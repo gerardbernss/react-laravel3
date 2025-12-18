@@ -314,7 +314,7 @@ export default function EditApplicant() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             {/* Application Information */}
                             <div className="border-b pb-6">
-                                <div className="mb-6 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4">
+                                <div className="mb-6 rounded-lg bg-linear-to-r from-blue-50 to-purple-50 p-4">
                                     <h2 className="text-xl font-bold text-gray-900">Application Information</h2>
                                 </div>
                                 <div className="space-y-6 pl-6">
@@ -708,7 +708,7 @@ export default function EditApplicant() {
 
                             {/* Personal Information */}
                             <div className="border-b pb-6">
-                                <div className="mb-6 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4">
+                                <div className="mb-6 rounded-lg bg-linear-to-r from-blue-50 to-purple-50 p-4">
                                     <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
                                 </div>
                                 <div className="pl-6">
@@ -846,7 +846,7 @@ export default function EditApplicant() {
                                                         <input
                                                             type="date"
                                                             {...field}
-                                                            className="w-full rounded-md border border-input bg-background px-3 py-[0.375rem] text-sm"
+                                                            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
@@ -957,7 +957,7 @@ export default function EditApplicant() {
 
                             {/* Contact Section */}
                             <div className="border-b pb-6">
-                                <div className="mb-6 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4">
+                                <div className="mb-6 rounded-lg bg-linear-to-r from-blue-50 to-purple-50 p-4">
                                     <h2 className="text-xl font-bold text-gray-900">Contact Information</h2>
                                 </div>
 
@@ -1158,7 +1158,7 @@ export default function EditApplicant() {
 
                             {/* Other Information */}
                             <div className="border-b pb-6">
-                                <div className="mb-6 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4">
+                                <div className="mb-6 rounded-lg bg-linear-to-r from-blue-50 to-purple-50 p-4">
                                     <h2 className="text-xl font-bold text-gray-900">Other Information</h2>
                                 </div>
                                 <div className="pl-6">
@@ -1204,7 +1204,7 @@ export default function EditApplicant() {
                                                         <input
                                                             type="date"
                                                             {...field}
-                                                            className="w-full rounded-md border border-input bg-background px-3 py-[0.375rem] text-sm"
+                                                            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
                                                         />
                                                     </FormControl>
                                                     <FormMessage />

@@ -54,7 +54,7 @@ export default function ApplicationSuccess() {
 
                     <Button
                         variant="outline"
-                        onClick={() => (window.location.href = '/applications/applicants/create')}
+                        onClick={() => (window.location.href = '/applications/start')}
                         className="flex flex-1 items-center justify-center gap-2 border-2 border-[#073066] text-[#073066] hover:bg-blue-50"
                     >
                         <FileText className="h-4 w-4" />

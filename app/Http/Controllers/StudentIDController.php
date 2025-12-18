@@ -33,7 +33,7 @@ class StudentIDController extends Controller
                 'last_name'          => $application->personalData->last_name ?? null,
                 'first_name'         => $application->personalData->first_name ?? null,
                 'middle_name'        => $application->personalData->middle_name ?? null,
-                'sex'                => $application->personalData->sex ?? null,
+                'gender'             => $application->personalData->gender ?? null,
                 'email'              => $application->personalData->email ?? null,
             ];
         });

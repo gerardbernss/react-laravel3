@@ -219,7 +219,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                         <InfoRow label="First Name" value={applicant.personal_data.first_name} />
                                         <InfoRow label="Middle Name" value={applicant.personal_data.middle_name} />
                                         <InfoRow label="LRN" value={applicant.personal_data.learner_reference_number} />
-                                        <InfoRow label="Gender" value={applicant.personal_data.sex} />
+                                        <InfoRow label="Gender" value={applicant.personal_data.gender} />
                                         <InfoRow label="Citizenship" value={applicant.personal_data.citizenship} />
                                         <InfoRow label="Religion" value={applicant.personal_data.religion} />
                                         <InfoRow label="Date of Birth" value={new Date(applicant.personal_data.date_of_birth).toLocaleDateString()} />

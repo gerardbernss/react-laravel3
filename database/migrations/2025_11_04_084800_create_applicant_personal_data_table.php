@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('suffix')->nullable();
             $table->string('learner_reference_number')->nullable();
 
-            $table->enum('sex', ['Male', 'Female', 'Other']);
+            $table->enum('gender', ['Male', 'Female', 'Other']);
             $table->string('citizenship');
             $table->string('religion');
             $table->date('date_of_birth');

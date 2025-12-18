@@ -16,7 +16,7 @@ class ApplicantPersonalData extends Model
         'middle_name',
         'suffix',
         'learner_reference_number',
-        'sex',
+        'gender',
         'citizenship',
         'religion',
         'date_of_birth',
@@ -38,6 +38,8 @@ class ApplicantPersonalData extends Model
         'stopped_studying',
         'accelerated',
         'health_conditions',
+        'has_doctors_note',
+        'doctors_note_file',
 
     ];
 

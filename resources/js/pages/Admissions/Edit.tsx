@@ -54,7 +54,7 @@ const applicantFormSchema = z.object({
     middle_name: z.string().optional(),
     suffix: z.string().optional(),
     learner_reference_number: z.string().optional(),
-    sex: z.string().optional(),
+    gender: z.string().optional(),
     citizenship: z.string().optional(),
     religion: z.string().optional(),
     date_of_birth: z.string().optional(),
@@ -273,7 +273,7 @@ export default function EditApplicant() {
                   middle_name: applicant.personal_data.middle_name || '',
                   suffix: applicant.personal_data.suffix || '',
                   learner_reference_number: applicant.personal_data.learner_reference_number || '',
-                  sex: applicant.personal_data.sex || '',
+                  gender: applicant.personal_data.gender || '',
                   citizenship: applicant.personal_data.citizenship || '',
                   religion: applicant.personal_data.religion || '',
                   date_of_birth: applicant.personal_data.date_of_birth || '',
@@ -401,7 +401,7 @@ export default function EditApplicant() {
                 middle_name: applicant.personal_data.middle_name || '',
                 suffix: applicant.personal_data.suffix || '',
                 learner_reference_number: applicant.personal_data.learner_reference_number || '',
-                sex: applicant.personal_data.sex || '',
+                gender: applicant.personal_data.gender || '',
                 citizenship: applicant.personal_data.citizenship || '',
                 religion: applicant.personal_data.religion || '',
                 date_of_birth: formatDate(applicant.personal_data.date_of_birth) || '',
@@ -953,7 +953,7 @@ export default function EditApplicant() {
                                         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                                             <FormField
                                                 control={form.control}
-                                                name="sex"
+                                                name="gender"
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <LabelWithTooltip label="Gender *" />

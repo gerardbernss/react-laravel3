@@ -32,7 +32,7 @@ class ApplicantController extends Controller
                 'last_name'          => $application->personalData->last_name ?? null,
                 'first_name'         => $application->personalData->first_name ?? null,
                 'middle_name'        => $application->personalData->middle_name ?? null,
-                'sex'                => $application->personalData->sex ?? null,
+                'gender'             => $application->personalData->gender ?? null,
                 'email'              => $application->personalData->email ?? null,
             ];
         });
@@ -142,7 +142,7 @@ class ApplicantController extends Controller
                 'middle_name'              => $request->middle_name,
                 'suffix'                   => $request->suffix,
                 'learner_reference_number' => $request->learner_reference_number,
-                'sex'                      => $request->sex,
+                'gender'                   => $request->gender,
                 'citizenship'              => $request->citizenship,
                 'religion'                 => $request->religion,
                 'date_of_birth'            => $request->date_of_birth,
@@ -422,7 +422,7 @@ class ApplicantController extends Controller
                 'middle_name'              => $request->middle_name,
                 'suffix'                   => $request->suffix,
                 'learner_reference_number' => $request->learner_reference_number,
-                'sex'                      => $request->sex,
+                'gender'                   => $request->gender,
                 'citizenship'              => $request->citizenship,
                 'religion'                 => $request->religion,
                 'date_of_birth'            => $request->date_of_birth,

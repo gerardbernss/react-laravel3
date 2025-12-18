@@ -36,143 +36,160 @@ const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string 
 
 const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
 
-const applicantFormSchema = z.object({
-    // Application info
-    application_date: z.string().min(1, { message: 'Application date is required.' }),
-    school_year: z.string().min(1, { message: 'Application date is required.' }),
-    application_status: z.string().min(1, { message: 'Application status is required.' }),
-    year_level: z.string().min(1, { message: 'Please select year level.' }),
-    semester: z.string().min(1, { message: 'Please select semester.' }),
-    strand: z.string().min(1, { message: 'Please select strand.' }),
-    classification: z.string().min(1, { message: 'Please select entry classification.' }),
-    learning_mode: z.string().min(1, { message: 'Please select learning mode.' }),
-    accomplished_by_name: z.string().optional(),
+const applicantFormSchema = z
+    .object({
+        // Application info
+        application_date: z.string().min(1, { message: 'Application date is required.' }),
+        school_year: z.string().min(1, { message: 'Application date is required.' }),
+        application_status: z.string().min(1, { message: 'Application status is required.' }),
+        year_level: z.string().min(1, { message: 'Please select year level.' }),
+        semester: z.string().min(1, { message: 'Please select semester.' }),
+        strand: z.string().min(1, { message: 'Please select strand.' }),
+        classification: z.string().min(1, { message: 'Please select entry classification.' }),
+        learning_mode: z.string().min(1, { message: 'Please select learning mode.' }),
+        accomplished_by_name: z.string().optional(),
 
-    //Personal Data
-    last_name: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
-    first_name: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
-    middle_name: z.string().optional(),
-    suffix: z.string().optional(),
-    learner_reference_number: z.string().optional(),
-    sex: z.string().min(1, { message: 'Gender is required.' }),
-    citizenship: z.string().min(2, { message: 'Citizenship is required.' }),
-    religion: z.string().min(1, { message: 'Religion is required.' }),
-    date_of_birth: z.string().min(1, { message: 'Date of birth is required.' }),
-    place_of_birth: z.string().optional(),
-    has_sibling: z.boolean().default(false),
-    email: z.string().email({ message: 'Please enter a valid email address.' }),
-    verificationCode: z.string().length(6, { message: 'Verification code must be 6 digits.' }).optional().or(z.literal('')),
-    altVerificationCode: z.string().length(6, { message: 'Verification code must be 6 digits.' }).optional().or(z.literal('')),
-    alt_email: z.string().email({ message: 'Please enter a valid alternate email address.' }),
-    mobile_number: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
-    present_street: z.string().optional(),
-    present_brgy: z.string().min(1, { message: 'Barangay is required.' }),
-    present_city: z.string().min(1, { message: 'City is required.' }),
-    present_province: z.string().min(1, { message: 'Province is required.' }),
-    present_zip: z.string().min(1, { message: 'ZIP code is required.' }),
-    permanent_street: z.string().optional(),
-    permanent_brgy: z.string().min(1, { message: 'Barangay is required.' }),
-    permanent_city: z.string().min(1, { message: 'City is required.' }),
-    permanent_province: z.string().min(1, { message: 'Province is required.' }),
-    permanent_zip: z.string().min(1, { message: 'ZIP code is required.' }),
-    stopped_studying: z.string().optional(),
-    accelerated: z.string().optional(),
-    health_conditions: z.union([z.string(), z.array(z.string())]).optional(),
-    has_doctors_note: z.boolean().default(false),
-    doctors_note_file: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' }),
+        //Personal Data
+        last_name: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
+        first_name: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
+        middle_name: z.string().optional(),
+        suffix: z.string().optional(),
+        learner_reference_number: z.string().optional(),
+        gender: z.string().min(1, { message: 'Gender is required.' }),
+        citizenship: z.string().min(2, { message: 'Citizenship is required.' }),
+        religion: z.string().min(1, { message: 'Religion is required.' }),
+        date_of_birth: z.string().min(1, { message: 'Date of birth is required.' }),
+        place_of_birth: z.string().optional(),
+        has_sibling: z.boolean().default(false),
+        email: z.string().email({ message: 'Please enter a valid email address.' }),
+        verificationCode: z.string().length(6, { message: 'Verification code must be 6 digits.' }).optional().or(z.literal('')),
+        altVerificationCode: z.string().length(6, { message: 'Verification code must be 6 digits.' }).optional().or(z.literal('')),
+        alt_email: z.string().email({ message: 'Please enter a valid alternate email address.' }),
+        mobile_number: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
+        present_street: z.string().optional(),
+        present_brgy: z.string().min(1, { message: 'Barangay is required.' }),
+        present_city: z.string().min(1, { message: 'City is required.' }),
+        present_province: z.string().min(1, { message: 'Province is required.' }),
+        present_zip: z.string().min(1, { message: 'ZIP code is required.' }),
+        permanent_street: z.string().optional(),
+        permanent_brgy: z.string().min(1, { message: 'Barangay is required.' }),
+        permanent_city: z.string().min(1, { message: 'City is required.' }),
+        permanent_province: z.string().min(1, { message: 'Province is required.' }),
+        permanent_zip: z.string().min(1, { message: 'ZIP code is required.' }),
+        stopped_studying: z.string().optional(),
+        accelerated: z.string().optional(),
+        health_conditions: z.union([z.string(), z.array(z.string())]).optional(),
 
-    // Family info
-    father_lname: z.string().min(2, { message: "Father's last name must be at least 2 characters." }),
-    father_fname: z.string().min(2, { message: "Father's first name must be at least 2 characters." }),
-    father_mname: z.string().min(2, { message: "Father's middle name must be at least 2 characters." }),
-    father_living: z.string().min(1, { message: "Father's status is required." }),
-    father_citizenship: z.string().optional(),
-    father_religion: z.string().optional(),
-    father_highest_educ: z.string().optional(),
-    father_occupation: z.string().optional(),
-    father_income: z.string().optional(),
-    father_business_emp: z.string().optional(),
-    father_business_address: z.string().optional(),
-    father_contact_no: z.string().regex(phoneRegex, { message: 'Invalid phone number.' }).or(z.literal('')).optional(),
-    father_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
+        has_doctors_note: z.boolean().default(false),
+        doctors_note_file: z.any().optional(),
 
-    father_slu_employee: z.boolean().default(false),
-    father_slu_dept: z.string().optional(),
-    mother_lname: z.string().min(2, { message: "Mother's maiden last name must be at least 2 characters." }),
-    mother_fname: z.string().min(2, { message: "Mother's first name must be at least 2 characters." }),
-    mother_mname: z.string().min(2, { message: "Mother's middle name must be at least 2 characters." }),
-    mother_living: z.string().min(1, { message: "Mother's status is required." }),
-    mother_citizenship: z.string().optional(),
-    mother_religion: z.string().optional(),
-    mother_highest_educ: z.string().optional(),
-    mother_occupation: z.string().optional(),
-    mother_income: z.string().optional(),
-    mother_business_emp: z.string().optional(),
-    mother_business_address: z.string().optional(),
-    mother_contact_no: z.string().regex(phoneRegex, { message: 'Invalid phone number.' }).or(z.literal('')).optional(),
-    mother_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
+        // Family info
+        father_lname: z.string().min(2, { message: "Father's last name must be at least 2 characters." }),
+        father_fname: z.string().min(2, { message: "Father's first name must be at least 2 characters." }),
+        father_mname: z.string().min(2, { message: "Father's middle name must be at least 2 characters." }),
+        father_living: z.string().min(1, { message: "Father's status is required." }),
+        father_citizenship: z.string().optional(),
+        father_religion: z.string().optional(),
+        father_highest_educ: z.string().optional(),
+        father_occupation: z.string().optional(),
+        father_income: z.string().optional(),
+        father_business_emp: z.string().optional(),
+        father_business_address: z.string().optional(),
+        father_contact_no: z.string().regex(phoneRegex, { message: 'Invalid phone number.' }).or(z.literal('')).optional(),
+        father_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
 
-    mother_slu_employee: z.boolean().default(false),
-    mother_slu_dept: z.string().optional(),
-    guardian_lname: z.string().min(2, { message: "Guardian's last name must be at least 2 characters." }),
-    guardian_fname: z.string().min(2, { message: "Guardian's first name must be at least 2 characters." }),
-    guardian_mname: z.string().min(2, { message: "Guardian's middle name must be at least 2 characters." }),
-    guardian_relationship: z.string().optional(),
-    guardian_citizenship: z.string().optional(),
-    guardian_religion: z.string().optional(),
-    guardian_highest_educ: z.string().optional(),
-    guardian_occupation: z.string().optional(),
-    guardian_income: z.string().optional(),
-    guardian_business_emp: z.string().optional(),
-    guardian_business_address: z.string().optional(),
-    guardian_contact_no: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
-    guardian_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
+        father_slu_employee: z.boolean().default(false),
+        father_slu_dept: z.string().optional(),
+        mother_lname: z.string().min(2, { message: "Mother's maiden last name must be at least 2 characters." }),
+        mother_fname: z.string().min(2, { message: "Mother's first name must be at least 2 characters." }),
+        mother_mname: z.string().min(2, { message: "Mother's middle name must be at least 2 characters." }),
+        mother_living: z.string().min(1, { message: "Mother's status is required." }),
+        mother_citizenship: z.string().optional(),
+        mother_religion: z.string().optional(),
+        mother_highest_educ: z.string().optional(),
+        mother_occupation: z.string().optional(),
+        mother_income: z.string().optional(),
+        mother_business_emp: z.string().optional(),
+        mother_business_address: z.string().optional(),
+        mother_contact_no: z.string().regex(phoneRegex, { message: 'Invalid phone number.' }).or(z.literal('')).optional(),
+        mother_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
 
-    guardian_slu_employee: z.boolean().default(false),
-    guardian_slu_dept: z.string().optional(),
-    emergency_contact_name: z.string().min(2, { message: "Please enter emergency contact's name." }),
-    emergency_relationship: z.string().min(1, { message: 'Relationship is required.' }),
-    emergency_home_phone: z.string().regex(phoneRegex).or(z.literal('')).optional(),
-    emergency_mobile_phone: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
-    emergency_email: z.string().email().or(z.literal('')).optional(),
+        mother_slu_employee: z.boolean().default(false),
+        mother_slu_dept: z.string().optional(),
+        guardian_lname: z.string().min(2, { message: "Guardian's last name must be at least 2 characters." }),
+        guardian_fname: z.string().min(2, { message: "Guardian's first name must be at least 2 characters." }),
+        guardian_mname: z.string().min(2, { message: "Guardian's middle name must be at least 2 characters." }),
+        guardian_relationship: z.string().optional(),
+        guardian_citizenship: z.string().optional(),
+        guardian_religion: z.string().optional(),
+        guardian_highest_educ: z.string().optional(),
+        guardian_occupation: z.string().optional(),
+        guardian_income: z.string().optional(),
+        guardian_business_emp: z.string().optional(),
+        guardian_business_address: z.string().optional(),
+        guardian_contact_no: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
+        guardian_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
 
-    //Siblings Info
-    siblings: z
-        .array(
-            z.object({
-                sibling_full_name: z.string().min(2, "Please enter sibling's name."),
-                sibling_grade_level: z.string().min(1, "Enter sibling's grade level."),
-                sibling_id_number: z.string().min(1, "Enter sibling's ID number."),
-            }),
-        )
-        .optional()
-        .default([]),
+        guardian_slu_employee: z.boolean().default(false),
+        guardian_slu_dept: z.string().optional(),
+        emergency_contact_name: z.string().min(2, { message: "Please enter emergency contact's name." }),
+        emergency_relationship: z.string().min(1, { message: 'Relationship is required.' }),
+        emergency_home_phone: z.string().regex(phoneRegex).or(z.literal('')).optional(),
+        emergency_mobile_phone: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
+        emergency_email: z.string().email().or(z.literal('')).optional(),
 
-    //Educ Background
-    schools: z
-        .array(
-            z.object({
-                school_name: z.string().min(2, { message: "Please enter school's name." }),
-                school_address: z.string().min(2, { message: "Please enter school's address." }),
-                from_grade: z.string().optional(),
-                to_grade: z.string().optional(),
-                from_year: z.string().optional(),
-                to_year: z.string().optional(),
-                honors_awards: z.string().optional(),
-                general_average: z.string().optional(),
-                class_rank: z.string().optional(),
-                class_size: z.string().optional(),
-            }),
-        )
-        .optional()
-        .default([]),
+        //Siblings Info
+        siblings: z
+            .array(
+                z.object({
+                    sibling_full_name: z.string().min(2, "Please enter sibling's name."),
+                    sibling_grade_level: z.string().min(1, "Enter sibling's grade level."),
+                    sibling_id_number: z.string().min(1, "Enter sibling's ID number."),
+                }),
+            )
+            .optional()
+            .default([]),
 
-    //Documents - Fix the file validation
-    certificate_of_enrollment: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' }),
-    birth_certificate: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' }),
-    latest_report_card_front: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' }),
-    latest_report_card_back: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' }),
-});
+        //Educ Background
+        schools: z
+            .array(
+                z.object({
+                    school_name: z.string().min(2, { message: "Please enter school's name." }),
+                    school_address: z.string().min(2, { message: "Please enter school's address." }),
+                    from_grade: z.string().optional(),
+                    to_grade: z.string().optional(),
+                    from_year: z.string().optional(),
+                    to_year: z.string().optional(),
+                    honors_awards: z.string().optional(),
+                    general_average: z.string().optional(),
+                    class_rank: z.string().optional(),
+                    class_size: z.string().optional(),
+                }),
+            )
+            .optional()
+            .default([]),
+
+        //Documents - Fix the file validation
+        certificate_of_enrollment: z
+            .any()
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' }),
+        birth_certificate: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' }),
+        latest_report_card_front: z
+            .any()
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' }),
+        latest_report_card_back: z
+            .any()
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' }),
+    })
+    .superRefine((data, ctx) => {
+        if (data.has_doctors_note && !data.doctors_note_file) {
+            ctx.addIssue({
+                path: ['doctors_note_file'],
+                message: 'Doctors note file is required when the checkbox is checked.',
+                code: z.ZodIssueCode.custom,
+            });
+        }
+    });
 
 type ApplicantFormValues = z.infer<typeof applicantFormSchema>;
 
@@ -281,7 +298,7 @@ export default function AddApplicant() {
             middle_name: '',
             suffix: '',
             learner_reference_number: '',
-            sex: '',
+            gender: '',
             citizenship: '',
             religion: '',
             date_of_birth: '',
@@ -305,6 +322,8 @@ export default function AddApplicant() {
             stopped_studying: '',
             accelerated: '',
             health_conditions: [],
+            has_doctors_note: false,
+            doctors_note_file: null,
 
             //family
             father_lname: '',
@@ -405,6 +424,9 @@ export default function AddApplicant() {
                         formData.append(key, JSON.stringify(value));
                     }
                 }
+                if (key === 'doctors_note_file' && value instanceof File) {
+                    formData.append('doctors_note_file', value);
+                }
                 // Handle health_conditions array
                 else if (key === 'health_conditions') {
                     if (Array.isArray(value) && value.length > 0) {
@@ -418,7 +440,8 @@ export default function AddApplicant() {
                     key === 'certificate_of_enrollment' ||
                     key === 'birth_certificate' ||
                     key === 'latest_report_card_front' ||
-                    key === 'latest_report_card_back'
+                    key === 'latest_report_card_back' ||
+                    key === 'doctors_note_file'
                 ) {
                     if (value instanceof File) {
                         formData.append(key, value);
@@ -450,7 +473,7 @@ export default function AddApplicant() {
 
                     // Show first error
                     const firstError = Object.values(errors)[0];
-                    toast.error(firstError || 'Failed to submit application. Please check the form.');
+                    toast.error(firstError || 'Failed to submit application.');
 
                     // Set form errors
                     Object.keys(errors).forEach((key) => {
@@ -952,7 +975,10 @@ export default function AddApplicant() {
                     <div className="flex-1">
                         <Form {...form}>
                             <TooltipProvider>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <form
+                                    onSubmit={form.handleSubmit(onSubmit, (errors) => console.log('Validation Errors:', errors))}
+                                    className="space-y-6"
+                                >
                                     {/* Application Information */}
                                     <div id="application" className="rounded-lg border pb-6 shadow-sm">
                                         <div className="mb-6 rounded-tl-lg rounded-tr-lg bg-[#004c88] bg-linear-to-r p-4">
@@ -1077,7 +1103,7 @@ export default function AddApplicant() {
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="Freshman">New Applicant</SelectItem>
+                                                                    <SelectItem value="New Applicant">New Applicant</SelectItem>
                                                                     <SelectItem value="Transferee">Transferee</SelectItem>
                                                                     <SelectItem value="Returnee">Returnee</SelectItem>
                                                                 </SelectContent>
@@ -1095,10 +1121,7 @@ export default function AddApplicant() {
                                                     render={({ field }) => {
                                                         return (
                                                             <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Program/Strand"
-                                                                    tooltip="Select your preferred academic program or strand."
-                                                                />
+                                                                <LabelWithTooltip label="Program *" tooltip="Select your academic program." />
                                                                 <Select onValueChange={field.onChange} value={field.value}>
                                                                     <FormControl>
                                                                         <SelectTrigger>
@@ -1218,7 +1241,7 @@ export default function AddApplicant() {
                                             <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                                                 <FormField
                                                     control={form.control}
-                                                    name="sex"
+                                                    name="gender"
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <LabelWithTooltip label="Gender *" />

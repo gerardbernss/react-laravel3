@@ -23,7 +23,7 @@ interface Applicant {
     first_name: string;
     last_name: string;
     email: string;
-    sex?: string;
+    gender?: string;
     application_date?: string;
     application_status?: string;
     strand?: string;
@@ -68,7 +68,7 @@ export default function Index({ applications }: Props) {
         'first_name',
         'last_name',
         'email',
-        'sex',
+        'gender',
         'strand',
         'application_date',
         'application_status',
@@ -163,7 +163,7 @@ export default function Index({ applications }: Props) {
                 a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 a.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesGender = selectedGender === 'all' || a.sex?.toLowerCase() === selectedGender.toLowerCase();
+            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === selectedGender.toLowerCase();
             const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
             const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
 
@@ -242,7 +242,7 @@ export default function Index({ applications }: Props) {
         { key: 'first_name', label: 'First Name' },
         { key: 'last_name', label: 'Last Name' },
         { key: 'email', label: 'Email' },
-        { key: 'sex', label: 'Gender' },
+        { key: 'gender', label: 'Gender' },
         { key: 'strand', label: 'Program/Strand' },
         { key: 'application_date', label: 'Application Date' },
         { key: 'application_status', label: 'Application Status' },
@@ -511,7 +511,7 @@ export default function Index({ applications }: Props) {
                                             <td className="px-4 py-3 font-medium text-gray-900">{row.last_name}</td>
                                         )}
                                         {visibleColumns.includes('email') && <td className="px-4 py-3 text-gray-600">{row.email}</td>}
-                                        {visibleColumns.includes('sex') && <td className="px-4 py-3 text-gray-900">{row.sex}</td>}
+                                        {visibleColumns.includes('gender') && <td className="px-4 py-3 text-gray-900">{row.gender}</td>}
                                         {visibleColumns.includes('strand') && <td className="px-4 py-3 text-gray-900">{row.strand}</td>}
                                         {visibleColumns.includes('application_date') && (
                                             <td className="px-4 py-3 text-gray-900">

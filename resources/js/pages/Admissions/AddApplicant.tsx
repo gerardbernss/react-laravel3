@@ -57,7 +57,7 @@ const applicantFormSchema = z.object({
     middle_name: z.string().optional(),
     suffix: z.string().optional(),
     learner_reference_number: z.string().optional(),
-    sex: z.string().min(1, { message: 'Gender is required.' }),
+    gender: z.string().min(1, { message: 'Gender is required.' }),
     citizenship: z.string().min(2, { message: 'Citizenship is required.' }),
     religion: z.string().min(1, { message: 'Religion is required.' }),
     date_of_birth: z.string().min(1, { message: 'Date of birth is required.' }),
@@ -283,7 +283,7 @@ export default function AddApplicant() {
             middle_name: '',
             suffix: '',
             learner_reference_number: '',
-            sex: '',
+            gender: '',
             citizenship: '',
             religion: '',
             date_of_birth: '',
@@ -862,7 +862,7 @@ export default function AddApplicant() {
                                             <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                                                 <FormField
                                                     control={form.control}
-                                                    name="sex"
+                                                    name="gender"
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <LabelWithTooltip label="Gender *" />

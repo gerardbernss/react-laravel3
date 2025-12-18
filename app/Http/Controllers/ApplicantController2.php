@@ -40,7 +40,7 @@ class ApplicantController2 extends Controller
                 'last_name'          => $application->personalData->last_name ?? null,
                 'first_name'         => $application->personalData->first_name ?? null,
                 'middle_name'        => $application->personalData->middle_name ?? null,
-                'sex'                => $application->personalData->sex ?? null,
+                'gender'             => $application->personalData->gender ?? null,
                 'email'              => $application->personalData->email ?? null,
             ];
         }
@@ -161,7 +161,7 @@ class ApplicantController2 extends Controller
         return ($input === null || $input === '') ? 'None' : $input;
     }
 
-    public function storeSHS(Request $request)
+    public function storeLES(Request $request)
     {
         DB::beginTransaction();
 
@@ -177,7 +177,7 @@ class ApplicantController2 extends Controller
                 'middle_name'              => $request->middle_name,
                 'suffix'                   => $request->suffix,
                 'learner_reference_number' => $request->learner_reference_number,
-                'sex'                      => $request->sex,
+                'gender'                   => $request->gender,
                 'citizenship'              => $request->citizenship,
                 'religion'                 => $request->religion,
                 'date_of_birth'            => $request->date_of_birth,
@@ -199,6 +199,8 @@ class ApplicantController2 extends Controller
                 'stopped_studying'         => $request->stopped_studying ?: 'No',
                 'accelerated'              => $request->accelerated ?: 'No',
                 'health_conditions'        => $this->formatHealthConditions($request->health_conditions),
+                'has_doctors_note'         => filter_var($request->has_doctors_note, FILTER_VALIDATE_BOOLEAN),
+
             ];
 
             if ($personalData) {
@@ -210,6 +212,29 @@ class ApplicantController2 extends Controller
             }
             if (! $personalData || ! $personalData->id) {
                 throw new \Exception("Failed to create or retrieve Personal Data ID.");
+            }
+            if ($request->hasFile('doctors_note_file')) {
+
+                $lastName  = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->last_name));
+                $firstName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->first_name));
+
+                $doctors_notefile = $request->file('doctors_note_file');
+
+                $filename = "{$personalData->id}_{$lastName}_{$firstName}_DOCTORS_NOTE." .
+                $doctors_notefile
+                    ->getClientOriginalExtension();
+
+                $path = $doctors_notefile
+                    ->storeAs(
+                        'documents/doctors_notes',
+                        $filename,
+                        'public'
+                    );
+
+                // ✅ SAVE FILE PATH TO PERSONAL DATA TABLE
+                $personalData->doctors_note_file = $path;
+                $personalData->save();
+
             }
 
             // STEP 2: Handle Family Background (Linked to PERSON)
@@ -329,7 +354,7 @@ class ApplicantController2 extends Controller
                 'application_number'         => $applicationNumber,
                 'application_date'           => $request->application_date,
                 'application_status'         => 'Pending',
-                'school_year'                => '2025-2026', // Ideally dynamic or from request
+                'school_year'                => $request->school_year,
                 'semester'                   => $request->semester,
                 'student_category'           => $studentCategory,
                 'year_level'                 => $request->year_level,
@@ -418,7 +443,7 @@ class ApplicantController2 extends Controller
                 'middle_name'              => $request->middle_name,
                 'suffix'                   => $request->suffix,
                 'learner_reference_number' => $request->learner_reference_number,
-                'sex'                      => $request->sex,
+                'gender'                   => $request->gender,
                 'citizenship'              => $request->citizenship,
                 'religion'                 => $request->religion,
                 'date_of_birth'            => $request->date_of_birth,
@@ -440,6 +465,8 @@ class ApplicantController2 extends Controller
                 'stopped_studying'         => $request->stopped_studying ?: 'No',
                 'accelerated'              => $request->accelerated ?: 'No',
                 'health_conditions'        => $this->formatHealthConditions($request->health_conditions),
+                'has_doctors_note'         => filter_var($request->has_doctors_note, FILTER_VALIDATE_BOOLEAN),
+
             ];
 
             if ($personalData) {
@@ -451,6 +478,29 @@ class ApplicantController2 extends Controller
             }
             if (! $personalData || ! $personalData->id) {
                 throw new \Exception("Failed to create or retrieve Personal Data ID.");
+            }
+            if ($request->hasFile('doctors_note_file')) {
+
+                $lastName  = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->last_name));
+                $firstName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->first_name));
+
+                $doctors_notefile = $request->file('doctors_note_file');
+
+                $filename = "{$personalData->id}_{$lastName}_{$firstName}_DOCTORS_NOTE." .
+                $doctors_notefile
+                    ->getClientOriginalExtension();
+
+                $path = $doctors_notefile
+                    ->storeAs(
+                        'documents/doctors_notes',
+                        $filename,
+                        'public'
+                    );
+
+                // ✅ SAVE FILE PATH TO PERSONAL DATA TABLE
+                $personalData->doctors_note_file = $path;
+                $personalData->save();
+
             }
 
             // STEP 2: Handle Family Background (Linked to PERSON)
@@ -570,7 +620,7 @@ class ApplicantController2 extends Controller
                 'application_number'         => $applicationNumber,
                 'application_date'           => $request->application_date,
                 'application_status'         => 'Pending',
-                'school_year'                => '2025-2026', // Ideally dynamic or from request
+                'school_year'                => $request->school_year,
                 'semester'                   => $request->semester,
                 'student_category'           => $studentCategory,
                 'year_level'                 => $request->year_level,
@@ -641,9 +691,10 @@ class ApplicantController2 extends Controller
             Log::error('Application submission failed: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Failed to submit: ' . $e->getMessage()])->withInput();
         }
+
     }
 
-    public function storeLES(Request $request)
+    public function storeSHS(Request $request)
     {
         DB::beginTransaction();
 
@@ -659,7 +710,7 @@ class ApplicantController2 extends Controller
                 'middle_name'              => $request->middle_name,
                 'suffix'                   => $request->suffix,
                 'learner_reference_number' => $request->learner_reference_number,
-                'sex'                      => $request->sex,
+                'gender'                   => $request->gender,
                 'citizenship'              => $request->citizenship,
                 'religion'                 => $request->religion,
                 'date_of_birth'            => $request->date_of_birth,
@@ -681,6 +732,8 @@ class ApplicantController2 extends Controller
                 'stopped_studying'         => $request->stopped_studying ?: 'No',
                 'accelerated'              => $request->accelerated ?: 'No',
                 'health_conditions'        => $this->formatHealthConditions($request->health_conditions),
+                'has_doctors_note'         => filter_var($request->has_doctors_note, FILTER_VALIDATE_BOOLEAN),
+
             ];
 
             if ($personalData) {
@@ -692,6 +745,29 @@ class ApplicantController2 extends Controller
             }
             if (! $personalData || ! $personalData->id) {
                 throw new \Exception("Failed to create or retrieve Personal Data ID.");
+            }
+            if ($request->hasFile('doctors_note_file')) {
+
+                $lastName  = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->last_name));
+                $firstName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->first_name));
+
+                $doctors_notefile = $request->file('doctors_note_file');
+
+                $filename = "{$personalData->id}_{$lastName}_{$firstName}_DOCTORS_NOTE." .
+                $doctors_notefile
+                    ->getClientOriginalExtension();
+
+                $path = $doctors_notefile
+                    ->storeAs(
+                        'documents/doctors_notes',
+                        $filename,
+                        'public'
+                    );
+
+                // ✅ SAVE FILE PATH TO PERSONAL DATA TABLE
+                $personalData->doctors_note_file = $path;
+                $personalData->save();
+
             }
 
             // STEP 2: Handle Family Background (Linked to PERSON)
@@ -811,7 +887,7 @@ class ApplicantController2 extends Controller
                 'application_number'         => $applicationNumber,
                 'application_date'           => $request->application_date,
                 'application_status'         => 'Pending',
-                'school_year'                => '2025-2026', // Ideally dynamic or from request
+                'school_year'                => $request->school_year,
                 'semester'                   => $request->semester,
                 'student_category'           => $studentCategory,
                 'year_level'                 => $request->year_level,
@@ -882,6 +958,7 @@ class ApplicantController2 extends Controller
             Log::error('Application submission failed: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Failed to submit: ' . $e->getMessage()])->withInput();
         }
+
     }
 
     public function success()
