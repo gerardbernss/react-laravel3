@@ -14,8 +14,9 @@ interface CitizenshipSelectProps {
     disabled?: boolean;
 }
 
-export function CitizenshipSelect({ value, onChange, placeholder = "Select citizenship", disabled }: CitizenshipSelectProps) {
+export function CitizenshipSelect({ value, onChange, placeholder = 'Select citizenship', disabled }: CitizenshipSelectProps) {
     const [open, setOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const { citizenships } = useCitizenships();
 
     return (
@@ -27,21 +28,16 @@ export function CitizenshipSelect({ value, onChange, placeholder = "Select citiz
                         role="combobox"
                         aria-expanded={open}
                         disabled={disabled}
-                        className={cn(
-                            'w-full justify-between',
-                            !value && 'text-muted-foreground'
-                        )}
+                        className={cn('w-full justify-between', !value && 'text-muted-foreground')}
                     >
-                        {value
-                            ? citizenships.find((c) => c.value === value)?.label || value
-                            : placeholder}
+                        {value ? citizenships.find((c) => c.value === value)?.label || value : placeholder}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </FormControl>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command>
-                    <CommandInput placeholder="Search citizenship..." />
+                    <CommandInput placeholder="Search citizenship..." onValueChange={setSearchTerm} />
                     <CommandList>
                         <CommandEmpty>No citizenship found.</CommandEmpty>
                         <CommandGroup>
@@ -55,14 +51,23 @@ export function CitizenshipSelect({ value, onChange, placeholder = "Select citiz
                                     }}
                                 >
                                     <Check
-                                        className={cn(
-                                            'mr-2 h-4 w-4',
-                                            value === citizenship.value ? 'opacity-100' : 'opacity-0'
-                                        )}
+                                        className={cn('mr-2 h-4 w-4', value === citizenship.value ? 'opacity-100' : 'opacity-0')}
                                     />
                                     {citizenship.label}
                                 </CommandItem>
                             ))}
+                            {searchTerm && !citizenships.some((c) => c.label.toLowerCase() === searchTerm.toLowerCase()) && (
+                                <CommandItem
+                                    value={searchTerm}
+                                    onSelect={() => {
+                                        onChange(searchTerm);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Check className={cn('mr-2 h-4 w-4', value === searchTerm ? 'opacity-100' : 'opacity-0')} />
+                                    Use "{searchTerm}"
+                                </CommandItem>
+                            )}
                         </CommandGroup>
                     </CommandList>
                 </Command>
