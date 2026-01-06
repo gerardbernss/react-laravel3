@@ -556,19 +556,19 @@ export default function AddApplicant() {
 
         try {
             // Load provinces
-            const provincesRes = await axios.get<PsgcItem[]>(`https://psgc.cloud/api/regions/${selectedPresentRegion}/provinces`);
+            const provincesRes = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`);
             setPermanentProvinces(provincesRes.data);
             setSelectedPermanentRegion(selectedPresentRegion);
 
             if (selectedPresentProvince) {
                 // Load cities
-                const citiesRes = await axios.get<PsgcItem[]>(`https://psgc.cloud/api/provinces/${selectedPresentProvince}/cities-municipalities`);
+                const citiesRes = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`);
                 setPermanentCities(citiesRes.data);
                 setSelectedPermanentProvince(selectedPresentProvince);
 
                 if (selectedPresentCity) {
                     // Load barangays
-                    const barangaysRes = await axios.get<PsgcItem[]>(`https://psgc.cloud/api/cities-municipalities/${selectedPresentCity}/barangays`);
+                    const barangaysRes = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`);
                     setPermanentBarangays(barangaysRes.data);
                     setSelectedPermanentCity(selectedPresentCity);
                 }
@@ -582,7 +582,7 @@ export default function AddApplicant() {
     // 1️⃣ Load regions on mount for BOTH addresses
     useEffect(() => {
         axios
-            .get<PsgcItem[]>('https://psgc.cloud/api/regions')
+            .get<PsgcItem[]>('https://psgc.gitlab.io/api/regions')
             .then((res) => {
                 setPresentRegions(res.data);
                 setPermanentRegions(res.data);
@@ -595,7 +595,7 @@ export default function AddApplicant() {
         if (!selectedPresentRegion) return;
 
         axios
-            .get<PsgcItem[]>(`https://psgc.cloud/api/regions/${selectedPresentRegion}/provinces`)
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`)
             .then((res) => setPresentProvinces(res.data))
             .catch(console.error);
 
@@ -613,7 +613,7 @@ export default function AddApplicant() {
         if (!selectedPresentProvince) return;
 
         axios
-            .get<PsgcItem[]>(`https://psgc.cloud/api/provinces/${selectedPresentProvince}/cities-municipalities`)
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`)
             .then((res) => setPresentCities(res.data))
             .catch(console.error);
 
@@ -628,7 +628,7 @@ export default function AddApplicant() {
         if (!selectedPresentCity) return;
 
         axios
-            .get<PsgcItem[]>(`https://psgc.cloud/api/cities-municipalities/${selectedPresentCity}/barangays`)
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`)
             .then((res) => setPresentBarangays(res.data))
             .catch(console.error);
 
@@ -691,7 +691,7 @@ export default function AddApplicant() {
         if (!selectedPermanentRegion) return;
 
         axios
-            .get<PsgcItem[]>(`https://psgc.cloud/api/regions/${selectedPermanentRegion}/provinces`)
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPermanentRegion}/provinces`)
             .then((res) => setPermanentProvinces(res.data))
             .catch(console.error);
 
@@ -713,7 +713,7 @@ export default function AddApplicant() {
         if (!selectedPermanentProvince) return;
 
         axios
-            .get<PsgcItem[]>(`https://psgc.cloud/api/provinces/${selectedPermanentProvince}/cities-municipalities`)
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPermanentProvince}/cities-municipalities`)
             .then((res) => setPermanentCities(res.data))
             .catch(console.error);
 
@@ -732,7 +732,7 @@ export default function AddApplicant() {
         if (!selectedPermanentCity) return;
 
         axios
-            .get<PsgcItem[]>(`https://psgc.cloud/api/cities-municipalities/${selectedPermanentCity}/barangays`)
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPermanentCity}/barangays`)
             .then((res) => setPermanentBarangays(res.data))
             .catch(console.error);
 
