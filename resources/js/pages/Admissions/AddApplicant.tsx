@@ -261,6 +261,8 @@ const FormNavigation = () => {
 };
 
 export default function AddApplicant() {
+    const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
+
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
         mode: 'onChange',
@@ -1850,8 +1852,10 @@ export default function AddApplicant() {
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             size="small"
+                                                            checked={guardianSource === 'father'}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
+                                                                    setGuardianSource('father');
                                                                     // Copy father's info to guardian fields
                                                                     form.setValue('guardian_lname', form.getValues('father_lname'));
                                                                     form.setValue('guardian_fname', form.getValues('father_fname'));
@@ -1877,6 +1881,24 @@ export default function AddApplicant() {
                                                                     form.setValue('guardian_slu_employee', form.getValues('father_slu_employee'));
                                                                     form.setValue('guardian_slu_dept', form.getValues('father_slu_dept') || '');
                                                                     form.setValue('guardian_relationship', 'Father');
+                                                                } else {
+                                                                    setGuardianSource(null);
+                                                                    // Clear guardian fields
+                                                                    form.setValue('guardian_lname', '');
+                                                                    form.setValue('guardian_fname', '');
+                                                                    form.setValue('guardian_mname', '');
+                                                                    form.setValue('guardian_citizenship', '');
+                                                                    form.setValue('guardian_religion', '');
+                                                                    form.setValue('guardian_highest_educ', '');
+                                                                    form.setValue('guardian_occupation', '');
+                                                                    form.setValue('guardian_income', '');
+                                                                    form.setValue('guardian_business_emp', '');
+                                                                    form.setValue('guardian_business_address', '');
+                                                                    form.setValue('guardian_contact_no', '');
+                                                                    form.setValue('guardian_email', '');
+                                                                    form.setValue('guardian_slu_employee', false);
+                                                                    form.setValue('guardian_slu_dept', '');
+                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
@@ -1886,8 +1908,10 @@ export default function AddApplicant() {
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             size="small"
+                                                            checked={guardianSource === 'mother'}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
+                                                                    setGuardianSource('mother');
                                                                     // Copy mother's info to guardian fields
                                                                     form.setValue('guardian_lname', form.getValues('mother_lname'));
                                                                     form.setValue('guardian_fname', form.getValues('mother_fname'));
@@ -1913,6 +1937,24 @@ export default function AddApplicant() {
                                                                     form.setValue('guardian_slu_employee', form.getValues('mother_slu_employee'));
                                                                     form.setValue('guardian_slu_dept', form.getValues('mother_slu_dept') || '');
                                                                     form.setValue('guardian_relationship', 'Mother');
+                                                                } else {
+                                                                    setGuardianSource(null);
+                                                                    // Clear guardian fields
+                                                                    form.setValue('guardian_lname', '');
+                                                                    form.setValue('guardian_fname', '');
+                                                                    form.setValue('guardian_mname', '');
+                                                                    form.setValue('guardian_citizenship', '');
+                                                                    form.setValue('guardian_religion', '');
+                                                                    form.setValue('guardian_highest_educ', '');
+                                                                    form.setValue('guardian_occupation', '');
+                                                                    form.setValue('guardian_income', '');
+                                                                    form.setValue('guardian_business_emp', '');
+                                                                    form.setValue('guardian_business_address', '');
+                                                                    form.setValue('guardian_contact_no', '');
+                                                                    form.setValue('guardian_email', '');
+                                                                    form.setValue('guardian_slu_employee', false);
+                                                                    form.setValue('guardian_slu_dept', '');
+                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
@@ -1928,7 +1970,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's Last Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1941,7 +1983,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's First Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1954,7 +1996,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's Middle Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1967,7 +2009,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Relationship with guardian" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1982,7 +2024,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Citizenship" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1995,7 +2037,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Religion" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2008,7 +2050,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2023,7 +2065,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Occupation" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2036,7 +2078,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Monthly Income" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2049,7 +2091,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Business/Employer" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2064,7 +2106,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Business Address" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2077,7 +2119,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Contact No." tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2090,7 +2132,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Email Address" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2122,12 +2164,12 @@ export default function AddApplicant() {
                                                                         >
                                                                             <FormControlLabel
                                                                                 value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
+                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} disabled={guardianSource !== null} />}
                                                                                 label="Yes"
                                                                             />
                                                                             <FormControlLabel
                                                                                 value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
+                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} disabled={guardianSource !== null} />}
                                                                                 label="No"
                                                                             />
                                                                         </RadioGroup>
@@ -2141,6 +2183,7 @@ export default function AddApplicant() {
                                                                         <FormControl className="flex-1">
                                                                             <Input
                                                                                 placeholder="Enter SLU Department"
+                                                                                disabled={guardianSource !== null}
                                                                                 {...form.register('guardian_slu_dept')}
                                                                             />
                                                                         </FormControl>
