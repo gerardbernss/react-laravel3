@@ -403,6 +403,111 @@ export default function AddApplicant() {
         form.setValue('school_year', `${startYear}-${endYear}`);
     }, [applicationDate]);
 
+    // Watch all father and mother fields for real-time updates
+    const fatherValues = form.watch([
+        'father_lname',
+        'father_fname',
+        'father_mname',
+        'father_citizenship',
+        'father_religion',
+        'father_highest_educ',
+        'father_occupation',
+        'father_income',
+        'father_business_emp',
+        'father_business_address',
+        'father_contact_no',
+        'father_email',
+        'father_slu_employee',
+        'father_slu_dept',
+    ]);
+
+    const motherValues = form.watch([
+        'mother_lname',
+        'mother_fname',
+        'mother_mname',
+        'mother_citizenship',
+        'mother_religion',
+        'mother_highest_educ',
+        'mother_occupation',
+        'mother_income',
+        'mother_business_emp',
+        'mother_business_address',
+        'mother_contact_no',
+        'mother_email',
+        'mother_slu_employee',
+        'mother_slu_dept',
+    ]);
+
+    useEffect(() => {
+        if (guardianSource === 'father') {
+            const [
+                lname,
+                fname,
+                mname,
+                citizenship,
+                religion,
+                educ,
+                occupation,
+                income,
+                businessEmp,
+                businessAddr,
+                contact,
+                email,
+                sluEmployee,
+                sluDept,
+            ] = fatherValues;
+
+            form.setValue('guardian_lname', lname || '');
+            form.setValue('guardian_fname', fname || '');
+            form.setValue('guardian_mname', mname || '');
+            form.setValue('guardian_citizenship', citizenship || '');
+            form.setValue('guardian_religion', religion || '');
+            form.setValue('guardian_highest_educ', educ || '');
+            form.setValue('guardian_occupation', occupation || '');
+            form.setValue('guardian_income', income || '');
+            form.setValue('guardian_business_emp', businessEmp || '');
+            form.setValue('guardian_business_address', businessAddr || '');
+            form.setValue('guardian_contact_no', contact || '');
+            form.setValue('guardian_email', email || '');
+            form.setValue('guardian_slu_employee', sluEmployee || false);
+            form.setValue('guardian_slu_dept', sluDept || '');
+            form.setValue('guardian_relationship', 'Father');
+        } else if (guardianSource === 'mother') {
+            const [
+                lname,
+                fname,
+                mname,
+                citizenship,
+                religion,
+                educ,
+                occupation,
+                income,
+                businessEmp,
+                businessAddr,
+                contact,
+                email,
+                sluEmployee,
+                sluDept,
+            ] = motherValues;
+
+            form.setValue('guardian_lname', lname || '');
+            form.setValue('guardian_fname', fname || '');
+            form.setValue('guardian_mname', mname || '');
+            form.setValue('guardian_citizenship', citizenship || '');
+            form.setValue('guardian_religion', religion || '');
+            form.setValue('guardian_highest_educ', educ || '');
+            form.setValue('guardian_occupation', occupation || '');
+            form.setValue('guardian_income', income || '');
+            form.setValue('guardian_business_emp', businessEmp || '');
+            form.setValue('guardian_business_address', businessAddr || '');
+            form.setValue('guardian_contact_no', contact || '');
+            form.setValue('guardian_email', email || '');
+            form.setValue('guardian_slu_employee', sluEmployee || false);
+            form.setValue('guardian_slu_dept', sluDept || '');
+            form.setValue('guardian_relationship', 'Mother');
+        }
+    }, [guardianSource, fatherValues, motherValues, form]);
+
     async function onSubmit(values: ApplicantFormValues) {
         try {
             const formData = new FormData();
@@ -1856,31 +1961,6 @@ export default function AddApplicant() {
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
                                                                     setGuardianSource('father');
-                                                                    // Copy father's info to guardian fields
-                                                                    form.setValue('guardian_lname', form.getValues('father_lname'));
-                                                                    form.setValue('guardian_fname', form.getValues('father_fname'));
-                                                                    form.setValue('guardian_mname', form.getValues('father_mname'));
-                                                                    form.setValue('guardian_citizenship', form.getValues('father_citizenship') || '');
-                                                                    form.setValue('guardian_religion', form.getValues('father_religion') || '');
-                                                                    form.setValue(
-                                                                        'guardian_highest_educ',
-                                                                        form.getValues('father_highest_educ') || '',
-                                                                    );
-                                                                    form.setValue('guardian_occupation', form.getValues('father_occupation') || '');
-                                                                    form.setValue('guardian_income', form.getValues('father_income') || '');
-                                                                    form.setValue(
-                                                                        'guardian_business_emp',
-                                                                        form.getValues('father_business_emp') || '',
-                                                                    );
-                                                                    form.setValue(
-                                                                        'guardian_business_address',
-                                                                        form.getValues('father_business_address') || '',
-                                                                    );
-                                                                    form.setValue('guardian_contact_no', form.getValues('father_contact_no') || '');
-                                                                    form.setValue('guardian_email', form.getValues('father_email') || '');
-                                                                    form.setValue('guardian_slu_employee', form.getValues('father_slu_employee'));
-                                                                    form.setValue('guardian_slu_dept', form.getValues('father_slu_dept') || '');
-                                                                    form.setValue('guardian_relationship', 'Father');
                                                                 } else {
                                                                     setGuardianSource(null);
                                                                     // Clear guardian fields
@@ -1912,31 +1992,6 @@ export default function AddApplicant() {
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
                                                                     setGuardianSource('mother');
-                                                                    // Copy mother's info to guardian fields
-                                                                    form.setValue('guardian_lname', form.getValues('mother_lname'));
-                                                                    form.setValue('guardian_fname', form.getValues('mother_fname'));
-                                                                    form.setValue('guardian_mname', form.getValues('mother_mname'));
-                                                                    form.setValue('guardian_citizenship', form.getValues('mother_citizenship') || '');
-                                                                    form.setValue('guardian_religion', form.getValues('mother_religion') || '');
-                                                                    form.setValue(
-                                                                        'guardian_highest_educ',
-                                                                        form.getValues('mother_highest_educ') || '',
-                                                                    );
-                                                                    form.setValue('guardian_occupation', form.getValues('mother_occupation') || '');
-                                                                    form.setValue('guardian_income', form.getValues('mother_income') || '');
-                                                                    form.setValue(
-                                                                        'guardian_business_emp',
-                                                                        form.getValues('mother_business_emp') || '',
-                                                                    );
-                                                                    form.setValue(
-                                                                        'guardian_business_address',
-                                                                        form.getValues('mother_business_address') || '',
-                                                                    );
-                                                                    form.setValue('guardian_contact_no', form.getValues('mother_contact_no') || '');
-                                                                    form.setValue('guardian_email', form.getValues('mother_email') || '');
-                                                                    form.setValue('guardian_slu_employee', form.getValues('mother_slu_employee'));
-                                                                    form.setValue('guardian_slu_dept', form.getValues('mother_slu_dept') || '');
-                                                                    form.setValue('guardian_relationship', 'Mother');
                                                                 } else {
                                                                     setGuardianSource(null);
                                                                     // Clear guardian fields
