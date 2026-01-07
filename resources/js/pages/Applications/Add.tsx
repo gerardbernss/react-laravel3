@@ -10,6 +10,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useBarangays } from '@/hooks/use-barangays';
 import { useCities } from '@/hooks/use-cities';
 import { useProvinces } from '@/hooks/use-provinces';
+import { useRegions } from '@/hooks/use-regions';
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import { Facebook, HelpCircle, Info, Mail, MapPin, Phone, Trash2 } from 'lucide-react';
@@ -70,10 +71,12 @@ const applicantFormSchema = z.object({
     mobile_number: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
     present_street: z.string().optional(),
     present_brgy: z.string().min(1, { message: 'Barangay is required.' }),
+    present_region: z.string().min(1, { message: 'Region is required.' }),
     present_city: z.string().min(1, { message: 'City is required.' }),
     present_province: z.string().min(1, { message: 'Province is required.' }),
     present_zip: z.string().min(1, { message: 'ZIP code is required.' }),
     permanent_street: z.string().optional(),
+    permanent_region: z.string().min(1, { message: 'Region is required.' }),
     permanent_brgy: z.string().min(1, { message: 'Barangay is required.' }),
     permanent_city: z.string().min(1, { message: 'City is required.' }),
     permanent_province: z.string().min(1, { message: 'Province is required.' }),
@@ -294,11 +297,13 @@ export default function AddApplicant() {
             alt_email: '',
             mobile_number: '',
             present_street: '',
+            present_region: '',
             present_brgy: '',
             present_city: '',
             present_province: '',
             present_zip: '',
             permanent_street: '',
+            permanent_region: '',
             permanent_brgy: '',
             permanent_city: '',
             permanent_province: '',
@@ -374,17 +379,23 @@ export default function AddApplicant() {
     });
 
     // Address hooks
-    const { provinces } = useProvinces();
+    const { regions } = useRegions();
 
     // Present Address State
+    const [presentRegionCode, setPresentRegionCode] = useState<string>('');
     const [presentProvinceCode, setPresentProvinceCode] = useState<string>('');
     const [presentCityCode, setPresentCityCode] = useState<string>('');
+
+    const { provinces: presentProvinces } = useProvinces(presentRegionCode);
     const { cities: presentCities } = useCities(presentProvinceCode);
     const { barangays: presentBarangays } = useBarangays(presentCityCode);
 
     // Permanent Address State
+    const [permanentRegionCode, setPermanentRegionCode] = useState<string>('');
     const [permanentProvinceCode, setPermanentProvinceCode] = useState<string>('');
     const [permanentCityCode, setPermanentCityCode] = useState<string>('');
+
+    const { provinces: permanentProvinces } = useProvinces(permanentRegionCode);
     const { cities: permanentCities } = useCities(permanentProvinceCode);
     const { barangays: permanentBarangays } = useBarangays(permanentCityCode);
 
@@ -1355,7 +1366,36 @@ export default function AddApplicant() {
                                             <div className="mt-6">
                                                 <h2 className="text-l font-bold text-gray-900">Present Address</h2>
 
-                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="present_region"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <LabelWithTooltip label="Region *" tooltip="Specify region." />
+                                                                <FormControl>
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val, option) => {
+                                                                            field.onChange(val);
+                                                                            setPresentRegionCode(option?.code || '');
+                                                                            // Clear dependent fields
+                                                                            form.setValue('present_province', '');
+                                                                            setPresentProvinceCode('');
+                                                                            form.setValue('present_city', '');
+                                                                            setPresentCityCode('');
+                                                                            form.setValue('present_brgy', '');
+                                                                        }}
+                                                                        options={regions}
+                                                                        placeholder="Select Region"
+                                                                        searchPlaceholder="Search region..."
+                                                                        creatable
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                     <FormField
                                                         control={form.control}
                                                         name="present_province"
@@ -1373,16 +1413,19 @@ export default function AddApplicant() {
                                                                             setPresentCityCode('');
                                                                             form.setValue('present_brgy', '');
                                                                         }}
-                                                                        options={provinces}
+                                                                        options={presentProvinces}
                                                                         placeholder="Select Province"
                                                                         searchPlaceholder="Search province..."
                                                                         creatable
+                                                                        disabled={!form.getValues('present_region') && !field.value}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
                                                     />
+                                                </div>
+                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
                                                         name="present_city"
@@ -1405,7 +1448,7 @@ export default function AddApplicant() {
                                                                         placeholder="Select City/Municipality"
                                                                         searchPlaceholder="Search city..."
                                                                         creatable
-                                                                        disabled={!presentProvinceCode && !field.value}
+                                                                        disabled={!form.getValues('present_province') && !field.value}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -1428,7 +1471,7 @@ export default function AddApplicant() {
                                                                         placeholder="Select Barangay"
                                                                         searchPlaceholder="Search barangay..."
                                                                         creatable
-                                                                        disabled={!presentCityCode && !field.value}
+                                                                        disabled={!form.getValues('present_city') && !field.value}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -1481,21 +1524,25 @@ export default function AddApplicant() {
                                                             if (checked) {
                                                                 // Copy present → permanent
                                                                 form.setValue('permanent_street', form.getValues('present_street'));
+                                                                form.setValue('permanent_region', form.getValues('present_region'));
                                                                 form.setValue('permanent_brgy', form.getValues('present_brgy'));
                                                                 form.setValue('permanent_city', form.getValues('present_city'));
                                                                 form.setValue('permanent_province', form.getValues('present_province'));
                                                                 form.setValue('permanent_zip', form.getValues('present_zip'));
 
+                                                                setPermanentRegionCode(presentRegionCode);
                                                                 setPermanentProvinceCode(presentProvinceCode);
                                                                 setPermanentCityCode(presentCityCode);
                                                             } else {
                                                                 // Clear permanent fields when unchecked
                                                                 form.setValue('permanent_street', '');
+                                                                form.setValue('permanent_region', '');
                                                                 form.setValue('permanent_brgy', '');
                                                                 form.setValue('permanent_city', '');
                                                                 form.setValue('permanent_province', '');
                                                                 form.setValue('permanent_zip', '');
 
+                                                                setPermanentRegionCode('');
                                                                 setPermanentProvinceCode('');
                                                                 setPermanentCityCode('');
                                                             }
@@ -1509,7 +1556,36 @@ export default function AddApplicant() {
                                             <div className="mt-4">
                                                 <h2 className="text-l font-bold text-gray-900">Permanent Address</h2>
 
-                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="permanent_region"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <LabelWithTooltip label="Region *" tooltip="Specify region." />
+                                                                <FormControl>
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val, option) => {
+                                                                            field.onChange(val);
+                                                                            setPermanentRegionCode(option?.code || '');
+                                                                            // Clear dependent fields
+                                                                            form.setValue('permanent_province', '');
+                                                                            setPermanentProvinceCode('');
+                                                                            form.setValue('permanent_city', '');
+                                                                            setPermanentCityCode('');
+                                                                            form.setValue('permanent_brgy', '');
+                                                                        }}
+                                                                        options={regions}
+                                                                        placeholder="Select Region"
+                                                                        searchPlaceholder="Search region..."
+                                                                        creatable
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                     <FormField
                                                         control={form.control}
                                                         name="permanent_province"
@@ -1527,16 +1603,20 @@ export default function AddApplicant() {
                                                                             setPermanentCityCode('');
                                                                             form.setValue('permanent_brgy', '');
                                                                         }}
-                                                                        options={provinces}
+                                                                        options={permanentProvinces}
                                                                         placeholder="Select Province"
                                                                         searchPlaceholder="Search province..."
                                                                         creatable
+                                                                        disabled={!form.getValues('permanent_region') && !field.value}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
                                                     />
+                                                </div>
+
+                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
                                                         name="permanent_city"
@@ -1559,7 +1639,7 @@ export default function AddApplicant() {
                                                                         placeholder="Select City/Municipality"
                                                                         searchPlaceholder="Search city..."
                                                                         creatable
-                                                                        disabled={!permanentProvinceCode && !field.value}
+                                                                        disabled={!form.getValues('permanent_province') && !field.value}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -1582,7 +1662,7 @@ export default function AddApplicant() {
                                                                         placeholder="Select Barangay"
                                                                         searchPlaceholder="Search barangay..."
                                                                         creatable
-                                                                        disabled={!permanentCityCode && !field.value}
+                                                                        disabled={!form.getValues('permanent_city') && !field.value}
                                                                     />
                                                                 </FormControl>
                                                                 <FormMessage />
