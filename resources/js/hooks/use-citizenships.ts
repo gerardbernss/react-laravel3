@@ -54,9 +54,12 @@ export function useCitizenships() {
                 // Sort alphabetically
                 options.sort((a, b) => a.label.localeCompare(b.label));
 
-                // Ensure "Filipino" is in the list if not present (it should be, but just in case)
-                // and maybe prioritize it?
-                // For now just sorting alphabetically is standard.
+                // Prioritize "Filipino"
+                const filipinoIndex = options.findIndex((o) => o.label === 'Filipino');
+                if (filipinoIndex > -1) {
+                    const filipino = options.splice(filipinoIndex, 1)[0];
+                    options.unshift(filipino);
+                }
 
                 setCitizenships(options);
             } catch (error) {
