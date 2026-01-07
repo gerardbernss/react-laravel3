@@ -5,6 +5,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
+import { CitizenshipSelect } from '@/components/citizenship-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { useBarangays } from '@/hooks/use-barangays';
+import { useCities } from '@/hooks/use-cities';
+import { useProvinces } from '@/hooks/use-provinces';
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import { Facebook, HelpCircle, Info, Mail, MapPin, Phone, Trash2 } from 'lucide-react';
@@ -367,6 +372,21 @@ export default function AddApplicant() {
             latest_report_card_back: null,
         },
     });
+
+    // Address hooks
+    const { provinces } = useProvinces();
+
+    // Present Address State
+    const [presentProvinceCode, setPresentProvinceCode] = useState<string>('');
+    const [presentCityCode, setPresentCityCode] = useState<string>('');
+    const { cities: presentCities } = useCities(presentProvinceCode);
+    const { barangays: presentBarangays } = useBarangays(presentCityCode);
+
+    // Permanent Address State
+    const [permanentProvinceCode, setPermanentProvinceCode] = useState<string>('');
+    const [permanentCityCode, setPermanentCityCode] = useState<string>('');
+    const { cities: permanentCities } = useCities(permanentProvinceCode);
+    const { barangays: permanentBarangays } = useBarangays(permanentCityCode);
 
     // --- NEW STATE for agreement checkbox ---
     const [hasAgreed, setHasAgreed] = React.useState(false);
@@ -1052,7 +1072,11 @@ export default function AddApplicant() {
                                                                 tooltip="Enter applicant's citizenship (e.g., Filipino)."
                                                             />
                                                             <FormControl>
-                                                                <Input placeholder="Filipino" {...field} />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -1331,18 +1355,58 @@ export default function AddApplicant() {
                                             <div className="mt-6">
                                                 <h2 className="text-l font-bold text-gray-900">Present Address</h2>
 
-                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
                                                     <FormField
                                                         control={form.control}
-                                                        name="present_street"
+                                                        name="present_province"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
+                                                                <FormControl>
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val, option) => {
+                                                                            field.onChange(val);
+                                                                            setPresentProvinceCode(option?.code || '');
+                                                                            // Clear dependent fields
+                                                                            form.setValue('present_city', '');
+                                                                            setPresentCityCode('');
+                                                                            form.setValue('present_brgy', '');
+                                                                        }}
+                                                                        options={provinces}
+                                                                        placeholder="Select Province"
+                                                                        searchPlaceholder="Search province..."
+                                                                        creatable
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="present_city"
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <LabelWithTooltip
-                                                                    label="Street Address"
-                                                                    tooltip="Include house number, street name."
+                                                                    label="City/Municipality *"
+                                                                    tooltip="Enter city or municipality of residence."
                                                                 />
                                                                 <FormControl>
-                                                                    <Input placeholder="123 Main Street" {...field} />
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val, option) => {
+                                                                            field.onChange(val);
+                                                                            setPresentCityCode(option?.code || '');
+                                                                            // Clear dependent fields
+                                                                            form.setValue('present_brgy', '');
+                                                                        }}
+                                                                        options={presentCities}
+                                                                        placeholder="Select City/Municipality"
+                                                                        searchPlaceholder="Search city..."
+                                                                        creatable
+                                                                        disabled={!presentProvinceCode && !field.value}
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1355,7 +1419,17 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
                                                                 <FormControl>
-                                                                    <Input placeholder="Sample Barangay" {...field} />
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val) => {
+                                                                            field.onChange(val);
+                                                                        }}
+                                                                        options={presentBarangays}
+                                                                        placeholder="Select Barangay"
+                                                                        searchPlaceholder="Search barangay..."
+                                                                        creatable
+                                                                        disabled={!presentCityCode && !field.value}
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1363,31 +1437,18 @@ export default function AddApplicant() {
                                                     />
                                                 </div>
 
-                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
-                                                        name="present_city"
+                                                        name="present_street"
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <LabelWithTooltip
-                                                                    label="City/Municipality *"
-                                                                    tooltip="Enter city or municipality of residence."
+                                                                    label="Street Address"
+                                                                    tooltip="Include house number, street name."
                                                                 />
                                                                 <FormControl>
-                                                                    <Input placeholder="Baguio City" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="present_province"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                <FormControl>
-                                                                    <Input placeholder="Benguet" {...field} />
+                                                                    <Input placeholder="123 Main Street" {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1424,6 +1485,9 @@ export default function AddApplicant() {
                                                                 form.setValue('permanent_city', form.getValues('present_city'));
                                                                 form.setValue('permanent_province', form.getValues('present_province'));
                                                                 form.setValue('permanent_zip', form.getValues('present_zip'));
+
+                                                                setPermanentProvinceCode(presentProvinceCode);
+                                                                setPermanentCityCode(presentCityCode);
                                                             } else {
                                                                 // Clear permanent fields when unchecked
                                                                 form.setValue('permanent_street', '');
@@ -1431,6 +1495,9 @@ export default function AddApplicant() {
                                                                 form.setValue('permanent_city', '');
                                                                 form.setValue('permanent_province', '');
                                                                 form.setValue('permanent_zip', '');
+
+                                                                setPermanentProvinceCode('');
+                                                                setPermanentCityCode('');
                                                             }
                                                         }}
                                                     />
@@ -1441,18 +1508,59 @@ export default function AddApplicant() {
                                             {/* --- Permanent Address Section --- */}
                                             <div className="mt-4">
                                                 <h2 className="text-l font-bold text-gray-900">Permanent Address</h2>
-                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
+
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
                                                     <FormField
                                                         control={form.control}
-                                                        name="permanent_street"
+                                                        name="permanent_province"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
+                                                                <FormControl>
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val, option) => {
+                                                                            field.onChange(val);
+                                                                            setPermanentProvinceCode(option?.code || '');
+                                                                            // Clear dependent fields
+                                                                            form.setValue('permanent_city', '');
+                                                                            setPermanentCityCode('');
+                                                                            form.setValue('permanent_brgy', '');
+                                                                        }}
+                                                                        options={provinces}
+                                                                        placeholder="Select Province"
+                                                                        searchPlaceholder="Search province..."
+                                                                        creatable
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="permanent_city"
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <LabelWithTooltip
-                                                                    label="Street Address"
-                                                                    tooltip="Include house number, street name."
+                                                                    label="City/Municipality *"
+                                                                    tooltip="Enter city or municipality of residence."
                                                                 />
                                                                 <FormControl>
-                                                                    <Input placeholder="123 Main Street" {...field} />
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val, option) => {
+                                                                            field.onChange(val);
+                                                                            setPermanentCityCode(option?.code || '');
+                                                                            // Clear dependent fields
+                                                                            form.setValue('permanent_brgy', '');
+                                                                        }}
+                                                                        options={permanentCities}
+                                                                        placeholder="Select City/Municipality"
+                                                                        searchPlaceholder="Search city..."
+                                                                        creatable
+                                                                        disabled={!permanentProvinceCode && !field.value}
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1465,7 +1573,17 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
                                                                 <FormControl>
-                                                                    <Input placeholder="Sample Barangay" {...field} />
+                                                                    <SearchableSelect
+                                                                        value={field.value}
+                                                                        onChange={(val) => {
+                                                                            field.onChange(val);
+                                                                        }}
+                                                                        options={permanentBarangays}
+                                                                        placeholder="Select Barangay"
+                                                                        searchPlaceholder="Search barangay..."
+                                                                        creatable
+                                                                        disabled={!permanentCityCode && !field.value}
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1473,31 +1591,18 @@ export default function AddApplicant() {
                                                     />
                                                 </div>
 
-                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
-                                                        name="permanent_city"
+                                                        name="permanent_street"
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <LabelWithTooltip
-                                                                    label="City/Municipality *"
-                                                                    tooltip="Enter city or municipality of residence."
+                                                                    label="Street Address"
+                                                                    tooltip="Include house number, street name."
                                                                 />
                                                                 <FormControl>
-                                                                    <Input placeholder="Baguio City" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="permanent_province"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                <FormControl>
-                                                                    <Input placeholder="Benguet" {...field} />
+                                                                    <Input placeholder="123 Main Street" {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1768,7 +1873,11 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Citizenship" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <CitizenshipSelect
+                                                                        value={field.value}
+                                                                        onChange={field.onChange}
+                                                                        placeholder="Select citizenship"
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2010,7 +2119,11 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Citizenship" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <CitizenshipSelect
+                                                                        value={field.value}
+                                                                        onChange={field.onChange}
+                                                                        placeholder="Select citizenship"
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2319,7 +2432,11 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Citizenship" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <CitizenshipSelect
+                                                                        value={field.value}
+                                                                        onChange={field.onChange}
+                                                                        placeholder="Select citizenship"
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
