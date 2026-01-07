@@ -1,3 +1,4 @@
+import { CitizenshipSelect } from '@/components/citizenship-select';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -1296,14 +1297,16 @@ export default function AddApplicant() {
                                                     control={form.control}
                                                     name="citizenship"
                                                     render={({ field }) => (
-                                                        <FormItem>
+                                                        <FormItem className="flex flex-col">
                                                             <LabelWithTooltip
                                                                 label="Citizenship *"
                                                                 tooltip="Enter applicant's citizenship (e.g., Filipino)."
                                                             />
-                                                            <FormControl>
-                                                                <Input placeholder="Filipino" {...field} />
-                                                            </FormControl>
+                                                            <CitizenshipSelect
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                placeholder="Select citizenship"
+                                                            />
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}
@@ -2459,11 +2462,16 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         control={form.control}
                                                         name="father_citizenship"
                                                         render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Citizenship" tooltip="" />
-                                                                <FormControl>
-                                                                    <Input placeholder="" {...field} />
-                                                                </FormControl>
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="Citizenship *"
+                                                                    tooltip="Enter applicant's citizenship (e.g., Filipino)."
+                                                                />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -2486,9 +2494,35 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         name="father_highest_educ"
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
+                                                                <LabelWithTooltip label="Highest Educational Attainment " />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Kindergarten">Kindergarten</SelectItem>
+                                                                            <SelectItem value="Elementary">Elementary</SelectItem>
+                                                                            <SelectItem value="Elementary Undergraduate">
+                                                                                Elementary Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="High School">High School</SelectItem>
+                                                                            <SelectItem value="High School Undergraduate">
+                                                                                High School Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Vocational/Trade">Vocational/Trade</SelectItem>
+                                                                            <SelectItem value="Graduate">Graduate</SelectItem>
+                                                                            <SelectItem value="College Undergraduate">
+                                                                                College Undergraduate
+                                                                            </SelectItem>
+                                                                            \
+                                                                            <SelectItem value="Post Graduate (Masters)">
+                                                                                Post Graduate (Masters)
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
+                                                                            <SelectItem value="Other">Other</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2701,11 +2735,16 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         control={form.control}
                                                         name="mother_citizenship"
                                                         render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Citizenship" tooltip="" />
-                                                                <FormControl>
-                                                                    <Input placeholder="" {...field} />
-                                                                </FormControl>
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="Citizenship *"
+                                                                    tooltip="Enter applicant's citizenship (e.g., Filipino)."
+                                                                />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -3010,11 +3049,16 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         control={form.control}
                                                         name="guardian_citizenship"
                                                         render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Citizenship" tooltip="" />
-                                                                <FormControl>
-                                                                    <Input placeholder="" {...field} />
-                                                                </FormControl>
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="Citizenship *"
+                                                                    tooltip="Enter applicant's citizenship (e.g., Filipino)."
+                                                                />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
