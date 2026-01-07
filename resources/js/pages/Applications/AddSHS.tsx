@@ -1,4 +1,5 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
+import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -1561,23 +1562,15 @@ export default function AddApplicant() {
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </div>
-                                                        <Select
-                                                            onValueChange={(value) => {
-                                                                setSelectedPresentRegion(value);
-                                                            }}
-                                                            value={selectedPresentRegion}
-                                                        >
-                                                            <SelectTrigger className="mt-2">
-                                                                <SelectValue placeholder="Select Region" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {presentRegions.map((region) => (
-                                                                    <SelectItem key={region.code} value={region.code}>
-                                                                        {region.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="mt-2">
+                                                            <SearchableSelect
+                                                                value={selectedPresentRegion}
+                                                                onChange={(value) => setSelectedPresentRegion(value)}
+                                                                options={presentRegions.map((r) => ({ label: r.name, value: r.code }))}
+                                                                placeholder="Select Region"
+                                                                searchPlaceholder="Search region..."
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {/* Province */}
@@ -1585,30 +1578,20 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="present_province"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                <Select
-                                                                    onValueChange={(value) => {
+                                                                <SearchableSelect
+                                                                    value={selectedPresentProvince}
+                                                                    onChange={(value) => {
                                                                         setSelectedPresentProvince(value);
                                                                         const selected = presentProvinces.find((p) => p.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPresentProvince}
+                                                                    options={presentProvinces.map((p) => ({ label: p.name, value: p.code }))}
+                                                                    placeholder="Select Province"
+                                                                    searchPlaceholder="Search province..."
                                                                     disabled={!selectedPresentRegion}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select Province" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {presentProvinces.map((province) => (
-                                                                            <SelectItem key={province.code} value={province.code}>
-                                                                                {province.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1619,33 +1602,23 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="present_city"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip
                                                                     label="City/Municipality *"
                                                                     tooltip="Enter city or municipality of residence."
                                                                 />
-                                                                <Select
-                                                                    onValueChange={(value) => {
+                                                                <SearchableSelect
+                                                                    value={selectedPresentCity}
+                                                                    onChange={(value) => {
                                                                         setSelectedPresentCity(value);
                                                                         const selected = presentCities.find((c) => c.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPresentCity}
+                                                                    options={presentCities.map((c) => ({ label: c.name, value: c.code }))}
+                                                                    placeholder="Select City/Municipality"
+                                                                    searchPlaceholder="Search city..."
                                                                     disabled={!selectedPresentProvince}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select City/Municipality" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {presentCities.map((city) => (
-                                                                            <SelectItem key={city.code} value={city.code}>
-                                                                                {city.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1656,29 +1629,19 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="present_brgy"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
-                                                                <Select
-                                                                    onValueChange={(value) => {
+                                                                <SearchableSelect
+                                                                    value={presentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    onChange={(value) => {
                                                                         const selected = presentBarangays.find((b) => b.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={presentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    options={presentBarangays.map((b) => ({ label: b.name, value: b.code }))}
+                                                                    placeholder="Select Barangay"
+                                                                    searchPlaceholder="Search barangay..."
                                                                     disabled={!selectedPresentCity}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select Barangay" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {presentBarangays.map((barangay) => (
-                                                                            <SelectItem key={barangay.code} value={barangay.code}>
-                                                                                {barangay.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1806,24 +1769,16 @@ export default function AddApplicant() {
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </div>
-                                                        <Select
-                                                            onValueChange={(value) => {
-                                                                setSelectedPermanentRegion(value);
-                                                            }}
-                                                            value={selectedPermanentRegion}
-                                                            disabled={isSameAddress}
-                                                        >
-                                                            <SelectTrigger className="mt-2">
-                                                                <SelectValue placeholder="Select Region" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {permanentRegions.map((region) => (
-                                                                    <SelectItem key={region.code} value={region.code}>
-                                                                        {region.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="mt-2">
+                                                            <SearchableSelect
+                                                                value={selectedPermanentRegion}
+                                                                onChange={(value) => setSelectedPermanentRegion(value)}
+                                                                options={permanentRegions.map((r) => ({ label: r.name, value: r.code }))}
+                                                                placeholder="Select Region"
+                                                                searchPlaceholder="Search region..."
+                                                                disabled={isSameAddress}
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {/* Province/State */}
@@ -1831,35 +1786,21 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="permanent_province"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                {/* ⬇️ FIX: Add 'key' to force re-render when syncing */}
-                                                                <Select
+                                                                <SearchableSelect
                                                                     key={`prov_${isSameAddress}_${selectedPermanentProvince}`}
-                                                                    onValueChange={(value) => {
+                                                                    value={selectedPermanentProvince}
+                                                                    onChange={(value) => {
                                                                         setSelectedPermanentProvince(value);
                                                                         const selected = permanentProvinces.find((p) => p.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPermanentProvince}
+                                                                    options={permanentProvinces.map((p) => ({ label: p.name, value: p.code }))}
+                                                                    placeholder="Select Province"
+                                                                    searchPlaceholder="Search province..."
                                                                     disabled={!selectedPermanentRegion || isSameAddress}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            {/* ⬇️ FIX: Display field.value directly */}
-                                                                            <SelectValue placeholder="Select Province">
-                                                                                {field.value || 'Select Province'}
-                                                                            </SelectValue>
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {permanentProvinces.map((province) => (
-                                                                            <SelectItem key={province.code} value={province.code}>
-                                                                                {province.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1869,37 +1810,24 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="permanent_city"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip
                                                                     label="City/Municipality *"
                                                                     tooltip="Enter city or municipality of residence."
                                                                 />
-                                                                {/* ⬇️ FIX: Add 'key' to force re-render when syncing */}
-                                                                <Select
+                                                                <SearchableSelect
                                                                     key={`city_${isSameAddress}_${selectedPermanentCity}`}
-                                                                    onValueChange={(value) => {
+                                                                    value={selectedPermanentCity}
+                                                                    onChange={(value) => {
                                                                         setSelectedPermanentCity(value);
                                                                         const selected = permanentCities.find((c) => c.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPermanentCity}
+                                                                    options={permanentCities.map((c) => ({ label: c.name, value: c.code }))}
+                                                                    placeholder="Select City/Municipality"
+                                                                    searchPlaceholder="Search city..."
                                                                     disabled={!selectedPermanentProvince || isSameAddress}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select City/Municipality">
-                                                                                {field.value || 'Select City/Municipality'}
-                                                                            </SelectValue>
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {permanentCities.map((city) => (
-                                                                            <SelectItem key={city.code} value={city.code}>
-                                                                                {city.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1910,34 +1838,20 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="permanent_brgy"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip label="Barangay *" tooltip="Enter barangay." />
-                                                                {/* ⬇️ FIX: Add 'key' to force re-render when syncing */}
-                                                                <Select
+                                                                <SearchableSelect
                                                                     key={`brgy_${isSameAddress}_${field.value}`}
-                                                                    onValueChange={(value) => {
+                                                                    value={permanentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    onChange={(value) => {
                                                                         const selected = permanentBarangays.find((b) => b.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    // Match the Code based on the Name in the form
-                                                                    value={permanentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    options={permanentBarangays.map((b) => ({ label: b.name, value: b.code }))}
+                                                                    placeholder="Select Barangay"
+                                                                    searchPlaceholder="Search barangay..."
                                                                     disabled={!selectedPermanentCity || isSameAddress}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select Barangay">
-                                                                                {field.value || 'Select Barangay'}
-                                                                            </SelectValue>
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {permanentBarangays.map((brgy) => (
-                                                                            <SelectItem key={brgy.code} value={brgy.code}>
-                                                                                {brgy.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
