@@ -306,6 +306,8 @@ const FormNavigation = () => {
 };
 
 export default function AddApplicant() {
+    const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
+
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
         mode: 'onChange',
@@ -440,6 +442,111 @@ export default function AddApplicant() {
 
         form.setValue('school_year', `${startYear}-${endYear}`);
     }, [applicationDate]);
+
+    // Watch all father and mother fields for real-time updates
+    const fatherValues = form.watch([
+        'father_lname',
+        'father_fname',
+        'father_mname',
+        'father_citizenship',
+        'father_religion',
+        'father_highest_educ',
+        'father_occupation',
+        'father_income',
+        'father_business_emp',
+        'father_business_address',
+        'father_contact_no',
+        'father_email',
+        'father_slu_employee',
+        'father_slu_dept',
+    ]);
+
+    const motherValues = form.watch([
+        'mother_lname',
+        'mother_fname',
+        'mother_mname',
+        'mother_citizenship',
+        'mother_religion',
+        'mother_highest_educ',
+        'mother_occupation',
+        'mother_income',
+        'mother_business_emp',
+        'mother_business_address',
+        'mother_contact_no',
+        'mother_email',
+        'mother_slu_employee',
+        'mother_slu_dept',
+    ]);
+
+    useEffect(() => {
+        if (guardianSource === 'father') {
+            const [
+                lname,
+                fname,
+                mname,
+                citizenship,
+                religion,
+                educ,
+                occupation,
+                income,
+                businessEmp,
+                businessAddr,
+                contact,
+                email,
+                sluEmployee,
+                sluDept,
+            ] = fatherValues;
+
+            form.setValue('guardian_lname', lname || '');
+            form.setValue('guardian_fname', fname || '');
+            form.setValue('guardian_mname', mname || '');
+            form.setValue('guardian_citizenship', citizenship || '');
+            form.setValue('guardian_religion', religion || '');
+            form.setValue('guardian_highest_educ', educ || '');
+            form.setValue('guardian_occupation', occupation || '');
+            form.setValue('guardian_income', income || '');
+            form.setValue('guardian_business_emp', businessEmp || '');
+            form.setValue('guardian_business_address', businessAddr || '');
+            form.setValue('guardian_contact_no', contact || '');
+            form.setValue('guardian_email', email || '');
+            form.setValue('guardian_slu_employee', sluEmployee || false);
+            form.setValue('guardian_slu_dept', sluDept || '');
+            form.setValue('guardian_relationship', 'Father');
+        } else if (guardianSource === 'mother') {
+            const [
+                lname,
+                fname,
+                mname,
+                citizenship,
+                religion,
+                educ,
+                occupation,
+                income,
+                businessEmp,
+                businessAddr,
+                contact,
+                email,
+                sluEmployee,
+                sluDept,
+            ] = motherValues;
+
+            form.setValue('guardian_lname', lname || '');
+            form.setValue('guardian_fname', fname || '');
+            form.setValue('guardian_mname', mname || '');
+            form.setValue('guardian_citizenship', citizenship || '');
+            form.setValue('guardian_religion', religion || '');
+            form.setValue('guardian_highest_educ', educ || '');
+            form.setValue('guardian_occupation', occupation || '');
+            form.setValue('guardian_income', income || '');
+            form.setValue('guardian_business_emp', businessEmp || '');
+            form.setValue('guardian_business_address', businessAddr || '');
+            form.setValue('guardian_contact_no', contact || '');
+            form.setValue('guardian_email', email || '');
+            form.setValue('guardian_slu_employee', sluEmployee || false);
+            form.setValue('guardian_slu_dept', sluDept || '');
+            form.setValue('guardian_relationship', 'Mother');
+        }
+    }, [guardianSource, fatherValues, motherValues, form]);
 
     async function onSubmit(values: ApplicantFormValues) {
         try {
@@ -2434,12 +2541,10 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                             <SelectItem value="College Undergraduate">
                                                                                 College Undergraduate
                                                                             </SelectItem>
-                                                                            \
                                                                             <SelectItem value="Post Graduate (Masters)">
                                                                                 Post Graduate (Masters)
                                                                             </SelectItem>
                                                                             <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
-                                                                            <SelectItem value="Other">Other</SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
                                                                 </FormControl>
@@ -2701,7 +2806,31 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Kindergarten">Kindergarten</SelectItem>
+                                                                            <SelectItem value="Elementary">Elementary</SelectItem>
+                                                                            <SelectItem value="Elementary Undergraduate">
+                                                                                Elementary Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="High School">High School</SelectItem>
+                                                                            <SelectItem value="High School Undergraduate">
+                                                                                High School Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Vocational/Trade">Vocational/Trade</SelectItem>
+                                                                            <SelectItem value="Graduate">Graduate</SelectItem>
+                                                                            <SelectItem value="College Undergraduate">
+                                                                                College Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (Masters)">
+                                                                                Post Graduate (Masters)
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2865,33 +2994,28 @@ that the student is fit to attend school, along with a medical certificate issue
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             size="small"
+                                                            checked={guardianSource === 'father'}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    // Copy father's info to guardian fields
-                                                                    form.setValue('guardian_lname', form.getValues('father_lname'));
-                                                                    form.setValue('guardian_fname', form.getValues('father_fname'));
-                                                                    form.setValue('guardian_mname', form.getValues('father_mname'));
-                                                                    form.setValue('guardian_citizenship', form.getValues('father_citizenship') || '');
-                                                                    form.setValue('guardian_religion', form.getValues('father_religion') || '');
-                                                                    form.setValue(
-                                                                        'guardian_highest_educ',
-                                                                        form.getValues('father_highest_educ') || '',
-                                                                    );
-                                                                    form.setValue('guardian_occupation', form.getValues('father_occupation') || '');
-                                                                    form.setValue('guardian_income', form.getValues('father_income') || '');
-                                                                    form.setValue(
-                                                                        'guardian_business_emp',
-                                                                        form.getValues('father_business_emp') || '',
-                                                                    );
-                                                                    form.setValue(
-                                                                        'guardian_business_address',
-                                                                        form.getValues('father_business_address') || '',
-                                                                    );
-                                                                    form.setValue('guardian_contact_no', form.getValues('father_contact_no') || '');
-                                                                    form.setValue('guardian_email', form.getValues('father_email') || '');
-                                                                    form.setValue('guardian_slu_employee', form.getValues('father_slu_employee'));
-                                                                    form.setValue('guardian_slu_dept', form.getValues('father_slu_dept') || '');
-                                                                    form.setValue('guardian_relationship', 'Father');
+                                                                    setGuardianSource('father');
+                                                                } else {
+                                                                    setGuardianSource(null);
+                                                                    // Clear guardian fields
+                                                                    form.setValue('guardian_lname', '');
+                                                                    form.setValue('guardian_fname', '');
+                                                                    form.setValue('guardian_mname', '');
+                                                                    form.setValue('guardian_citizenship', '');
+                                                                    form.setValue('guardian_religion', '');
+                                                                    form.setValue('guardian_highest_educ', '');
+                                                                    form.setValue('guardian_occupation', '');
+                                                                    form.setValue('guardian_income', '');
+                                                                    form.setValue('guardian_business_emp', '');
+                                                                    form.setValue('guardian_business_address', '');
+                                                                    form.setValue('guardian_contact_no', '');
+                                                                    form.setValue('guardian_email', '');
+                                                                    form.setValue('guardian_slu_employee', false);
+                                                                    form.setValue('guardian_slu_dept', '');
+                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
@@ -2901,33 +3025,28 @@ that the student is fit to attend school, along with a medical certificate issue
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             size="small"
+                                                            checked={guardianSource === 'mother'}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    // Copy mother's info to guardian fields
-                                                                    form.setValue('guardian_lname', form.getValues('mother_lname'));
-                                                                    form.setValue('guardian_fname', form.getValues('mother_fname'));
-                                                                    form.setValue('guardian_mname', form.getValues('mother_mname'));
-                                                                    form.setValue('guardian_citizenship', form.getValues('mother_citizenship') || '');
-                                                                    form.setValue('guardian_religion', form.getValues('mother_religion') || '');
-                                                                    form.setValue(
-                                                                        'guardian_highest_educ',
-                                                                        form.getValues('mother_highest_educ') || '',
-                                                                    );
-                                                                    form.setValue('guardian_occupation', form.getValues('mother_occupation') || '');
-                                                                    form.setValue('guardian_income', form.getValues('mother_income') || '');
-                                                                    form.setValue(
-                                                                        'guardian_business_emp',
-                                                                        form.getValues('mother_business_emp') || '',
-                                                                    );
-                                                                    form.setValue(
-                                                                        'guardian_business_address',
-                                                                        form.getValues('mother_business_address') || '',
-                                                                    );
-                                                                    form.setValue('guardian_contact_no', form.getValues('mother_contact_no') || '');
-                                                                    form.setValue('guardian_email', form.getValues('mother_email') || '');
-                                                                    form.setValue('guardian_slu_employee', form.getValues('mother_slu_employee'));
-                                                                    form.setValue('guardian_slu_dept', form.getValues('mother_slu_dept') || '');
-                                                                    form.setValue('guardian_relationship', 'Mother');
+                                                                    setGuardianSource('mother');
+                                                                } else {
+                                                                    setGuardianSource(null);
+                                                                    // Clear guardian fields
+                                                                    form.setValue('guardian_lname', '');
+                                                                    form.setValue('guardian_fname', '');
+                                                                    form.setValue('guardian_mname', '');
+                                                                    form.setValue('guardian_citizenship', '');
+                                                                    form.setValue('guardian_religion', '');
+                                                                    form.setValue('guardian_highest_educ', '');
+                                                                    form.setValue('guardian_occupation', '');
+                                                                    form.setValue('guardian_income', '');
+                                                                    form.setValue('guardian_business_emp', '');
+                                                                    form.setValue('guardian_business_address', '');
+                                                                    form.setValue('guardian_contact_no', '');
+                                                                    form.setValue('guardian_email', '');
+                                                                    form.setValue('guardian_slu_employee', false);
+                                                                    form.setValue('guardian_slu_dept', '');
+                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
@@ -2943,7 +3062,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's Last Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2956,7 +3075,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's First Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2969,7 +3088,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's Middle Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2982,7 +3101,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Relationship with guardian" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3003,6 +3122,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                     value={field.value}
                                                                     onChange={field.onChange}
                                                                     placeholder="Select citizenship"
+                                                                    disabled={guardianSource !== null}
                                                                 />
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3015,7 +3135,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Religion" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3028,7 +3148,35 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select
+                                                                        onValueChange={field.onChange}
+                                                                        value={field.value}
+                                                                        disabled={guardianSource !== null}
+                                                                    >
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Kindergarten">Kindergarten</SelectItem>
+                                                                            <SelectItem value="Elementary">Elementary</SelectItem>
+                                                                            <SelectItem value="Elementary Undergraduate">
+                                                                                Elementary Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="High School">High School</SelectItem>
+                                                                            <SelectItem value="High School Undergraduate">
+                                                                                High School Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Vocational/Trade">Vocational/Trade</SelectItem>
+                                                                            <SelectItem value="Graduate">Graduate</SelectItem>
+                                                                            <SelectItem value="College Undergraduate">
+                                                                                College Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (Masters)">
+                                                                                Post Graduate (Masters)
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3043,7 +3191,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Occupation" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3056,7 +3204,11 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Monthly Income" tooltip="" />
                                                                 <FormControl>
-                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                    <Select
+                                                                        onValueChange={field.onChange}
+                                                                        value={field.value}
+                                                                        disabled={guardianSource !== null}
+                                                                    >
                                                                         <SelectTrigger>
                                                                             <SelectValue placeholder="Select " />
                                                                         </SelectTrigger>
@@ -3082,7 +3234,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Business/Employer" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3097,7 +3249,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Business Address" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3110,7 +3262,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Contact No." tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3123,7 +3275,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Email Address" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3155,12 +3307,22 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         >
                                                                             <FormControlLabel
                                                                                 value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
+                                                                                control={
+                                                                                    <Radio
+                                                                                        sx={{ transform: 'scale(0.9)' }}
+                                                                                        disabled={guardianSource !== null}
+                                                                                    />
+                                                                                }
                                                                                 label="Yes"
                                                                             />
                                                                             <FormControlLabel
                                                                                 value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
+                                                                                control={
+                                                                                    <Radio
+                                                                                        sx={{ transform: 'scale(0.9)' }}
+                                                                                        disabled={guardianSource !== null}
+                                                                                    />
+                                                                                }
                                                                                 label="No"
                                                                             />
                                                                         </RadioGroup>
@@ -3174,6 +3336,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         <FormControl className="flex-1">
                                                                             <Input
                                                                                 placeholder="Enter SLU Department"
+                                                                                disabled={guardianSource !== null}
                                                                                 {...form.register('guardian_slu_dept')}
                                                                             />
                                                                         </FormControl>
