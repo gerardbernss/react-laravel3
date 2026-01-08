@@ -15,30 +15,30 @@ class ApplicantController extends Controller
     // Display all applications with full relationships.
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
-        ])->get();
-
-        $flattenedApplications = $applications->map(function ($application) {
-            return [
-                'id'                 => $application->id,
-                'application_number' => $application->application_number,
-                'application_date'   => $application->application_date,
-                'application_status' => $application->application_status,
-                'strand'             => $application->strand,
-
-                // Personal Data
-                'personal_data_id'   => $application->personalData->id ?? null,
-                'last_name'          => $application->personalData->last_name ?? null,
-                'first_name'         => $application->personalData->first_name ?? null,
-                'middle_name'        => $application->personalData->middle_name ?? null,
-                'gender'             => $application->personalData->gender ?? null,
-                'email'              => $application->personalData->email ?? null,
-            ];
-        });
+        // ⚡ Bolt: Optimized query to fetch only necessary data.
+        // This avoids loading full models into memory and bypasses the need for a
+        // memory-intensive ->map() operation in PHP. By selecting only the columns
+        // needed for the view, we significantly reduce server-side processing
+        // and memory usage, leading to a faster response time.
+        $applications = DB::table('applicant_application_info')
+            ->leftJoin('applicant_personal_data', 'applicant_application_info.applicant_personal_data_id', '=', 'applicant_personal_data.id')
+            ->select(
+                'applicant_application_info.id',
+                'applicant_application_info.application_number',
+                'applicant_application_info.application_date',
+                'applicant_application_info.application_status',
+                'applicant_application_info.strand',
+                'applicant_personal_data.id as personal_data_id',
+                'applicant_personal_data.last_name',
+                'applicant_personal_data.first_name',
+                'applicant_personal_data.middle_name',
+                'applicant_personal_data.gender',
+                'applicant_personal_data.email'
+            )
+            ->get();
 
         return Inertia::render('Admissions/Index', [
-            'applications' => $flattenedApplications,
+            'applications' => $applications,
         ]);
     }
 
