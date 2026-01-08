@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ApplicantController2;
+use App\Http\Controllers\PublicApplicantController;
 use App\Http\Controllers\ApplicantController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RolesController;
@@ -23,18 +23,14 @@ Route::get('/test-cors', function () {
  * These routes are accessible without authentication
  */
 Route::prefix('applications')->name('applications.')->group(function () {
-    Route::get('/start', [ApplicantController2::class, 'start'])->name('applications.start');
-    Route::get('/apply-shs', [ApplicantController2::class, 'createSHS'])->name('applications.shs');
-    Route::get('/apply-jhs', [ApplicantController2::class, 'createJHS'])->name('applications.jhs');
-    Route::get('/apply-les', [ApplicantController2::class, 'createLES'])->name('applications.les');
+    Route::get('/start', [PublicApplicantController::class, 'start'])->name('start');
+    Route::get('/apply-shs', [PublicApplicantController::class, 'createSHS'])->name('shs');
+    Route::get('/apply-jhs', [PublicApplicantController::class, 'createJHS'])->name('jhs');
+    Route::get('/apply-les', [PublicApplicantController::class, 'createLES'])->name('les');
 
-    Route::post('/apply-shs', [ApplicantController2::class, 'storeSHS'])->name('applications.shs.store');
-    Route::post('/apply-jhs', [ApplicantController2::class, 'storeJHS'])->name('applications.jhs.store');
-    Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store');
+    Route::post('/apply', [PublicApplicantController::class, 'store'])->name('store');
 
-    // Route::get('/create', [ApplicantController2::class, 'create'])->name('create');
-    // Route::post('/applicants', [ApplicantController2::class, 'store'])->name('store');
-    Route::get('/success', [ApplicantController2::class, 'success'])->name('success');
+    Route::get('/success', [PublicApplicantController::class, 'success'])->name('success');
 });
 
 /**
