@@ -11,11 +11,11 @@ use Inertia\Inertia;
 
 class UsersController extends Controller
 {
-    public function __construct()
-    {
-        // Authorization is handled in individual methods
-    }
-
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Inertia\Response
+     */
     public function index()
     {
         Gate::authorize('viewAny', User::class);
@@ -26,6 +26,11 @@ class UsersController extends Controller
         return Inertia::render('Users/Index', compact('users', 'roles'));
     }
 
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Inertia\Response
+     */
     public function create()
     {
         Gate::authorize('create', User::class);
@@ -35,6 +40,12 @@ class UsersController extends Controller
         return Inertia::render('Users/Create', compact('roles'));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
         Gate::authorize('create', User::class);
@@ -65,6 +76,12 @@ class UsersController extends Controller
         return redirect()->route('users.index')->with('message', 'User created successfully!');
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Inertia\Response
+     */
     public function edit(User $user)
     {
         Gate::authorize('view', $user);
@@ -75,6 +92,13 @@ class UsersController extends Controller
         return Inertia::render('Users/Edit', compact('user', 'roles'));
     }
 
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, User $user)
     {
         Gate::authorize('update', $user);
@@ -111,6 +135,12 @@ class UsersController extends Controller
         return redirect()->route('users.index')->with('message', 'User updated successfully!');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(User $user)
     {
         Gate::authorize('delete', $user);
