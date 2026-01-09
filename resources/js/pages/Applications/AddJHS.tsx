@@ -35,6 +35,8 @@ const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string 
 };
 
 const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 
 const applicantFormSchema = z
     .object({
@@ -172,14 +174,32 @@ const applicantFormSchema = z
         //Documents - Fix the file validation
         certificate_of_enrollment: z
             .any()
-            .refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' }),
-        birth_certificate: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' }),
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
+        birth_certificate: z
+            .any()
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
         latest_report_card_front: z
             .any()
-            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' }),
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
         latest_report_card_back: z
             .any()
-            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' }),
+            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
     })
     .superRefine((data, ctx) => {
         if (data.has_doctors_note && !data.doctors_note_file) {
