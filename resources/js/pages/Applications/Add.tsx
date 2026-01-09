@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
-import { Facebook, HelpCircle, Info, Mail, MapPin, Phone, Trash2 } from 'lucide-react';
+import { ClipboardList, Facebook, FileText, GraduationCap, HelpCircle, Info, Mail, MapPin, Phone, Trash2, User, UserPlus, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
@@ -215,12 +215,12 @@ const FormNavigation = () => {
     };
 
     const navItems = [
-        { id: 'application', label: 'Application Info', icon: '📋' },
-        { id: 'personal', label: 'Personal Info', icon: '👤' },
-        { id: 'family', label: 'Family Background', icon: '👨‍👩‍👧‍👦' },
-        { id: 'siblings', label: 'Sibling Discount', icon: '👫' },
-        { id: 'education', label: 'Education', icon: '🎓' },
-        { id: 'documents', label: 'Documents', icon: '📄' },
+        { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
+        { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
+        { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
+        { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+        { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
+        { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
     ];
 
     return (
@@ -231,8 +231,10 @@ const FormNavigation = () => {
                         {/* Step Circle */}
                         <button onClick={() => scrollToSection(item.id)} className={`flex flex-col items-center px-3 text-center transition-colors`}>
                             <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                                    activeSection === item.id ? 'border-[#073066] bg-yellow-200 text-[#073066]' : 'border-gray-300 text-gray-500'
+                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                                    activeSection === item.id
+                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
                                 } `}
                             >
                                 {item.icon}
