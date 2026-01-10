@@ -10,7 +10,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Chip } from '@mui/material';
 import { format } from 'date-fns';
 import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiPlus, HiTrash } from 'react-icons/hi';
 import { toast } from 'sonner';
@@ -40,6 +40,7 @@ interface Props {
 
 export default function Index({ applications }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
     const [selectedGender, setSelectedGender] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [selectedStrand, setSelectedStrand] = useState<string>('all');
@@ -63,6 +64,17 @@ export default function Index({ applications }: Props) {
         'application_date',
         'application_status',
     ]);
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 300); // 300ms delay
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [searchQuery]);
 
     const handleCalendarChange = (_value: string | number, _e: React.ChangeEventHandler<HTMLSelectElement>) => {
         const _event = {
@@ -165,13 +177,16 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
+        // By debouncing the search query, we avoid re-filtering on every keystroke,
+        // which significantly improves performance on large datasets. The filtering
+        // logic is now only triggered after the user has stopped typing for 300ms.
         return applications.filter((a) => {
             const matchesSearch =
-                a.id.toString().includes(searchQuery) ||
-                a.application_number.toLowerCase().includes(searchQuery) ||
-                a.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.email?.toLowerCase().includes(searchQuery.toLowerCase());
+                a.id.toString().includes(debouncedSearchQuery) ||
+                a.application_number.toLowerCase().includes(debouncedSearchQuery) ||
+                a.first_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                a.last_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                a.email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
 
             const matchesGender = selectedGender === 'all' || a.sex?.toLowerCase() === selectedGender.toLowerCase();
             const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
@@ -201,7 +216,7 @@ export default function Index({ applications }: Props) {
 
             return matchesSearch && matchesGender && matchesStatus && matchesDate && matchesStrand;
         });
-    }, [applications, searchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
+    }, [applications, debouncedSearchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
 
     const sortedApplicants = useMemo(() => {
         if (!sortConfig.key) return filteredApplicants;
