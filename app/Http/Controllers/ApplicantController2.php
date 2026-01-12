@@ -88,6 +88,18 @@ class ApplicantController2 extends Controller
         return Inertia::render('Applications/AddSHS');
     }
 
+    private function isDuplicateApplication(Request $request): bool
+    {
+        return ApplicantPersonalData::where('first_name', $request->first_name)
+            ->where('last_name', $request->last_name)
+            ->where('middle_name', $request->middle_name)
+            ->where('date_of_birth', $request->date_of_birth)
+            ->whereHas('applications', function ($query) use ($request) {
+                $query->where('school_year', $request->school_year);
+            })
+            ->exists();
+    }
+
 // Store a new application and all related records.
     private function getApplicationPrefixLetter($yearLevel): string
     {
@@ -199,6 +211,10 @@ class ApplicantController2 extends Controller
 
     public function storeLES(Request $request)
     {
+        if ($this->isDuplicateApplication($request)) {
+            return back()->withErrors(['duplicate_application' => 'You have already submitted an application.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
@@ -465,6 +481,10 @@ class ApplicantController2 extends Controller
 
     public function storeJHS(Request $request)
     {
+        if ($this->isDuplicateApplication($request)) {
+            return back()->withErrors(['duplicate_application' => 'You have already submitted an application.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
@@ -732,6 +752,10 @@ class ApplicantController2 extends Controller
 
     public function storeSHS(Request $request)
     {
+        if ($this->isDuplicateApplication($request)) {
+            return back()->withErrors(['duplicate_application' => 'You have already submitted an application.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {

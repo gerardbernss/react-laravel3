@@ -1,6 +1,15 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
 import { FileUpload } from '@/components/file-upload';
 import { SearchableSelect } from '@/components/searchable-select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -310,6 +319,7 @@ const FormNavigation = () => {
 
 export default function AddApplicant() {
     const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
+    const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
@@ -609,6 +619,10 @@ export default function AddApplicant() {
                 },
                 onError: (errors) => {
                     console.error('Submission errors:', errors);
+
+                    if (errors.duplicate_application) {
+                        setIsDuplicateDialogOpen(true);
+                    }
 
                     // Show first error
                     const firstError = Object.values(errors)[0];
@@ -3811,6 +3825,17 @@ that the student is fit to attend school, along with a medical certificate issue
                         </Form>
                     </div>
                 </div>
+                <AlertDialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Duplicate Application</AlertDialogTitle>
+                            <AlertDialogDescription>You have already submitted an application.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogAction onClick={() => setIsDuplicateDialogOpen(false)}>OK</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
 
             <footer className="mt-10 bg-white shadow-md">
