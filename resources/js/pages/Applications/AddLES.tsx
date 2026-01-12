@@ -1,4 +1,5 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
+import { FileUpload } from '@/components/file-upload';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -7,11 +8,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
-
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import axios from 'axios';
-import { Facebook, HelpCircle, Info, Mail, MapPin, Phone, Trash2 } from 'lucide-react';
+import { ClipboardList, Facebook, FileText, GraduationCap, HelpCircle, Info, Mail, MapPin, Phone, Trash2, User, UserPlus, Users } from 'lucide-react';
+
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
@@ -265,12 +266,12 @@ const FormNavigation = () => {
     };
 
     const navItems = [
-        { id: 'application', label: 'Application Info', icon: '📋' },
-        { id: 'personal', label: 'Personal Info', icon: '👤' },
-        { id: 'family', label: 'Family Background', icon: '👨‍👩‍👧‍👦' },
-        { id: 'siblings', label: 'Sibling Discount', icon: '👫' },
-        { id: 'education', label: 'Education', icon: '🎓' },
-        { id: 'documents', label: 'Documents', icon: '📄' },
+        { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
+        { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
+        { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
+        { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+        { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
+        { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
     ];
 
     return (
@@ -281,8 +282,10 @@ const FormNavigation = () => {
                         {/* Step Circle */}
                         <button onClick={() => scrollToSection(item.id)} className={`flex flex-col items-center px-3 text-center transition-colors`}>
                             <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                                    activeSection === item.id ? 'border-[#073066] bg-yellow-200 text-[#073066]' : 'border-gray-300 text-gray-500'
+                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                                    activeSection === item.id
+                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
                                 } `}
                             >
                                 {item.icon}
@@ -2184,118 +2187,19 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                                 <FormField
                                                                                     control={form.control}
                                                                                     name="doctors_note_file"
-                                                                                    render={({ field }) => {
-                                                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                                                            e.preventDefault();
-                                                                                            setIsDragging(true);
-                                                                                        };
-
-                                                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                                                            e.preventDefault();
-                                                                                            setIsDragging(false);
-                                                                                        };
-
-                                                                                        const handleDrop = (e: React.DragEvent) => {
-                                                                                            e.preventDefault();
-                                                                                            setIsDragging(false);
-                                                                                            const files = e.dataTransfer.files;
-                                                                                            if (files.length > 0) {
-                                                                                                field.onChange(files[0]);
-                                                                                            }
-                                                                                        };
-
-                                                                                        const handleFileChange = (
-                                                                                            e: React.ChangeEvent<HTMLInputElement>,
-                                                                                        ) => {
-                                                                                            const files = e.target.files;
-                                                                                            if (files && files.length > 0) {
-                                                                                                field.onChange(files[0]);
-                                                                                            }
-                                                                                        };
-
-                                                                                        return (
-                                                                                            <FormItem className="mt-2">
-                                                                                                <FormControl>
-                                                                                                    <div>
-                                                                                                        <div
-                                                                                                            onClick={() =>
-                                                                                                                fileInputRef.current?.click()
-                                                                                                            }
-                                                                                                            onDragOver={handleDragOver}
-                                                                                                            onDragLeave={handleDragLeave}
-                                                                                                            onDrop={handleDrop}
-                                                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-                                                                                                                isDragging
-                                                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                                                            }`}
-                                                                                                        >
-                                                                                                            {field.value ? (
-                                                                                                                <div className="flex items-center justify-between">
-                                                                                                                    <span className="truncate text-xs text-gray-700">
-                                                                                                                        {field.value.name}
-                                                                                                                    </span>
-                                                                                                                    <Button
-                                                                                                                        type="button"
-                                                                                                                        variant="ghost"
-                                                                                                                        size="sm"
-                                                                                                                        onClick={(e) => {
-                                                                                                                            e.stopPropagation();
-                                                                                                                            field.onChange(null);
-                                                                                                                            if (
-                                                                                                                                fileInputRef.current
-                                                                                                                            ) {
-                                                                                                                                fileInputRef.current.value =
-                                                                                                                                    '';
-                                                                                                                            }
-                                                                                                                        }}
-                                                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                                                    >
-                                                                                                                        <Trash2 className="h-3 w-3" />
-                                                                                                                    </Button>
-                                                                                                                </div>
-                                                                                                            ) : (
-                                                                                                                <div className="flex flex-col items-center">
-                                                                                                                    <svg
-                                                                                                                        className="mb-2 h-8 w-8 text-gray-400"
-                                                                                                                        stroke="currentColor"
-                                                                                                                        fill="none"
-                                                                                                                        viewBox="0 0 24 24"
-                                                                                                                        aria-hidden="true"
-                                                                                                                    >
-                                                                                                                        <path
-                                                                                                                            strokeLinecap="round"
-                                                                                                                            strokeLinejoin="round"
-                                                                                                                            strokeWidth={2}
-                                                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                                                        />
-                                                                                                                    </svg>
-                                                                                                                    <p className="text-xs text-gray-600">
-                                                                                                                        Click to upload or drag and
-                                                                                                                        drop
-                                                                                                                    </p>
-                                                                                                                    <p className="mt-1 text-xs text-gray-500">
-                                                                                                                        PDF, JPG, JPEG, PNG (Optional)
-                                                                                                                    </p>
-                                                                                                                </div>
-                                                                                                            )}
-                                                                                                        </div>
-                                                                                                        <input
-                                                                                                            ref={fileInputRef}
-                                                                                                            type="file"
-                                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                                                                                            onChange={handleFileChange}
-                                                                                                            className="hidden"
-                                                                                                        />
-                                                                                                    </div>
-                                                                                                </FormControl>
-                                                                                                <FormMessage />
-                                                                                            </FormItem>
-                                                                                        );
-                                                                                    }}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem className="mt-2">
+                                                                                            <FormControl>
+                                                                                                <FileUpload
+                                                                                                    value={field.value}
+                                                                                                    onChange={field.onChange}
+                                                                                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                                                                    description="PDF, JPG, JPEG, PNG (Optional)"
+                                                                                                />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
                                                                                 />
                                                                             )}
                                                                         </Box>
@@ -3707,448 +3611,88 @@ that the student is fit to attend school, along with a medical certificate issue
                                                 <FormField
                                                     control={form.control}
                                                     name="certificate_of_enrollment"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Certificate of Enrollment"
-                                                                    tooltip="Upload your official Certificate of Enrollment."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Certificate of Enrollment"
+                                                                tooltip="Upload your official Certificate of Enrollment."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Birth Certificate */}
                                                 <FormField
                                                     control={form.control}
                                                     name="birth_certificate"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Birth Certificate"
-                                                                    tooltip="Upload your PSA or NSO Birth Certificate."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Birth Certificate"
+                                                                tooltip="Upload your PSA or NSO Birth Certificate."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Latest Report Card (Front) */}
                                                 <FormField
                                                     control={form.control}
                                                     name="latest_report_card_front"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Latest Report Card (Front)"
-                                                                    tooltip="Upload the front side of your most recent report card."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Latest Report Card (Front)"
+                                                                tooltip="Upload the front side of your most recent report card."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Latest Report Card (Back) */}
                                                 <FormField
                                                     control={form.control}
                                                     name="latest_report_card_back"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Latest Report Card (Back)"
-                                                                    tooltip="Upload the back side of your most recent report card."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Latest Report Card (Back)"
+                                                                tooltip="Upload the back side of your most recent report card."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
                                             </div>
                                         </div>
