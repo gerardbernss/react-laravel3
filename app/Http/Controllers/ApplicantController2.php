@@ -161,6 +161,27 @@ class ApplicantController2 extends Controller
         return ($input === null || $input === '') ? 'None' : $input;
     }
 
+    private function checkDuplicateApplication($personalDataId, $schoolYear, $semester = null)
+    {
+        $query = ApplicantApplicationInfo::where('applicant_personal_data_id', $personalDataId)
+            ->where('school_year', $schoolYear);
+
+        if (! empty($semester)) {
+            $query->where('semester', $semester);
+        }
+
+        $existing = $query->first();
+
+        if ($existing) {
+            $msg = "You have already submitted an application for School Year {$schoolYear}";
+            if (! empty($semester)) {
+                $msg .= ", {$semester}";
+            }
+            $msg .= ". (Application No: " . $existing->application_number . ")";
+            throw new \Exception($msg);
+        }
+    }
+
     public function storeLES(Request $request)
     {
         DB::beginTransaction();
@@ -169,6 +190,10 @@ class ApplicantController2 extends Controller
             // STEP 1: Handle Personal Data (The Master Record)
             // Check if this person exists by email (Guest logic)
             $personalData = ApplicantPersonalData::where('email', $request->email)->first();
+
+            if ($personalData) {
+                $this->checkDuplicateApplication($personalData->id, $request->school_year, $request->semester);
+            }
 
             $personalPayload = [
 
@@ -436,6 +461,10 @@ class ApplicantController2 extends Controller
             // Check if this person exists by email (Guest logic)
             $personalData = ApplicantPersonalData::where('email', $request->email)->first();
 
+            if ($personalData) {
+                $this->checkDuplicateApplication($personalData->id, $request->school_year, $request->semester);
+            }
+
             $personalPayload = [
 
                 'last_name'                => $request->last_name,
@@ -702,6 +731,10 @@ class ApplicantController2 extends Controller
             // STEP 1: Handle Personal Data (The Master Record)
             // Check if this person exists by email (Guest logic)
             $personalData = ApplicantPersonalData::where('email', $request->email)->first();
+
+            if ($personalData) {
+                $this->checkDuplicateApplication($personalData->id, $request->school_year, $request->semester);
+            }
 
             $personalPayload = [
 

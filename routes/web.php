@@ -28,9 +28,9 @@ Route::prefix('applications')->name('applications.')->group(function () {
     Route::get('/apply-jhs', [ApplicantController2::class, 'createJHS'])->name('applications.jhs');
     Route::get('/apply-les', [ApplicantController2::class, 'createLES'])->name('applications.les');
 
-    Route::post('/apply-shs', [ApplicantController2::class, 'storeSHS'])->name('applications.shs.store');
-    Route::post('/apply-jhs', [ApplicantController2::class, 'storeJHS'])->name('applications.jhs.store');
-    Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store');
+    Route::post('/apply-shs', [ApplicantController2::class, 'storeSHS'])->name('applications.shs.store')->middleware('throttle:3,1');
+    Route::post('/apply-jhs', [ApplicantController2::class, 'storeJHS'])->name('applications.jhs.store')->middleware('throttle:3,1');
+    Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store')->middleware('throttle:3,1');
 
     // Route::get('/create', [ApplicantController2::class, 'create'])->name('create');
     // Route::post('/applicants', [ApplicantController2::class, 'store'])->name('store');
