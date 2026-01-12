@@ -161,6 +161,42 @@ class ApplicantController2 extends Controller
         return ($input === null || $input === '') ? 'None' : $input;
     }
 
+    public function checkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $email = $request->email;
+
+        // Check if email exists in Users table
+        $userExists = \App\Models\User::where('email', $email)->exists();
+
+        if ($userExists) {
+            return response()->json([
+                'exists'  => true,
+                'message' => 'This email is already registered as a system user.',
+            ]);
+        }
+
+        // Check ApplicantPersonalData
+        $applicantExists = ApplicantPersonalData::where('email', $email)
+            ->orWhere('alt_email', $email)
+            ->exists();
+
+        if ($applicantExists) {
+            return response()->json([
+                'exists'  => true,
+                'message' => 'This email is already used in another application.',
+            ]);
+        }
+
+        return response()->json([
+            'exists'  => false,
+            'message' => 'Email is available.',
+        ]);
+    }
+
     public function storeLES(Request $request)
     {
         DB::beginTransaction();
