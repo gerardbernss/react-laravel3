@@ -319,7 +319,7 @@ const FormNavigation = () => {
 
 export default function AddApplicant() {
     const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
-    const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+    const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = React.useState(false);
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
