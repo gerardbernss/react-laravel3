@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreApplicationRequest;
 use App\Models\ApplicantApplicationInfo;
 use App\Models\ApplicantPersonalData;
 use Illuminate\Http\Request;
@@ -197,7 +198,7 @@ class ApplicantController2 extends Controller
         ]);
     }
 
-    public function storeLES(Request $request)
+    public function storeLES(StoreApplicationRequest $request)
     {
         DB::beginTransaction();
 
@@ -463,7 +464,7 @@ class ApplicantController2 extends Controller
         }
     }
 
-    public function storeJHS(Request $request)
+    public function storeJHS(StoreApplicationRequest $request)
     {
         DB::beginTransaction();
 
@@ -730,7 +731,7 @@ class ApplicantController2 extends Controller
 
     }
 
-    public function storeSHS(Request $request)
+    public function storeSHS(StoreApplicationRequest $request)
     {
         DB::beginTransaction();
 

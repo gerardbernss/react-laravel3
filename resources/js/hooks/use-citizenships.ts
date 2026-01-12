@@ -23,9 +23,11 @@ export type CitizenshipOption = {
 export function useCitizenships() {
     const [citizenships, setCitizenships] = useState<CitizenshipOption[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCountries = async () => {
+            setError(null);
             try {
                 // Using restcountries.com to get demonyms
                 const response = await axios.get<Country[]>('https://restcountries.com/v3.1/all?fields=name,demonyms');
@@ -64,6 +66,7 @@ export function useCitizenships() {
                 setCitizenships(options);
             } catch (error) {
                 console.error('Failed to fetch citizenships:', error);
+                setError('Failed to load citizenship options.');
                 // Fallback or empty list
             } finally {
                 setLoading(false);
@@ -73,5 +76,5 @@ export function useCitizenships() {
         fetchCountries();
     }, []);
 
-    return { citizenships, loading };
+    return { citizenships, loading, error };
 }
