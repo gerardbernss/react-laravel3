@@ -713,7 +713,10 @@ export default function AddApplicant() {
         axios
             .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`)
             .then((res) => setPresentProvinces(res.data))
-            .catch(console.error);
+            .catch((error) => {
+                console.error(error);
+                toast.error('Failed to load provinces. Please try again.');
+            });
 
         setPresentCities([]);
         setPresentBarangays([]);
@@ -731,7 +734,10 @@ export default function AddApplicant() {
         axios
             .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`)
             .then((res) => setPresentCities(res.data))
-            .catch(console.error);
+            .catch((error) => {
+                console.error(error);
+                toast.error('Failed to load cities. Please try again.');
+            });
 
         setPresentBarangays([]);
         setSelectedPresentCity('');
@@ -746,7 +752,10 @@ export default function AddApplicant() {
         axios
             .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`)
             .then((res) => setPresentBarangays(res.data))
-            .catch(console.error);
+            .catch((error) => {
+                console.error(error);
+                toast.error('Failed to load barangays. Please try again.');
+            });
 
         form.setValue('present_brgy', '');
     }, [selectedPresentCity]);

@@ -10,6 +10,7 @@ export interface Option {
 export function useProvinces(regionCode?: string) {
     const [provinces, setProvinces] = useState<Option[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
         if (!regionCode) {
@@ -32,6 +33,7 @@ export function useProvinces(regionCode?: string) {
 
         const fetchProvinces = async () => {
             setLoading(true);
+            setError(null);
             try {
                 const response = await axios.get<any[]>(`https://psgc.gitlab.io/api/regions/${regionCode}/provinces`);
                 const options: Option[] = response.data.map((p) => ({
@@ -44,6 +46,7 @@ export function useProvinces(regionCode?: string) {
                 setProvinces(options);
             } catch (error) {
                 console.error('Failed to fetch provinces:', error);
+                setError(error as Error);
                 setProvinces([]);
             } finally {
                 setLoading(false);
@@ -53,5 +56,5 @@ export function useProvinces(regionCode?: string) {
         fetchProvinces();
     }, [regionCode]);
 
-    return { provinces, loading };
+    return { provinces, loading, error };
 }

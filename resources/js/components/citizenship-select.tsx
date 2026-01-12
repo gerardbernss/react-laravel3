@@ -5,7 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useCitizenships } from '@/hooks/use-citizenships';
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface CitizenshipSelectProps {
     value?: string;
@@ -17,7 +18,13 @@ interface CitizenshipSelectProps {
 export function CitizenshipSelect({ value, onChange, placeholder = 'Select citizenship', disabled }: CitizenshipSelectProps) {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const { citizenships } = useCitizenships();
+    const { citizenships, error } = useCitizenships();
+
+    useEffect(() => {
+        if (error) {
+            toast.error('Failed to load citizenship options. Please refresh the page.');
+        }
+    }, [error]);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>

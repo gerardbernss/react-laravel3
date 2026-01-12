@@ -23,6 +23,7 @@ export type CitizenshipOption = {
 export function useCitizenships() {
     const [citizenships, setCitizenships] = useState<CitizenshipOption[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -64,7 +65,7 @@ export function useCitizenships() {
                 setCitizenships(options);
             } catch (error) {
                 console.error('Failed to fetch citizenships:', error);
-                // Fallback or empty list
+                setError(error as Error);
             } finally {
                 setLoading(false);
             }
@@ -73,5 +74,5 @@ export function useCitizenships() {
         fetchCountries();
     }, []);
 
-    return { citizenships, loading };
+    return { citizenships, loading, error };
 }
