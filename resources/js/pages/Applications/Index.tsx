@@ -10,6 +10,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Chip } from '@mui/material';
 import { format } from 'date-fns';
 import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useMemo, useState } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiPlus, HiTrash } from 'react-icons/hi';
@@ -40,6 +41,7 @@ interface Props {
 
 export default function Index({ applications }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search query
     const [selectedGender, setSelectedGender] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [selectedStrand, setSelectedStrand] = useState<string>('all');
@@ -165,13 +167,22 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
+        /**
+         * Optimization: Debounce Search Input
+         *
+         * Why: The search input was triggering a re-render and re-filtering the entire list on every keystroke,
+         * causing UI lag, especially with large datasets.
+         *
+         * What: By debouncing the search query, we delay the filtering logic until the user has stopped typing
+         * for 300ms. This significantly reduces the number of re-renders and improves the UI's responsiveness.
+         */
         return applications.filter((a) => {
             const matchesSearch =
-                a.id.toString().includes(searchQuery) ||
-                a.application_number.toLowerCase().includes(searchQuery) ||
-                a.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.email?.toLowerCase().includes(searchQuery.toLowerCase());
+                a.id.toString().includes(debouncedSearchQuery) ||
+                a.application_number.toLowerCase().includes(debouncedSearchQuery) ||
+                a.first_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                a.last_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                a.email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
 
             const matchesGender = selectedGender === 'all' || a.sex?.toLowerCase() === selectedGender.toLowerCase();
             const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
@@ -201,7 +212,7 @@ export default function Index({ applications }: Props) {
 
             return matchesSearch && matchesGender && matchesStatus && matchesDate && matchesStrand;
         });
-    }, [applications, searchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
+    }, [applications, debouncedSearchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
 
     const sortedApplicants = useMemo(() => {
         if (!sortConfig.key) return filteredApplicants;
