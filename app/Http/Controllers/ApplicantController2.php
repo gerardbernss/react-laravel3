@@ -197,6 +197,24 @@ class ApplicantController2 extends Controller
         ]);
     }
 
+    public function checkDuplicate(Request $request)
+    {
+        $request->validate([
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'middle_name' => 'required|string',
+            'date_of_birth' => 'required|date',
+        ]);
+
+        $exists = ApplicantPersonalData::where('first_name', $request->first_name)
+            ->where('last_name', $request->last_name)
+            ->where('middle_name', $request->middle_name)
+            ->where('date_of_birth', $request->date_of_birth)
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
     public function storeLES(Request $request)
     {
         DB::beginTransaction();
