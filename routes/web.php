@@ -32,6 +32,8 @@ Route::prefix('applications')->name('applications.')->group(function () {
     Route::post('/apply-jhs', [ApplicantController2::class, 'storeJHS'])->name('applications.jhs.store');
     Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store');
 
+    Route::post('/check-email', [ApplicantController2::class, 'checkEmail'])->name('applications.check-email');
+
     // Route::get('/create', [ApplicantController2::class, 'create'])->name('create');
     // Route::post('/applicants', [ApplicantController2::class, 'store'])->name('store');
     Route::get('/success', [ApplicantController2::class, 'success'])->name('success');
@@ -50,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Route::put('/applications/applicants/generate-pdf', [YourController::class, 'generatePdf'])->name('applications.applicants.generatePdf');
 
         Route::get('/admissions/applicants/create', [ApplicantController::class, 'create'])->name('applicants.create');
+        Route::post('/admissions/applicants/check-email', [ApplicantController::class, 'checkEmail'])->name('applicants.check-email');
         Route::post('/admissions/applicants', [ApplicantController::class, 'store'])->name('applicants.store');
         Route::get('/admissions/applicants', [ApplicantController::class, 'index'])->name('applicants.index');
         Route::get('/admissions/applicants/{id}/show', [ApplicantController::class, 'show'])->name('applicants.show');

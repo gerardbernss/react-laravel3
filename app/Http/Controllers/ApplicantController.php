@@ -127,6 +127,54 @@ class ApplicantController extends Controller
         return ($input === null || $input === '') ? 'None' : $input;
     }
 
+    /**
+     * Check if email or alt_email exists in users or applicants
+     */
+    public function checkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string',
+            'exclude_id' => 'nullable|integer',
+        ]);
+
+        $email = trim($request->email);
+        $excludeId = $request->exclude_id;
+
+        // Check System Users
+        if (\App\Models\User::where('email', $email)->exists()) {
+             return response()->json([
+                'exists' => true,
+                'source' => 'users',
+                'message' => 'This email is already associated with a system user account.'
+            ]);
+        }
+
+        // Check Applicants (Main and Alt)
+        $query = ApplicantPersonalData::where(function($q) use ($email) {
+            $q->where('email', $email)
+              ->orWhere('alt_email', $email);
+        });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $applicantExists = $query->exists();
+
+        if ($applicantExists) {
+             return response()->json([
+                'exists' => true,
+                'source' => 'applicants',
+                'message' => 'This email is already associated with an applicant record.'
+            ]);
+        }
+
+        return response()->json([
+            'exists' => false,
+            'message' => 'Email is available.'
+        ]);
+    }
+
     // Store a new application (ADMIN VERSION - includes manual application number)
     public function store(Request $request)
     {
