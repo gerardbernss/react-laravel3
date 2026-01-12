@@ -725,6 +725,24 @@ export default function AddApplicant() {
     const [verifyingCode, setVerifyingCode] = useState(false);
     const [emailVerified, setEmailVerified] = useState(false);
 
+    const checkEmailAvailability = async (email: string, fieldName: 'email' | 'alt_email') => {
+        if (!email) return;
+
+        try {
+            const response = await axios.post('/applications/check-email', { email });
+            if (response.data.exists) {
+                form.setError(fieldName, {
+                    type: 'manual',
+                    message: response.data.message,
+                });
+            } else {
+                form.clearErrors(fieldName);
+            }
+        } catch (error) {
+            console.error('Error checking email:', error);
+        }
+    };
+
     // Alternate email verification states
     const [altCodeSent, setAltCodeSent] = useState(false);
     const [sendingAltCode, setSendingAltCode] = useState(false);
@@ -1351,6 +1369,10 @@ export default function AddApplicant() {
                                                                             type="email"
                                                                             placeholder="your.email@example.com"
                                                                             {...field}
+                                                                            onBlur={(e) => {
+                                                                                field.onBlur();
+                                                                                checkEmailAvailability(e.target.value, 'email');
+                                                                            }}
                                                                             disabled={emailVerified}
                                                                             className={`flex-1 ${emailVerified ? 'border-green-500 bg-green-50' : ''}`}
                                                                         />
@@ -1456,6 +1478,10 @@ export default function AddApplicant() {
                                                                             type="email"
                                                                             placeholder="your.email@example.com"
                                                                             {...field}
+                                                                            onBlur={(e) => {
+                                                                                field.onBlur();
+                                                                                checkEmailAvailability(e.target.value, 'alt_email');
+                                                                            }}
                                                                             disabled={altEmailVerified}
                                                                             className={`flex-1 ${altEmailVerified ? 'border-green-500 bg-green-50' : ''}`}
                                                                         />
