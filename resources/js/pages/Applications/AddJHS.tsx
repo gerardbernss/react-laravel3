@@ -1,3 +1,6 @@
+import { CitizenshipSelect } from '@/components/citizenship-select';
+import { FileUpload } from '@/components/file-upload';
+import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -5,11 +8,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
-
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import axios from 'axios';
-import { Facebook, HelpCircle, Info, Mail, MapPin, Phone, Trash2 } from 'lucide-react';
+import { ClipboardList, Facebook, FileText, GraduationCap, HelpCircle, Info, Mail, MapPin, Phone, Trash2, User, UserPlus, Users } from 'lucide-react';
+
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
@@ -35,6 +38,8 @@ const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string 
 };
 
 const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 
 const applicantFormSchema = z
     .object({
@@ -52,7 +57,7 @@ const applicantFormSchema = z
         //Personal Data
         last_name: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
         first_name: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
-        middle_name: z.string().optional(),
+        middle_name: z.string().min(2, { message: 'Middle name must be at least 2 characters.' }),
         suffix: z.string().optional(),
         learner_reference_number: z.string().optional(),
         gender: z.string().min(1, { message: 'Gender is required.' }),
@@ -81,7 +86,14 @@ const applicantFormSchema = z
         health_conditions: z.union([z.string(), z.array(z.string())]).optional(),
 
         has_doctors_note: z.boolean().default(false),
-        doctors_note_file: z.any().optional(),
+        doctors_note_file: z
+            .any()
+            .refine((file) => !file || file instanceof File, { message: 'Must be a valid file.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            })
+            .optional(),
 
         // Family info
         father_lname: z.string().min(2, { message: "Father's last name must be at least 2 characters." }),
@@ -172,14 +184,32 @@ const applicantFormSchema = z
         //Documents - Fix the file validation
         certificate_of_enrollment: z
             .any()
-            .refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' }),
-        birth_certificate: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' }),
+            .refine((file) => file instanceof File, { message: 'Certificate of Enrollment is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
+        birth_certificate: z
+            .any()
+            .refine((file) => file instanceof File, { message: 'Birth Certificate is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
         latest_report_card_front: z
             .any()
-            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' }),
+            .refine((file) => file instanceof File, { message: 'Latest Report Card (Front) is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
         latest_report_card_back: z
             .any()
-            .refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' }),
+            .refine((file) => file instanceof File, { message: 'Latest Report Card (Back) is required.' })
+            .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
+            .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
+                message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
+            }),
     })
     .superRefine((data, ctx) => {
         if (data.has_doctors_note && !data.doctors_note_file) {
@@ -236,12 +266,12 @@ const FormNavigation = () => {
     };
 
     const navItems = [
-        { id: 'application', label: 'Application Info', icon: '📋' },
-        { id: 'personal', label: 'Personal Info', icon: '👤' },
-        { id: 'family', label: 'Family Background', icon: '👨‍👩‍👧‍👦' },
-        { id: 'siblings', label: 'Sibling Discount', icon: '👫' },
-        { id: 'education', label: 'Education', icon: '🎓' },
-        { id: 'documents', label: 'Documents', icon: '📄' },
+        { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
+        { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
+        { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
+        { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+        { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
+        { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
     ];
 
     return (
@@ -252,8 +282,10 @@ const FormNavigation = () => {
                         {/* Step Circle */}
                         <button onClick={() => scrollToSection(item.id)} className={`flex flex-col items-center px-3 text-center transition-colors`}>
                             <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                                    activeSection === item.id ? 'border-[#073066] bg-yellow-200 text-[#073066]' : 'border-gray-300 text-gray-500'
+                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                                    activeSection === item.id
+                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
                                 } `}
                             >
                                 {item.icon}
@@ -277,6 +309,8 @@ const FormNavigation = () => {
 };
 
 export default function AddApplicant() {
+    const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
+
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
         mode: 'onChange',
@@ -411,6 +445,111 @@ export default function AddApplicant() {
 
         form.setValue('school_year', `${startYear}-${endYear}`);
     }, [applicationDate]);
+
+    // Watch all father and mother fields for real-time updates
+    const fatherValues = form.watch([
+        'father_lname',
+        'father_fname',
+        'father_mname',
+        'father_citizenship',
+        'father_religion',
+        'father_highest_educ',
+        'father_occupation',
+        'father_income',
+        'father_business_emp',
+        'father_business_address',
+        'father_contact_no',
+        'father_email',
+        'father_slu_employee',
+        'father_slu_dept',
+    ]);
+
+    const motherValues = form.watch([
+        'mother_lname',
+        'mother_fname',
+        'mother_mname',
+        'mother_citizenship',
+        'mother_religion',
+        'mother_highest_educ',
+        'mother_occupation',
+        'mother_income',
+        'mother_business_emp',
+        'mother_business_address',
+        'mother_contact_no',
+        'mother_email',
+        'mother_slu_employee',
+        'mother_slu_dept',
+    ]);
+
+    useEffect(() => {
+        if (guardianSource === 'father') {
+            const [
+                lname,
+                fname,
+                mname,
+                citizenship,
+                religion,
+                educ,
+                occupation,
+                income,
+                businessEmp,
+                businessAddr,
+                contact,
+                email,
+                sluEmployee,
+                sluDept,
+            ] = fatherValues;
+
+            form.setValue('guardian_lname', lname || '');
+            form.setValue('guardian_fname', fname || '');
+            form.setValue('guardian_mname', mname || '');
+            form.setValue('guardian_citizenship', citizenship || '');
+            form.setValue('guardian_religion', religion || '');
+            form.setValue('guardian_highest_educ', educ || '');
+            form.setValue('guardian_occupation', occupation || '');
+            form.setValue('guardian_income', income || '');
+            form.setValue('guardian_business_emp', businessEmp || '');
+            form.setValue('guardian_business_address', businessAddr || '');
+            form.setValue('guardian_contact_no', contact || '');
+            form.setValue('guardian_email', email || '');
+            form.setValue('guardian_slu_employee', sluEmployee || false);
+            form.setValue('guardian_slu_dept', sluDept || '');
+            form.setValue('guardian_relationship', 'Father');
+        } else if (guardianSource === 'mother') {
+            const [
+                lname,
+                fname,
+                mname,
+                citizenship,
+                religion,
+                educ,
+                occupation,
+                income,
+                businessEmp,
+                businessAddr,
+                contact,
+                email,
+                sluEmployee,
+                sluDept,
+            ] = motherValues;
+
+            form.setValue('guardian_lname', lname || '');
+            form.setValue('guardian_fname', fname || '');
+            form.setValue('guardian_mname', mname || '');
+            form.setValue('guardian_citizenship', citizenship || '');
+            form.setValue('guardian_religion', religion || '');
+            form.setValue('guardian_highest_educ', educ || '');
+            form.setValue('guardian_occupation', occupation || '');
+            form.setValue('guardian_income', income || '');
+            form.setValue('guardian_business_emp', businessEmp || '');
+            form.setValue('guardian_business_address', businessAddr || '');
+            form.setValue('guardian_contact_no', contact || '');
+            form.setValue('guardian_email', email || '');
+            form.setValue('guardian_slu_employee', sluEmployee || false);
+            form.setValue('guardian_slu_dept', sluDept || '');
+            form.setValue('guardian_relationship', 'Mother');
+        }
+    }, [guardianSource, fatherValues, motherValues, form]);
 
     async function onSubmit(values: ApplicantFormValues) {
         try {
@@ -724,6 +863,24 @@ export default function AddApplicant() {
     const [sendingCode, setSendingCode] = useState(false);
     const [verifyingCode, setVerifyingCode] = useState(false);
     const [emailVerified, setEmailVerified] = useState(false);
+
+    const checkEmailAvailability = async (email: string, fieldName: 'email' | 'alt_email') => {
+        if (!email) return;
+
+        try {
+            const response = await axios.post('/applications/check-email', { email });
+            if (response.data.exists) {
+                form.setError(fieldName, {
+                    type: 'manual',
+                    message: response.data.message,
+                });
+            } else {
+                form.clearErrors(fieldName);
+            }
+        } catch (error) {
+            console.error('Error checking email:', error);
+        }
+    };
 
     // Alternate email verification states
     const [altCodeSent, setAltCodeSent] = useState(false);
@@ -1045,7 +1202,7 @@ export default function AddApplicant() {
                                                                         const juniorHighLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'];
 
                                                                         if (juniorHighLevels.includes(value)) {
-                                                                            form.setValue('strand', 'Junior High School');
+                                                                            form.setValue('strand', 'Laboratory Junior High School');
                                                                         }
                                                                     }}
                                                                     value={field.value}
@@ -1130,7 +1287,9 @@ export default function AddApplicant() {
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
-                                                                        <SelectItem value="Junior High School">Junior High School</SelectItem>
+                                                                        <SelectItem value="Laboratory Junior High School">
+                                                                            Laboratory Junior High School
+                                                                        </SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                                 <FormMessage />
@@ -1264,14 +1423,16 @@ export default function AddApplicant() {
                                                     control={form.control}
                                                     name="citizenship"
                                                     render={({ field }) => (
-                                                        <FormItem>
+                                                        <FormItem className="flex flex-col">
                                                             <LabelWithTooltip
                                                                 label="Citizenship *"
                                                                 tooltip="Enter applicant's citizenship (e.g., Filipino)."
                                                             />
-                                                            <FormControl>
-                                                                <Input placeholder="Filipino" {...field} />
-                                                            </FormControl>
+                                                            <CitizenshipSelect
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                placeholder="Select citizenship"
+                                                            />
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}
@@ -1351,6 +1512,10 @@ export default function AddApplicant() {
                                                                             type="email"
                                                                             placeholder="your.email@example.com"
                                                                             {...field}
+                                                                            onBlur={(e) => {
+                                                                                field.onBlur();
+                                                                                checkEmailAvailability(e.target.value, 'email');
+                                                                            }}
                                                                             disabled={emailVerified}
                                                                             className={`flex-1 ${emailVerified ? 'border-green-500 bg-green-50' : ''}`}
                                                                         />
@@ -1456,6 +1621,10 @@ export default function AddApplicant() {
                                                                             type="email"
                                                                             placeholder="your.email@example.com"
                                                                             {...field}
+                                                                            onBlur={(e) => {
+                                                                                field.onBlur();
+                                                                                checkEmailAvailability(e.target.value, 'alt_email');
+                                                                            }}
                                                                             disabled={altEmailVerified}
                                                                             className={`flex-1 ${altEmailVerified ? 'border-green-500 bg-green-50' : ''}`}
                                                                         />
@@ -1566,23 +1735,18 @@ export default function AddApplicant() {
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </div>
-                                                        <Select
-                                                            onValueChange={(value) => {
-                                                                setSelectedPresentRegion(value);
-                                                            }}
-                                                            value={selectedPresentRegion}
-                                                        >
-                                                            <SelectTrigger className="mt-2">
-                                                                <SelectValue placeholder="Select Region" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {presentRegions.map((region) => (
-                                                                    <SelectItem key={region.code} value={region.code}>
-                                                                        {region.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="mt-2">
+                                                            <SearchableSelect
+                                                                value={selectedPresentRegion}
+                                                                onChange={setSelectedPresentRegion}
+                                                                options={(presentRegions ?? []).map((r) => ({
+                                                                    label: r.name,
+                                                                    value: r.code,
+                                                                }))}
+                                                                placeholder="Select Region"
+                                                                searchPlaceholder="Search region..."
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {/* Province */}
@@ -1592,28 +1756,18 @@ export default function AddApplicant() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                <Select
-                                                                    onValueChange={(value) => {
+                                                                <SearchableSelect
+                                                                    value={selectedPresentProvince}
+                                                                    onChange={(value) => {
                                                                         setSelectedPresentProvince(value);
                                                                         const selected = presentProvinces.find((p) => p.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPresentProvince}
+                                                                    options={presentProvinces.map((p) => ({ label: p.name, value: p.code }))}
+                                                                    placeholder="Select Province"
+                                                                    searchPlaceholder="Search province..."
                                                                     disabled={!selectedPresentRegion}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select Province" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {presentProvinces.map((province) => (
-                                                                            <SelectItem key={province.code} value={province.code}>
-                                                                                {province.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1624,33 +1778,23 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="present_city"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip
                                                                     label="City/Municipality *"
                                                                     tooltip="Enter city or municipality of residence."
                                                                 />
-                                                                <Select
-                                                                    onValueChange={(value) => {
+                                                                <SearchableSelect
+                                                                    value={selectedPresentCity}
+                                                                    onChange={(value) => {
                                                                         setSelectedPresentCity(value);
                                                                         const selected = presentCities.find((c) => c.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPresentCity}
+                                                                    options={presentCities.map((c) => ({ label: c.name, value: c.code }))}
+                                                                    placeholder="Select City/Municipality"
+                                                                    searchPlaceholder="Search city..."
                                                                     disabled={!selectedPresentProvince}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select City/Municipality" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {presentCities.map((city) => (
-                                                                            <SelectItem key={city.code} value={city.code}>
-                                                                                {city.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1661,29 +1805,19 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="present_brgy"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
-                                                                <Select
-                                                                    onValueChange={(value) => {
+                                                                <SearchableSelect
+                                                                    value={presentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    onChange={(value) => {
                                                                         const selected = presentBarangays.find((b) => b.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={presentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    options={presentBarangays.map((b) => ({ label: b.name, value: b.code }))}
+                                                                    placeholder="Select Barangay"
+                                                                    searchPlaceholder="Search barangay..."
                                                                     disabled={!selectedPresentCity}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select Barangay" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {presentBarangays.map((barangay) => (
-                                                                            <SelectItem key={barangay.code} value={barangay.code}>
-                                                                                {barangay.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1811,24 +1945,16 @@ export default function AddApplicant() {
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </div>
-                                                        <Select
-                                                            onValueChange={(value) => {
-                                                                setSelectedPermanentRegion(value);
-                                                            }}
-                                                            value={selectedPermanentRegion}
-                                                            disabled={isSameAddress}
-                                                        >
-                                                            <SelectTrigger className="mt-2">
-                                                                <SelectValue placeholder="Select Region" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {permanentRegions.map((region) => (
-                                                                    <SelectItem key={region.code} value={region.code}>
-                                                                        {region.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="mt-2">
+                                                            <SearchableSelect
+                                                                value={selectedPermanentRegion}
+                                                                onChange={(value) => setSelectedPermanentRegion(value)}
+                                                                options={permanentRegions.map((r) => ({ label: r.name, value: r.code }))}
+                                                                placeholder="Select Region"
+                                                                searchPlaceholder="Search region..."
+                                                                disabled={isSameAddress}
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {/* Province/State */}
@@ -1836,35 +1962,21 @@ export default function AddApplicant() {
                                                         control={form.control}
                                                         name="permanent_province"
                                                         render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className="flex flex-col">
                                                                 <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                {/* ⬇️ FIX: Add 'key' to force re-render when syncing */}
-                                                                <Select
+                                                                <SearchableSelect
                                                                     key={`prov_${isSameAddress}_${selectedPermanentProvince}`}
-                                                                    onValueChange={(value) => {
+                                                                    value={selectedPermanentProvince}
+                                                                    onChange={(value) => {
                                                                         setSelectedPermanentProvince(value);
                                                                         const selected = permanentProvinces.find((p) => p.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPermanentProvince}
+                                                                    options={permanentProvinces.map((p) => ({ label: p.name, value: p.code }))}
+                                                                    placeholder="Select Province"
+                                                                    searchPlaceholder="Search province..."
                                                                     disabled={!selectedPermanentRegion || isSameAddress}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            {/* ⬇️ FIX: Display field.value directly */}
-                                                                            <SelectValue placeholder="Select Province">
-                                                                                {field.value || 'Select Province'}
-                                                                            </SelectValue>
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {permanentProvinces.map((province) => (
-                                                                            <SelectItem key={province.code} value={province.code}>
-                                                                                {province.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1880,31 +1992,19 @@ export default function AddApplicant() {
                                                                     tooltip="Enter city or municipality of residence."
                                                                 />
                                                                 {/* ⬇️ FIX: Add 'key' to force re-render when syncing */}
-                                                                <Select
+                                                                <SearchableSelect
                                                                     key={`city_${isSameAddress}_${selectedPermanentCity}`}
-                                                                    onValueChange={(value) => {
+                                                                    value={selectedPermanentCity}
+                                                                    onChange={(value) => {
                                                                         setSelectedPermanentCity(value);
                                                                         const selected = permanentCities.find((c) => c.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    value={selectedPermanentCity}
+                                                                    options={permanentCities.map((c) => ({ label: c.name, value: c.code }))}
+                                                                    placeholder="Select City/Municipality"
+                                                                    searchPlaceholder="Search city..."
                                                                     disabled={!selectedPermanentProvince || isSameAddress}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select City/Municipality">
-                                                                                {field.value || 'Select City/Municipality'}
-                                                                            </SelectValue>
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {permanentCities.map((city) => (
-                                                                            <SelectItem key={city.code} value={city.code}>
-                                                                                {city.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1918,31 +2018,18 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Barangay *" tooltip="Enter barangay." />
                                                                 {/* ⬇️ FIX: Add 'key' to force re-render when syncing */}
-                                                                <Select
+                                                                <SearchableSelect
                                                                     key={`brgy_${isSameAddress}_${field.value}`}
-                                                                    onValueChange={(value) => {
+                                                                    value={permanentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    onChange={(value) => {
                                                                         const selected = permanentBarangays.find((b) => b.code === value);
                                                                         field.onChange(selected?.name || '');
                                                                     }}
-                                                                    // Match the Code based on the Name in the form
-                                                                    value={permanentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    options={permanentBarangays.map((b) => ({ label: b.name, value: b.code }))}
+                                                                    placeholder="Select Barangay"
+                                                                    searchPlaceholder="Search barangay..."
                                                                     disabled={!selectedPermanentCity || isSameAddress}
-                                                                >
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select Barangay">
-                                                                                {field.value || 'Select Barangay'}
-                                                                            </SelectValue>
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        {permanentBarangays.map((brgy) => (
-                                                                            <SelectItem key={brgy.code} value={brgy.code}>
-                                                                                {brgy.name}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -2123,118 +2210,19 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                                 <FormField
                                                                                     control={form.control}
                                                                                     name="doctors_note_file"
-                                                                                    render={({ field }) => {
-                                                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                                                            e.preventDefault();
-                                                                                            setIsDragging(true);
-                                                                                        };
-
-                                                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                                                            e.preventDefault();
-                                                                                            setIsDragging(false);
-                                                                                        };
-
-                                                                                        const handleDrop = (e: React.DragEvent) => {
-                                                                                            e.preventDefault();
-                                                                                            setIsDragging(false);
-                                                                                            const files = e.dataTransfer.files;
-                                                                                            if (files.length > 0) {
-                                                                                                field.onChange(files[0]);
-                                                                                            }
-                                                                                        };
-
-                                                                                        const handleFileChange = (
-                                                                                            e: React.ChangeEvent<HTMLInputElement>,
-                                                                                        ) => {
-                                                                                            const files = e.target.files;
-                                                                                            if (files && files.length > 0) {
-                                                                                                field.onChange(files[0]);
-                                                                                            }
-                                                                                        };
-
-                                                                                        return (
-                                                                                            <FormItem className="mt-2">
-                                                                                                <FormControl>
-                                                                                                    <div>
-                                                                                                        <div
-                                                                                                            onClick={() =>
-                                                                                                                fileInputRef.current?.click()
-                                                                                                            }
-                                                                                                            onDragOver={handleDragOver}
-                                                                                                            onDragLeave={handleDragLeave}
-                                                                                                            onDrop={handleDrop}
-                                                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-                                                                                                                isDragging
-                                                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                                                            }`}
-                                                                                                        >
-                                                                                                            {field.value ? (
-                                                                                                                <div className="flex items-center justify-between">
-                                                                                                                    <span className="truncate text-xs text-gray-700">
-                                                                                                                        {field.value.name}
-                                                                                                                    </span>
-                                                                                                                    <Button
-                                                                                                                        type="button"
-                                                                                                                        variant="ghost"
-                                                                                                                        size="sm"
-                                                                                                                        onClick={(e) => {
-                                                                                                                            e.stopPropagation();
-                                                                                                                            field.onChange(null);
-                                                                                                                            if (
-                                                                                                                                fileInputRef.current
-                                                                                                                            ) {
-                                                                                                                                fileInputRef.current.value =
-                                                                                                                                    '';
-                                                                                                                            }
-                                                                                                                        }}
-                                                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                                                    >
-                                                                                                                        <Trash2 className="h-3 w-3" />
-                                                                                                                    </Button>
-                                                                                                                </div>
-                                                                                                            ) : (
-                                                                                                                <div className="flex flex-col items-center">
-                                                                                                                    <svg
-                                                                                                                        className="mb-2 h-8 w-8 text-gray-400"
-                                                                                                                        stroke="currentColor"
-                                                                                                                        fill="none"
-                                                                                                                        viewBox="0 0 24 24"
-                                                                                                                        aria-hidden="true"
-                                                                                                                    >
-                                                                                                                        <path
-                                                                                                                            strokeLinecap="round"
-                                                                                                                            strokeLinejoin="round"
-                                                                                                                            strokeWidth={2}
-                                                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                                                        />
-                                                                                                                    </svg>
-                                                                                                                    <p className="text-xs text-gray-600">
-                                                                                                                        Click to upload or drag and
-                                                                                                                        drop
-                                                                                                                    </p>
-                                                                                                                    <p className="mt-1 text-xs text-gray-500">
-                                                                                                                        PDF, JPG, JPEG, PNG (Optional)
-                                                                                                                    </p>
-                                                                                                                </div>
-                                                                                                            )}
-                                                                                                        </div>
-                                                                                                        <input
-                                                                                                            ref={fileInputRef}
-                                                                                                            type="file"
-                                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                                                                                            onChange={handleFileChange}
-                                                                                                            className="hidden"
-                                                                                                        />
-                                                                                                    </div>
-                                                                                                </FormControl>
-                                                                                                <FormMessage />
-                                                                                            </FormItem>
-                                                                                        );
-                                                                                    }}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem className="mt-2">
+                                                                                            <FormControl>
+                                                                                                <FileUpload
+                                                                                                    value={field.value}
+                                                                                                    onChange={field.onChange}
+                                                                                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                                                                    description="PDF, JPG, JPEG, PNG (Optional)"
+                                                                                                />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
                                                                                 />
                                                                             )}
                                                                         </Box>
@@ -2427,11 +2415,16 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         control={form.control}
                                                         name="father_citizenship"
                                                         render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Citizenship" tooltip="" />
-                                                                <FormControl>
-                                                                    <Input placeholder="" {...field} />
-                                                                </FormControl>
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="Citizenship *"
+                                                                    tooltip="Enter applicant's citizenship (e.g., Filipino)."
+                                                                />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -2454,9 +2447,33 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         name="father_highest_educ"
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
+                                                                <LabelWithTooltip label="Highest Educational Attainment " />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Kindergarten">Kindergarten</SelectItem>
+                                                                            <SelectItem value="Elementary">Elementary</SelectItem>
+                                                                            <SelectItem value="Elementary Undergraduate">
+                                                                                Elementary Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="High School">High School</SelectItem>
+                                                                            <SelectItem value="High School Undergraduate">
+                                                                                High School Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Vocational/Trade">Vocational/Trade</SelectItem>
+                                                                            <SelectItem value="Graduate">Graduate</SelectItem>
+                                                                            <SelectItem value="College Undergraduate">
+                                                                                College Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (Masters)">
+                                                                                Post Graduate (Masters)
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2484,7 +2501,20 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Monthly Income" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Below 10,000">Below 10,000</SelectItem>
+                                                                            <SelectItem value="10,000 - 20,000">10,000 - 20,000</SelectItem>
+                                                                            <SelectItem value="20,000 - 40,000">20,000 - 40,000</SelectItem>
+                                                                            <SelectItem value="40,000 - 70,000">40,000 - 70,000</SelectItem>
+                                                                            <SelectItem value="70,000 - 100,000">70,000 - 100,000</SelectItem>
+                                                                            <SelectItem value="100,000 - 200,000">100,000 - 200,000</SelectItem>
+                                                                            <SelectItem value="Above 200,000">Above 200,000</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2608,7 +2638,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         name="mother_lname"
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <LabelWithTooltip label="Mother's Last Name" tooltip="" />
+                                                                <LabelWithTooltip label="Mother's Maiden Last Name" tooltip="" />
                                                                 <FormControl>
                                                                     <Input placeholder="" {...field} />
                                                                 </FormControl>
@@ -2634,7 +2664,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         name="mother_mname"
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <LabelWithTooltip label="Mother's Middle Name" tooltip="" />
+                                                                <LabelWithTooltip label="Mother's Maiden Middle Name" tooltip="" />
                                                                 <FormControl>
                                                                     <Input placeholder="" {...field} />
                                                                 </FormControl>
@@ -2669,11 +2699,16 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         control={form.control}
                                                         name="mother_citizenship"
                                                         render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Citizenship" tooltip="" />
-                                                                <FormControl>
-                                                                    <Input placeholder="" {...field} />
-                                                                </FormControl>
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="Citizenship *"
+                                                                    tooltip="Enter applicant's citizenship (e.g., Filipino)."
+                                                                />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -2698,7 +2733,31 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Kindergarten">Kindergarten</SelectItem>
+                                                                            <SelectItem value="Elementary">Elementary</SelectItem>
+                                                                            <SelectItem value="Elementary Undergraduate">
+                                                                                Elementary Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="High School">High School</SelectItem>
+                                                                            <SelectItem value="High School Undergraduate">
+                                                                                High School Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Vocational/Trade">Vocational/Trade</SelectItem>
+                                                                            <SelectItem value="Graduate">Graduate</SelectItem>
+                                                                            <SelectItem value="College Undergraduate">
+                                                                                College Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (Masters)">
+                                                                                Post Graduate (Masters)
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2726,7 +2785,20 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Monthly Income" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Below 10,000">Below 10,000</SelectItem>
+                                                                            <SelectItem value="10,000 - 20,000">10,000 - 20,000</SelectItem>
+                                                                            <SelectItem value="20,000 - 40,000">20,000 - 40,000</SelectItem>
+                                                                            <SelectItem value="40,000 - 70,000">40,000 - 70,000</SelectItem>
+                                                                            <SelectItem value="70,000 - 100,000">70,000 - 100,000</SelectItem>
+                                                                            <SelectItem value="100,000 - 200,000">100,000 - 200,000</SelectItem>
+                                                                            <SelectItem value="Above 200,000">Above 200,000</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2849,33 +2921,28 @@ that the student is fit to attend school, along with a medical certificate issue
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             size="small"
+                                                            checked={guardianSource === 'father'}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    // Copy father's info to guardian fields
-                                                                    form.setValue('guardian_lname', form.getValues('father_lname'));
-                                                                    form.setValue('guardian_fname', form.getValues('father_fname'));
-                                                                    form.setValue('guardian_mname', form.getValues('father_mname'));
-                                                                    form.setValue('guardian_citizenship', form.getValues('father_citizenship') || '');
-                                                                    form.setValue('guardian_religion', form.getValues('father_religion') || '');
-                                                                    form.setValue(
-                                                                        'guardian_highest_educ',
-                                                                        form.getValues('father_highest_educ') || '',
-                                                                    );
-                                                                    form.setValue('guardian_occupation', form.getValues('father_occupation') || '');
-                                                                    form.setValue('guardian_income', form.getValues('father_income') || '');
-                                                                    form.setValue(
-                                                                        'guardian_business_emp',
-                                                                        form.getValues('father_business_emp') || '',
-                                                                    );
-                                                                    form.setValue(
-                                                                        'guardian_business_address',
-                                                                        form.getValues('father_business_address') || '',
-                                                                    );
-                                                                    form.setValue('guardian_contact_no', form.getValues('father_contact_no') || '');
-                                                                    form.setValue('guardian_email', form.getValues('father_email') || '');
-                                                                    form.setValue('guardian_slu_employee', form.getValues('father_slu_employee'));
-                                                                    form.setValue('guardian_slu_dept', form.getValues('father_slu_dept') || '');
-                                                                    form.setValue('guardian_relationship', 'Father');
+                                                                    setGuardianSource('father');
+                                                                } else {
+                                                                    setGuardianSource(null);
+                                                                    // Clear guardian fields
+                                                                    form.setValue('guardian_lname', '');
+                                                                    form.setValue('guardian_fname', '');
+                                                                    form.setValue('guardian_mname', '');
+                                                                    form.setValue('guardian_citizenship', '');
+                                                                    form.setValue('guardian_religion', '');
+                                                                    form.setValue('guardian_highest_educ', '');
+                                                                    form.setValue('guardian_occupation', '');
+                                                                    form.setValue('guardian_income', '');
+                                                                    form.setValue('guardian_business_emp', '');
+                                                                    form.setValue('guardian_business_address', '');
+                                                                    form.setValue('guardian_contact_no', '');
+                                                                    form.setValue('guardian_email', '');
+                                                                    form.setValue('guardian_slu_employee', false);
+                                                                    form.setValue('guardian_slu_dept', '');
+                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
@@ -2885,33 +2952,28 @@ that the student is fit to attend school, along with a medical certificate issue
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
                                                             size="small"
+                                                            checked={guardianSource === 'mother'}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    // Copy mother's info to guardian fields
-                                                                    form.setValue('guardian_lname', form.getValues('mother_lname'));
-                                                                    form.setValue('guardian_fname', form.getValues('mother_fname'));
-                                                                    form.setValue('guardian_mname', form.getValues('mother_mname'));
-                                                                    form.setValue('guardian_citizenship', form.getValues('mother_citizenship') || '');
-                                                                    form.setValue('guardian_religion', form.getValues('mother_religion') || '');
-                                                                    form.setValue(
-                                                                        'guardian_highest_educ',
-                                                                        form.getValues('mother_highest_educ') || '',
-                                                                    );
-                                                                    form.setValue('guardian_occupation', form.getValues('mother_occupation') || '');
-                                                                    form.setValue('guardian_income', form.getValues('mother_income') || '');
-                                                                    form.setValue(
-                                                                        'guardian_business_emp',
-                                                                        form.getValues('mother_business_emp') || '',
-                                                                    );
-                                                                    form.setValue(
-                                                                        'guardian_business_address',
-                                                                        form.getValues('mother_business_address') || '',
-                                                                    );
-                                                                    form.setValue('guardian_contact_no', form.getValues('mother_contact_no') || '');
-                                                                    form.setValue('guardian_email', form.getValues('mother_email') || '');
-                                                                    form.setValue('guardian_slu_employee', form.getValues('mother_slu_employee'));
-                                                                    form.setValue('guardian_slu_dept', form.getValues('mother_slu_dept') || '');
-                                                                    form.setValue('guardian_relationship', 'Mother');
+                                                                    setGuardianSource('mother');
+                                                                } else {
+                                                                    setGuardianSource(null);
+                                                                    // Clear guardian fields
+                                                                    form.setValue('guardian_lname', '');
+                                                                    form.setValue('guardian_fname', '');
+                                                                    form.setValue('guardian_mname', '');
+                                                                    form.setValue('guardian_citizenship', '');
+                                                                    form.setValue('guardian_religion', '');
+                                                                    form.setValue('guardian_highest_educ', '');
+                                                                    form.setValue('guardian_occupation', '');
+                                                                    form.setValue('guardian_income', '');
+                                                                    form.setValue('guardian_business_emp', '');
+                                                                    form.setValue('guardian_business_address', '');
+                                                                    form.setValue('guardian_contact_no', '');
+                                                                    form.setValue('guardian_email', '');
+                                                                    form.setValue('guardian_slu_employee', false);
+                                                                    form.setValue('guardian_slu_dept', '');
+                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
@@ -2927,7 +2989,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's Last Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2940,7 +3002,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's First Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2953,7 +3015,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Guardian's Middle Name" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2966,7 +3028,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Relationship with guardian" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -2978,11 +3040,17 @@ that the student is fit to attend school, along with a medical certificate issue
                                                         control={form.control}
                                                         name="guardian_citizenship"
                                                         render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Citizenship" tooltip="" />
-                                                                <FormControl>
-                                                                    <Input placeholder="" {...field} />
-                                                                </FormControl>
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="Citizenship *"
+                                                                    tooltip="Enter applicant's citizenship (e.g., Filipino)."
+                                                                />
+                                                                <CitizenshipSelect
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    placeholder="Select citizenship"
+                                                                    disabled={guardianSource !== null}
+                                                                />
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -2994,7 +3062,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Religion" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3007,7 +3075,35 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Highest Educational Attainment" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select
+                                                                        onValueChange={field.onChange}
+                                                                        value={field.value}
+                                                                        disabled={guardianSource !== null}
+                                                                    >
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Kindergarten">Kindergarten</SelectItem>
+                                                                            <SelectItem value="Elementary">Elementary</SelectItem>
+                                                                            <SelectItem value="Elementary Undergraduate">
+                                                                                Elementary Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="High School">High School</SelectItem>
+                                                                            <SelectItem value="High School Undergraduate">
+                                                                                High School Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Vocational/Trade">Vocational/Trade</SelectItem>
+                                                                            <SelectItem value="Graduate">Graduate</SelectItem>
+                                                                            <SelectItem value="College Undergraduate">
+                                                                                College Undergraduate
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (Masters)">
+                                                                                Post Graduate (Masters)
+                                                                            </SelectItem>
+                                                                            <SelectItem value="Post Graduate (PhD)">Post Graduate (PhD)</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3022,7 +3118,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Occupation" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3035,7 +3131,24 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Monthly Income" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Select
+                                                                        onValueChange={field.onChange}
+                                                                        value={field.value}
+                                                                        disabled={guardianSource !== null}
+                                                                    >
+                                                                        <SelectTrigger>
+                                                                            <SelectValue placeholder="Select " />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Below 10,000">Below 10,000</SelectItem>
+                                                                            <SelectItem value="10,000 - 20,000">10,000 - 20,000</SelectItem>
+                                                                            <SelectItem value="20,000 - 40,000">20,000 - 40,000</SelectItem>
+                                                                            <SelectItem value="40,000 - 70,000">40,000 - 70,000</SelectItem>
+                                                                            <SelectItem value="70,000 - 100,000">70,000 - 100,000</SelectItem>
+                                                                            <SelectItem value="100,000 - 200,000">100,000 - 200,000</SelectItem>
+                                                                            <SelectItem value="Above 200,000">Above 200,000</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3048,7 +3161,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Business/Employer" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3063,7 +3176,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Business Address" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3076,7 +3189,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Contact No." tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3089,7 +3202,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Email Address" tooltip="" />
                                                                 <FormControl>
-                                                                    <Input placeholder="" {...field} />
+                                                                    <Input placeholder="" disabled={guardianSource !== null} {...field} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -3121,12 +3234,22 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         >
                                                                             <FormControlLabel
                                                                                 value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
+                                                                                control={
+                                                                                    <Radio
+                                                                                        sx={{ transform: 'scale(0.9)' }}
+                                                                                        disabled={guardianSource !== null}
+                                                                                    />
+                                                                                }
                                                                                 label="Yes"
                                                                             />
                                                                             <FormControlLabel
                                                                                 value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
+                                                                                control={
+                                                                                    <Radio
+                                                                                        sx={{ transform: 'scale(0.9)' }}
+                                                                                        disabled={guardianSource !== null}
+                                                                                    />
+                                                                                }
                                                                                 label="No"
                                                                             />
                                                                         </RadioGroup>
@@ -3140,6 +3263,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         <FormControl className="flex-1">
                                                                             <Input
                                                                                 placeholder="Enter SLU Department"
+                                                                                disabled={guardianSource !== null}
                                                                                 {...form.register('guardian_slu_dept')}
                                                                             />
                                                                         </FormControl>
@@ -3510,448 +3634,88 @@ that the student is fit to attend school, along with a medical certificate issue
                                                 <FormField
                                                     control={form.control}
                                                     name="certificate_of_enrollment"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Certificate of Enrollment"
-                                                                    tooltip="Upload your official Certificate of Enrollment."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Certificate of Enrollment"
+                                                                tooltip="Upload your official Certificate of Enrollment."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Birth Certificate */}
                                                 <FormField
                                                     control={form.control}
                                                     name="birth_certificate"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Birth Certificate"
-                                                                    tooltip="Upload your PSA or NSO Birth Certificate."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Birth Certificate"
+                                                                tooltip="Upload your PSA or NSO Birth Certificate."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Latest Report Card (Front) */}
                                                 <FormField
                                                     control={form.control}
                                                     name="latest_report_card_front"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Latest Report Card (Front)"
-                                                                    tooltip="Upload the front side of your most recent report card."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Latest Report Card (Front)"
+                                                                tooltip="Upload the front side of your most recent report card."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Latest Report Card (Back) */}
                                                 <FormField
                                                     control={form.control}
                                                     name="latest_report_card_back"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Latest Report Card (Back)"
-                                                                    tooltip="Upload the back side of your most recent report card."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Latest Report Card (Back)"
+                                                                tooltip="Upload the back side of your most recent report card."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
                                             </div>
                                         </div>

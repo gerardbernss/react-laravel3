@@ -187,7 +187,7 @@ class ApplicantController2 extends Controller
         if ($applicantExists) {
             return response()->json([
                 'exists'  => true,
-                'message' => 'This email is already used.',
+                'message' => 'This email is already registered.',
             ]);
         }
 
