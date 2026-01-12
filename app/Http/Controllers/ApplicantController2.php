@@ -21,6 +21,17 @@ class ApplicantController2 extends Controller
         return Inertia::render('Applications/Start');
     }
 
+    public function checkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $exists = \App\Models\User::where('email', $request->email)->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
 // Display all applications with full relationships.
     public function index()
     {

@@ -32,6 +32,8 @@ Route::prefix('applications')->name('applications.')->group(function () {
     Route::post('/apply-jhs', [ApplicantController2::class, 'storeJHS'])->name('applications.jhs.store');
     Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store');
 
+    Route::post('/check-email', [ApplicantController2::class, 'checkEmail'])->name('check-email');
+
     // Route::get('/create', [ApplicantController2::class, 'create'])->name('create');
     // Route::post('/applicants', [ApplicantController2::class, 'store'])->name('store');
     Route::get('/success', [ApplicantController2::class, 'success'])->name('success');
