@@ -2,6 +2,7 @@ import { CitizenshipSelect } from '@/components/citizenship-select';
 import { FileUpload } from '@/components/file-upload';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -310,6 +311,7 @@ const FormNavigation = () => {
 
 export default function AddApplicant() {
     const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
+    const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
@@ -553,6 +555,19 @@ export default function AddApplicant() {
 
     async function onSubmit(values: ApplicantFormValues) {
         try {
+            // Check for duplicate application
+            const duplicateCheck = await axios.post('/applications/check-duplicate', {
+                first_name: values.first_name,
+                last_name: values.last_name,
+                middle_name: values.middle_name,
+                date_of_birth: values.date_of_birth,
+            });
+
+            if (duplicateCheck.data.exists) {
+                setShowDuplicateDialog(true);
+                return;
+            }
+
             const formData = new FormData();
 
             // Append all regular form fields
@@ -3828,6 +3843,18 @@ that the student is fit to attend school, along with a medical certificate issue
                     </div>
                 </div>
             </div>
+
+            <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Application Already Submitted</DialogTitle>
+                        <DialogDescription>You have already submitted an application.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button onClick={() => setShowDuplicateDialog(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <footer className="mt-10 bg-white shadow-md">
                 <div className="mx-auto flex max-w-[1200px] items-center justify-between px-10 py-15">

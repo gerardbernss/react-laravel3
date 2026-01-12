@@ -33,6 +33,7 @@ Route::prefix('applications')->name('applications.')->group(function () {
     Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store');
 
     Route::post('/check-email', [ApplicantController2::class, 'checkEmail'])->name('check-email');
+    Route::post('/check-duplicate', [ApplicantController2::class, 'checkDuplicate'])->name('check-duplicate');
 
     // Route::get('/create', [ApplicantController2::class, 'create'])->name('create');
     // Route::post('/applicants', [ApplicantController2::class, 'store'])->name('store');
