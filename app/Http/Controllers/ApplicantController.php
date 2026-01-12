@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreApplicationRequest;
 use App\Models\ApplicantApplicationInfo;
 use App\Models\ApplicantPersonalData;
 use Illuminate\Http\Request;
@@ -128,7 +129,7 @@ class ApplicantController extends Controller
     }
 
     // Store a new application (ADMIN VERSION - includes manual application number)
-    public function store(Request $request)
+    public function store(StoreApplicationRequest $request)
     {
         DB::beginTransaction();
 
@@ -403,7 +404,7 @@ class ApplicantController extends Controller
         return $prefix . $year . '-' . $sequenceNumber;
     } */
 
-    public function update(Request $request, $id)
+    public function update(StoreApplicationRequest $request, $id)
     {
         DB::beginTransaction();
 

@@ -10,8 +10,10 @@ export interface Option {
 export function useProvinces(regionCode?: string) {
     const [provinces, setProvinces] = useState<Option[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        setError(null);
         if (!regionCode) {
             setProvinces([]);
             return;
@@ -44,6 +46,7 @@ export function useProvinces(regionCode?: string) {
                 setProvinces(options);
             } catch (error) {
                 console.error('Failed to fetch provinces:', error);
+                setError('Failed to load provinces. Please check your connection.');
                 setProvinces([]);
             } finally {
                 setLoading(false);
@@ -53,5 +56,5 @@ export function useProvinces(regionCode?: string) {
         fetchProvinces();
     }, [regionCode]);
 
-    return { provinces, loading };
+    return { provinces, loading, error };
 }
