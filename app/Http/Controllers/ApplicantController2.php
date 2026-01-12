@@ -21,6 +21,17 @@ class ApplicantController2 extends Controller
         return Inertia::render('Applications/Start');
     }
 
+    public function checkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $exists = \App\Models\User::where('email', $request->email)->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
 // Display all applications with full relationships.
     public function index()
     {
@@ -163,6 +174,16 @@ class ApplicantController2 extends Controller
 
     public function storeLES(Request $request)
     {
+        // Check if email belongs to a system user
+        if (\App\Models\User::where('email', $request->email)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered by a system user.'])->withInput();
+        }
+
+        // Check if alt_email belongs to a system user
+        if ($request->alt_email && \App\Models\User::where('email', $request->alt_email)->exists()) {
+            return back()->withErrors(['alt_email' => 'This alternate email is already registered by a system user.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
@@ -429,6 +450,16 @@ class ApplicantController2 extends Controller
 
     public function storeJHS(Request $request)
     {
+        // Check if email belongs to a system user
+        if (\App\Models\User::where('email', $request->email)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered by a system user.'])->withInput();
+        }
+
+        // Check if alt_email belongs to a system user
+        if ($request->alt_email && \App\Models\User::where('email', $request->alt_email)->exists()) {
+            return back()->withErrors(['alt_email' => 'This alternate email is already registered by a system user.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
@@ -696,6 +727,16 @@ class ApplicantController2 extends Controller
 
     public function storeSHS(Request $request)
     {
+        // Check if email belongs to a system user
+        if (\App\Models\User::where('email', $request->email)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered by a system user.'])->withInput();
+        }
+
+        // Check if alt_email belongs to a system user
+        if ($request->alt_email && \App\Models\User::where('email', $request->alt_email)->exists()) {
+            return back()->withErrors(['alt_email' => 'This alternate email is already registered by a system user.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {

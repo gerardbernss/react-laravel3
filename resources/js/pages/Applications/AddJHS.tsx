@@ -1353,6 +1353,27 @@ export default function AddApplicant() {
                                                                             {...field}
                                                                             disabled={emailVerified}
                                                                             className={`flex-1 ${emailVerified ? 'border-green-500 bg-green-50' : ''}`}
+                                                                            onBlur={async (e) => {
+                                                                                field.onBlur();
+                                                                                const email = e.target.value;
+                                                                                if (email && /.+@.+\..+/.test(email) && !emailVerified) {
+                                                                                    try {
+                                                                                        const response = await axios.post('/applications/check-email', {
+                                                                                            email,
+                                                                                        });
+                                                                                        if (response.data.exists) {
+                                                                                            form.setError('email', {
+                                                                                                type: 'manual',
+                                                                                                message: 'This email is already registered by a system user.',
+                                                                                            });
+                                                                                        } else {
+                                                                                            form.clearErrors('email');
+                                                                                        }
+                                                                                    } catch (error) {
+                                                                                        console.error('Error checking email', error);
+                                                                                    }
+                                                                                }
+                                                                            }}
                                                                         />
                                                                     </FormControl>
                                                                     <button
@@ -1458,6 +1479,27 @@ export default function AddApplicant() {
                                                                             {...field}
                                                                             disabled={altEmailVerified}
                                                                             className={`flex-1 ${altEmailVerified ? 'border-green-500 bg-green-50' : ''}`}
+                                                                            onBlur={async (e) => {
+                                                                                field.onBlur();
+                                                                                const email = e.target.value;
+                                                                                if (email && /.+@.+\..+/.test(email) && !altEmailVerified) {
+                                                                                    try {
+                                                                                        const response = await axios.post('/applications/check-email', {
+                                                                                            email,
+                                                                                        });
+                                                                                        if (response.data.exists) {
+                                                                                            form.setError('alt_email', {
+                                                                                                type: 'manual',
+                                                                                                message: 'This email is already registered by a system user.',
+                                                                                            });
+                                                                                        } else {
+                                                                                            form.clearErrors('alt_email');
+                                                                                        }
+                                                                                    } catch (error) {
+                                                                                        console.error('Error checking email', error);
+                                                                                    }
+                                                                                }
+                                                                            }}
                                                                         />
                                                                     </FormControl>
                                                                     <button

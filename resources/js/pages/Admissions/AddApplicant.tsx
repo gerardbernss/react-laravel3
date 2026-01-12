@@ -14,6 +14,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Add New Applicant', href: '/admissions/applicants/create' }];
 
@@ -966,7 +967,29 @@ export default function AddApplicant() {
                                                         <FormItem>
                                                             <LabelWithTooltip label="Email Address *" tooltip="Enter your email." />
                                                             <FormControl>
-                                                                <Input placeholder="" {...field} />
+                                                                <Input
+                                                                    placeholder=""
+                                                                    {...field}
+                                                                    onBlur={async (e) => {
+                                                                        field.onBlur(); // call original onBlur
+                                                                        const email = e.target.value;
+                                                                        if (email && /.+@.+\..+/.test(email)) {
+                                                                            try {
+                                                                                const response = await axios.post('/applications/check-email', { email });
+                                                                                if (response.data.exists) {
+                                                                                    form.setError('email', {
+                                                                                        type: 'manual',
+                                                                                        message: 'This email is already registered by a system user.',
+                                                                                    });
+                                                                                } else {
+                                                                                    form.clearErrors('email');
+                                                                                }
+                                                                            } catch (error) {
+                                                                                console.error('Error checking email', error);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -982,7 +1005,29 @@ export default function AddApplicant() {
                                                                 tooltip="Enter your alternate email."
                                                             />
                                                             <FormControl>
-                                                                <Input placeholder="" {...field} />
+                                                                <Input
+                                                                    placeholder=""
+                                                                    {...field}
+                                                                    onBlur={async (e) => {
+                                                                        field.onBlur();
+                                                                        const email = e.target.value;
+                                                                        if (email && /.+@.+\..+/.test(email)) {
+                                                                            try {
+                                                                                const response = await axios.post('/applications/check-email', { email });
+                                                                                if (response.data.exists) {
+                                                                                    form.setError('alt_email', {
+                                                                                        type: 'manual',
+                                                                                        message: 'This email is already registered by a system user.',
+                                                                                    });
+                                                                                } else {
+                                                                                    form.clearErrors('alt_email');
+                                                                                }
+                                                                            } catch (error) {
+                                                                                console.error('Error checking email', error);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
