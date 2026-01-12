@@ -64,6 +64,45 @@ class ApplicantController2 extends Controller
         return response()->json($application);
     }
 
+    /**
+     * Check if email or alt_email exists in users or applicants
+     */
+    public function checkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string',
+        ]);
+
+        $email = trim($request->email);
+
+        // Check System Users
+        if (\App\Models\User::where('email', $email)->exists()) {
+             return response()->json([
+                'exists' => true,
+                'source' => 'users',
+                'message' => 'This email is already associated with a system user account.'
+            ]);
+        }
+
+        // Check Applicants (Main and Alt)
+        $applicantExists = ApplicantPersonalData::where('email', $email)
+            ->orWhere('alt_email', $email)
+            ->exists();
+
+        if ($applicantExists) {
+             return response()->json([
+                'exists' => true,
+                'source' => 'applicants',
+                'message' => 'This email is already associated with an applicant record.'
+            ]);
+        }
+
+        return response()->json([
+            'exists' => false,
+            'message' => 'Email is available.'
+        ]);
+    }
+
 /**
  * Show LES application form
  */
