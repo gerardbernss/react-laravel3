@@ -130,6 +130,11 @@ class ApplicantController extends Controller
     // Store a new application (ADMIN VERSION - includes manual application number)
     public function store(Request $request)
     {
+        // Check if email belongs to a system user
+        if (\App\Models\User::where('email', $request->email)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered by a system user.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
@@ -405,16 +410,22 @@ class ApplicantController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Load application first to check current email
+        $application = ApplicantApplicationInfo::with([
+            'personalData.familyBackground',
+            'personalData.siblings',
+            'educationalBackground',
+            'documents',
+        ])->findOrFail($id);
+
+        // Check if email is being changed and if it belongs to a system user
+        if ($request->email !== $application->personalData->email && \App\Models\User::where('email', $request->email)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered by a system user.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
-            $application = ApplicantApplicationInfo::with([
-                'personalData.familyBackground',
-                'personalData.siblings',
-                'educationalBackground',
-                'documents',
-            ])->findOrFail($id);
-
             // STEP 1: Update Personal Data
             $personalPayload = [
                 'last_name'                => $request->last_name,
