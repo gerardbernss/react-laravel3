@@ -2622,28 +2622,46 @@ export default function AddApplicant() {
                                                                                 className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
                                                                             >
                                                                                 {/* Grade Level */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Grade Level"
-                                                                                        {...form.register(`siblings.${index}.sibling_grade_level`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`siblings.${index}.sibling_grade_level`}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormControl>
+                                                                                                <Input placeholder="Grade Level" {...field} />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
 
                                                                                 {/* Full Name */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Full Name"
-                                                                                        {...form.register(`siblings.${index}.sibling_full_name`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`siblings.${index}.sibling_full_name`}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormControl>
+                                                                                                <Input placeholder="Full Name" {...field} />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
 
                                                                                 {/* ID Number */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="ID Number"
-                                                                                        {...form.register(`siblings.${index}.sibling_id_number`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`siblings.${index}.sibling_id_number`}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormControl>
+                                                                                                <Input placeholder="ID Number" {...field} />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
 
                                                                                 {/* Remove Button */}
                                                                                 <Button
