@@ -45,36 +45,36 @@ export default function Start() {
         <div className="min-h-screen bg-[#f5f5f5]">
             {/* Header */}
             <header className="bg-[#073066] text-white shadow-md">
-                <div className="mx-auto flex max-w-[1800px] items-center justify-between px-10 py-6">
+                <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row md:px-10">
                     {/* Left Side: Logo + University Name */}
-                    <div className="flex items-center gap-4">
-                        <img src="/images/slu-logo2.png" alt="SLU Logo" className="h-30 w-30 object-contain" />
+                    <div className="flex flex-col items-center gap-4 text-center md:flex-row md:text-left">
+                        <img src="/images/slu-logo2.png" alt="SLU Logo" className="h-20 w-20 object-contain md:h-30 md:w-30" />
                         <div className="flex flex-col">
-                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-5xl text-white">
+                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-3xl text-white md:text-5xl">
                                 Saint Louis University
                             </h1>
-                            <p className="mt-1 text-gray-200">Baguio City, Philippines</p>
+                            <p className="mt-1 text-sm text-gray-200 md:text-base">Baguio City, Philippines</p>
                         </div>
                     </div>
 
                     {/* Rightmost Text */}
-                    <p className="text-2xl whitespace-nowrap text-white">Online Application</p>
+                    <p className="text-xl font-semibold text-white md:text-2xl">Online Application</p>
                 </div>
             </header>
 
             {/* Main Content */}
-            <div className="mx-auto w-full max-w-[1400px] px-10 py-16">
+            <div className="mx-auto w-full max-w-[1400px] px-4 py-8 md:px-10 md:py-16">
                 {/* Welcome Section */}
                 <div className="mb-12 text-center">
-                    <h1 className="mb-4 text-3xl font-bold text-[#073066]">Welcome to SLU Online Application</h1>
-                    <p className="text-md text-gray-600">Please select the appropriate application type to begin your enrollment process</p>
+                    <h1 className="mb-4 text-2xl font-bold text-[#073066] md:text-3xl">Welcome to SLU Online Application</h1>
+                    <p className="text-sm text-gray-600 md:text-base">Please select the appropriate application type to begin your enrollment process</p>
                 </div>
 
                 {/* Selection Cards */}
                 <div className="mb-16">
-                    <h3 className="mb-6 text-center text-2xl font-semibold text-[#073066]">Apply as:</h3>
+                    <h3 className="mb-6 text-center text-xl font-semibold text-[#073066] md:text-2xl">Apply as:</h3>
 
-                    <div className="grid grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                         {applicationTypes.map((type) => (
                             <button
                                 key={type.id}
@@ -146,42 +146,42 @@ export default function Start() {
 
             {/* Footer */}
             <footer className="mt-12 bg-white shadow-md">
-                <div className="mx-auto flex max-w-[1200px] items-center justify-between px-10 py-15">
+                <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-8 px-4 py-10 md:flex-row md:items-start md:px-10">
                     {/* Left group: Logo + Text */}
-                    <div className="flex items-start gap-6">
-                        <img src="/images/slu-logo.png" alt="SLU Logo" className="h-40 w-40 object-contain" />
+                    <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-start md:text-left">
+                        <img src="/images/slu-logo.png" alt="SLU Logo" className="h-32 w-32 object-contain md:h-40 md:w-40" />
 
                         <div className="flex flex-col gap-2">
-                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-4xl text-[#073066]">
+                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-2xl text-[#073066] md:text-4xl">
                                 Saint Louis University
                             </h1>
 
-                            <p className="flex items-center text-[#073066]">
-                                <MapPin className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <MapPin className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 Upper Bonifacio, Baguio City, Benguet, Philippines 2600
                             </p>
 
-                            <p className="flex items-center text-[#073066]">
-                                <Mail className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <Mail className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 admissions@slu.edu.ph
                             </p>
 
-                            <p className="flex items-center text-[#073066]">
-                                <Phone className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <Phone className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 (74) 442 1234
                             </p>
 
-                            <p className="flex items-center text-[#073066]">
-                                <Facebook className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <Facebook className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 @SaintLouisUniversity
                             </p>
                         </div>
                     </div>
 
                     {/* Right side: copyright (stacked) */}
-                    <div className="flex flex-col items-end">
-                        <p className="whitespace-nowrap text-[#073066]">Copyright © 2024 Saint Louis University</p>
-                        <p className="whitespace-nowrap text-[#073066]">All rights reserved.</p>
+                    <div className="flex flex-col items-center text-center md:items-end md:text-right">
+                        <p className="text-[#073066]">Copyright © 2024 Saint Louis University</p>
+                        <p className="text-[#073066]">All rights reserved.</p>
                     </div>
                 </div>
             </footer>
