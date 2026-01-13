@@ -168,6 +168,14 @@ const applicantFormSchema = z.object({
     birth_certificate: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' }),
     latest_report_card_front: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' }),
     latest_report_card_back: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' }),
+}).superRefine((data, ctx) => {
+    if (data.has_sibling && (!data.siblings || data.siblings.length === 0)) {
+        ctx.addIssue({
+            path: ['siblings'],
+            message: 'Please provide at least one sibling.',
+            code: z.ZodIssueCode.custom,
+        });
+    }
 });
 
 type ApplicantFormValues = z.infer<typeof applicantFormSchema>;

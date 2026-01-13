@@ -219,6 +219,14 @@ const applicantFormSchema = z
                 code: z.ZodIssueCode.custom,
             });
         }
+
+        if (data.has_sibling && (!data.siblings || data.siblings.length === 0)) {
+            ctx.addIssue({
+                path: ['siblings'],
+                message: 'Please provide at least one sibling.',
+                code: z.ZodIssueCode.custom,
+            });
+        }
     });
 
 type ApplicantFormValues = z.infer<typeof applicantFormSchema>;
