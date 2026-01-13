@@ -225,7 +225,7 @@ const FormNavigation = () => {
 
     return (
         <div className="sticky top-0 z-50 mb-4 w-full rounded-lg bg-white shadow-md">
-            <div className="flex items-center justify-between overflow-x-auto px-10 py-4">
+            <div className="flex items-center justify-between overflow-x-auto px-4 py-4 md:px-10">
                 {navItems.map((item, index) => (
                     <div key={item.id} className="flex items-center">
                         {/* Step Circle */}
@@ -675,30 +675,30 @@ export default function AddApplicant() {
             <Head title="Application" />
             {/* Header */}
             <header className="bg-[#073066] text-white shadow-md">
-                <div className="mx-auto flex max-w-[1800px] items-center justify-between px-10 py-6">
+                <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row md:px-10">
                     {/* Left Side: Logo + University Name */}
-                    <div className="flex items-center gap-4">
-                        <img src="/images/slu-logo2.png" alt="SLU Logo" className="h-30 w-30 object-contain" />
+                    <div className="flex flex-col items-center gap-4 text-center md:flex-row md:text-left">
+                        <img src="/images/slu-logo2.png" alt="SLU Logo" className="h-20 w-20 object-contain md:h-30 md:w-30" />
 
                         <div className="flex flex-col">
-                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-5xl text-white">
+                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-3xl text-white md:text-5xl">
                                 Saint Louis University
                             </h1>
-                            <p className="mt-1 text-gray-200">Baguio City, Philippines</p>
+                            <p className="mt-1 text-sm text-gray-200 md:text-base">Baguio City, Philippines</p>
                         </div>
                     </div>
 
                     {/* Rightmost Text */}
-                    <p className="text-2xl whitespace-nowrap text-white">JHS Online Application</p>
+                    <p className="text-xl font-semibold text-white md:text-2xl">JHS Online Application</p>
                 </div>
             </header>
 
-            <div className="mx-auto w-full max-w-[1500px] rounded-lg p-10">
+            <div className="mx-auto w-full max-w-[1500px] rounded-lg p-4 md:p-10">
                 {/* Option 2: Modern Card Style */}
 
                 <div className="bg-linear-to-r text-[#073066]">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold">Student Application</h1>
+                        <h1 className="text-2xl font-bold md:text-3xl">Student Application</h1>
                     </div>
                 </div>
                 <div className="py-6">
@@ -728,7 +728,7 @@ export default function AddApplicant() {
                                             <h2 className="text-xl font-bold text-white">Application Information</h2>
                                         </div>
                                         <div className="space-y-6 px-4">
-                                            <div className="grid grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                                 <FormField
                                                     control={form.control}
                                                     name="application_date"
@@ -2555,7 +2555,7 @@ export default function AddApplicant() {
                                         </div>
 
                                         <div className="px-4">
-                                            <div className="mt-4 grid grid-cols-1 gap-6 px-4">
+                                            <div className="mt-4 grid grid-cols-1 gap-6 px-0 md:px-4">
                                                 <FormField
                                                     control={form.control}
                                                     name="has_sibling"
@@ -2619,7 +2619,7 @@ export default function AddApplicant() {
                                                                         {form.watch('siblings')?.map((sibling, index) => (
                                                                             <div
                                                                                 key={index}
-                                                                                className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
+                                                                                className="mb-4 grid grid-cols-1 gap-4 border-b pb-4 md:mb-2 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center md:gap-3 md:border-b-0 md:pb-0"
                                                                             >
                                                                                 {/* Grade Level */}
                                                                                 <FormControl>
@@ -2646,19 +2646,21 @@ export default function AddApplicant() {
                                                                                 </FormControl>
 
                                                                                 {/* Remove Button */}
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    onClick={() => {
-                                                                                        const updated = [...(form.getValues('siblings') ?? [])];
-                                                                                        updated.splice(index, 1);
-                                                                                        form.setValue('siblings', updated);
-                                                                                    }}
-                                                                                    className="text-red-500 hover:text-red-700"
-                                                                                >
-                                                                                    <Trash2 className="h-4 w-4" />
-                                                                                </Button>
+                                                                                <div className="flex justify-end md:block">
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="ghost"
+                                                                                        size="icon"
+                                                                                        onClick={() => {
+                                                                                            const updated = [...(form.getValues('siblings') ?? [])];
+                                                                                            updated.splice(index, 1);
+                                                                                            form.setValue('siblings', updated);
+                                                                                        }}
+                                                                                        className="text-red-500 hover:text-red-700"
+                                                                                    >
+                                                                                        <Trash2 className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                </div>
                                                                             </div>
                                                                         ))}
 
@@ -2712,9 +2714,9 @@ export default function AddApplicant() {
 
                                                             <div className="mt-3 space-y-4">
                                                                 {(form.watch('schools') || []).map((school, index) => (
-                                                                    <div key={index} className="relative mb-4 rounded-lg border p-4 pr-12 shadow-sm">
+                                                                    <div key={index} className="relative mb-4 rounded-lg border p-4 shadow-sm md:pr-12">
                                                                         {/* Row 1: School Name, School Address */}
-                                                                        <div className="grid grid-cols-2 gap-3">
+                                                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                                                             <FormControl>
                                                                                 <Input
                                                                                     placeholder="School Name"
@@ -2730,7 +2732,7 @@ export default function AddApplicant() {
                                                                         </div>
 
                                                                         {/* Row 2: From Grade, To Grade, From Year, To Year */}
-                                                                        <div className="mt-3 grid grid-cols-4 gap-3">
+                                                                        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
                                                                             <FormControl>
                                                                                 <Input
                                                                                     placeholder="From Grade"
@@ -2758,7 +2760,7 @@ export default function AddApplicant() {
                                                                         </div>
 
                                                                         {/* Row 3: Honors, Average, Rank, Size */}
-                                                                        <div className="mt-3 grid grid-cols-4 gap-3">
+                                                                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
                                                                             <FormControl>
                                                                                 <Input
                                                                                     placeholder="Honors and Awards"
@@ -2785,20 +2787,22 @@ export default function AddApplicant() {
                                                                             </FormControl>
                                                                         </div>
 
-                                                                        {/* Remove Button (right side, vertically centered) */}
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => {
-                                                                                const updated = [...(form.getValues('schools') || [])];
-                                                                                updated.splice(index, 1);
-                                                                                form.setValue('schools', updated);
-                                                                            }}
-                                                                            className="absolute top-1/2 right-2 -translate-y-1/2 text-red-500 hover:text-red-700"
-                                                                        >
-                                                                            <Trash2 className="h-5 w-5" />
-                                                                        </Button>
+                                                                        {/* Remove Button */}
+                                                                        <div className="mt-3 flex justify-end md:absolute md:top-1/2 md:right-2 md:mt-0 md:-translate-y-1/2">
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() => {
+                                                                                    const updated = [...(form.getValues('schools') || [])];
+                                                                                    updated.splice(index, 1);
+                                                                                    form.setValue('schools', updated);
+                                                                                }}
+                                                                                className="text-red-500 hover:text-red-700"
+                                                                            >
+                                                                                <Trash2 className="h-5 w-5" />
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
                                                                 ))}
 
@@ -3296,7 +3300,7 @@ export default function AddApplicant() {
                                     </div>
                                     <div className="mt-10 border-b pb-6">
                                         <div className="space-y-6">
-                                            <div className="grid grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                                 <FormField
                                                     control={form.control}
                                                     name="accomplished_by_name"
@@ -3404,42 +3408,42 @@ export default function AddApplicant() {
             </div>
 
             <footer className="mt-10 bg-white shadow-md">
-                <div className="mx-auto flex max-w-[1200px] items-center justify-between px-10 py-15">
+                <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-8 px-4 py-10 md:flex-row md:items-start md:px-10">
                     {/* Left group: Logo + Text */}
-                    <div className="flex items-start gap-6">
-                        <img src="/images/slu-logo.png" alt="SLU Logo" className="h-40 w-40 object-contain" />
+                    <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-start md:text-left">
+                        <img src="/images/slu-logo.png" alt="SLU Logo" className="h-32 w-32 object-contain md:h-40 md:w-40" />
 
                         <div className="flex flex-col gap-2">
-                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-4xl text-[#073066]">
+                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-2xl text-[#073066] md:text-4xl">
                                 Saint Louis University
                             </h1>
 
-                            <p className="flex items-center text-[#073066]">
-                                <MapPin className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <MapPin className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 Upper Bonifacio, Baguio City, Benguet, Philippines 2600
                             </p>
 
-                            <p className="flex items-center text-[#073066]">
-                                <Mail className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <Mail className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 admissions@slu.edu.ph
                             </p>
 
-                            <p className="flex items-center text-[#073066]">
-                                <Phone className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <Phone className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 (74) 442 1234
                             </p>
 
-                            <p className="flex items-center text-[#073066]">
-                                <Facebook className="mr-2 inline-block h-5 w-5" />
+                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                                <Facebook className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 @SaintLouisUniversity
                             </p>
                         </div>
                     </div>
 
                     {/* Right side: copyright (stacked) */}
-                    <div className="flex flex-col items-end">
-                        <p className="whitespace-nowrap text-[#073066]">Copyright © 2024 Saint Louis University</p>
-                        <p className="whitespace-nowrap text-[#073066]">All rights reserved.</p>
+                    <div className="flex flex-col items-center text-center md:items-end md:text-right">
+                        <p className="text-[#073066]">Copyright © 2024 Saint Louis University</p>
+                        <p className="text-[#073066]">All rights reserved.</p>
                     </div>
                 </div>
             </footer>
