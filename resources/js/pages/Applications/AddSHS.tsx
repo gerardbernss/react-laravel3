@@ -3392,28 +3392,46 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                                 className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
                                                                             >
                                                                                 {/* Grade Level */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Grade Level"
-                                                                                        {...form.register(`siblings.${index}.sibling_grade_level`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`siblings.${index}.sibling_grade_level`}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormControl>
+                                                                                                <Input placeholder="Grade Level" {...field} />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
 
                                                                                 {/* Full Name */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Full Name"
-                                                                                        {...form.register(`siblings.${index}.sibling_full_name`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`siblings.${index}.sibling_full_name`}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormControl>
+                                                                                                <Input placeholder="Full Name" {...field} />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
 
                                                                                 {/* ID Number */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="ID Number"
-                                                                                        {...form.register(`siblings.${index}.sibling_id_number`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <FormField
+                                                                                    control={form.control}
+                                                                                    name={`siblings.${index}.sibling_id_number`}
+                                                                                    render={({ field }) => (
+                                                                                        <FormItem>
+                                                                                            <FormControl>
+                                                                                                <Input placeholder="ID Number" {...field} />
+                                                                                            </FormControl>
+                                                                                            <FormMessage />
+                                                                                        </FormItem>
+                                                                                    )}
+                                                                                />
 
                                                                                 {/* Remove Button */}
                                                                                 <Button
@@ -3485,74 +3503,134 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                     <div key={index} className="relative mb-4 rounded-lg border p-4 pr-12 shadow-sm">
                                                                         {/* Row 1: School Name, School Address */}
                                                                         <div className="grid grid-cols-2 gap-3">
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="School Name"
-                                                                                    {...form.register(`schools.${index}.school_name`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="School Address"
-                                                                                    {...form.register(`schools.${index}.school_address`)}
-                                                                                />
-                                                                            </FormControl>
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.school_name`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="School Name" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.school_address`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="School Address" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
                                                                         </div>
 
                                                                         {/* Row 2: From Grade, To Grade, From Year, To Year */}
                                                                         <div className="mt-3 grid grid-cols-4 gap-3">
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="From Grade"
-                                                                                    {...form.register(`schools.${index}.from_grade`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="To Grade"
-                                                                                    {...form.register(`schools.${index}.to_grade`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="From Year"
-                                                                                    {...form.register(`schools.${index}.from_year`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="To Year"
-                                                                                    {...form.register(`schools.${index}.to_year`)}
-                                                                                />
-                                                                            </FormControl>
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.from_grade`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="From Grade" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.to_grade`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="To Grade" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.from_year`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="From Year" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.to_year`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="To Year" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
                                                                         </div>
 
                                                                         {/* Row 3: Honors, Average, Rank, Size */}
                                                                         <div className="mt-3 grid grid-cols-4 gap-3">
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="Honors and Awards"
-                                                                                    {...form.register(`schools.${index}.honors_awards`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="General Average"
-                                                                                    {...form.register(`schools.${index}.general_average`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="Class Rank"
-                                                                                    {...form.register(`schools.${index}.class_rank`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="Class Size"
-                                                                                    {...form.register(`schools.${index}.class_size`)}
-                                                                                />
-                                                                            </FormControl>
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.honors_awards`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="Honors and Awards" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.general_average`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="General Average" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.class_rank`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="Class Rank" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.class_size`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="Class Size" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
                                                                         </div>
 
                                                                         {/* Remove Button (right side, vertically centered) */}
