@@ -627,7 +627,7 @@ class ApplicantController extends Controller
     public function destroy($id)
     {
         DB::transaction(function () use ($id) {
-            $application = ApplicantApplicationInfo::with(['documents', 'educationalBackground'])->findOrFail($id);
+            $application = ApplicantApplicationInfo::with(['documents', 'educationalBackground', 'personalData'])->findOrFail($id);
 
             // Delete document files from storage
             if ($application->documents) {
@@ -646,11 +646,35 @@ class ApplicantController extends Controller
                 $application->documents()->delete();
             }
 
-            // Delete educational backgrounds
-            $application->educationalBackground()->delete();
+            // Check if Personal Data should be deleted
+            $personalData = $application->personalData;
 
-            // Delete parent application
-            $application->delete();
+            // Count other applications for this person
+            $otherAppsCount = 0;
+            if ($personalData) {
+                $otherAppsCount = $personalData->applications()->where('id', '!=', $id)->count();
+            }
+
+            if ($personalData && $otherAppsCount === 0) {
+                // If this is the only application, delete the person.
+                // Cascading deletes will handle:
+                // - Family Background
+                // - Siblings
+                // - Student record
+                // - This Application Info
+                // - Educational Background (via cascade from Application Info)
+
+                $personalData->delete();
+            } else {
+                // If there are other applications, or no personal data attached,
+                // just delete this application and its direct children.
+
+                // Delete educational backgrounds
+                $application->educationalBackground()->delete();
+
+                // Delete parent application
+                $application->delete();
+            }
         });
 
         return redirect()

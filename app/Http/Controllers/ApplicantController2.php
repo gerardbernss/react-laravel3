@@ -197,8 +197,36 @@ class ApplicantController2 extends Controller
         ]);
     }
 
+    private function isDuplicateApplication(Request $request): bool
+    {
+        $firstName  = Str::lower(trim((string) $request->first_name));
+        $lastName   = Str::lower(trim((string) $request->last_name));
+        $middleName = $request->middle_name ? Str::lower(trim((string) $request->middle_name)) : null;
+        $birthDate  = $request->date_of_birth;
+        $schoolYear = trim((string) $request->school_year);
+
+        return ApplicantPersonalData::whereRaw('LOWER(first_name) = ?', [$firstName])
+            ->whereRaw('LOWER(last_name) = ?', [$lastName])
+            ->where(function ($query) use ($middleName) {
+                if ($middleName) {
+                    $query->whereRaw('LOWER(middle_name) = ?', [$middleName]);
+                } else {
+                    $query->whereNull('middle_name')->orWhere('middle_name', '');
+                }
+            })
+            ->where('date_of_birth', $birthDate)
+            ->whereHas('applications', function ($query) use ($schoolYear) {
+                $query->where('school_year', $schoolYear);
+            })
+            ->exists();
+    }
+
     public function storeLES(Request $request)
     {
+        if ($this->isDuplicateApplication($request)) {
+            return back()->withErrors(['duplicate_application' => 'You have already submitted an application.'])->withInput();
+        }
+
         DB::beginTransaction();
 
         try {
