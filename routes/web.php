@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admissions/applicants/{id}/show', [ApplicantController::class, 'show'])->name('applicants.show');
         Route::get('/admissions/applicants/{id}/edit', [ApplicantController::class, 'edit'])->name('applicants.edit');
         Route::put('/admissions/applicants/{id}', [ApplicantController::class, 'update'])->name('applicants.update');
+        Route::delete('/admissions/applicants/bulk-delete', [ApplicantController::class, 'bulkDestroy'])->name('applicants.bulk-destroy');
         Route::delete('/admissions/applicants/{id}', [ApplicantController::class, 'destroy'])->name('applicants.destroy');
         Route::get('/view-document/{path}', function ($path) {
             // Verify user is admin

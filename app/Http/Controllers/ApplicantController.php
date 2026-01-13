@@ -627,35 +627,82 @@ class ApplicantController extends Controller
     public function destroy($id)
     {
         DB::transaction(function () use ($id) {
-            $application = ApplicantApplicationInfo::with(['documents', 'educationalBackground'])->findOrFail($id);
-
-            // Delete document files from storage
-            if ($application->documents) {
-                $fileFields = [
-                    'certificate_of_enrollment',
-                    'birth_certificate',
-                    'latest_report_card_front',
-                    'latest_report_card_back',
-                ];
-
-                foreach ($fileFields as $field) {
-                    if (! empty($application->documents->$field)) {
-                        Storage::disk('public')->delete($application->documents->$field);
-                    }
-                }
-                $application->documents()->delete();
-            }
-
-            // Delete educational backgrounds
-            $application->educationalBackground()->delete();
-
-            // Delete parent application
-            $application->delete();
+            $this->deleteApplicant($id);
         });
 
         return redirect()
             ->route('applicants.index')
             ->with('success', 'Applicant deleted successfully');
+    }
 
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:applicant_application_info,id',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            foreach ($request->ids as $id) {
+                $this->deleteApplicant($id);
+            }
+        });
+
+        return redirect()
+            ->route('applicants.index')
+            ->with('success', count($request->ids) . ' applicants deleted successfully.');
+    }
+
+    private function deleteApplicant($id)
+    {
+        $application = ApplicantApplicationInfo::with(['documents', 'educationalBackground', 'personalData'])->find($id);
+
+        if (! $application) {
+            return;
+        }
+
+        // Delete document files from storage
+        if ($application->documents) {
+            $fileFields = [
+                'certificate_of_enrollment',
+                'birth_certificate',
+                'latest_report_card_front',
+                'latest_report_card_back',
+            ];
+
+            foreach ($fileFields as $field) {
+                if (! empty($application->documents->$field)) {
+                    Storage::disk('public')->delete($application->documents->$field);
+                }
+            }
+            $application->documents()->delete();
+        }
+
+        // Check if Personal Data should be deleted
+        $personalData = $application->personalData;
+
+        // Count other applications for this person
+        $otherAppsCount = 0;
+        if ($personalData) {
+            $otherAppsCount = $personalData->applications()->where('id', '!=', $id)->count();
+        }
+
+        if ($personalData && $otherAppsCount === 0) {
+            // If this is the only application, delete the person.
+            // Cascading deletes will handle:
+            // - Family Background
+            // - Siblings
+            // - Student record
+            // - This Application Info
+            // - Educational Background (via cascade from Application Info)
+
+            $personalData->delete();
+        } else {
+            // If there are other applications, or no personal data attached,
+            // just delete this application and its direct children.
+
+            $application->educationalBackground()->delete();
+            $application->delete();
+        }
     }
 }
