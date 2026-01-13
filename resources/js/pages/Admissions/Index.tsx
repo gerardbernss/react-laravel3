@@ -121,9 +121,16 @@ export default function Index({ applications }: Props) {
 
     const handleBulkDelete = () => {
         if (confirm(`Delete ${selectedRows.length} selected items?`)) {
-            // Implement bulk delete logic here
-            toast.success(`${selectedRows.length} applicants deleted successfully!`);
-            setSelectedRows([]);
+            router.delete(route('applicants.bulk-destroy'), {
+                data: { ids: selectedRows },
+                onSuccess: () => {
+                    toast.success(`${selectedRows.length} applicants deleted successfully!`);
+                    setSelectedRows([]);
+                },
+                onError: () => {
+                    toast.error('Failed to delete selected applicants. Please try again.');
+                },
+            });
         }
     };
 
