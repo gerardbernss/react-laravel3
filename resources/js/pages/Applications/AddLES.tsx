@@ -3420,80 +3420,97 @@ that the student is fit to attend school, along with a medical certificate issue
 
                                                             {/* Dynamic Siblings Table */}
                                                             {field.value === true && (
-                                                                <div className="mt-4 rounded-lg border p-4 shadow-sm">
-                                                                    <LabelWithTooltip
-                                                                        label="Siblings Currently Enrolled or Will Enroll"
-                                                                        tooltip="Provide the details of each sibling."
-                                                                    />
-
-                                                                    <div className="mt-3">
-                                                                        {form.watch('siblings')?.map((sibling, index) => (
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name="siblings"
+                                                                    render={({ field: siblingsField }) => (
+                                                                        <FormItem>
                                                                             <div
-                                                                                key={index}
-                                                                                className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
+                                                                                className={`mt-4 rounded-lg border p-4 shadow-sm ${form.formState.errors.siblings ? 'border-red-500' : ''}`}
                                                                             >
-                                                                                {/* Grade Level */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Grade Level"
-                                                                                        {...form.register(`siblings.${index}.sibling_grade_level`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <LabelWithTooltip
+                                                                                    label="Siblings Currently Enrolled or Will Enroll"
+                                                                                    tooltip="Provide the details of each sibling."
+                                                                                />
 
-                                                                                {/* Full Name */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Full Name"
-                                                                                        {...form.register(`siblings.${index}.sibling_full_name`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <div className="mt-3">
+                                                                                    {siblingsField.value?.map((sibling, index) => (
+                                                                                        <div
+                                                                                            key={index}
+                                                                                            className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
+                                                                                        >
+                                                                                            {/* Grade Level */}
+                                                                                            <FormControl>
+                                                                                                <Input
+                                                                                                    placeholder="Grade Level"
+                                                                                                    {...form.register(
+                                                                                                        `siblings.${index}.sibling_grade_level`,
+                                                                                                    )}
+                                                                                                />
+                                                                                            </FormControl>
 
-                                                                                {/* ID Number */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="ID Number"
-                                                                                        {...form.register(`siblings.${index}.sibling_id_number`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                            {/* Full Name */}
+                                                                                            <FormControl>
+                                                                                                <Input
+                                                                                                    placeholder="Full Name"
+                                                                                                    {...form.register(
+                                                                                                        `siblings.${index}.sibling_full_name`,
+                                                                                                    )}
+                                                                                                />
+                                                                                            </FormControl>
 
-                                                                                {/* Remove Button */}
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    onClick={() => {
-                                                                                        const updated = [...(form.getValues('siblings') ?? [])];
-                                                                                        updated.splice(index, 1);
-                                                                                        form.setValue('siblings', updated);
-                                                                                    }}
-                                                                                    className="text-red-500 hover:text-red-700"
-                                                                                >
-                                                                                    <Trash2 className="h-4 w-4" />
-                                                                                </Button>
+                                                                                            {/* ID Number */}
+                                                                                            <FormControl>
+                                                                                                <Input
+                                                                                                    placeholder="ID Number"
+                                                                                                    {...form.register(
+                                                                                                        `siblings.${index}.sibling_id_number`,
+                                                                                                    )}
+                                                                                                />
+                                                                                            </FormControl>
+
+                                                                                            {/* Remove Button */}
+                                                                                            <Button
+                                                                                                type="button"
+                                                                                                variant="ghost"
+                                                                                                size="icon"
+                                                                                                onClick={() => {
+                                                                                                    const updated = [...(siblingsField.value ?? [])];
+                                                                                                    updated.splice(index, 1);
+                                                                                                    siblingsField.onChange(updated);
+                                                                                                }}
+                                                                                                className="text-red-500 hover:text-red-700"
+                                                                                            >
+                                                                                                <Trash2 className="h-4 w-4" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    ))}
+
+                                                                                    {/* Add Sibling Button */}
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        onClick={() =>
+                                                                                            siblingsField.onChange([
+                                                                                                ...(siblingsField.value || []),
+                                                                                                {
+                                                                                                    sibling_full_name: '',
+                                                                                                    sibling_grade_level: '',
+                                                                                                    sibling_id_number: '',
+                                                                                                },
+                                                                                            ])
+                                                                                        }
+                                                                                        className="mt-3"
+                                                                                    >
+                                                                                        + Add Sibling
+                                                                                    </Button>
+                                                                                </div>
+                                                                                <FormMessage />
                                                                             </div>
-                                                                        ))}
-
-                                                                        {/* Add Sibling Button */}
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={() =>
-                                                                                form.setValue('siblings', [
-                                                                                    ...(form.getValues('siblings') || []),
-                                                                                    {
-                                                                                        sibling_full_name: '',
-                                                                                        sibling_grade_level: '',
-                                                                                        sibling_id_number: '',
-                                                                                    },
-                                                                                ])
-                                                                            }
-                                                                            className="mt-3"
-                                                                        >
-                                                                            + Add Sibling
-                                                                        </Button>
-                                                                    </div>
-                                                                </div>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
                                                             )}
 
                                                             <FormMessage />
