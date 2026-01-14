@@ -2201,6 +2201,54 @@ export default function AddApplicant() {
                                                                     />
 
 
+                                                                        </Box>
+                                                                    )}
+                                                                </Box>
+
+                                                                {/* Other health conditions */}
+                                                                {[
+                                                                    'Intellectual Difficulties',
+                                                                    'Communication Difficulties',
+                                                                    'Autism Spectrum',
+                                                                    'ADHD',
+                                                                    'Physical And Motor Difficulties',
+                                                                    'Medical Conditions',
+                                                                    'Major Psychological Disorders',
+                                                                ].map((option) => (
+                                                                    <FormControlLabel
+                                                                        key={option}
+                                                                        control={
+                                                                            <Checkbox
+                                                                                size="small"
+                                                                                checked={Array.isArray(field.value) && field.value.includes(option)}
+                                                                                onChange={(e) => {
+                                                                                    const checked = e.target.checked;
+                                                                                    const currentValue = Array.isArray(field.value)
+                                                                                        ? field.value
+                                                                                        : [];
+
+                                                                                    if (checked) {
+                                                                                        field.onChange([...currentValue, option]);
+                                                                                    } else {
+                                                                                        field.onChange(
+                                                                                            currentValue.filter((v: string) => v !== option),
+                                                                                        );
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        }
+                                                                        label={option}
+                                                                        sx={{
+                                                                            alignItems: 'center',
+                                                                            '& .MuiFormControlLabel-label': {
+                                                                                fontSize: '0.875rem',
+                                                                                color: '#374151',
+                                                                                lineHeight: 1.4,
+                                                                            },
+                                                                        }}
+                                                                    />
+                                                                ))}
+
                                                                 {/* Doctor's Note Checkbox - Shows when ANY health condition is checked */}
                                                                 {Array.isArray(field.value) && field.value.length > 0 && (
                                                                     <Box sx={{ gridColumn: 'span 3', mt: 2 }}>
@@ -2256,53 +2304,6 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         )}
                                                                     </Box>
                                                                 )}
-                                                                        </Box>
-                                                                    )}
-                                                                </Box>
-
-                                                                {/* Other health conditions */}
-                                                                {[
-                                                                    'Intellectual Difficulties',
-                                                                    'Communication Difficulties',
-                                                                    'Autism Spectrum',
-                                                                    'ADHD',
-                                                                    'Physical And Motor Difficulties',
-                                                                    'Medical Conditions',
-                                                                    'Major Psychological Disorders',
-                                                                ].map((option) => (
-                                                                    <FormControlLabel
-                                                                        key={option}
-                                                                        control={
-                                                                            <Checkbox
-                                                                                size="small"
-                                                                                checked={Array.isArray(field.value) && field.value.includes(option)}
-                                                                                onChange={(e) => {
-                                                                                    const checked = e.target.checked;
-                                                                                    const currentValue = Array.isArray(field.value)
-                                                                                        ? field.value
-                                                                                        : [];
-
-                                                                                    if (checked) {
-                                                                                        field.onChange([...currentValue, option]);
-                                                                                    } else {
-                                                                                        field.onChange(
-                                                                                            currentValue.filter((v: string) => v !== option),
-                                                                                        );
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        }
-                                                                        label={option}
-                                                                        sx={{
-                                                                            alignItems: 'center',
-                                                                            '& .MuiFormControlLabel-label': {
-                                                                                fontSize: '0.875rem',
-                                                                                color: '#374151',
-                                                                                lineHeight: 1.4,
-                                                                            },
-                                                                        }}
-                                                                    />
-                                                                ))}
 
                                                                 {/* "Others" checkbox */}
                                                                 <FormControlLabel
