@@ -224,10 +224,12 @@ const applicantFormSchema = z
             }),
     })
     .superRefine((data, ctx) => {
-        if (data.has_doctors_note && !data.doctors_note_file) {
+        const hasHealthConditions = Array.isArray(data.health_conditions) && data.health_conditions.length > 0;
+
+        if (hasHealthConditions && !data.doctors_note_file) {
             ctx.addIssue({
                 path: ['doctors_note_file'],
-                message: 'Doctors note file is required when the checkbox is checked.',
+                message: 'Doctors note file is required when health conditions are selected.',
                 code: z.ZodIssueCode.custom,
             });
         }
@@ -2199,9 +2201,9 @@ export default function AddApplicant() {
                                                                         }}
                                                                     />
 
-                                                                    {/* Doctor's Note Checkbox - Shows when Sensory Difficulties is checked */}
-                                                                    {Array.isArray(field.value) && field.value.includes('Sensory Difficulties') && (
-                                                                        <Box sx={{ ml: 4, mt: 1 }}>
+                                                                    {/* Doctor's Note Checkbox - Shows when ANY health condition is checked */}
+                                                                    {Array.isArray(field.value) && field.value.length > 0 && (
+                                                                        <Box sx={{ gridColumn: 'span 3', mt: 2 }}>
                                                                             <FormField
                                                                                 control={form.control}
                                                                                 name="has_doctors_note"
