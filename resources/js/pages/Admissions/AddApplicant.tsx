@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,8 +10,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
-import { ArrowLeft, HelpCircle, Trash2 } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, Trash2, User, UserPlus, Users } from 'lucide-react';
+
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -218,49 +220,52 @@ const FormNavigation = () => {
     };
 
     const navItems = [
-        { id: 'application', label: 'Application Info', icon: '📋' },
-        { id: 'personal', label: 'Personal Info', icon: '👤' },
-        { id: 'family', label: 'Family Background', icon: '👨‍👩‍👧‍👦' },
-        { id: 'siblings', label: 'Sibling Discount', icon: '👫' },
-        { id: 'education', label: 'Education', icon: '🎓' },
-        { id: 'documents', label: 'Documents', icon: '📄' },
+        { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
+        { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
+        { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
+        { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+        { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
+        { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
     ];
 
     return (
-        <div className="w-full bg-white shadow-md">
-            <div className="mx-auto max-w-[1500px] px-10">
-                <div className="flex items-center justify-between overflow-x-auto py-4">
-                    {navItems.map((item, index) => (
-                        <div key={item.id} className="flex items-center">
-                            <button
-                                onClick={() => scrollToSection(item.id)}
-                                className="flex flex-col items-center px-3 text-center transition-colors"
+        <div className="sticky top-0 z-50 mb-4 w-full rounded-lg bg-white shadow-md">
+            <div className="flex items-center justify-between overflow-x-auto px-25 py-4">
+                {navItems.map((item, index) => (
+                    <div key={item.id} className="flex items-center">
+                        {/* Step Circle */}
+                        <button onClick={() => scrollToSection(item.id)} className={`flex flex-col items-center px-3 text-center transition-colors`}>
+                            <div
+                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                                    activeSection === item.id
+                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
+                                } `}
                             >
-                                <div
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                                        activeSection === item.id ? 'border-[#073066] bg-yellow-200 text-[#073066]' : 'border-gray-300 text-gray-500'
-                                    }`}
-                                >
-                                    {item.icon}
-                                </div>
-                                <span
-                                    className={`mt-2 text-xs whitespace-nowrap ${
-                                        activeSection === item.id ? 'font-semibold text-[#073066]' : 'text-gray-600'
-                                    }`}
-                                >
-                                    {item.label}
-                                </span>
-                            </button>
-                            {index < navItems.length - 1 && <div className="mx-2 h-0.5 w-16 bg-gray-300"></div>}
-                        </div>
-                    ))}
-                </div>
+                                {item.icon}
+                            </div>
+                            <span
+                                className={`mt-2 text-xs whitespace-nowrap ${
+                                    activeSection === item.id ? 'font-semibold text-[#073066]' : 'text-gray-600'
+                                }`}
+                            >
+                                {item.label}
+                            </span>
+                        </button>
+
+                        {/* Line Between Steps (except last) */}
+                        {index < navItems.length - 1 && <div className="mx-2 h-0.5 w-31 bg-gray-300"></div>}
+                    </div>
+                ))}
             </div>
         </div>
     );
 };
 
 export default function AddApplicant() {
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'discard' | 'reset' | null>(null);
+
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
         mode: 'onChange',
@@ -383,7 +388,31 @@ export default function AddApplicant() {
         });
     };
 
+    const handleConfirmAction = () => {
+        if (pendingAction === 'discard') {
+            window.history.back();
+        } else if (pendingAction === 'reset') {
+            handleReset();
+        }
+        setShowConfirmDialog(false);
+        setPendingAction(null);
+    };
+
     const applicationDate = form.watch('application_date');
+    const allValues = form.watch();
+
+    const hasChanges = React.useMemo(() => {
+        return Object.entries(allValues).some(([key, value]) => {
+            if (['application_date', 'school_year', 'application_status'].includes(key)) {
+                return false;
+            }
+            if (Array.isArray(value)) return value.length > 0;
+            if (typeof value === 'boolean') return value === true; // Assuming default is false
+            if (value instanceof File) return true;
+            if (typeof value === 'string') return value.trim() !== '';
+            return value !== null && value !== undefined;
+        });
+    }, [allValues]);
 
     useEffect(() => {
         if (!applicationDate) return;
@@ -475,6 +504,38 @@ export default function AddApplicant() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{pendingAction === 'discard' ? 'Discard Changes' : 'Reset Form'}</DialogTitle>
+                        <DialogDescription>
+                            {pendingAction === 'discard'
+                                ? 'Are you sure you want to discard changes? All unsaved changes will be lost'
+                                : 'Are you sure you want to reset the form? All progress will be lost'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            className="mr-1 flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setShowConfirmDialog(false);
+                                setPendingAction(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
+                            type="button"
+                            onClick={handleConfirmAction}
+                        >
+                            Confirm
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className="min-h-screen bg-[#f5f5f5]">
                 <div className="sticky top-0 z-50 bg-white shadow-sm">
                     <div className="mx-auto max-w-[1500px] px-10 pt-8 pb-4">
@@ -491,7 +552,10 @@ export default function AddApplicant() {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to discard? All progress will be lost.')) {
+                                        if (hasChanges) {
+                                            setPendingAction('discard');
+                                            setShowConfirmDialog(true);
+                                        } else {
                                             window.history.back();
                                         }
                                     }}
@@ -501,10 +565,10 @@ export default function AddApplicant() {
                                 </Button>
                                 <Button
                                     type="button"
+                                    disabled={!hasChanges}
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to reset form? All progress will be lost.')) {
-                                            handleReset;
-                                        }
+                                        setPendingAction('reset');
+                                        setShowConfirmDialog(true);
                                     }}
                                     className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                                 >

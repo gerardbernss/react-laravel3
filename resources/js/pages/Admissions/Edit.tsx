@@ -211,7 +211,11 @@ const FormNavigation = () => {
                 {navItems.map((item, index) => (
                     <div key={item.id} className="flex items-center">
                         {/* Step Circle */}
-                        <button onClick={() => scrollToSection(item.id)} className={`flex flex-col items-center px-3 text-center transition-colors`}>
+                        <button
+                            type="button"
+                            onClick={() => scrollToSection(item.id)}
+                            className={`flex flex-col items-center px-3 text-center transition-colors`}
+                        >
                             <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                                     activeSection === item.id
@@ -582,6 +586,7 @@ export default function EditApplicant() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <button
+                                                type="button"
                                                 className="rounded-full p-2 transition-colors hover:bg-blue-100"
                                                 onClick={() => window.history.back()}
                                             >
