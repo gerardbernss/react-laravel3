@@ -1,6 +1,15 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
 import { FileUpload } from '@/components/file-upload';
 import { SearchableSelect } from '@/components/searchable-select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -179,7 +188,10 @@ const applicantFormSchema = z
                 }),
             )
             .optional()
-            .default([]),
+            .default([])
+            .refine((schools) => schools.every((s) => s.school_name.trim() !== '' || s.school_address.trim() !== ''), {
+                message: 'Please complete or remove empty school entries.',
+            }),
 
         //Documents - Fix the file validation
         certificate_of_enrollment: z
@@ -216,6 +228,13 @@ const applicantFormSchema = z
             ctx.addIssue({
                 path: ['doctors_note_file'],
                 message: 'Doctors note file is required when the checkbox is checked.',
+                code: z.ZodIssueCode.custom,
+            });
+        }
+        if (data.has_sibling && (!data.siblings || data.siblings.length === 0)) {
+            ctx.addIssue({
+                path: ['siblings'],
+                message: 'Enter your sibling details.',
                 code: z.ZodIssueCode.custom,
             });
         }
@@ -310,6 +329,7 @@ const FormNavigation = () => {
 
 export default function AddApplicant() {
     const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
+    const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
@@ -609,6 +629,10 @@ export default function AddApplicant() {
                 },
                 onError: (errors) => {
                     console.error('Submission errors:', errors);
+
+                    if (errors.duplicate_application) {
+                        setIsDuplicateDialogOpen(true);
+                    }
 
                     // Show first error
                     const firstError = Object.values(errors)[0];
@@ -1153,7 +1177,7 @@ export default function AddApplicant() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <LabelWithTooltip
-                                                                label="Application Date"
+                                                                label="Application Date *"
                                                                 tooltip="Select the date of your application."
                                                             />
                                                             <FormControl>
@@ -1186,7 +1210,27 @@ export default function AddApplicant() {
                                                         return (
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Grade Level *" tooltip="Choose your grade level." />
-                                                                <Select value={field.value}>
+                                                                <Select
+                                                                    onValueChange={(value) => {
+                                                                        field.onChange(value);
+                                                                        // Auto-set strand based on year level
+                                                                        const elementaryLevels = [
+                                                                            'Kindergarten',
+                                                                            'Grade 1',
+                                                                            'Grade 2',
+                                                                            'Grade 3',
+                                                                            'Grade 4',
+                                                                            'Grade 5',
+                                                                            'Grade 6',
+                                                                        ];
+                                                                        const juniorHighLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'];
+
+                                                                        if (elementaryLevels.includes(value)) {
+                                                                            form.setValue('strand', 'Laboratory Elementary School');
+                                                                        }
+                                                                    }}
+                                                                    value={field.value}
+                                                                >
                                                                     <FormControl>
                                                                         <SelectTrigger>
                                                                             <SelectValue placeholder="Select year level" />
@@ -1257,22 +1301,22 @@ export default function AddApplicant() {
                                                     render={({ field }) => {
                                                         return (
                                                             <FormItem>
-                                                                <LabelWithTooltip label="Program *" tooltip="Select your academic strand." />
+                                                                <LabelWithTooltip label="Program *" tooltip="Select your academic program." />
                                                                 <Select onValueChange={field.onChange} value={field.value}>
                                                                     <FormControl>
                                                                         <SelectTrigger>
-                                                                            <SelectValue placeholder="Select a strand" />
+                                                                            <SelectValue placeholder="Select a program" />
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
-                                                                        <SelectItem value="Accountancy, Business, and Management (ABM)">
-                                                                            Accountancy, Business, and Management (ABM)
-                                                                        </SelectItem>
-                                                                        <SelectItem value="Science, Technology, Engineering, and Mathematics (STEM)">
-                                                                            Science, Technology, Engineering, and Mathematics (STEM)
+                                                                        <SelectItem value="Accountancy, Business and Management (ABM)">
+                                                                            Accountancy, Business and Management (ABM)
                                                                         </SelectItem>
                                                                         <SelectItem value="Humanities and Social Sciences (HUMSS)">
                                                                             Humanities and Social Sciences (HUMSS)
+                                                                        </SelectItem>
+                                                                        <SelectItem value="Science, Technology, Engineering and Mathematics (STEM)">
+                                                                            Science, Technology, Engineering and Mathematics (STEM)
                                                                         </SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
@@ -3379,80 +3423,118 @@ that the student is fit to attend school, along with a medical certificate issue
 
                                                             {/* Dynamic Siblings Table */}
                                                             {field.value === true && (
-                                                                <div className="mt-4 rounded-lg border p-4 shadow-sm">
-                                                                    <LabelWithTooltip
-                                                                        label="Siblings Currently Enrolled or Will Enroll"
-                                                                        tooltip="Provide the details of each sibling."
-                                                                    />
-
-                                                                    <div className="mt-3">
-                                                                        {form.watch('siblings')?.map((sibling, index) => (
+                                                                <FormField
+                                                                    control={form.control}
+                                                                    name="siblings"
+                                                                    render={({ field: siblingsField }) => (
+                                                                        <FormItem>
                                                                             <div
-                                                                                key={index}
-                                                                                className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
+                                                                                className={`mt-4 rounded-lg border p-4 shadow-sm ${form.formState.errors.siblings ? 'border-red-500' : ''}`}
                                                                             >
-                                                                                {/* Grade Level */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Grade Level"
-                                                                                        {...form.register(`siblings.${index}.sibling_grade_level`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <LabelWithTooltip
+                                                                                    label="Siblings Currently Enrolled or Will Enroll"
+                                                                                    tooltip="Provide the details of each sibling."
+                                                                                />
 
-                                                                                {/* Full Name */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="Full Name"
-                                                                                        {...form.register(`siblings.${index}.sibling_full_name`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                <div className="mt-3">
+                                                                                    {siblingsField.value?.map((sibling, index) => (
+                                                                                        <div
+                                                                                            key={index}
+                                                                                            className="mb-2 grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3"
+                                                                                        >
+                                                                                            {/* Grade Level */}
+                                                                                            <FormField
+                                                                                                control={form.control}
+                                                                                                name={`siblings.${index}.sibling_grade_level`}
+                                                                                                render={({ field }) => (
+                                                                                                    <FormItem>
+                                                                                                        <FormControl>
+                                                                                                            <Input
+                                                                                                                placeholder="Grade Level"
+                                                                                                                {...field}
+                                                                                                            />
+                                                                                                        </FormControl>
+                                                                                                        <FormMessage />
+                                                                                                    </FormItem>
+                                                                                                )}
+                                                                                            />
 
-                                                                                {/* ID Number */}
-                                                                                <FormControl>
-                                                                                    <Input
-                                                                                        placeholder="ID Number"
-                                                                                        {...form.register(`siblings.${index}.sibling_id_number`)}
-                                                                                    />
-                                                                                </FormControl>
+                                                                                            {/* Full Name */}
+                                                                                            <FormField
+                                                                                                control={form.control}
+                                                                                                name={`siblings.${index}.sibling_full_name`}
+                                                                                                render={({ field }) => (
+                                                                                                    <FormItem>
+                                                                                                        <FormControl>
+                                                                                                            <Input
+                                                                                                                placeholder="Full Name"
+                                                                                                                {...field}
+                                                                                                            />
+                                                                                                        </FormControl>
+                                                                                                        <FormMessage />
+                                                                                                    </FormItem>
+                                                                                                )}
+                                                                                            />
 
-                                                                                {/* Remove Button */}
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    onClick={() => {
-                                                                                        const updated = [...(form.getValues('siblings') ?? [])];
-                                                                                        updated.splice(index, 1);
-                                                                                        form.setValue('siblings', updated);
-                                                                                    }}
-                                                                                    className="text-red-500 hover:text-red-700"
-                                                                                >
-                                                                                    <Trash2 className="h-4 w-4" />
-                                                                                </Button>
+                                                                                            {/* ID Number */}
+                                                                                            <FormField
+                                                                                                control={form.control}
+                                                                                                name={`siblings.${index}.sibling_id_number`}
+                                                                                                render={({ field }) => (
+                                                                                                    <FormItem>
+                                                                                                        <FormControl>
+                                                                                                            <Input
+                                                                                                                placeholder="ID Number"
+                                                                                                                {...field}
+                                                                                                            />
+                                                                                                        </FormControl>
+                                                                                                        <FormMessage />
+                                                                                                    </FormItem>
+                                                                                                )}
+                                                                                            />
+
+                                                                                            {/* Remove Button */}
+                                                                                            <Button
+                                                                                                type="button"
+                                                                                                variant="ghost"
+                                                                                                size="icon"
+                                                                                                onClick={() => {
+                                                                                                    const updated = [...(siblingsField.value ?? [])];
+                                                                                                    updated.splice(index, 1);
+                                                                                                    siblingsField.onChange(updated);
+                                                                                                }}
+                                                                                                className="text-red-500 hover:text-red-700"
+                                                                                            >
+                                                                                                <Trash2 className="h-4 w-4" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    <FormMessage />
+
+                                                                                    {/* Add Sibling Button */}
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        onClick={() =>
+                                                                                            siblingsField.onChange([
+                                                                                                ...(siblingsField.value || []),
+                                                                                                {
+                                                                                                    sibling_full_name: '',
+                                                                                                    sibling_grade_level: '',
+                                                                                                    sibling_id_number: '',
+                                                                                                },
+                                                                                            ])
+                                                                                        }
+                                                                                        className="mt-3"
+                                                                                    >
+                                                                                        + Add Sibling
+                                                                                    </Button>
+                                                                                </div>
                                                                             </div>
-                                                                        ))}
-
-                                                                        {/* Add Sibling Button */}
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={() =>
-                                                                                form.setValue('siblings', [
-                                                                                    ...(form.getValues('siblings') || []),
-                                                                                    {
-                                                                                        sibling_full_name: '',
-                                                                                        sibling_grade_level: '',
-                                                                                        sibling_id_number: '',
-                                                                                    },
-                                                                                ])
-                                                                            }
-                                                                            className="mt-3"
-                                                                        >
-                                                                            + Add Sibling
-                                                                        </Button>
-                                                                    </div>
-                                                                </div>
+                                                                        </FormItem>
+                                                                    )}
+                                                                />
                                                             )}
 
                                                             <FormMessage />
@@ -3485,74 +3567,134 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                     <div key={index} className="relative mb-4 rounded-lg border p-4 pr-12 shadow-sm">
                                                                         {/* Row 1: School Name, School Address */}
                                                                         <div className="grid grid-cols-2 gap-3">
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="School Name"
-                                                                                    {...form.register(`schools.${index}.school_name`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="School Address"
-                                                                                    {...form.register(`schools.${index}.school_address`)}
-                                                                                />
-                                                                            </FormControl>
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.school_name`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="School Name" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.school_address`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="School Address" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
                                                                         </div>
 
                                                                         {/* Row 2: From Grade, To Grade, From Year, To Year */}
                                                                         <div className="mt-3 grid grid-cols-4 gap-3">
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="From Grade"
-                                                                                    {...form.register(`schools.${index}.from_grade`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="To Grade"
-                                                                                    {...form.register(`schools.${index}.to_grade`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="From Year"
-                                                                                    {...form.register(`schools.${index}.from_year`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="To Year"
-                                                                                    {...form.register(`schools.${index}.to_year`)}
-                                                                                />
-                                                                            </FormControl>
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.from_grade`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="From Grade" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.to_grade`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="To Grade" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.from_year`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="From Year" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.to_year`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="To Year" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
                                                                         </div>
 
                                                                         {/* Row 3: Honors, Average, Rank, Size */}
                                                                         <div className="mt-3 grid grid-cols-4 gap-3">
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="Honors and Awards"
-                                                                                    {...form.register(`schools.${index}.honors_awards`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="General Average"
-                                                                                    {...form.register(`schools.${index}.general_average`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="Class Rank"
-                                                                                    {...form.register(`schools.${index}.class_rank`)}
-                                                                                />
-                                                                            </FormControl>
-                                                                            <FormControl>
-                                                                                <Input
-                                                                                    placeholder="Class Size"
-                                                                                    {...form.register(`schools.${index}.class_size`)}
-                                                                                />
-                                                                            </FormControl>
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.honors_awards`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="Honors and Awards" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.general_average`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="General Average" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.class_rank`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="Class Rank" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                            <FormField
+                                                                                control={form.control}
+                                                                                name={`schools.${index}.class_size`}
+                                                                                render={({ field }) => (
+                                                                                    <FormItem>
+                                                                                        <FormControl>
+                                                                                            <Input placeholder="Class Size" {...field} />
+                                                                                        </FormControl>
+                                                                                        <FormMessage />
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
                                                                         </div>
 
                                                                         {/* Remove Button (right side, vertically centered) */}
@@ -3571,6 +3713,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         </Button>
                                                                     </div>
                                                                 ))}
+                                                                <FormMessage />
 
                                                                 {/* Add New School */}
                                                                 <Button
@@ -3811,6 +3954,17 @@ that the student is fit to attend school, along with a medical certificate issue
                         </Form>
                     </div>
                 </div>
+                <AlertDialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Duplicate Application</AlertDialogTitle>
+                            <AlertDialogDescription>You have already submitted an application.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogAction onClick={() => setIsDuplicateDialogOpen(false)}>OK</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
 
             <footer className="mt-10 bg-white shadow-md">

@@ -9,7 +9,7 @@ import { type BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup, TextareaAutosize } from '@mui/material';
-import { ArrowLeft, HelpCircle, School, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, School, Trash2, User, UserPlus, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -198,43 +198,42 @@ const FormNavigation = () => {
     };
 
     const navItems = [
-        { id: 'application', label: 'Application Info', icon: '📋' },
-        { id: 'personal', label: 'Personal Info', icon: '👤' },
-        { id: 'family', label: 'Family Background', icon: '👨‍👩‍👧‍👦' },
-        { id: 'siblings', label: 'Sibling Discount', icon: '👫' },
-        { id: 'education', label: 'Education', icon: '🎓' },
-        { id: 'documents', label: 'Documents', icon: '📄' },
+        { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
+        { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
+        { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
+        { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+        { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
+        { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
     ];
-
     return (
-        <div className="w-full bg-white shadow-md">
-            <div className="mx-auto max-w-[1500px] px-10">
-                <div className="flex items-center justify-between overflow-x-auto py-4">
-                    {navItems.map((item, index) => (
-                        <div key={item.id} className="flex items-center">
-                            <button
-                                onClick={() => scrollToSection(item.id)}
-                                className="flex flex-col items-center px-3 text-center transition-colors"
+        <div className="sticky top-0 z-50 mb-4 w-full rounded-lg bg-white shadow-md">
+            <div className="flex items-center justify-between overflow-x-auto px-25 py-4">
+                {navItems.map((item, index) => (
+                    <div key={item.id} className="flex items-center">
+                        {/* Step Circle */}
+                        <button onClick={() => scrollToSection(item.id)} className={`flex flex-col items-center px-3 text-center transition-colors`}>
+                            <div
+                                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                                    activeSection === item.id
+                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
+                                } `}
                             >
-                                <div
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                                        activeSection === item.id ? 'border-[#073066] bg-yellow-200 text-[#073066]' : 'border-gray-300 text-gray-500'
-                                    }`}
-                                >
-                                    {item.icon}
-                                </div>
-                                <span
-                                    className={`mt-2 text-xs whitespace-nowrap ${
-                                        activeSection === item.id ? 'font-semibold text-[#073066]' : 'text-gray-600'
-                                    }`}
-                                >
-                                    {item.label}
-                                </span>
-                            </button>
-                            {index < navItems.length - 1 && <div className="mx-2 h-0.5 w-16 bg-gray-300"></div>}
-                        </div>
-                    ))}
-                </div>
+                                {item.icon}
+                            </div>
+                            <span
+                                className={`mt-2 text-xs whitespace-nowrap ${
+                                    activeSection === item.id ? 'font-semibold text-[#073066]' : 'text-gray-600'
+                                }`}
+                            >
+                                {item.label}
+                            </span>
+                        </button>
+
+                        {/* Line Between Steps (except last) */}
+                        {index < navItems.length - 1 && <div className="mx-2 h-0.5 w-31 bg-gray-300"></div>}
+                    </div>
+                ))}
             </div>
         </div>
     );
