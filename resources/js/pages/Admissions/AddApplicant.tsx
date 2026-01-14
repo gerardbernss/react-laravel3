@@ -384,6 +384,20 @@ export default function AddApplicant() {
     };
 
     const applicationDate = form.watch('application_date');
+    const allValues = form.watch();
+
+    const hasChanges = React.useMemo(() => {
+        return Object.entries(allValues).some(([key, value]) => {
+            if (['application_date', 'school_year', 'application_status'].includes(key)) {
+                return false;
+            }
+            if (Array.isArray(value)) return value.length > 0;
+            if (typeof value === 'boolean') return value === true; // Assuming default is false
+            if (value instanceof File) return true;
+            if (typeof value === 'string') return value.trim() !== '';
+            return value !== null && value !== undefined;
+        });
+    }, [allValues]);
 
     useEffect(() => {
         if (!applicationDate) return;
@@ -491,7 +505,11 @@ export default function AddApplicant() {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to discard? All progress will be lost.')) {
+                                        if (hasChanges) {
+                                            if (confirm('Are you sure you want to discard changes? All unsaved changes will be lost')) {
+                                                window.history.back();
+                                            }
+                                        } else {
                                             window.history.back();
                                         }
                                     }}
@@ -501,9 +519,10 @@ export default function AddApplicant() {
                                 </Button>
                                 <Button
                                     type="button"
+                                    disabled={!hasChanges}
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to reset form? All progress will be lost.')) {
-                                            handleReset;
+                                        if (confirm('Are you sure you want to reset the form? All progress will be lost')) {
+                                            handleReset();
                                         }
                                     }}
                                     className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
