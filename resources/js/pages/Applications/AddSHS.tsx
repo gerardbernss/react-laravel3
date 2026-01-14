@@ -224,10 +224,12 @@ const applicantFormSchema = z
             }),
     })
     .superRefine((data, ctx) => {
-        if (data.has_doctors_note && !data.doctors_note_file) {
+        const hasHealthConditions = Array.isArray(data.health_conditions) && data.health_conditions.length > 0;
+
+        if (hasHealthConditions && !data.doctors_note_file) {
             ctx.addIssue({
                 path: ['doctors_note_file'],
-                message: 'Doctors note file is required when the checkbox is checked.',
+                message: 'Doctors note file is required when health conditions are selected.',
                 code: z.ZodIssueCode.custom,
             });
         }
@@ -1210,27 +1212,7 @@ export default function AddApplicant() {
                                                         return (
                                                             <FormItem>
                                                                 <LabelWithTooltip label="Grade Level *" tooltip="Choose your grade level." />
-                                                                <Select
-                                                                    onValueChange={(value) => {
-                                                                        field.onChange(value);
-                                                                        // Auto-set strand based on year level
-                                                                        const elementaryLevels = [
-                                                                            'Kindergarten',
-                                                                            'Grade 1',
-                                                                            'Grade 2',
-                                                                            'Grade 3',
-                                                                            'Grade 4',
-                                                                            'Grade 5',
-                                                                            'Grade 6',
-                                                                        ];
-                                                                        const juniorHighLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'];
-
-                                                                        if (elementaryLevels.includes(value)) {
-                                                                            form.setValue('strand', 'Laboratory Elementary School');
-                                                                        }
-                                                                    }}
-                                                                    value={field.value}
-                                                                >
+                                                                <Select value={field.value}>
                                                                     <FormControl>
                                                                         <SelectTrigger>
                                                                             <SelectValue placeholder="Select year level" />
@@ -1238,7 +1220,7 @@ export default function AddApplicant() {
                                                                     </FormControl>
                                                                     <SelectContent>
                                                                         <SelectGroup>
-                                                                            <SelectLabel>Senior High School (SHS)</SelectLabel>
+                                                                            <SelectLabel>Laboratory Senior High School (SHS)</SelectLabel>
                                                                             <SelectItem value="Grade 11">Grade 11</SelectItem>
                                                                             <SelectItem value="Grade 12">Grade 12</SelectItem>
                                                                         </SelectGroup>
@@ -2161,101 +2143,42 @@ export default function AddApplicant() {
                                                                     mt: 1,
                                                                 }}
                                                             >
-                                                                {/* Sensory Difficulties with subfields */}
-                                                                <Box sx={{ gridColumn: 'span 3' }}>
-                                                                    <FormControlLabel
-                                                                        control={
-                                                                            <Checkbox
-                                                                                size="small"
-                                                                                checked={
-                                                                                    Array.isArray(field.value) &&
-                                                                                    field.value.includes('Sensory Difficulties')
+                                                                {/* Sensory Difficulties */}
+
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Checkbox
+                                                                            size="small"
+                                                                            checked={
+                                                                                Array.isArray(field.value) &&
+                                                                                field.value.includes('Sensory Difficulties')
+                                                                            }
+                                                                            onChange={(e) => {
+                                                                                const checked = e.target.checked;
+                                                                                const currentValue = Array.isArray(field.value) ? field.value : [];
+
+                                                                                if (checked) {
+                                                                                    field.onChange([...currentValue, 'Sensory Difficulties']);
+                                                                                } else {
+                                                                                    field.onChange(
+                                                                                        currentValue.filter(
+                                                                                            (v: string) => v !== 'Sensory Difficulties',
+                                                                                        ),
+                                                                                    );
                                                                                 }
-                                                                                onChange={(e) => {
-                                                                                    const checked = e.target.checked;
-                                                                                    const currentValue = Array.isArray(field.value)
-                                                                                        ? field.value
-                                                                                        : [];
-
-                                                                                    if (checked) {
-                                                                                        field.onChange([...currentValue, 'Sensory Difficulties']);
-                                                                                    } else {
-                                                                                        field.onChange(
-                                                                                            currentValue.filter(
-                                                                                                (v: string) => v !== 'Sensory Difficulties',
-                                                                                            ),
-                                                                                        );
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        }
-                                                                        label="Sensory Difficulties"
-                                                                        sx={{
-                                                                            alignItems: 'center',
-                                                                            '& .MuiFormControlLabel-label': {
-                                                                                fontSize: '0.875rem',
-                                                                                color: '#374151',
-                                                                                lineHeight: 1.4,
-                                                                            },
-                                                                        }}
-                                                                    />
-
-                                                                    {/* Doctor's Note Checkbox - Shows when Sensory Difficulties is checked */}
-                                                                    {Array.isArray(field.value) && field.value.includes('Sensory Difficulties') && (
-                                                                        <Box sx={{ ml: 4, mt: 1 }}>
-                                                                            <FormField
-                                                                                control={form.control}
-                                                                                name="has_doctors_note"
-                                                                                render={({ field: noteField }) => (
-                                                                                    <FormItem>
-                                                                                        <FormControlLabel
-                                                                                            control={
-                                                                                                <Checkbox
-                                                                                                    size="small"
-                                                                                                    checked={noteField.value || false}
-                                                                                                    onChange={(e) =>
-                                                                                                        noteField.onChange(e.target.checked)
-                                                                                                    }
-                                                                                                />
-                                                                                            }
-                                                                                            label="With a physician’s recommendation certifying
-that the student is fit to attend school, along with a medical certificate issued within the last two years."
-                                                                                            sx={{
-                                                                                                alignItems: 'center',
-                                                                                                '& .MuiFormControlLabel-label': {
-                                                                                                    fontSize: '0.875rem',
-                                                                                                    color: '#374151',
-                                                                                                    lineHeight: 1.4,
-                                                                                                },
-                                                                                            }}
-                                                                                        />
-                                                                                    </FormItem>
-                                                                                )}
-                                                                            />
-
-                                                                            {/* File Upload - Shows when "With doctor's note" is checked */}
-                                                                            {form.watch('has_doctors_note') && (
-                                                                                <FormField
-                                                                                    control={form.control}
-                                                                                    name="doctors_note_file"
-                                                                                    render={({ field }) => (
-                                                                                        <FormItem className="mt-2">
-                                                                                            <FormControl>
-                                                                                                <FileUpload
-                                                                                                    value={field.value}
-                                                                                                    onChange={field.onChange}
-                                                                                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                                                                                    description="PDF, JPG, JPEG, PNG (Optional)"
-                                                                                                />
-                                                                                            </FormControl>
-                                                                                            <FormMessage />
-                                                                                        </FormItem>
-                                                                                    )}
-                                                                                />
-                                                                            )}
-                                                                        </Box>
-                                                                    )}
-                                                                </Box>
+                                                                            }}
+                                                                        />
+                                                                    }
+                                                                    label="Sensory Difficulties"
+                                                                    sx={{
+                                                                        alignItems: 'center',
+                                                                        '& .MuiFormControlLabel-label': {
+                                                                            fontSize: '0.875rem',
+                                                                            color: '#374151',
+                                                                            lineHeight: 1.4,
+                                                                        },
+                                                                    }}
+                                                                />
 
                                                                 {/* Other health conditions */}
                                                                 {[
@@ -2358,6 +2281,60 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                         field.onChange([...currentValue, `Others: ${otherValue}`]);
                                                                     }}
                                                                 />
+                                                            )}
+
+                                                            {/* Doctor's Note Checkbox - Shows when ANY health condition is checked */}
+                                                            {Array.isArray(field.value) && field.value.length > 0 && (
+                                                                <Box sx={{ mt: 2 }}>
+                                                                    <FormField
+                                                                        control={form.control}
+                                                                        name="has_doctors_note"
+                                                                        render={({ field: noteField }) => (
+                                                                            <FormItem className="mt-5">
+                                                                                <FormControlLabel
+                                                                                    control={
+                                                                                        <Checkbox
+                                                                                            size="small"
+                                                                                            checked={noteField.value || false}
+                                                                                            onChange={(e) => noteField.onChange(e.target.checked)}
+                                                                                        />
+                                                                                    }
+                                                                                    label="With a physician’s recommendation certifying
+that the student is fit to attend school, along with a medical certificate issued within the last two years."
+                                                                                    sx={{
+                                                                                        alignItems: 'center',
+                                                                                        '& .MuiFormControlLabel-label': {
+                                                                                            fontSize: '0.875rem',
+                                                                                            color: '#374151',
+                                                                                            lineHeight: 1.4,
+                                                                                        },
+                                                                                    }}
+                                                                                />
+                                                                            </FormItem>
+                                                                        )}
+                                                                    />
+
+                                                                    {/* File Upload - Shows when "With doctor's note" is checked */}
+                                                                    {form.watch('has_doctors_note') && (
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="doctors_note_file"
+                                                                            render={({ field }) => (
+                                                                                <FormItem className="mt-2">
+                                                                                    <FormControl>
+                                                                                        <FileUpload
+                                                                                            value={field.value}
+                                                                                            onChange={field.onChange}
+                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                                                            description="PDF, JPG, JPEG, PNG (Optional)"
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage />
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    )}
+                                                                </Box>
                                                             )}
 
                                                             <FormMessage />
