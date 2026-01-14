@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
-import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
+import { FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import axios from 'axios';
 import { ClipboardList, Facebook, FileText, GraduationCap, HelpCircle, Info, Mail, MapPin, Phone, Trash2, User, UserPlus, Users } from 'lucide-react';
@@ -26,6 +26,8 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
 import { z } from 'zod';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 // ✅ Reusable tooltip label component
 const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string }) => {
@@ -1896,11 +1898,11 @@ export default function AddApplicant() {
                                                 {/* Checkbox to sync addresses */}
                                                 <div className="mt-2 flex items-center space-x-2 px-4">
                                                     <Checkbox
-                                                        size="small"
+                                                        id="same-as-present"
                                                         checked={isSameAddress}
-                                                        onChange={(e) => {
-                                                            const checked = e.target.checked;
-                                                            if (checked) {
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked === true) {
+
                                                                 // 1. 🚀 FORCE UPDATE: Copy arrays immediately
                                                                 // This makes the dropdown options available BEFORE the component re-renders
                                                                 setPermanentRegions(presentRegions);
@@ -1934,25 +1936,15 @@ export default function AddApplicant() {
                                                                     form.clearErrors('permanent_province');
                                                                     form.clearErrors('permanent_zip');
                                                                 }, 100);
+
                                                             } else {
                                                                 setIsSameAddress(false);
-
-                                                                form.setValue('permanent_street', '', { shouldValidate: false });
-                                                                form.setValue('permanent_brgy', '', { shouldValidate: false });
-                                                                form.setValue('permanent_city', '', { shouldValidate: false });
-                                                                form.setValue('permanent_province', '', { shouldValidate: false });
-                                                                form.setValue('permanent_zip', '', { shouldValidate: false });
-
-                                                                setSelectedPermanentRegion('');
-                                                                setSelectedPermanentProvince('');
-                                                                setSelectedPermanentCity('');
-                                                                setPermanentProvinces([]);
-                                                                setPermanentCities([]);
-                                                                setPermanentBarangays([]);
                                                             }
                                                         }}
                                                     />
-                                                    <label className="text-sm text-gray-700">Same as present address</label>
+                                                    <Label htmlFor="same-as-present" className="text-sm font-normal text-gray-700">
+                                                        Same as present address
+                                                    </Label>
                                                 </div>
 
                                                 <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
@@ -2154,53 +2146,9 @@ export default function AddApplicant() {
                                                         <FormItem className="mt-2">
                                                             <FormLabel>Health Conditions (Tick the box/es if applicable.)</FormLabel>
 
-                                                            <Box
-                                                                sx={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                                                    gap: 1,
-                                                                    mt: 1,
-                                                                }}
-                                                            >
-                                                                {/* Sensory Difficulties */}
-
-                                                                <FormControlLabel
-                                                                    control={
-                                                                        <Checkbox
-                                                                            size="small"
-                                                                            checked={
-                                                                                Array.isArray(field.value) &&
-                                                                                field.value.includes('Sensory Difficulties')
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const checked = e.target.checked;
-                                                                                const currentValue = Array.isArray(field.value) ? field.value : [];
-
-                                                                                if (checked) {
-                                                                                    field.onChange([...currentValue, 'Sensory Difficulties']);
-                                                                                } else {
-                                                                                    field.onChange(
-                                                                                        currentValue.filter(
-                                                                                            (v: string) => v !== 'Sensory Difficulties',
-                                                                                        ),
-                                                                                    );
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                    }
-                                                                    label="Sensory Difficulties"
-                                                                    sx={{
-                                                                        alignItems: 'center',
-                                                                        '& .MuiFormControlLabel-label': {
-                                                                            fontSize: '0.875rem',
-                                                                            color: '#374151',
-                                                                            lineHeight: 1.4,
-                                                                        },
-                                                                    }}
-                                                                />
-
-                                                                {/* Other health conditions */}
+                                                            <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
                                                                 {[
+                                                                    'Sensory Difficulties',
                                                                     'Intellectual Difficulties',
                                                                     'Communication Difficulties',
                                                                     'Autism Spectrum',
@@ -2209,75 +2157,50 @@ export default function AddApplicant() {
                                                                     'Medical Conditions',
                                                                     'Major Psychological Disorders',
                                                                 ].map((option) => (
-                                                                    <FormControlLabel
-                                                                        key={option}
-                                                                        control={
-                                                                            <Checkbox
-                                                                                size="small"
-                                                                                checked={Array.isArray(field.value) && field.value.includes(option)}
-                                                                                onChange={(e) => {
-                                                                                    const checked = e.target.checked;
-                                                                                    const currentValue = Array.isArray(field.value)
-                                                                                        ? field.value
-                                                                                        : [];
-
-                                                                                    if (checked) {
-                                                                                        field.onChange([...currentValue, option]);
-                                                                                    } else {
-                                                                                        field.onChange(
-                                                                                            currentValue.filter((v: string) => v !== option),
-                                                                                        );
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        }
-                                                                        label={option}
-                                                                        sx={{
-                                                                            alignItems: 'center',
-                                                                            '& .MuiFormControlLabel-label': {
-                                                                                fontSize: '0.875rem',
-                                                                                color: '#374151',
-                                                                                lineHeight: 1.4,
-                                                                            },
-                                                                        }}
-                                                                    />
-                                                                ))}
-
-                                                                {/* "Others" checkbox */}
-                                                                <FormControlLabel
-                                                                    control={
+                                                                    <div key={option} className="flex items-center space-x-2">
                                                                         <Checkbox
-                                                                            size="small"
-                                                                            checked={
-                                                                                Array.isArray(field.value) &&
-                                                                                field.value.some((v) => v.startsWith('Others'))
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const checked = e.target.checked;
+                                                                            id={option}
+                                                                            checked={Array.isArray(field.value) && field.value.includes(option)}
+                                                                            onCheckedChange={(checked) => {
                                                                                 const currentValue = Array.isArray(field.value) ? field.value : [];
 
-                                                                                if (checked) {
-                                                                                    if (!currentValue.some((v) => v.startsWith('Others'))) {
-                                                                                        field.onChange([...currentValue, 'Others:']);
-                                                                                    }
+                                                                                if (checked === true) {
+                                                                                    field.onChange([...currentValue, option]);
                                                                                 } else {
-                                                                                    field.onChange(
-                                                                                        currentValue.filter((v: string) => !v.startsWith('Others')),
-                                                                                    );
+                                                                                    field.onChange(currentValue.filter((v: string) => v !== option));
                                                                                 }
                                                                             }}
                                                                         />
-                                                                    }
-                                                                    label="Others (Please specify)"
-                                                                    sx={{
-                                                                        alignItems: 'center',
-                                                                        '& .MuiFormControlLabel-label': {
-                                                                            fontSize: '0.875rem',
-                                                                            color: '#374151',
-                                                                        },
-                                                                    }}
-                                                                />
-                                                            </Box>
+                                                                        <Label htmlFor={option} className="text-sm font-normal text-gray-700">
+                                                                            {option}
+                                                                        </Label>
+                                                                    </div>
+                                                                ))}
+
+                                                                {/* “Others” checkbox */}
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Checkbox
+                                                                        id="Others"
+                                                                        checked={Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others'))}
+                                                                        onCheckedChange={(checked) => {
+                                                                            const currentValue = Array.isArray(field.value) ? field.value : [];
+
+                                                                            if (checked === true) {
+                                                                                if (!currentValue.some((v) => v.startsWith('Others'))) {
+                                                                                    field.onChange([...currentValue, 'Others:']);
+                                                                                }
+                                                                            } else {
+                                                                                field.onChange(
+                                                                                    currentValue.filter((v: string) => !v.startsWith('Others')),
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <Label htmlFor="Others" className="text-sm font-normal text-gray-700">
+                                                                        Others (Please specify)
+                                                                    </Label>
+                                                                </div>
+                                                            </div>
 
                                                             {/* "Others" text box */}
                                                             {Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others')) && (
@@ -2304,31 +2227,30 @@ export default function AddApplicant() {
 
                                                             {/* Doctor's Note Checkbox - Shows when ANY health condition is checked */}
                                                             {Array.isArray(field.value) && field.value.length > 0 && (
-                                                                <Box sx={{ mt: 2 }}>
+                                                                <div className="mt-4 border-t pt-4">
                                                                     <FormField
                                                                         control={form.control}
                                                                         name="has_doctors_note"
                                                                         render={({ field: noteField }) => (
                                                                             <FormItem className="mt-5">
-                                                                                <FormControlLabel
-                                                                                    control={
-                                                                                        <Checkbox
-                                                                                            size="small"
-                                                                                            checked={noteField.value || false}
-                                                                                            onChange={(e) => noteField.onChange(e.target.checked)}
-                                                                                        />
-                                                                                    }
-                                                                                    label="With a physician’s recommendation certifying
-that the student is fit to attend school, along with a medical certificate issued within the last two years."
-                                                                                    sx={{
-                                                                                        alignItems: 'center',
-                                                                                        '& .MuiFormControlLabel-label': {
-                                                                                            fontSize: '0.875rem',
-                                                                                            color: '#374151',
-                                                                                            lineHeight: 1.4,
-                                                                                        },
-                                                                                    }}
-                                                                                />
+                                                                                <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                                                                                <FormControl>
+                                                                                    <Checkbox
+                                                                                        checked={noteField.value}
+                                                                                        onCheckedChange={(checked) => {
+                                                                                            noteField.onChange(checked === true);
+                                                                                            if (!checked) {
+                                                                                                form.setValue('doctors_note_file', null);
+                                                                                            }
+                                                                                        }}
+                                                                                    />
+                                                                                </FormControl>
+                                                                                <div className="space-y-1 leading-none">
+                                                                                    <Label className="font-normal text-sm text-gray-700">
+                                                                                        With a physician’s recommendation certifying that the student is fit to attend school, along with a medical certificate issued within the last two years.
+                                                                                    </Label>
+                                                                                </div>
+                                                                            </div>
                                                                             </FormItem>
                                                                         )}
                                                                     />
@@ -2353,7 +2275,7 @@ that the student is fit to attend school, along with a medical certificate issue
                                                                             )}
                                                                         />
                                                                     )}
-                                                                </Box>
+                                                                </div>
                                                             )}
 
                                                             <FormMessage />
@@ -2944,64 +2866,36 @@ that the student is fit to attend school, along with a medical certificate issue
                                                 <div className="mt-4 flex gap-6 px-4">
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
-                                                            size="small"
+                                                            id="father-as-guardian"
                                                             checked={guardianSource === 'father'}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked === true) {
                                                                     setGuardianSource('father');
                                                                 } else {
                                                                     setGuardianSource(null);
-                                                                    // Clear guardian fields
-                                                                    form.setValue('guardian_lname', '');
-                                                                    form.setValue('guardian_fname', '');
-                                                                    form.setValue('guardian_mname', '');
-                                                                    form.setValue('guardian_citizenship', '');
-                                                                    form.setValue('guardian_religion', '');
-                                                                    form.setValue('guardian_highest_educ', '');
-                                                                    form.setValue('guardian_occupation', '');
-                                                                    form.setValue('guardian_income', '');
-                                                                    form.setValue('guardian_business_emp', '');
-                                                                    form.setValue('guardian_business_address', '');
-                                                                    form.setValue('guardian_contact_no', '');
-                                                                    form.setValue('guardian_email', '');
-                                                                    form.setValue('guardian_slu_employee', false);
-                                                                    form.setValue('guardian_slu_dept', '');
-                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
-                                                        <label className="text-sm text-gray-700">Choose Father as Guardian</label>
+                                                        <Label htmlFor="father-as-guardian" className="text-sm font-normal text-gray-700">
+                                                            Choose Father as Guardian
+                                                        </Label>
                                                     </div>
 
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
-                                                            size="small"
+                                                            id="mother-as-guardian"
                                                             checked={guardianSource === 'mother'}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked === true) {
                                                                     setGuardianSource('mother');
                                                                 } else {
                                                                     setGuardianSource(null);
-                                                                    // Clear guardian fields
-                                                                    form.setValue('guardian_lname', '');
-                                                                    form.setValue('guardian_fname', '');
-                                                                    form.setValue('guardian_mname', '');
-                                                                    form.setValue('guardian_citizenship', '');
-                                                                    form.setValue('guardian_religion', '');
-                                                                    form.setValue('guardian_highest_educ', '');
-                                                                    form.setValue('guardian_occupation', '');
-                                                                    form.setValue('guardian_income', '');
-                                                                    form.setValue('guardian_business_emp', '');
-                                                                    form.setValue('guardian_business_address', '');
-                                                                    form.setValue('guardian_contact_no', '');
-                                                                    form.setValue('guardian_email', '');
-                                                                    form.setValue('guardian_slu_employee', false);
-                                                                    form.setValue('guardian_slu_dept', '');
-                                                                    form.setValue('guardian_relationship', '');
                                                                 }
                                                             }}
                                                         />
-                                                        <label className="text-sm text-gray-700">Choose Mother as Guardian</label>
+                                                        <Label htmlFor="mother-as-guardian" className="text-sm font-normal text-gray-700">
+                                                            Choose Mother as Guardian
+                                                        </Label>
                                                     </div>
                                                 </div>
 
@@ -3890,17 +3784,15 @@ that the student is fit to attend school, along with a medical certificate issue
                                             </p>
                                         </div>
                                         <div className="mt-4">
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        checked={hasAgreed}
-                                                        onChange={(e) => setHasAgreed(e.target.checked)}
-                                                        name="iAgree"
-                                                        color="primary"
-                                                    />
-                                                }
-                                                label="I Agree"
+                                            <div className="mt-4 flex items-center space-x-2">
+                                            <Checkbox
+                                                id="agreement"
+                                                checked={hasAgreed}
+                                                onCheckedChange={(checked) => setHasAgreed(checked === true)}
+                                                name="iAgree"
                                             />
+                                            <Label htmlFor="agreement">I Agree</Label>
+                                        </div>
                                         </div>
                                     </div>
                                     {/* --- END: AGREEMENT SECTION --- */}
