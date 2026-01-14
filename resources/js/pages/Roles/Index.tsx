@@ -21,6 +21,7 @@ import {
     X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -275,13 +276,7 @@ export default function Index() {
                                             <h4 className="mb-2 text-sm font-semibold">Toggle Columns</h4>
                                             {[...columns, { key: 'actions' as const, label: 'Actions' }].map((column) => (
                                                 <div key={String(column.key)} className="flex items-center space-x-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        id={String(column.key)}
-                                                        checked={visibleColumns.includes(column.key)}
-                                                        onChange={() => toggleColumnVisibility(column.key)}
-                                                        className="h-4 w-4 rounded border-gray-300"
-                                                    />
+                                                    <Checkbox id={String(column.key)} checked={visibleColumns.includes(column.key)} onCheckedChange={() => toggleColumnVisibility(column.key)} />
                                                     <label htmlFor={String(column.key)} className="text-sm">
                                                         {column.label}
                                                     </label>
@@ -309,12 +304,7 @@ export default function Index() {
                                     <thead className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
                                         <tr>
                                             <th className="px-4 py-3 text-left">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={paginatedRoles.length > 0 && selectedRows.length === paginatedRoles.length}
-                                                    onChange={handleSelectAll}
-                                                    className="h-3.5 w-3.5 cursor-pointer rounded border-gray-300"
-                                                />
+                                                <Checkbox checked={paginatedRoles.length > 0 && selectedRows.length === paginatedRoles.length} onCheckedChange={(checked) => handleSelectAll({ target: { checked: checked === true } } as any)} />
                                             </th>
                                             {columns
                                                 .filter((col) => visibleColumns.includes(col.key))
@@ -351,12 +341,7 @@ export default function Index() {
                                                 }`}
                                             >
                                                 <td className="px-4 py-3">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedRows.includes(role.id)}
-                                                        onChange={() => handleSelectRow(role.id)}
-                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-gray-300"
-                                                    />
+                                                    <Checkbox checked={selectedRows.includes(role.id)} onCheckedChange={() => handleSelectRow(role.id)} />
                                                 </td>
                                                 {visibleColumns.includes('id') && <td className="px-4 py-3 font-medium text-gray-900">{role.id}</td>}
                                                 {visibleColumns.includes('name') && (

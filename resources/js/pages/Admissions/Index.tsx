@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiOutlinePencilAlt, HiPlus, HiTrash } from 'react-icons/hi';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Applicant {
     id: number;
@@ -501,13 +502,7 @@ export default function Index({ applications }: Props) {
                                         <h4 className="mb-2 text-sm font-semibold">Toggle Columns</h4>
                                         {columns.map((column) => (
                                             <div key={String(column.key)} className="flex items-center space-x-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id={String(column.key)}
-                                                    checked={visibleColumns.includes(column.key)}
-                                                    onChange={() => toggleColumnVisibility(column.key)}
-                                                    className="h-4 w-4 rounded border-gray-300"
-                                                />
+                                                <Checkbox id={String(column.key)} checked={visibleColumns.includes(column.key)} onCheckedChange={() => toggleColumnVisibility(column.key)} />
                                                 <label htmlFor={String(column.key)} className="text-sm">
                                                     {column.label}
                                                 </label>
@@ -556,12 +551,7 @@ export default function Index({ applications }: Props) {
                             <thead className="bg-linear-to-r from-slate-700 to-slate-800 text-white">
                                 <tr>
                                     <th className="px-4 py-3 text-left">
-                                        <input
-                                            type="checkbox"
-                                            checked={paginatedApplicants.length > 0 && selectedRows.length === paginatedApplicants.length}
-                                            onChange={handleSelectAll}
-                                            className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                                        />
+                                        <Checkbox checked={paginatedApplicants.length > 0 && selectedRows.length === paginatedApplicants.length} onCheckedChange={(checked) => handleSelectAll({ target: { checked: checked === true } } as any)} />
                                     </th>
                                     {columns
                                         .filter((col) => visibleColumns.includes(col.key))
@@ -594,12 +584,7 @@ export default function Index({ applications }: Props) {
                                         }`}
                                     >
                                         <td className="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedRows.includes(row.id)}
-                                                onChange={() => handleSelectRow(row.id)}
-                                                className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                                            />
+                                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleSelectRow(row.id)} />
                                         </td>
                                         {visibleColumns.includes('application_number') && (
                                             <td className="px-4 py-3 font-medium text-gray-900">{row.application_number}</td>

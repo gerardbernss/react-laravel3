@@ -8,12 +8,14 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Box, Checkbox, FormControlLabel, Radio, RadioGroup, TextareaAutosize } from '@mui/material';
+import { FormControlLabel, Radio, RadioGroup, TextareaAutosize } from '@mui/material';
 import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, School, Trash2, User, UserPlus, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Applicant List', href: '/admissions/applicants' },
@@ -1287,14 +1289,7 @@ export default function EditApplicant() {
                                                     <FormItem className="mt-2">
                                                         <FormLabel>Health Conditions (Tick the box/es if applicable.)</FormLabel>
 
-                                                        <Box
-                                                            sx={{
-                                                                display: 'grid',
-                                                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                                                gap: 1,
-                                                                mt: 1,
-                                                            }}
-                                                        >
+                                                        <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
                                                             {[
                                                                 'Sensory Difficulties',
                                                                 'Intellectual Difficulties',
@@ -1305,17 +1300,13 @@ export default function EditApplicant() {
                                                                 'Medical Conditions',
                                                                 'Major Psychological Disorders',
                                                             ].map((option) => (
-                                                                <FormControlLabel
-                                                                    key={option}
-                                                                    control={
-                                                                        <Checkbox
-                                                                            size="small"
+                                                                <div key={option} className="flex items-center space-x-2">
+                                                                        <Checkbox id={option}
                                                                             checked={Array.isArray(field.value) && field.value.includes(option)}
-                                                                            onChange={(e) => {
-                                                                                const checked = e.target.checked;
+                                                                            onCheckedChange={(checked) => {
                                                                                 const currentValue = Array.isArray(field.value) ? field.value : [];
 
-                                                                                if (checked) {
+                                                                                if (checked === true) {
                                                                                     field.onChange([...currentValue, option]);
                                                                                 } else {
                                                                                     field.onChange(currentValue.filter((v: string) => v !== option));
@@ -1336,40 +1327,32 @@ export default function EditApplicant() {
                                                             ))}
 
                                                             {/* “Others” checkbox */}
-                                                            <FormControlLabel
-                                                                control={
-                                                                    <Checkbox
-                                                                        size="small"
-                                                                        checked={
-                                                                            Array.isArray(field.value) &&
-                                                                            field.value.some((v) => v.startsWith('Others'))
-                                                                        }
-                                                                        onChange={(e) => {
-                                                                            const checked = e.target.checked;
-                                                                            const currentValue = Array.isArray(field.value) ? field.value : [];
+                                                            <div className="flex items-center space-x-2">
+                                                                <Checkbox
+                                                                    id="Others"
+                                                                    checked={
+                                                                        Array.isArray(field.value) &&
+                                                                        field.value.some((v: string) => v.startsWith('Others'))
+                                                                    }
+                                                                    onCheckedChange={(checked) => {
+                                                                        const currentValue = Array.isArray(field.value) ? field.value : [];
 
-                                                                            if (checked) {
-                                                                                if (!currentValue.some((v) => v.startsWith('Others'))) {
-                                                                                    field.onChange([...currentValue, 'Others:']);
-                                                                                }
-                                                                            } else {
-                                                                                field.onChange(
-                                                                                    currentValue.filter((v: string) => !v.startsWith('Others')),
-                                                                                );
+                                                                        if (checked === true) {
+                                                                            if (!currentValue.some((v: string) => v.startsWith('Others'))) {
+                                                                                field.onChange([...currentValue, 'Others:']);
                                                                             }
-                                                                        }}
-                                                                    />
-                                                                }
-                                                                label="Others (Please specify)"
-                                                                sx={{
-                                                                    alignItems: 'center',
-                                                                    '& .MuiFormControlLabel-label': {
-                                                                        fontSize: '0.875rem',
-                                                                        color: '#374151',
-                                                                    },
-                                                                }}
-                                                            />
-                                                        </Box>
+                                                                        } else {
+                                                                            field.onChange(
+                                                                                currentValue.filter((v: string) => !v.startsWith('Others')),
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Label htmlFor="Others" className="text-sm font-normal text-gray-700">
+                                                                    Others (Please specify)
+                                                                </Label>
+                                                            </div>
+                                                        </div>
 
                                                         {/* “Others” text box */}
                                                         {Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others')) && (
@@ -1914,10 +1897,10 @@ export default function EditApplicant() {
                                             {/* Auto-fill checkboxes */}
                                             <div className="mt-4 flex gap-6 px-4">
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        size="small"
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
+                                                    <Checkbox id="father-as-guardian"
+
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked === true) {
                                                                 // Copy father's info to guardian fields
                                                                 form.setValue('guardian_lname', form.getValues('father_lname'));
                                                                 form.setValue('guardian_fname', form.getValues('father_fname'));
@@ -1940,14 +1923,14 @@ export default function EditApplicant() {
                                                             }
                                                         }}
                                                     />
-                                                    <label className="text-sm text-gray-700">Choose Father as Guardian</label>
+                                                    <Label htmlFor="father-as-guardian" className="text-sm text-gray-700">Choose Father as Guardian</Label>
                                                 </div>
 
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        size="small"
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
+                                                    <Checkbox id="mother-as-guardian"
+
+                                                        onCheckedChange={(checked) => {
+                                                            if (checked === true) {
                                                                 // Copy mother's info to guardian fields
                                                                 form.setValue('guardian_lname', form.getValues('mother_lname'));
                                                                 form.setValue('guardian_fname', form.getValues('mother_fname'));
@@ -1970,7 +1953,7 @@ export default function EditApplicant() {
                                                             }
                                                         }}
                                                     />
-                                                    <label className="text-sm text-gray-700">Choose Mother as Guardian</label>
+                                                    <Label htmlFor="mother-as-guardian" className="text-sm text-gray-700">Choose Mother as Guardian</Label>
                                                 </div>
                                             </div>
 
