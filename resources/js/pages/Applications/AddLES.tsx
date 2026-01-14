@@ -94,7 +94,6 @@ const applicantFormSchema = z
         accelerated: z.string().optional(),
         health_conditions: z.union([z.string(), z.array(z.string())]).optional(),
 
-        has_doctors_note: z.boolean().default(false),
         doctors_note_file: z
             .any()
             .refine((file) => !file || file instanceof File, { message: 'Must be a valid file.' })
@@ -224,10 +223,12 @@ const applicantFormSchema = z
             }),
     })
     .superRefine((data, ctx) => {
-        if (data.has_doctors_note && !data.doctors_note_file) {
+        const hasHealthConditions = Array.isArray(data.health_conditions) && data.health_conditions.length > 0;
+
+        if (hasHealthConditions && !data.doctors_note_file) {
             ctx.addIssue({
                 path: ['doctors_note_file'],
-                message: 'Doctors note file is required when the checkbox is checked.',
+                message: 'Doctors note file is required when health conditions are selected.',
                 code: z.ZodIssueCode.custom,
             });
         }
@@ -376,7 +377,6 @@ export default function AddApplicant() {
             stopped_studying: '',
             accelerated: '',
             health_conditions: [],
-            has_doctors_note: false,
             doctors_note_file: null,
 
             //family
@@ -2205,54 +2205,26 @@ export default function AddApplicant() {
                                                                     <Box sx={{ gridColumn: 'span 3', mt: 2 }}>
                                                                         <FormField
                                                                             control={form.control}
-                                                                            name="has_doctors_note"
-                                                                            render={({ field: noteField }) => (
-                                                                                <FormItem>
-                                                                                    <FormControlLabel
-                                                                                        control={
-                                                                                            <Checkbox
-                                                                                                size="small"
-                                                                                                checked={noteField.value || false}
-                                                                                                onChange={(e) =>
-                                                                                                    noteField.onChange(e.target.checked)
-                                                                                                }
-                                                                                            />
-                                                                                        }
-                                                                                        label="With a physician’s recommendation certifying
-that the student is fit to attend school, along with a medical certificate issued within the last two years."
-                                                                                        sx={{
-                                                                                            alignItems: 'center',
-                                                                                            '& .MuiFormControlLabel-label': {
-                                                                                                fontSize: '0.875rem',
-                                                                                                color: '#374151',
-                                                                                                lineHeight: 1.4,
-                                                                                            },
-                                                                                        }}
-                                                                                    />
+                                                                            name="doctors_note_file"
+                                                                            render={({ field }) => (
+                                                                                <FormItem className="mt-2">
+                                                                                    <FormLabel>
+                                                                                        With a physician’s recommendation certifying that the student
+                                                                                        is fit to attend school, along with a medical certificate
+                                                                                        issued within the last two years.
+                                                                                    </FormLabel>
+                                                                                    <FormControl>
+                                                                                        <FileUpload
+                                                                                            value={field.value}
+                                                                                            onChange={field.onChange}
+                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                                                            description="PDF, JPG, JPEG, PNG (Optional)"
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage />
                                                                                 </FormItem>
                                                                             )}
                                                                         />
-
-                                                                        {/* File Upload - Shows when "With doctor's note" is checked */}
-                                                                        {form.watch('has_doctors_note') && (
-                                                                            <FormField
-                                                                                control={form.control}
-                                                                                name="doctors_note_file"
-                                                                                render={({ field }) => (
-                                                                                    <FormItem className="mt-2">
-                                                                                        <FormControl>
-                                                                                            <FileUpload
-                                                                                                value={field.value}
-                                                                                                onChange={field.onChange}
-                                                                                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                                                                                description="PDF, JPG, JPEG, PNG (Optional)"
-                                                                                            />
-                                                                                        </FormControl>
-                                                                                        <FormMessage />
-                                                                                    </FormItem>
-                                                                                )}
-                                                                            />
-                                                                        )}
                                                                     </Box>
                                                                 )}
                                                                         </Box>
