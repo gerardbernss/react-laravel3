@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,7 +11,7 @@ import { router } from '@inertiajs/react';
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
 import { ArrowLeft, HelpCircle, Trash2 } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -261,6 +262,9 @@ const FormNavigation = () => {
 };
 
 export default function AddApplicant() {
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'discard' | 'reset' | null>(null);
+
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
         mode: 'onChange',
@@ -383,6 +387,16 @@ export default function AddApplicant() {
         });
     };
 
+    const handleConfirmAction = () => {
+        if (pendingAction === 'discard') {
+            window.history.back();
+        } else if (pendingAction === 'reset') {
+            handleReset();
+        }
+        setShowConfirmDialog(false);
+        setPendingAction(null);
+    };
+
     const applicationDate = form.watch('application_date');
     const allValues = form.watch();
 
@@ -489,6 +503,41 @@ export default function AddApplicant() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {pendingAction === 'discard' ? 'Discard Changes' : 'Reset Form'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {pendingAction === 'discard'
+                                ? 'Are you sure you want to discard changes? All unsaved changes will be lost'
+                                : 'Are you sure you want to reset the form? All progress will be lost'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            className="mr-1 flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setShowConfirmDialog(false);
+                                setPendingAction(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
+                            type="button"
+                            onClick={handleConfirmAction}
+                        >
+                            Confirm
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <div className="min-h-screen bg-[#f5f5f5]">
                 <div className="sticky top-0 z-50 bg-white shadow-sm">
                     <div className="mx-auto max-w-[1500px] px-10 pt-8 pb-4">
@@ -506,9 +555,8 @@ export default function AddApplicant() {
                                     type="button"
                                     onClick={() => {
                                         if (hasChanges) {
-                                            if (confirm('Are you sure you want to discard changes? All unsaved changes will be lost')) {
-                                                window.history.back();
-                                            }
+                                            setPendingAction('discard');
+                                            setShowConfirmDialog(true);
                                         } else {
                                             window.history.back();
                                         }
@@ -521,9 +569,8 @@ export default function AddApplicant() {
                                     type="button"
                                     disabled={!hasChanges}
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to reset the form? All progress will be lost')) {
-                                            handleReset();
-                                        }
+                                        setPendingAction('reset');
+                                        setShowConfirmDialog(true);
                                     }}
                                     className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                                 >
