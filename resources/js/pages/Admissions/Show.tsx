@@ -1,8 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, ClipboardList, Download, Edit, FileCheck, FileText, GraduationCap, Key, Mail, MapPin, User, UserPlus, Users } from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 interface InfoRowProps {
     label: string;
@@ -25,6 +26,22 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
             href: `/admissions/applicants/${applicant.id}/show`,
         },
     ];
+
+    const handleFinalResult = () => {
+        router.post(
+            `/admissions/applicants/${applicant.id}/send-final-result`,
+            {},
+            {
+                onSuccess: () => {
+                    toast.success('Final result email sent successfully');
+                },
+                onError: (errors) => {
+                    toast.error('Failed to send email');
+                    console.error(errors);
+                },
+            },
+        );
+    };
 
     const FormNavigation = () => {
         const [activeSection, setActiveSection] = React.useState('application');
@@ -157,7 +174,10 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                <button
+                                    onClick={handleFinalResult}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                >
                                     <FileCheck className="h-4 w-4" />
                                     Final Result
                                 </button>

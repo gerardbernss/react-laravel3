@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\FinalResultMail;
 
 class ApplicantController extends Controller
 {
@@ -681,5 +683,22 @@ class ApplicantController extends Controller
             ->route('applicants.index')
             ->with('success', 'Applicant deleted successfully');
 
+    }
+
+    public function sendFinalResult($id)
+    {
+        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+        if (!$application->personalData || !$application->personalData->email) {
+            return back()->withErrors(['error' => 'Applicant email not found.']);
+        }
+
+        try {
+            Mail::to($application->personalData->email)->send(new FinalResultMail($application));
+            return back()->with('success', 'Final result email sent successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send final result email: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+        }
     }
 }
