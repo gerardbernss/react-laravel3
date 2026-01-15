@@ -454,7 +454,7 @@ export default function Index({ applications }: Props) {
 
                 {/* Custom DataGrid Table */}
                 <div className="overflow-hidden rounded-lg bg-white shadow-md">
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
                             <thead className="bg-linear-to-r from-slate-700 to-slate-800 text-white">
                                 <tr>

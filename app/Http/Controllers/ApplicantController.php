@@ -102,7 +102,7 @@ class ApplicantController extends Controller
     {
         $letter = $this->getApplicationPrefixLetter($yearLevel);
 
-        $last = ApplicantApplicationInfo::where('application_number', 'like', $letter . '%')
+        $last = ApplicantApplicationInfo::where('application_number', 'like', $letter . '%', true)
             ->orderBy('application_number', 'desc')
             ->first();
 
