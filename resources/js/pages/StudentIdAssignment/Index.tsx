@@ -720,12 +720,22 @@ export default function Index({ applications }: Props) {
                                     />
                                     <p className="text-xs text-gray-500">Auto-generated. You can modify if needed.</p>
 
-                                    <Button
-                                        type="submit"
-                                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
-                                    >
-                                        Assign Student Number
-                                    </Button>
+                                    <div className="flex items-center gap-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => setSelectedRowId(null)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
+                                        >
+                                            Assign Student Number
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </form>
