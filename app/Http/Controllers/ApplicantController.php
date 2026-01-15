@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\FinalResultMail;
+use App\Mail\ConfirmationEmailMail;
+use App\Mail\PortalPasswordMail;
 
 class ApplicantController extends Controller
 {
@@ -698,6 +700,40 @@ class ApplicantController extends Controller
             return back()->with('success', 'Final result email sent successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to send final result email: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+        }
+    }
+
+    public function sendConfirmationEmail($id)
+    {
+        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+        if (!$application->personalData || !$application->personalData->email) {
+            return back()->withErrors(['error' => 'Applicant email not found.']);
+        }
+
+        try {
+            Mail::to($application->personalData->email)->send(new ConfirmationEmailMail($application));
+            return back()->with('success', 'Confirmation email sent successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send confirmation email: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+        }
+    }
+
+    public function sendPortalPassword($id)
+    {
+        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+        if (!$application->personalData || !$application->personalData->email) {
+            return back()->withErrors(['error' => 'Applicant email not found.']);
+        }
+
+        try {
+            Mail::to($application->personalData->email)->send(new PortalPasswordMail($application));
+            return back()->with('success', 'Portal password email sent successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send portal password email: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
         }
     }
