@@ -1,9 +1,8 @@
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ClipboardList, Download, Edit, FileCheck, FileText, GraduationCap, Key, Mail, MapPin, User, UserPlus, Users } from 'lucide-react';
 import React, { useState } from 'react';
-import { toast } from 'sonner';
 
 interface InfoRowProps {
     label: string;
@@ -28,19 +27,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
     ];
 
     const handleFinalResult = () => {
-        router.post(
-            `/admissions/applicants/${applicant.id}/send-final-result`,
-            {},
-            {
-                onSuccess: () => {
-                    toast.success('Final result email sent successfully');
-                },
-                onError: (errors) => {
-                    toast.error('Failed to send email');
-                    console.error(errors);
-                },
-            },
-        );
+        window.open(`/admissions/applicants/${applicant.id}/send-final-result`);
     };
 
     const FormNavigation = () => {

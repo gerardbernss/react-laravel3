@@ -58,7 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admissions/applicants/{id}/edit', [ApplicantController::class, 'edit'])->name('applicants.edit');
         Route::put('/admissions/applicants/{id}', [ApplicantController::class, 'update'])->name('applicants.update');
         Route::delete('/admissions/applicants/{id}', [ApplicantController::class, 'destroy'])->name('applicants.destroy');
-        Route::post('/admissions/applicants/{id}/send-final-result', [ApplicantController::class, 'sendFinalResult'])->name('applicants.send-final-result');
+        Route::get('/admissions/applicants/{id}/send-final-result', [ApplicantController::class, 'sendFinalResult'])->name('applicants.send-final-result');
         Route::get('/view-document/{path}', function ($path) {
             // Verify user is admin
 
