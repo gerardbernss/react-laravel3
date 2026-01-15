@@ -188,7 +188,7 @@ export default function Index() {
                     </div>
                     {hasPermission('create-users') && (
                         <Link href="/users/create">
-                            <Button>
+                            <Button className="bg-[#073066] hover:bg-[#05254d]">
                                 <UserPlus className="mr-2 h-4 w-4" />
                                 Create User
                             </Button>
@@ -196,54 +196,39 @@ export default function Index() {
                     )}
                 </div>
 
-                {/* Search Bar */}
-                <div className="mb-4 flex flex-col">
-                    <label className="mb-1 text-xs font-medium text-gray-600">Search</label>
-                    <div className="relative max-w-md">
-                        <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search by ID, Name, Email, or Role..."
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="h-10 w-full rounded-md border-2 border-gray-300 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 focus:border-blue-600 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        )}
+                {/* Search + Columns + Export */}
+                <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                    {/* Search Bar */}
+                    <div className="flex w-full flex-col md:w-1/3">
+                        <label className="mb-1 text-xs font-medium text-gray-600">Search</label>
+                        <div className="relative">
+                            <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by ID, Name, Email, or Role..."
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="h-10 w-full rounded-md border-2 border-gray-300 bg-gray-50 py-2 pr-10 pl-10 text-sm text-gray-700 focus:border-blue-600 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Bulk Actions */}
-                {selectedRows.length > 0 && (
-                    <div className="mb-4 flex items-center gap-3 rounded-lg bg-blue-50 p-3">
-                        <span className="text-sm font-medium text-gray-700">{selectedRows.length} row(s) selected</span>
-                        {hasPermission('delete-users') && (
-                            <button
-                                onClick={handleBulkDelete}
-                                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-                            >
-                                Delete Selected
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* Custom DataGrid Table */}
-                <div className="overflow-hidden rounded-lg bg-white shadow-md">
-                    {/* Toolbar */}
-                    <div className="flex items-center justify-end gap-2 border-b border-gray-200 bg-gray-50 p-2">
+                    {/* Columns + Export */}
+                    <div className="flex gap-2">
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-8 text-xs">
+                                <Button variant="outline" className="h-10 text-sm">
                                     <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                     </svg>
@@ -271,7 +256,7 @@ export default function Index() {
                             </PopoverContent>
                         </Popover>
 
-                        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExport}>
+                        <Button variant="outline" className="h-10 text-sm" onClick={handleExport}>
                             <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path
                                     strokeLinecap="round"
@@ -283,7 +268,25 @@ export default function Index() {
                             Export
                         </Button>
                     </div>
+                </div>
 
+                {/* Bulk Actions */}
+                {selectedRows.length > 0 && (
+                    <div className="mb-4 flex items-center gap-3 rounded-lg bg-blue-50 p-3">
+                        <span className="text-sm font-medium text-gray-700">{selectedRows.length} row(s) selected</span>
+                        {hasPermission('delete-users') && (
+                            <button
+                                onClick={handleBulkDelete}
+                                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                            >
+                                Delete Selected
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Custom DataGrid Table */}
+                <div className="overflow-hidden rounded-lg bg-white shadow-md">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead className="bg-gradient-to-r from-slate-700 to-slate-800 text-white">
