@@ -246,44 +246,37 @@ export default function Index({ applications }: Props) {
             <Head title="Evaluation/Assessment" />
 
             <div className="p-10">
-                <h1 className="mb-6 text-3xl font-semibold text-gray-800">Evaluation/Assessment</h1>
+                <div className="mb-6 flex items-center justify-between">
+                    <h1 className="text-3xl font-semibold text-gray-800">Evaluation/Assessment</h1>
+                    <Link
+                        href={`/admissions/applicants/create`}
+                        className="flex items-center gap-2 rounded-md bg-[#073066] px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-[#05254d] hover:shadow-lg"
+                        style={{ minWidth: 'fit-content', whiteSpace: 'nowrap' }}
+                    >
+                        <HiPlus size={18} />
+                        Add New Applicant
+                    </Link>
+                </div>
 
                 {/* Search + Filters + Columns + Export */}
                 <div className="mb-4 space-y-3">
-                    {/* SEARCH ROW: use CSS grid so label baseline and button align perfectly */}
-                    <div className="grid w-full grid-cols-1 items-start gap-3 md:grid-cols-[1fr_auto] md:items-start">
-                        {/* LEFT: label + search input */}
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                            <div className="flex items-center">
-                                <div className="flex h-10 w-full items-center justify-start rounded-md border border-gray-300 bg-white text-sm shadow-sm focus-within:ring-2 focus-within:ring-blue-400 hover:bg-gray-50 md:w-[400px]">
-                                    <span className="pr-2 pl-3 text-gray-500">🔍</span>
-                                    <input
-                                        type="text"
-                                        placeholder="Search by ID, Name, Email, or Applicant No."
-                                        value={searchQuery}
-                                        onChange={(e) => {
-                                            setSearchQuery(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="h-full w-full bg-transparent pr-3 text-sm text-gray-700 outline-none"
-                                    />
-                                </div>
+                    {/* SEARCH ROW */}
+                    <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
+                        <div className="flex items-center">
+                            <div className="flex h-10 w-full items-center justify-start rounded-md border border-gray-300 bg-white text-sm shadow-sm focus-within:ring-2 focus-within:ring-blue-400 hover:bg-gray-50 md:w-[400px]">
+                                <span className="pr-2 pl-3 text-gray-500">🔍</span>
+                                <input
+                                    type="text"
+                                    placeholder="Search by ID, Name, Email, or Applicant No."
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="h-full w-full bg-transparent pr-3 text-sm text-gray-700 outline-none"
+                                />
                             </div>
-                        </div>
-
-                        {/* RIGHT: label spacer + button — spacer enforces exact vertical alignment */}
-                        <div className="flex flex-col items-start md:items-end">
-                            {/* spacer to match the label line height on md+; invisible on small screens */}
-                            <div className="hidden h-4 md:block" />
-                            <Link
-                                href={`/admissions/applicants/create`}
-                                className="flex items-center gap-2 rounded-md bg-[#073066] px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-[#05254d] hover:shadow-lg"
-                                style={{ minWidth: 'fit-content', whiteSpace: 'nowrap' }}
-                            >
-                                <HiPlus size={18} />
-                                Add New Applicant
-                            </Link>
                         </div>
                     </div>
 
