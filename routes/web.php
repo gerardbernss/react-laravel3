@@ -58,6 +58,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admissions/applicants/{id}/edit', [ApplicantController::class, 'edit'])->name('applicants.edit');
         Route::put('/admissions/applicants/{id}', [ApplicantController::class, 'update'])->name('applicants.update');
         Route::delete('/admissions/applicants/{id}', [ApplicantController::class, 'destroy'])->name('applicants.destroy');
+        Route::get('/admissions/applicants/{id}/send-final-result', [ApplicantController::class, 'sendFinalResult'])->name('applicants.send-final-result');
+        Route::get('/admissions/applicants/{id}/send-confirmation-email', [ApplicantController::class, 'sendConfirmationEmail'])->name('applicants.send-confirmation-email');
+        Route::get('/admissions/applicants/{id}/send-portal-password', [ApplicantController::class, 'sendPortalPassword'])->name('applicants.send-portal-password');
+
         Route::get('/view-document/{path}', function ($path) {
             // Verify user is admin
 
@@ -76,18 +80,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         })->name('view.document');
 
     });
-
-    /*/ applications management --ADMIN
-    Route::middleware(['permission:manage-applications'])->group(function () {
-        Route::post('/applications/applicants', [ApplicantController2::class, 'store'])->name('applications.store');
-        Route::get('/applications/applicants', [ApplicantController2::class, 'index'])->name('applications.index');
-        Route::get('/applications/applicants/{id}/show', [ApplicantController2::class, 'show'])->name('applications.show');
-        Route::get('/applications/applicants/{id}/edit', [ApplicantController2::class, 'edit'])->name('applications.edit');
-        Route::put('/applications/applicants/{id}', [ApplicantController2::class, 'update'])->name('applications.update');
-        Route::delete('/applications/applicants/{id}', [ApplicantController2::class, 'destroy'])->name('applications.destroy');
-        Route::get('/applications/success', [ApplicantController2::class, 'success'])
-            ->name('applications.success');
-    }); */
 
     // student ID management --ADMIN
     Route::middleware(['permission:manage-student-id-assignment'])->group(function (): void {

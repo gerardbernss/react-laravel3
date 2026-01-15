@@ -201,7 +201,7 @@ const FormNavigation = () => {
         { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
         { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
         { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
-        { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+        { id: 'siblings', label: 'Siblings', icon: <UserPlus className="h-5 w-5" /> },
         { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
         { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
     ];

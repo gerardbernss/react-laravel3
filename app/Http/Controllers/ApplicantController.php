@@ -1,11 +1,15 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Mail\EmailConfirmationMail;
+use App\Mail\FinalResultMail;
+use App\Mail\PortalPasswordMail;
 use App\Models\ApplicantApplicationInfo;
 use App\Models\ApplicantPersonalData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -682,4 +686,56 @@ class ApplicantController extends Controller
             ->with('success', 'Applicant deleted successfully');
 
     }
+
+    public function sendFinalResult($id)
+    {
+        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+        if (! $application->personalData || ! $application->personalData->email) {
+            return back()->withErrors(['error' => 'Applicant email not found.']);
+        }
+
+        try {
+            Mail::to($application->personalData->email)->send(new FinalResultMail($application));
+            return back()->with('success', 'Final result email sent successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send final result email: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+        }
+    }
+
+    public function sendConfirmationEmail($id)
+    {
+        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+        if (! $application->personalData || ! $application->personalData->email) {
+            return back()->withErrors(['error' => 'Applicant email not found.']);
+        }
+
+        try {
+            Mail::to($application->personalData->email)->send(new EmailConfirmationMail($application));
+            return back()->with('success', 'Confirmation email sent successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send confirmation email: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+        }
+    }
+
+    public function sendPortalPassword($id)
+    {
+        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+        if (! $application->personalData || ! $application->personalData->email) {
+            return back()->withErrors(['error' => 'Applicant email not found.']);
+        }
+
+        try {
+            Mail::to($application->personalData->email)->send(new PortalPasswordMail($application));
+            return back()->with('success', 'Portal password email sent successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send portal password email: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+        }
+    }
+
 }

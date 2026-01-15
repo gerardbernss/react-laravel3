@@ -26,6 +26,18 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
         },
     ];
 
+    const handleFinalResult = () => {
+        window.open(`/admissions/applicants/${applicant.id}/send-final-result`);
+    };
+
+    const handleConfirmationEmail = () => {
+        window.open(`/admissions/applicants/${applicant.id}/send-confirmation-email`);
+    };
+
+    const handlePortalPassword = () => {
+        window.open(`/admissions/applicants/${applicant.id}/send-portal-password`);
+    };
+
     const FormNavigation = () => {
         const [activeSection, setActiveSection] = React.useState('application');
 
@@ -72,7 +84,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
             { id: 'application', label: 'Application Info', icon: <ClipboardList className="h-5 w-5" /> },
             { id: 'personal', label: 'Personal Info', icon: <User className="h-5 w-5" /> },
             { id: 'family', label: 'Family Background', icon: <Users className="h-5 w-5" /> },
-            { id: 'siblings', label: 'Sibling Discount', icon: <UserPlus className="h-5 w-5" /> },
+            { id: 'siblings', label: 'Siblings', icon: <UserPlus className="h-5 w-5" /> },
             { id: 'education', label: 'Education', icon: <GraduationCap className="h-5 w-5" /> },
             { id: 'documents', label: 'Documents', icon: <FileText className="h-5 w-5" /> },
         ];
@@ -157,21 +169,30 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                <button
+                                    onClick={handleFinalResult}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                >
                                     <FileCheck className="h-4 w-4" />
                                     Final Result
                                 </button>
-                                <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                <button
+                                    onClick={handleConfirmationEmail}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                >
                                     <Mail className="h-4 w-4" />
                                     Confirmation Email
                                 </button>
-                                <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                <button
+                                    onClick={handlePortalPassword}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                >
                                     <Key className="h-4 w-4" />
                                     Send Portal Password
                                 </button>
                                 <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
                                     <Download className="h-4 w-4" />
-                                    Download PDF
+                                    Download Form
                                 </button>
                                 <Link
                                     href={`/admissions/applicants/${applicant.id}/edit`}
