@@ -645,21 +645,30 @@ export default function Index({ applications }: Props) {
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* NEW SECTION: Assign Student Number Container - Matches Screenshot */}
-                {selectedApplicant && (
-                    <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                        <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-gray-800">
+            {/* NEW SECTION: Assign Student Number Dialog */}
+            <Dialog
+                open={!!selectedApplicant}
+                onOpenChange={(open) => {
+                    if (!open) setSelectedRowId(null);
+                }}
+            >
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-gray-800">
                             <UserPlus className="h-6 w-6 text-gray-700" />
                             Assign Student Number
-                        </h2>
+                        </DialogTitle>
+                    </DialogHeader>
 
+                    {selectedApplicant && (
                         <form onSubmit={handleAssignStudentId} className="space-y-6">
                             {/* Selected Applicant Summary Box */}
                             <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-6">
                                 <h3 className="mb-4 text-sm font-medium text-gray-500">Selected Applicant</h3>
 
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     {/* Application # */}
                                     <div>
                                         <p className="mb-1 text-xs text-gray-500">Application #:</p>
@@ -669,7 +678,7 @@ export default function Index({ applications }: Props) {
                                     {/* Application Date */}
                                     <div>
                                         <p className="mb-1 text-xs text-gray-500">Application Date:</p>
-                                        <p className="tetx-md font-medium text-gray-900">
+                                        <p className="font-medium text-gray-900">
                                             {selectedApplicant.application_date
                                                 ? format(new Date(selectedApplicant.application_date), 'MMM dd, yyyy')
                                                 : 'N/A'}
@@ -677,7 +686,7 @@ export default function Index({ applications }: Props) {
                                     </div>
 
                                     {/* Name */}
-                                    <div>
+                                    <div className="col-span-2">
                                         <p className="mb-1 text-xs text-gray-500">Name:</p>
                                         <p className="text-md font-bold text-gray-900">
                                             {selectedApplicant.first_name} {selectedApplicant.last_name}
@@ -685,7 +694,7 @@ export default function Index({ applications }: Props) {
                                     </div>
 
                                     {/* Email */}
-                                    <div>
+                                    <div className="col-span-2">
                                         <p className="mb-1 text-xs text-gray-500">Email:</p>
                                         <p className="font-medium text-gray-900">{selectedApplicant.email}</p>
                                     </div>
@@ -693,35 +702,42 @@ export default function Index({ applications }: Props) {
                             </div>
 
                             {/* Input Field */}
-                            <div className="flex-2">
-                                <label htmlFor="studentIdInput" className="mb-2 block font-semibold text-gray-700">
+                            <div>
+                                <label htmlFor="studentIdInput" className="mb-1 block font-semibold text-gray-700">
                                     Student Number
                                 </label>
 
-                                {/* Input + Button inline */}
-                                <div className="flex items-center gap-3">
+                                {/* Input + Button stack */}
+                                <div className="flex flex-col gap-3">
                                     <input
                                         id="studentIdInput"
                                         type="text"
                                         value={assignIdValue}
                                         onChange={(e) => setAssignIdValue(e.target.value)}
-                                        className="h-10 flex-1 rounded-md border border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                                        className="h-10 w-full rounded-md border border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                                        placeholder="Enter Student ID"
                                     />
+                                    <p className="text-xs text-gray-500">Auto-generated. You can modify if needed.</p>
 
-                                    <Button
-                                        type="submit"
-                                        className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
-                                    >
-                                        Assign Student Number
-                                    </Button>
+                                    <div className="mt-2 flex w-full gap-3">
+                                        <Button type="button" variant="outline" className="flex-1" onClick={() => setSelectedRowId(null)}>
+                                            Cancel
+                                        </Button>
+
+                                        <Button
+                                            type="submit"
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
+                                        >
+                                            Assign Student Number
+                                        </Button>
+                                    </div>
                                 </div>
-
-                                <p className="mt-2 text-xs text-gray-500">Auto-generated. You can modify if needed.</p>
                             </div>
                         </form>
-                    </div>
-                )}
-            </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
