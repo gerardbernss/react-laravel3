@@ -231,16 +231,21 @@ export default function Index({ applications }: Props) {
 
     const totalPages = Math.ceil(sortedApplicants.length / pageSize);
 
-    const columns = [
-        { key: 'application_number' as keyof Applicant, label: 'Application Number' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'sex' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
+    // Memoize the columns array to prevent it from being recreated on every render.
+    // This is a performance optimization that can help to reduce unnecessary re-renders.
+    const columns = useMemo(
+        () => [
+            { key: 'application_number' as keyof Applicant, label: 'Application Number' },
+            { key: 'first_name' as keyof Applicant, label: 'First Name' },
+            { key: 'last_name' as keyof Applicant, label: 'Last Name' },
+            { key: 'email' as keyof Applicant, label: 'Email' },
+            { key: 'sex' as keyof Applicant, label: 'Gender' },
+            { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
+            { key: 'application_date' as keyof Applicant, label: 'Application Date' },
+            { key: 'application_status' as keyof Applicant, label: 'Application Status' },
+        ],
+        [],
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
