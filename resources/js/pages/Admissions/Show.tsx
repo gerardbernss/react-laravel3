@@ -201,6 +201,18 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                     <Edit className="h-4 w-4" />
                                     Edit Profile
                                 </Link>
+                                <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                    <FileCheck className="h-4 w-4" />
+                                    Final Result
+                                </button>
+                                <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                    <Mail className="h-4 w-4" />
+                                    Confirmation Email
+                                </button>
+                                <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                    <Key className="h-4 w-4" />
+                                    Send Portal Password
+                                </button>
                             </div>
                         </div>
                     </div>
