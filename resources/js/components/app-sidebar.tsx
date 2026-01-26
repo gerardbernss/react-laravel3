@@ -6,7 +6,20 @@ import { usePermissions } from '@/hooks/useAuth';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, FilePlus, FileSearchIcon, Folder, Key, LayoutGrid, Shield, UserRoundPen, Users } from 'lucide-react';
+import {
+    BookOpen,
+    Briefcase,
+    ClipboardList,
+    FilePlus,
+    FileSearchIcon,
+    Folder,
+    Key,
+    LayoutGrid,
+    Shield,
+    UserCheck,
+    UserRoundPen,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 /**
@@ -27,9 +40,33 @@ const allNavItems: NavItem[] = [
         permission: 'view-permissions',
     },
     {
-        title: 'Evaluation/Assessment',
+        title: 'Student Admissions',
         href: '/admissions/applicants',
+        icon: Briefcase,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Entrance Exams',
+        href: '/admissions/entrance-exams',
         icon: FileSearchIcon,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Assessments',
+        href: '/admissions/assessments',
+        icon: ClipboardList,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Portal Credentials',
+        href: '/admissions/portal-credentials',
+        icon: UserCheck,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Enrollments',
+        href: '/admissions/enrollments',
+        icon: UserRoundPen,
         permission: 'view-permissions',
     },
     {

@@ -66,4 +66,18 @@ class ApplicantPersonalData extends Model
         return $this->hasMany(ApplicantSiblings::class, 'applicant_personal_data_id');
     }
 
+    public function portalCredential()
+    {
+        return $this->hasOne(PortalCredential::class, 'applicant_personal_data_id');
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class, 'applicant_personal_data_id');
+    }
+
+    public function entranceExam()
+    {
+        return $this->hasOne(EntranceExam::class, 'applicant_personal_data_id');
+    }
 }

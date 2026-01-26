@@ -1,8 +1,24 @@
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ClipboardList, Download, Edit, FileCheck, FileText, GraduationCap, Key, Mail, MapPin, User, UserPlus, Users } from 'lucide-react';
+import {
+    ArrowLeft,
+    ClipboardList,
+    Download,
+    Edit,
+    FileCheck,
+    FileText,
+    GraduationCap,
+    Key,
+    Loader,
+    Mail,
+    MapPin,
+    User,
+    UserPlus,
+    Users,
+} from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 interface InfoRowProps {
     label: string;
@@ -15,8 +31,8 @@ interface StatusBadgeProps {
 
 export default function ViewProfile({ applicant }: { applicant: any }) {
     const [activeSection, setActiveSection] = useState('application');
-
     const [open, setOpen] = useState(false);
+    const [sendingEmail, setSendingEmail] = useState<string | null>(null);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Applicant List', href: '/admissions/applicants' },
@@ -26,17 +42,35 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
         },
     ];
 
-    const handleFinalResult = () => {
-        window.open(`/admissions/applicants/${applicant.id}/send-final-result`);
+    const sendEmail = async (type: 'final-result' | 'confirmation-email' | 'portal-password') => {
+        setSendingEmail(type);
+
+        try {
+            const response = await fetch(`/admissions/applicants/${applicant.id}/send-${type}`, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data.message || 'Email sent successfully!');
+            } else {
+                toast.error(data.message || 'Failed to send email');
+            }
+        } catch (error) {
+            toast.error('An error occurred while sending the email');
+            console.error('Email send error:', error);
+        } finally {
+            setSendingEmail(null);
+        }
     };
 
-    const handleConfirmationEmail = () => {
-        window.open(`/admissions/applicants/${applicant.id}/send-confirmation-email`);
-    };
-
-    const handlePortalPassword = () => {
-        window.open(`/admissions/applicants/${applicant.id}/send-portal-password`);
-    };
+    const handleFinalResult = () => sendEmail('final-result');
+    const handleConfirmationEmail = () => sendEmail('confirmation-email');
+    const handlePortalPassword = () => sendEmail('portal-password');
 
     const FormNavigation = () => {
         const [activeSection, setActiveSection] = React.useState('application');
@@ -171,24 +205,35 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleFinalResult}
-                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                    disabled={sendingEmail !== null}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <FileCheck className="h-4 w-4" />
-                                    Final Result
+                                    {sendingEmail === 'final-result' ? (
+                                        <Loader className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <FileCheck className="h-4 w-4" />
+                                    )}
+                                    {sendingEmail === 'final-result' ? 'Sending...' : 'Final Result'}
                                 </button>
                                 <button
                                     onClick={handleConfirmationEmail}
-                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                    disabled={sendingEmail !== null}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <Mail className="h-4 w-4" />
-                                    Confirmation Email
+                                    {sendingEmail === 'confirmation-email' ? (
+                                        <Loader className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Mail className="h-4 w-4" />
+                                    )}
+                                    {sendingEmail === 'confirmation-email' ? 'Sending...' : 'Confirmation Email'}
                                 </button>
                                 <button
                                     onClick={handlePortalPassword}
-                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                    disabled={sendingEmail !== null}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <Key className="h-4 w-4" />
-                                    Send Portal Password
+                                    {sendingEmail === 'portal-password' ? <Loader className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                                    {sendingEmail === 'portal-password' ? 'Sending...' : 'Send Portal Password'}
                                 </button>
                                 <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
                                     <Download className="h-4 w-4" />

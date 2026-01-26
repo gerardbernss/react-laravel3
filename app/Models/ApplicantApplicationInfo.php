@@ -51,4 +51,46 @@ class ApplicantApplicationInfo extends Model
         return $this->hasOne(ApplicantDocuments::class, 'applicant_application_info_id');
     }
 
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class, 'applicant_application_info_id');
+    }
+
+    public function portalCredential()
+    {
+        return $this->hasOne(PortalCredential::class, 'applicant_application_info_id');
+    }
+
+    public function student()
+    {
+        return $this->hasOne(Student::class, 'applicant_application_info_id');
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(EnrollmentAuditLog::class, 'applicant_application_info_id');
+    }
+
+    public function entranceExam()
+    {
+        return $this->hasOne(EntranceExam::class, 'applicant_application_info_id');
+    }
+
+    /**
+     * Scopes
+     */
+    public function scopeEnrolled($query)
+    {
+        return $query->where('application_status', 'Enrolled');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('application_status', 'Pending');
+    }
+
+    public function scopeExamTaken($query)
+    {
+        return $query->where('application_status', 'Exam Taken');
+    }
 }

@@ -39,15 +39,15 @@ Route::middleware('guest')->group(function () {
     // Google OAuth routes
     Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
         ->name('auth.google');
-    
+
     Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])
         ->name('auth.google.callback');
-    
+
     // Handle OPTIONS requests for CORS
     Route::options('auth/google', function () {
         return response('', 200);
     });
-    
+
     Route::options('auth/google/callback', function () {
         return response('', 200);
     });

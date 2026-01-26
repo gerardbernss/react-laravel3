@@ -1,6 +1,7 @@
 <?php
 namespace App\Mail;
 
+use App\Models\PortalCredential;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -11,14 +12,16 @@ class PortalPasswordMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $applicant;
+    public PortalCredential $credential;
+    public string $temporaryPassword;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($applicant)
+    public function __construct(PortalCredential $credential, string $temporaryPassword)
     {
-        $this->applicant = $applicant;
+        $this->credential        = $credential;
+        $this->temporaryPassword = $temporaryPassword;
     }
 
     /**
@@ -26,8 +29,10 @@ class PortalPasswordMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $studentName = $this->credential->personalData?->first_name . ' ' . $this->credential->personalData?->last_name;
+
         return new Envelope(
-            subject: 'Student Portal Credentials',
+            subject: "Your Student Portal Login Credentials - {$studentName}",
         );
     }
 
@@ -38,13 +43,17 @@ class PortalPasswordMail extends Mailable
     {
         return new Content(
             view: 'emails.portal_password',
+            with: [
+                'credential'        => $this->credential,
+                'temporaryPassword' => $this->temporaryPassword,
+                'studentName'       => $this->credential->personalData?->first_name . ' ' . $this->credential->personalData?->last_name,
+                'portalUrl'         => config('app.url') . '/student-portal',
+            ],
         );
     }
 
     /**
      * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
     public function attachments(): array
     {

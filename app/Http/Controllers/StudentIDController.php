@@ -118,21 +118,42 @@ class StudentIDController extends Controller
     // Controller
     public function emailStudentID($id)
     {
-        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+        try {
+            $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
 
-        $student = Student::where('application_id', $application->id)
-            ->orWhere('applicant_personal_data_id', $application->personalData->id)
-            ->first();
+            if (! $application->personalData || ! $application->personalData->email) {
+                return response()->json([
+                    'message' => 'Applicant email not found.',
+                ], 400);
+            }
 
-        $mailData = [
-            'first_name'        => $application->personalData->first_name,
-            'last_name'         => $application->personalData->last_name,
-            'student_id_number' => $student->student_id_number ?? 'Not assigned',
-            'email'             => $application->personalData->email,
-        ];
+            $student = Student::where('application_id', $application->id)
+                ->orWhere('applicant_personal_data_id', $application->personalData->id)
+                ->first();
 
-        Mail::to($application->personalData->email)->send(new StudentAdmissionsMail($mailData));
+            if (! $student) {
+                return response()->json([
+                    'message' => 'Student record not found.',
+                ], 400);
+            }
 
-        return back()->with('success', 'ID Number successfully sent.');
+            $mailData = [
+                'first_name'        => $application->personalData->first_name,
+                'last_name'         => $application->personalData->last_name,
+                'student_id_number' => $student->student_id_number ?? 'Not assigned',
+                'email'             => $application->personalData->email,
+            ];
+
+            Mail::to($application->personalData->email)->send(new StudentAdmissionsMail($mailData));
+
+            return response()->json([
+                'message' => 'Student ID email sent successfully.',
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send student ID email: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

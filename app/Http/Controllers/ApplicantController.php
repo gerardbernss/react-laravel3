@@ -6,6 +6,7 @@ use App\Mail\FinalResultMail;
 use App\Mail\PortalPasswordMail;
 use App\Models\ApplicantApplicationInfo;
 use App\Models\ApplicantPersonalData;
+use App\Models\PortalCredential;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,9 +15,34 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
+/**
+ * ApplicantController - Admin Portal
+ *
+ * Manages applicant data for administrators, including creating, updating, and viewing
+ * applications. This controller handles the complete lifecycle of student applications
+ * from submission through enrollment, including document management and email notifications.
+ *
+ * Key Features:
+ * - Full CRUD operations for applicant records
+ * - Manual and automatic application number generation
+ * - Multi-step application data handling (personal, family, educational background)
+ * - Document upload and storage management
+ * - Email notifications (confirmation, results, portal credentials)
+ * - Student record creation upon enrollment
+ *
+ * @package App\Http\Controllers
+ */
 class ApplicantController extends Controller
 {
-    // Display all applications with full relationships.
+    /**
+     * Display all applications with flattened personal data
+     *
+     * Retrieves all applications with their associated personal data and formats them
+     * into a flat structure for easier frontend consumption. Used in the admin dashboard
+     * to display a list of all applicants.
+     *
+     * @return \Inertia\Response Renders the Admissions/Index page with application data
+     */
     public function index()
     {
         $applications = ApplicantApplicationInfo::with([
@@ -46,8 +72,17 @@ class ApplicantController extends Controller
         ]);
     }
 
-    // Display a single applicant with full details.
-
+    /**
+     * Display a single applicant with full details
+     *
+     * Retrieves a complete applicant record including all related data:
+     * personal information, family background, siblings, educational history,
+     * and uploaded documents. Used in the applicant detail view.
+     *
+     * @param int $id The applicant application info ID
+     * @return \Inertia\Response Renders the Admissions/Show page with complete applicant data
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException If application not found
+     */
     public function show($id)
     {
         $application = ApplicantApplicationInfo::with([
@@ -62,13 +97,32 @@ class ApplicantController extends Controller
         ]);
     }
 
-    // Render the create form page.
+    /**
+     * Render the create applicant form page
+     *
+     * Displays the form for administrators to manually add a new applicant.
+     * This is different from the public application forms used by prospective students.
+     *
+     * @return \Inertia\Response Renders the Admissions/AddApplicant form
+     */
     public function create()
     {
         return Inertia::render('Admissions/AddApplicant');
     }
 
-    // Generate application number
+    /**
+     * Determine the application number prefix based on year level
+     *
+     * Assigns a letter prefix for the application number based on the educational level:
+     * - 'E' for Elementary (Kindergarten through Grade 6)
+     * - 'H' for High School (Grade 7 through Grade 12, covering both JHS and SHS)
+     *
+     * The method handles various input formats including numeric grades, text-based
+     * grade levels, and edge cases to ensure consistent categorization.
+     *
+     * @param mixed $yearLevel The year/grade level (e.g., "Grade 7", "Kindergarten", "11")
+     * @return string The prefix letter ('E' or 'H')
+     */
     private function getApplicationPrefixLetter($yearLevel): string
     {
         $normalized = Str::of((string) $yearLevel)->lower()->trim()->__toString();
@@ -138,7 +192,7 @@ class ApplicantController extends Controller
 
         try {
             // STEP 1: Handle Personal Data
-            $personalData = ApplicantPersonalData::where('email', $request->email)->first();
+            $personalData = ApplicantPersonalData::query()->where('email', $request->email)->first();
 
             $personalPayload = [
                 'last_name'                => $request->last_name,
@@ -171,7 +225,8 @@ class ApplicantController extends Controller
             ];
 
             if ($personalData) {
-                $personalData->update($personalPayload);
+                $personalData->fill($personalPayload);
+                $personalData->save();
             } else {
                 $personalData = ApplicantPersonalData::create($personalPayload);
             }
@@ -271,7 +326,7 @@ class ApplicantController extends Controller
             if ($request->application_number) {
                 $manualNumber = strtoupper(trim($request->application_number));
 
-                if (ApplicantApplicationInfo::where('application_number', $manualNumber)->exists()) {
+                if (ApplicantApplicationInfo::query()->where('application_number', $manualNumber)->exists()) {
                     throw new \Exception("The application number '$manualNumber' is already taken.");
                 }
 
@@ -450,7 +505,8 @@ class ApplicantController extends Controller
                 'health_conditions'        => $this->formatHealthConditions($request->health_conditions),
             ];
 
-            $application->personalData->update($personalPayload);
+            $application->personalData->fill($personalPayload);
+            $application->personalData->save();
 
             // STEP 2: Update Family Background
             $familyPayload = [
@@ -558,7 +614,7 @@ class ApplicantController extends Controller
             if ($request->application_number && $request->application_number !== $application->application_number) {
                 $manualNumber = strtoupper(trim($request->application_number));
 
-                if (ApplicantApplicationInfo::where('application_number', $manualNumber)
+                if (ApplicantApplicationInfo::query()->where('application_number', $manualNumber)
                     ->where('id', '!=', $id)
                     ->exists()) {
                     throw new \Exception("The application number '$manualNumber' is already taken.");
@@ -567,7 +623,8 @@ class ApplicantController extends Controller
                 $applicationPayload['application_number'] = $manualNumber;
             }
 
-            $application->update($applicationPayload);
+            $application->fill($applicationPayload);
+            $application->save();
 
             // STEP 5.5: Handle Enrollment - Create Student Record if status is "Enrolled"
             // STEP 5.5: Handle Enrollment - Ensure Student Record Exists
@@ -656,7 +713,7 @@ class ApplicantController extends Controller
             // Count other applications for this person
             $otherAppsCount = 0;
             if ($personalData) {
-                $otherAppsCount = $personalData->applications()->where('id', '!=', $id)->count();
+                $otherAppsCount = $personalData->applications()->query()->where('id', '!=', $id)->count();
             }
 
             if ($personalData && $otherAppsCount === 0) {
@@ -668,7 +725,7 @@ class ApplicantController extends Controller
                 // - This Application Info
                 // - Educational Background (via cascade from Application Info)
 
-                $personalData->delete();
+                ApplicantPersonalData::destroy($personalData->id);
             } else {
                 // If there are other applications, or no personal data attached,
                 // just delete this application and its direct children.
@@ -677,7 +734,7 @@ class ApplicantController extends Controller
                 $application->educationalBackground()->delete();
 
                 // Delete parent application
-                $application->delete();
+                ApplicantApplicationInfo::destroy($application->id);
             }
         });
 
@@ -689,52 +746,121 @@ class ApplicantController extends Controller
 
     public function sendFinalResult($id)
     {
-        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
-
-        if (! $application->personalData || ! $application->personalData->email) {
-            return back()->withErrors(['error' => 'Applicant email not found.']);
-        }
-
         try {
+            $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+            if (! $application->personalData || ! $application->personalData->email) {
+                return response()->json([
+                    'message' => 'Applicant email not found.',
+                ], 400);
+            }
+
             Mail::to($application->personalData->email)->send(new FinalResultMail($application));
-            return back()->with('success', 'Final result email sent successfully.');
+            return response()->json([
+                'message' => 'Final result email sent successfully.',
+            ], 200);
         } catch (\Exception $e) {
             Log::error('Failed to send final result email: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
     public function sendConfirmationEmail($id)
     {
-        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
-
-        if (! $application->personalData || ! $application->personalData->email) {
-            return back()->withErrors(['error' => 'Applicant email not found.']);
-        }
-
         try {
+            $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+            if (! $application->personalData || ! $application->personalData->email) {
+                return response()->json([
+                    'message' => 'Applicant email not found.',
+                ], 400);
+            }
+
             Mail::to($application->personalData->email)->send(new EmailConfirmationMail($application));
-            return back()->with('success', 'Confirmation email sent successfully.');
+            return response()->json([
+                'message' => 'Confirmation email sent successfully.',
+            ], 200);
         } catch (\Exception $e) {
             Log::error('Failed to send confirmation email: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+            return response()->json([
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
     public function sendPortalPassword($id)
     {
-        $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
-
-        if (! $application->personalData || ! $application->personalData->email) {
-            return back()->withErrors(['error' => 'Applicant email not found.']);
-        }
-
         try {
-            Mail::to($application->personalData->email)->send(new PortalPasswordMail($application));
-            return back()->with('success', 'Portal password email sent successfully.');
+            $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+
+            if (! $application->personalData) {
+                return response()->json([
+                    'message' => 'Applicant personal data not found.',
+                ], 400);
+            }
+
+            if (! $application->personalData->email) {
+                return response()->json([
+                    'message' => 'Applicant email not found.',
+                ], 400);
+            }
+
+            // Get or create portal credential
+            $credential = PortalCredential::where('applicant_application_info_id', $application->id)->first();
+
+            if (! $credential) {
+                // Create new credential if doesn't exist
+                $firstName = strtolower(Str::slug($application->personalData->first_name ?? 'applicant'));
+                $lastName  = strtolower(Str::slug($application->personalData->last_name ?? ''));
+
+                $username     = 'applicant.' . $firstName . (! empty($lastName) ? '.' . $lastName : '');
+                $baseUsername = $username;
+                $counter      = 1;
+
+                while (PortalCredential::where('username', $username)->exists()) {
+                    $username = $baseUsername . $counter;
+                    $counter++;
+                }
+
+                $temporaryPassword = Str::random(12);
+
+                $credential = PortalCredential::create([
+                    'applicant_personal_data_id'    => $application->applicant_personal_data_id,
+                    'applicant_application_info_id' => $application->id,
+                    'username'                      => $username,
+                    'temporary_password'            => bcrypt($temporaryPassword),
+                    'credentials_generated_at'      => now(),
+                ]);
+            } else {
+                // Generate new password for existing credential
+                $temporaryPassword = Str::random(12);
+                $credential->update([
+                    'temporary_password' => bcrypt($temporaryPassword),
+                ]);
+            }
+
+            // Reload credential to get relationships
+            $credential->load('personalData');
+
+            // Send the email with credentials
+            Mail::to($application->personalData->email)->send(new PortalPasswordMail($credential, $temporaryPassword));
+
+            // Update sent timestamp
+            $credential->update([
+                'credentials_sent_at' => now(),
+                'sent_via'            => 'email',
+            ]);
+
+            return response()->json([
+                'message' => 'Portal password email sent successfully.',
+            ], 200);
         } catch (\Exception $e) {
-            Log::error('Failed to send portal password email: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to send email: ' . $e->getMessage()]);
+            Log::error('Failed to send portal password email: ' . $e->getMessage() . ' - ' . $e->getTraceAsString());
+            return response()->json([
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
         }
     }
 

@@ -13,6 +13,11 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+// Login Demo Page
+Route::get('/login-demo', function () {
+    return Inertia::render('LoginDemo');
+})->name('login-demo');
+
 // Test CORS headers
 Route::get('/test-cors', function () {
     return response()->json(['message' => 'CORS test successful'], 200);
@@ -158,6 +163,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
     });
 });
+
+// Admission management routes
+require __DIR__ . '/admissions.php';
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

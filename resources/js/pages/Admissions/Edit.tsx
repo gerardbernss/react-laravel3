@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -929,7 +929,7 @@ export default function EditApplicant() {
                                                 name="suffix"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <LabelWithTooltip label="Suffix" tooltip="Optional — e.g., Jr., Sr., III." />
+                                                        <LabelWithTooltip label="Suffix" tooltip="Optional â€” e.g., Jr., Sr., III." />
                                                         <FormControl>
                                                             <Input placeholder="Jr., III" {...field} />
                                                         </FormControl>
@@ -1150,7 +1150,7 @@ export default function EditApplicant() {
                                                     name="present_zip"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <LabelWithTooltip label="ZIP Code *" tooltip="Enter your 4–6 digit postal ZIP code." />
+                                                            <LabelWithTooltip label="ZIP Code *" tooltip="Enter your 4â€“6 digit postal ZIP code." />
                                                             <FormControl>
                                                                 <Input type="text" inputMode="numeric" placeholder="2600" {...field} />
                                                             </FormControl>
@@ -1228,7 +1228,7 @@ export default function EditApplicant() {
                                                     name="permanent_zip"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <LabelWithTooltip label="ZIP Code *" tooltip="Enter your 4–6 digit postal ZIP code." />
+                                                            <LabelWithTooltip label="ZIP Code *" tooltip="Enter your 4â€“6 digit postal ZIP code." />
                                                             <FormControl>
                                                                 <Input type="text" inputMode="numeric" placeholder="2600" {...field} />
                                                             </FormControl>
@@ -1327,15 +1327,15 @@ export default function EditApplicant() {
                                                                     sx={{
                                                                         alignItems: 'center',
                                                                         '& .MuiFormControlLabel-label': {
-                                                                            fontSize: '0.875rem', // 👈 adjust text size here
-                                                                            color: '#374151', // Tailwind’s gray-700 equivalent
+                                                                            fontSize: '0.875rem', // ðŸ‘ˆ adjust text size here
+                                                                            color: '#374151', // Tailwindâ€™s gray-700 equivalent
                                                                             lineHeight: 1.4,
                                                                         },
                                                                     }}
                                                                 />
                                                             ))}
 
-                                                            {/* “Others” checkbox */}
+                                                            {/* â€œOthersâ€ checkbox */}
                                                             <FormControlLabel
                                                                 control={
                                                                     <Checkbox
@@ -1371,7 +1371,7 @@ export default function EditApplicant() {
                                                             />
                                                         </Box>
 
-                                                        {/* “Others” text box */}
+                                                        {/* â€œOthersâ€ text box */}
                                                         {Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others')) && (
                                                             <TextareaAutosize
                                                                 minRows={2}
@@ -1603,7 +1603,9 @@ export default function EditApplicant() {
                                                     render={({ field }) => {
                                                         // Normalize the value once at the top
                                                         const isEmployee =
-                                                            field.value === true || (field.value as any) === 1 || (field.value as any) === '1';
+                                                            field.value === true ||
+                                                            (field.value as unknown) === 1 ||
+                                                            (field.value as unknown) === '1';
 
                                                         return (
                                                             <FormItem className="flex h-full flex-col space-y-2">
@@ -1853,7 +1855,9 @@ export default function EditApplicant() {
                                                     render={({ field }) => {
                                                         // Normalize the value once at the top
                                                         const isEmployee =
-                                                            field.value === true || (field.value as any) === 1 || (field.value as any) === '1';
+                                                            field.value === true ||
+                                                            (field.value as unknown) === 1 ||
+                                                            (field.value as unknown) === '1';
 
                                                         return (
                                                             <FormItem className="flex h-full flex-col space-y-2">
@@ -2158,7 +2162,9 @@ export default function EditApplicant() {
                                                     render={({ field }) => {
                                                         // Normalize the value once at the top
                                                         const isEmployee =
-                                                            field.value === true || (field.value as any) === 1 || (field.value as any) === '1';
+                                                            field.value === true ||
+                                                            (field.value as unknown) === 1 ||
+                                                            (field.value as unknown) === '1';
 
                                                         return (
                                                             <FormItem className="flex h-full flex-col space-y-2">
@@ -2287,7 +2293,7 @@ export default function EditApplicant() {
                                                 render={({ field }) => {
                                                     // Normalize the value
                                                     const hasSibling =
-                                                        field.value === true || (field.value as any) === 1 || (field.value as any) === '1';
+                                                        field.value === true || (field.value as unknown) === 1 || (field.value as unknown) === '1';
 
                                                     // Store siblings in a variable
                                                     const siblings = form.watch('siblings');

@@ -1544,7 +1544,7 @@ export default function AddApplicant() {
                                                                         className={`rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors ${
                                                                             emailVerified
                                                                                 ? 'cursor-default bg-green-600'
-                                                                                : 'bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400'
+                                                                                : 'bg-blue-500 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400'
                                                                         }`}
                                                                     >
                                                                         {emailVerified
@@ -1653,7 +1653,7 @@ export default function AddApplicant() {
                                                                         className={`rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap text-white transition-colors ${
                                                                             altEmailVerified
                                                                                 ? 'cursor-default bg-green-600'
-                                                                                : 'bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400'
+                                                                                : 'bg-blue-500 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400'
                                                                         }`}
                                                                     >
                                                                         {altEmailVerified

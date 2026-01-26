@@ -13,7 +13,7 @@ export default function Start() {
             description: 'For Kindergarten to Grade 6 applicants',
             icon: <BookOpen className="h-16 w-16" />,
             color: 'bg-blue-500',
-            hoverColor: 'hover:bg-blue-600',
+            hoverColor: 'hover:bg-blue-700',
         },
         {
             id: 'jhs',
