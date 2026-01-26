@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\ApplicantController2;
 use App\Http\Controllers\ApplicantController;
+use App\Http\Controllers\ApplicantPortalController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\StudentIDController;
 use App\Http\Controllers\UsersController;
+use App\Models\ApplicantPersonalData;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -49,8 +52,20 @@ Route::prefix('applications')->name('applications.')->group(function () {
  */
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
+        // Check if user is an applicant
+        $isApplicant = ApplicantPersonalData::where('email', Auth::user()->email)->exists();
+        if ($isApplicant) {
+            return redirect()->route('applicant.dashboard');
+        }
         return Inertia::render('dashboard');
     })->name('dashboard');
+
+    // Applicant Portal Routes
+    Route::prefix('applicant')->name('applicant.')->group(function () {
+        Route::get('/dashboard', [ApplicantPortalController::class, 'index'])->name('dashboard');
+        Route::get('/profile/edit', [ApplicantPortalController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [ApplicantPortalController::class, 'update'])->name('profile.update');
+    });
 
     // applicant management
     Route::middleware(['permission:manage-applications'])->group(function () {
