@@ -36,6 +36,22 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type ColumnKey = keyof Applicant | 'actions';
+
+// Bolt: Move static data structures outside the component to ensure stable references and avoid recreation on every render.
+const columns: { key: ColumnKey; label: string }[] = [
+    { key: 'student_id_number', label: 'Student ID Number' },
+    { key: 'application_number', label: 'Application Number' },
+    { key: 'first_name', label: 'First Name' },
+    { key: 'last_name', label: 'Last Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'strand', label: 'Program/Strand' },
+    { key: 'application_date', label: 'Application Date' },
+    { key: 'application_status', label: 'Application Status' },
+    { key: 'actions', label: 'Actions' },
+];
+
 interface Props {
     applications: Applicant[];
 }
@@ -45,8 +61,6 @@ export default function Index({ applications }: Props) {
     const [selectedGender, setSelectedGender] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [selectedStrand, setSelectedStrand] = useState<string>('all');
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedApplicantIdForDelete, setSelectedApplicantIdForDelete] = useState<number | null>(null); // Renamed to avoid confusion
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [sortConfig, setSortConfig] = useState<{ key: keyof Applicant | null; direction: 'asc' | 'desc' }>({
         key: null,
@@ -60,9 +74,8 @@ export default function Index({ applications }: Props) {
 
     // Confirmation dialog state for overwrite
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-    const [pendingAssignIdValue, setPendingAssignIdValue] = useState('');
 
-    const [visibleColumns, setVisibleColumns] = useState<(keyof Applicant | 'actions')[]>([
+    const [visibleColumns] = useState<(keyof Applicant | 'actions')[]>([
         'student_id_number',
         'application_number',
         'first_name',
@@ -150,11 +163,23 @@ export default function Index({ applications }: Props) {
         }
     };
 
-    const toggleColumnVisibility = (key: keyof Applicant) => {
-        setVisibleColumns((prev) => (prev.includes(key) ? prev.filter((col) => col !== key) : [...prev, key]));
-    };
-
     const filteredApplicants = useMemo(() => {
+        // Bolt: Pre-calculate date range boundaries once to avoid redundant Date object creation inside the filter loop.
+        let fromTime: number | null = null;
+        let toTime: number | null = null;
+
+        if (dateRange?.from) {
+            const fromDate = new Date(dateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            fromTime = fromDate.getTime();
+
+            if (dateRange.to) {
+                const toDate = new Date(dateRange.to);
+                toDate.setHours(0, 0, 0, 0);
+                toTime = toDate.getTime();
+            }
+        }
+
         return applications.filter((a) => {
             const matchesSearch =
                 a.id.toString().includes(searchQuery) ||
@@ -168,23 +193,19 @@ export default function Index({ applications }: Props) {
             const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
 
             let matchesDate = true;
-            if (dateRange?.from) {
+            if (fromTime !== null) {
                 if (!a.application_date) {
                     matchesDate = false;
                 } else {
                     const appDateStr = a.application_date.split(' ')[0];
                     const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
-
                     appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
+                    const appTime = appDate.getTime();
 
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
+                    if (toTime !== null) {
+                        matchesDate = appTime >= fromTime && appTime <= toTime;
                     } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
+                        matchesDate = appTime >= fromTime;
                     }
                 }
             }
@@ -226,28 +247,7 @@ export default function Index({ applications }: Props) {
         return applications.find((app) => app.id === selectedRowId);
     }, [applications, selectedRowId]);
 
-    // 3. Add handler for Email ID action
-    const handleEmailId = (applicantId: number, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent row selection
-        // Your email logic here - you can use the EmailAssignIdButton component logic
-        // or create a new email sending function
-        console.log('Email ID for applicant:', applicantId);
-    };
 
-    type ColumnKey = keyof Applicant | 'actions';
-
-    const columns: { key: ColumnKey; label: string }[] = [
-        { key: 'student_id_number', label: 'Student ID Number' },
-        { key: 'application_number', label: 'Application Number' },
-        { key: 'first_name', label: 'First Name' },
-        { key: 'last_name', label: 'Last Name' },
-        { key: 'email', label: 'Email' },
-        { key: 'gender', label: 'Gender' },
-        { key: 'strand', label: 'Program/Strand' },
-        { key: 'application_date', label: 'Application Date' },
-        { key: 'application_status', label: 'Application Status' },
-        { key: 'actions', label: 'Actions' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
