@@ -34,6 +34,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+// Bolt: Move static data structures outside the component to ensure stable references and avoid recreation on every render.
+const columns = [
+    { key: 'application_number' as keyof Applicant, label: 'Application Number' },
+    { key: 'first_name' as keyof Applicant, label: 'First Name' },
+    { key: 'last_name' as keyof Applicant, label: 'Last Name' },
+    { key: 'email' as keyof Applicant, label: 'Email' },
+    { key: 'sex' as keyof Applicant, label: 'Gender' },
+    { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
+    { key: 'application_date' as keyof Applicant, label: 'Application Date' },
+    { key: 'application_status' as keyof Applicant, label: 'Application Status' },
+];
+
 interface Props {
     applications: Applicant[];
 }
@@ -165,6 +177,22 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
+        // Bolt: Pre-calculate date range boundaries once to avoid redundant Date object creation inside the filter loop.
+        let fromTime: number | null = null;
+        let toTime: number | null = null;
+
+        if (dateRange?.from) {
+            const fromDate = new Date(dateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            fromTime = fromDate.getTime();
+
+            if (dateRange.to) {
+                const toDate = new Date(dateRange.to);
+                toDate.setHours(0, 0, 0, 0);
+                toTime = toDate.getTime();
+            }
+        }
+
         return applications.filter((a) => {
             const matchesSearch =
                 a.id.toString().includes(searchQuery) ||
@@ -178,23 +206,19 @@ export default function Index({ applications }: Props) {
             const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
 
             let matchesDate = true;
-            if (dateRange?.from) {
+            if (fromTime !== null) {
                 if (!a.application_date) {
                     matchesDate = false;
                 } else {
                     const appDateStr = a.application_date.split(' ')[0];
                     const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
-
                     appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
+                    const appTime = appDate.getTime();
 
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
+                    if (toTime !== null) {
+                        matchesDate = appTime >= fromTime && appTime <= toTime;
                     } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
+                        matchesDate = appTime >= fromTime;
                     }
                 }
             }
@@ -231,16 +255,6 @@ export default function Index({ applications }: Props) {
 
     const totalPages = Math.ceil(sortedApplicants.length / pageSize);
 
-    const columns = [
-        { key: 'application_number' as keyof Applicant, label: 'Application Number' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'sex' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
