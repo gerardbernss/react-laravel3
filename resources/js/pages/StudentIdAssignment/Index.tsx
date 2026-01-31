@@ -61,8 +61,6 @@ export default function Index({ applications }: Props) {
     const [selectedGender, setSelectedGender] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [selectedStrand, setSelectedStrand] = useState<string>('all');
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedApplicantIdForDelete, setSelectedApplicantIdForDelete] = useState<number | null>(null); // Renamed to avoid confusion
     const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [sortConfig, setSortConfig] = useState<{ key: keyof Applicant | null; direction: 'asc' | 'desc' }>({
         key: null,
@@ -76,9 +74,8 @@ export default function Index({ applications }: Props) {
 
     // Confirmation dialog state for overwrite
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-    const [pendingAssignIdValue, setPendingAssignIdValue] = useState('');
 
-    const [visibleColumns, setVisibleColumns] = useState<(keyof Applicant | 'actions')[]>([
+    const [visibleColumns] = useState<(keyof Applicant | 'actions')[]>([
         'student_id_number',
         'application_number',
         'first_name',
@@ -166,10 +163,6 @@ export default function Index({ applications }: Props) {
         }
     };
 
-    const toggleColumnVisibility = (key: keyof Applicant) => {
-        setVisibleColumns((prev) => (prev.includes(key) ? prev.filter((col) => col !== key) : [...prev, key]));
-    };
-
     const filteredApplicants = useMemo(() => {
         // Bolt: Pre-calculate date range boundaries once to avoid redundant Date object creation inside the filter loop.
         let fromTime: number | null = null;
@@ -254,13 +247,6 @@ export default function Index({ applications }: Props) {
         return applications.find((app) => app.id === selectedRowId);
     }, [applications, selectedRowId]);
 
-    // 3. Add handler for Email ID action
-    const handleEmailId = (applicantId: number, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent row selection
-        // Your email logic here - you can use the EmailAssignIdButton component logic
-        // or create a new email sending function
-        console.log('Email ID for applicant:', applicantId);
-    };
 
 
     return (
