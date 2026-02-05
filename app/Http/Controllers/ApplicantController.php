@@ -45,8 +45,18 @@ class ApplicantController extends Controller
      */
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
+        // Performance Optimization: Select only necessary columns to reduce database load and memory usage.
+        // This avoids fetching large fields like addresses and health conditions that are not needed for the list view.
+        $applications = ApplicantApplicationInfo::select([
+            'id',
+            'application_number',
+            'application_date',
+            'application_status',
+            'strand',
+            'applicant_personal_data_id'
+        ])
+        ->with([
+            'personalData:id,last_name,first_name,middle_name,gender,email',
         ])->get();
 
         $flattenedApplications = $applications->map(function ($application) {
