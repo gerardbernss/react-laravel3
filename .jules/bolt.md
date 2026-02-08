@@ -1,0 +1,3 @@
+## 2026-02-08 - Optimized Applicants List Performance
+**Learning:** Selecting all columns from the database when only a few are needed for a list view can significantly increase memory usage and payload size, especially when relationships are involved. In React, performing expensive operations like `new Date()` inside a filter loop that runs on every search keystroke can lead to UI lag. Pre-calculating these values using `useMemo` is much more efficient.
+**Action:** Always use `select()` in Eloquent queries for list endpoints and pre-calculate loop-invariant values (like date timestamps or normalized strings) outside of filter/map loops in React components.
