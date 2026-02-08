@@ -25,6 +25,7 @@ interface Applicant {
     application_date?: string;
     application_status?: string;
     strand?: string;
+    application_date_timestamp?: number | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -34,11 +35,31 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+// Performance Optimization: Define stable data structures outside the component to prevent recreation on every render
+const columns = [
+    { key: 'application_number' as keyof Applicant, label: 'Application Number' },
+    { key: 'first_name' as keyof Applicant, label: 'First Name' },
+    { key: 'last_name' as keyof Applicant, label: 'Last Name' },
+    { key: 'email' as keyof Applicant, label: 'Email' },
+    { key: 'gender' as keyof Applicant, label: 'Gender' },
+    { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
+    { key: 'application_date' as keyof Applicant, label: 'Application Date' },
+    { key: 'application_status' as keyof Applicant, label: 'Application Status' },
+];
+
 interface Props {
     applications: Applicant[];
 }
 
 export default function Index({ applications }: Props) {
+    // Performance Optimization: Memoize processed applications with timestamps to avoid repeated date parsing in the filter loop
+    const processedApplications = useMemo(() => {
+        return applications.map((a) => ({
+            ...a,
+            application_date_timestamp: a.application_date ? new Date(a.application_date.split(' ')[0]).setHours(0, 0, 0, 0) : null,
+        }));
+    }, [applications]);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGender, setSelectedGender] = useState<string>('all');
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -164,43 +185,46 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
-        return applications.filter((a) => {
-            const matchesSearch =
-                a.id.toString().includes(searchQuery) ||
-                a.application_number.toLowerCase().includes(searchQuery) ||
-                a.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.email?.toLowerCase().includes(searchQuery.toLowerCase());
+        // Performance Optimization: Pre-calculate loop-invariant values outside the filter loop to reduce per-item processing overhead
+        const normalizedSearch = searchQuery.toLowerCase();
+        const normalizedGender = selectedGender.toLowerCase();
+        const normalizedStatus = selectedStatus.toLowerCase();
+        const normalizedStrand = selectedStrand.toLowerCase();
 
-            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === selectedGender.toLowerCase();
-            const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
-            const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
+        const fromTime = dateRange?.from ? new Date(dateRange.from).setHours(0, 0, 0, 0) : null;
+        const toTime = dateRange?.to ? new Date(dateRange.to).setHours(0, 0, 0, 0) : null;
+
+        return processedApplications.filter((a) => {
+            const matchesSearch =
+                !normalizedSearch ||
+                a.id.toString().includes(normalizedSearch) ||
+                a.application_number.toLowerCase().includes(normalizedSearch) ||
+                a.first_name?.toLowerCase().includes(normalizedSearch) ||
+                a.last_name?.toLowerCase().includes(normalizedSearch) ||
+                a.email?.toLowerCase().includes(normalizedSearch);
+
+            const matchesGender = normalizedGender === 'all' || a.gender?.toLowerCase() === normalizedGender;
+            const matchesStatus = normalizedStatus === 'all' || a.application_status?.toLowerCase() === normalizedStatus;
+            const matchesStrand = normalizedStrand === 'all' || a.strand?.toLowerCase() === normalizedStrand;
 
             let matchesDate = true;
-            if (dateRange?.from) {
-                if (!a.application_date) {
+            if (fromTime) {
+                const appTime = a.application_date_timestamp;
+                if (appTime === null || appTime === undefined) {
                     matchesDate = false;
                 } else {
-                    const appDateStr = a.application_date.split(' ')[0];
-                    const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
-
-                    appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
-
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
+                    // Using pre-calculated timestamp for ultra-fast comparison
+                    if (toTime) {
+                        matchesDate = appTime >= fromTime && appTime <= toTime;
                     } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
+                        matchesDate = appTime >= fromTime;
                     }
                 }
             }
 
             return matchesSearch && matchesGender && matchesStatus && matchesDate && matchesStrand;
         });
-    }, [applications, searchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
+    }, [processedApplications, searchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
 
     const sortedApplicants = useMemo(() => {
         if (!sortConfig.key) return filteredApplicants;
@@ -229,17 +253,6 @@ export default function Index({ applications }: Props) {
     }, [sortedApplicants, currentPage, pageSize]);
 
     const totalPages = Math.ceil(sortedApplicants.length / pageSize);
-
-    const columns = [
-        { key: 'application_number' as keyof Applicant, label: 'Application Number' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'gender' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
