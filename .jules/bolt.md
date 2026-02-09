@@ -1,0 +1,3 @@
+## 2026-02-09 - Optimize applicants list performance
+**Learning:** For list filtering in React components, pre-calculating loop-invariant values (like normalized search queries and date timestamps) outside the `.filter()` callback within `useMemo` minimizes per-item processing overhead. Also, selecting only required columns in the backend controller reduces the memory footprint and the amount of data transferred to the frontend, which is critical for lists that can grow large.
+**Action:** Always check for redundant operations inside filter/map loops in React components and optimize backend queries to select specific columns for list views.
