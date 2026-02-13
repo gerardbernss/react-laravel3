@@ -24,8 +24,16 @@ class ApplicantController2 extends Controller
 // Display all applications with full relationships.
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
+        // Performance optimization: Select only the columns needed for the index page to reduce memory usage and data transfer
+        $applications = ApplicantApplicationInfo::select([
+            'id',
+            'application_number',
+            'application_date',
+            'application_status',
+            'strand',
+            'applicant_personal_data_id',
+        ])->with([
+            'personalData:id,last_name,first_name,middle_name,gender,email',
         ])->get();
 
         $flattenedApplications = $applications->map(function ($application) {
