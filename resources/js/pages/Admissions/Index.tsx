@@ -34,6 +34,21 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/**
+ * Performance Optimization:
+ * Define static columns outside the component to prevent recreation on every render.
+ */
+const columns = [
+    { key: 'application_number' as keyof Applicant, label: 'Application Number' },
+    { key: 'first_name' as keyof Applicant, label: 'First Name' },
+    { key: 'last_name' as keyof Applicant, label: 'Last Name' },
+    { key: 'email' as keyof Applicant, label: 'Email' },
+    { key: 'gender' as keyof Applicant, label: 'Gender' },
+    { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
+    { key: 'application_date' as keyof Applicant, label: 'Application Date' },
+    { key: 'application_status' as keyof Applicant, label: 'Application Status' },
+];
+
 interface Props {
     applications: Applicant[];
 }
@@ -164,36 +179,42 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
+        /**
+         * Performance Optimization:
+         * Pre-calculate comparison values outside the filter loop.
+         */
+        const searchLower = searchQuery.toLowerCase();
+        const genderLower = selectedGender.toLowerCase();
+        const statusLower = selectedStatus.toLowerCase();
+        const strandLower = selectedStrand.toLowerCase();
+
+        const fromTimestamp = dateRange?.from ? new Date(dateRange.from).setHours(0, 0, 0, 0) : null;
+        const toTimestamp = dateRange?.to ? new Date(dateRange.to).setHours(0, 0, 0, 0) : null;
+
         return applications.filter((a) => {
             const matchesSearch =
                 a.id.toString().includes(searchQuery) ||
-                a.application_number.toLowerCase().includes(searchQuery) ||
-                a.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.email?.toLowerCase().includes(searchQuery.toLowerCase());
+                a.application_number.toLowerCase().includes(searchLower) ||
+                a.first_name?.toLowerCase().includes(searchLower) ||
+                a.last_name?.toLowerCase().includes(searchLower) ||
+                a.email?.toLowerCase().includes(searchLower);
 
-            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === selectedGender.toLowerCase();
-            const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
-            const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
+            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === genderLower;
+            const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === statusLower;
+            const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === strandLower;
 
             let matchesDate = true;
-            if (dateRange?.from) {
+            if (fromTimestamp !== null) {
                 if (!a.application_date) {
                     matchesDate = false;
                 } else {
-                    const appDateStr = a.application_date.split(' ')[0];
-                    const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
+                    // Extract date part and set to midnight for stable comparison
+                    const appDate = new Date(a.application_date.split(' ')[0]).setHours(0, 0, 0, 0);
 
-                    appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
-
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
+                    if (toTimestamp !== null) {
+                        matchesDate = appDate >= fromTimestamp && appDate <= toTimestamp;
                     } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
+                        matchesDate = appDate >= fromTimestamp;
                     }
                 }
             }
@@ -229,17 +250,6 @@ export default function Index({ applications }: Props) {
     }, [sortedApplicants, currentPage, pageSize]);
 
     const totalPages = Math.ceil(sortedApplicants.length / pageSize);
-
-    const columns = [
-        { key: 'application_number' as keyof Applicant, label: 'Application Number' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'gender' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

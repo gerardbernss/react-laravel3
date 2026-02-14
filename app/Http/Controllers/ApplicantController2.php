@@ -24,9 +24,25 @@ class ApplicantController2 extends Controller
 // Display all applications with full relationships.
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
-        ])->get();
+        /**
+         * Performance Optimization:
+         * 1. Use select() to fetch only required columns from the main table.
+         * 2. Use constrained eager loading to fetch only required columns from the related table.
+         * 3. This reduces memory usage and database I/O by avoiding unnecessary data hydration.
+         */
+        $applications = ApplicantApplicationInfo::query()
+            ->select([
+                'id',
+                'application_number',
+                'application_date',
+                'application_status',
+                'strand',
+                'applicant_personal_data_id',
+            ])
+            ->with([
+                'personalData:id,last_name,first_name,gender,email',
+            ])
+            ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
             return [
@@ -36,15 +52,14 @@ class ApplicantController2 extends Controller
                 'application_status' => $application->application_status,
                 'strand'             => $application->strand,
 
-                // Personal Data
-                'last_name'          => $application->personalData->last_name ?? null,
-                'first_name'         => $application->personalData->first_name ?? null,
-                'middle_name'        => $application->personalData->middle_name ?? null,
-                'gender'             => $application->personalData->gender ?? null,
-                'email'              => $application->personalData->email ?? null,
+                // Personal Data - only include fields used by the frontend
+                'last_name'  => $application->personalData->last_name ?? null,
+                'first_name' => $application->personalData->first_name ?? null,
+                'email'      => $application->personalData->email ?? null,
+                // The frontend page (Applications/Index.tsx) expects 'sex' instead of 'gender'
+                'sex'        => $application->personalData->gender ?? null,
             ];
-        }
-        );
+        });
 
         return Inertia::render('Applications/Index', [
             'applications' => $flattenedApplications,
