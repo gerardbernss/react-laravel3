@@ -1,0 +1,3 @@
+## 2025-02-15 - Optimizing Applicant Data Management
+**Learning:** Large relational datasets in Laravel/Inertia apps often suffer from "over-fetching" where entire model instances with all columns (including large text blobs) are sent to the frontend. Additionally, React client-side filtering can become a bottleneck if loop-invariant operations like `.toLowerCase()` or `new Date()` are performed inside the `.filter()` callback.
+**Action:** Always use `select()` and constrained eager loading in controllers to limit payload size. Hoist static data outside React components and pre-calculate search/filter variables before entering tight loops.

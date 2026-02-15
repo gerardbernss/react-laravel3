@@ -24,9 +24,21 @@ class ApplicantController2 extends Controller
 // Display all applications with full relationships.
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
-        ])->get();
+        // Performance optimization: Select only necessary columns to reduce memory usage and data transfer size.
+        // Eager load only required fields from the personalData relationship.
+        $applications = ApplicantApplicationInfo::query()
+            ->select([
+                'id',
+                'application_number',
+                'application_date',
+                'application_status',
+                'strand',
+                'applicant_personal_data_id',
+            ])
+            ->with([
+                'personalData:id,last_name,first_name,middle_name,gender,email',
+            ])
+            ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
             return [
@@ -37,11 +49,11 @@ class ApplicantController2 extends Controller
                 'strand'             => $application->strand,
 
                 // Personal Data
-                'last_name'          => $application->personalData->last_name ?? null,
-                'first_name'         => $application->personalData->first_name ?? null,
-                'middle_name'        => $application->personalData->middle_name ?? null,
-                'gender'             => $application->personalData->gender ?? null,
-                'email'              => $application->personalData->email ?? null,
+                'last_name'  => $application->personalData->last_name ?? null,
+                'first_name' => $application->personalData->first_name ?? null,
+                'middle_name' => $application->personalData->middle_name ?? null,
+                'sex'        => $application->personalData->gender ?? null, // Map gender to sex for the public portal frontend
+                'email'      => $application->personalData->email ?? null,
             ];
         }
         );
