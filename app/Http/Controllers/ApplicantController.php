@@ -45,8 +45,17 @@ class ApplicantController extends Controller
      */
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
+        // Performance Optimization: Select only required columns and use constrained eager loading
+        // to reduce memory usage and database load while preserving necessary data.
+        $applications = ApplicantApplicationInfo::select([
+            'id',
+            'applicant_personal_data_id',
+            'application_number',
+            'application_date',
+            'application_status',
+            'strand',
+        ])->with([
+            'personalData:id,last_name,first_name,middle_name,gender,email',
         ])->get();
 
         $flattenedApplications = $applications->map(function ($application) {
@@ -57,7 +66,7 @@ class ApplicantController extends Controller
                 'application_status' => $application->application_status,
                 'strand'             => $application->strand,
 
-                // Personal Data
+                // Personal Data - fetched with specific columns for performance
                 'personal_data_id'   => $application->personalData->id ?? null,
                 'last_name'          => $application->personalData->last_name ?? null,
                 'first_name'         => $application->personalData->first_name ?? null,
