@@ -1,0 +1,3 @@
+## 2026-02-17 - Optimizing Data-Heavy Index Pages
+**Learning:** In this Laravel/React codebase, index pages often fetch all records and filter them on the frontend. Significant performance gains can be achieved by reducing the JSON payload size through column selection in the backend and optimizing the frontend filter logic to avoid redundant computations (like string conversions and date parsing) inside the loop.
+**Action:** Always check if `select()` and constrained eager loading are used in controllers, and ensure frontend filters in `useMemo` pre-calculate invariant values outside the filter loop.
