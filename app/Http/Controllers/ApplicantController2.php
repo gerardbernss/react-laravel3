@@ -21,12 +21,26 @@ class ApplicantController2 extends Controller
         return Inertia::render('Applications/Start');
     }
 
-// Display all applications with full relationships.
+    /**
+     * Display all applications with full relationships.
+     *
+     * Performance Optimization: Uses constrained eager loading and specific column selection
+     * to reduce memory usage and data transfer from the database.
+     */
     public function index()
     {
         $applications = ApplicantApplicationInfo::with([
-            'personalData',
-        ])->get();
+            'personalData:id,last_name,first_name,middle_name,gender,email',
+        ])
+        ->select([
+            'id',
+            'application_number',
+            'application_date',
+            'application_status',
+            'strand',
+            'applicant_personal_data_id'
+        ])
+        ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
             return [
@@ -40,7 +54,7 @@ class ApplicantController2 extends Controller
                 'last_name'          => $application->personalData->last_name ?? null,
                 'first_name'         => $application->personalData->first_name ?? null,
                 'middle_name'        => $application->personalData->middle_name ?? null,
-                'gender'             => $application->personalData->gender ?? null,
+                'sex'                => $application->personalData->gender ?? null, // Mapped to 'sex' as expected by Applications/Index.tsx
                 'email'              => $application->personalData->email ?? null,
             ];
         }

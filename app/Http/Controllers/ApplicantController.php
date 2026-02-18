@@ -41,13 +41,25 @@ class ApplicantController extends Controller
      * into a flat structure for easier frontend consumption. Used in the admin dashboard
      * to display a list of all applicants.
      *
+     * Performance Optimization: Uses constrained eager loading and specific column selection
+     * to reduce memory usage and data transfer from the database.
+     *
      * @return \Inertia\Response Renders the Admissions/Index page with application data
      */
     public function index()
     {
         $applications = ApplicantApplicationInfo::with([
-            'personalData',
-        ])->get();
+            'personalData:id,last_name,first_name,middle_name,gender,email',
+        ])
+        ->select([
+            'id',
+            'application_number',
+            'application_date',
+            'application_status',
+            'strand',
+            'applicant_personal_data_id'
+        ])
+        ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
             return [
