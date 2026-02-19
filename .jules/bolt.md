@@ -1,0 +1,3 @@
+## 2025-02-19 - Optimizing Applicant List Performance
+**Learning:** Combining backend query optimization (column selection) with frontend memoization (stable references and pre-calculated filter values) provides a multi-layered performance boost. Reducing the data payload size at the DB level significantly reduces memory pressure on both the PHP server and the client browser, while optimizing the React filter loop ensures smooth interactions even with large lists.
+**Action:** Always check if full Eloquent models are being sent to Inertia views when only a few columns are needed, and pre-calculate invariant values outside of tight loops like `.filter()` or `.map()` in React.
