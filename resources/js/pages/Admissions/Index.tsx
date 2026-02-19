@@ -38,6 +38,19 @@ interface Props {
     applications: Applicant[];
 }
 
+// PERFORMANCE OPTIMIZATION: Define static columns outside the component to ensure
+// a stable reference and prevent recreation on every render.
+const columns = [
+    { key: 'application_number' as keyof Applicant, label: 'Application Number' },
+    { key: 'first_name' as keyof Applicant, label: 'First Name' },
+    { key: 'last_name' as keyof Applicant, label: 'Last Name' },
+    { key: 'email' as keyof Applicant, label: 'Email' },
+    { key: 'gender' as keyof Applicant, label: 'Gender' },
+    { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
+    { key: 'application_date' as keyof Applicant, label: 'Application Date' },
+    { key: 'application_status' as keyof Applicant, label: 'Application Status' },
+];
+
 export default function Index({ applications }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGender, setSelectedGender] = useState<string>('all');
@@ -164,6 +177,16 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
+        // PERFORMANCE OPTIMIZATION: Pre-calculate timestamps outside the filter loop
+        // to avoid redundant Date object creation and parsing for every item.
+        const fromDate = dateRange?.from ? new Date(dateRange.from) : null;
+        if (fromDate) fromDate.setHours(0, 0, 0, 0);
+        const fromTime = fromDate?.getTime();
+
+        const toDate = dateRange?.to ? new Date(dateRange.to) : null;
+        if (toDate) toDate.setHours(0, 0, 0, 0);
+        const toTime = toDate?.getTime();
+
         return applications.filter((a) => {
             const matchesSearch =
                 a.id.toString().includes(searchQuery) ||
@@ -177,23 +200,18 @@ export default function Index({ applications }: Props) {
             const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
 
             let matchesDate = true;
-            if (dateRange?.from) {
+            if (fromTime) {
                 if (!a.application_date) {
                     matchesDate = false;
                 } else {
-                    const appDateStr = a.application_date.split(' ')[0];
-                    const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
-
+                    const appDate = new Date(a.application_date.split(' ')[0]);
                     appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
+                    const appTime = appDate.getTime();
 
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
+                    if (toTime) {
+                        matchesDate = appTime >= fromTime && appTime <= toTime;
                     } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
+                        matchesDate = appTime >= fromTime;
                     }
                 }
             }
@@ -229,17 +247,6 @@ export default function Index({ applications }: Props) {
     }, [sortedApplicants, currentPage, pageSize]);
 
     const totalPages = Math.ceil(sortedApplicants.length / pageSize);
-
-    const columns = [
-        { key: 'application_number' as keyof Applicant, label: 'Application Number' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'gender' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
