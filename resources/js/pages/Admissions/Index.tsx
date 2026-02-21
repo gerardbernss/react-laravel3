@@ -38,6 +38,17 @@ interface Props {
     applications: Applicant[];
 }
 
+const COLUMNS = [
+    { key: 'application_number' as keyof Applicant, label: 'Application Number' },
+    { key: 'first_name' as keyof Applicant, label: 'First Name' },
+    { key: 'last_name' as keyof Applicant, label: 'Last Name' },
+    { key: 'email' as keyof Applicant, label: 'Email' },
+    { key: 'gender' as keyof Applicant, label: 'Gender' },
+    { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
+    { key: 'application_date' as keyof Applicant, label: 'Application Date' },
+    { key: 'application_status' as keyof Applicant, label: 'Application Status' },
+];
+
 export default function Index({ applications }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGender, setSelectedGender] = useState<string>('all');
@@ -132,11 +143,11 @@ export default function Index({ applications }: Props) {
     };
 
     const handleExport = () => {
-        const headers = columns.filter((col) => visibleColumns.includes(col.key)).map((col) => col.label);
+        const headers = COLUMNS.filter((col) => visibleColumns.includes(col.key)).map((col) => col.label);
         const csvContent = [
             headers.join(','),
             ...sortedApplicants.map((row) =>
-                columns
+                COLUMNS
                     .filter((col) => visibleColumns.includes(col.key))
                     .map((col) => {
                         const value = row[col.key];
@@ -164,36 +175,54 @@ export default function Index({ applications }: Props) {
     };
 
     const filteredApplicants = useMemo(() => {
+        // Performance optimization: Pre-calculate loop-invariant values outside the filter loop
+        // to minimize per-item processing overhead.
+        const query = searchQuery.toLowerCase();
+        const genderFilter = selectedGender === 'all' ? null : selectedGender.toLowerCase();
+        const statusFilter = selectedStatus === 'all' ? null : selectedStatus.toLowerCase();
+        const strandFilter = selectedStrand === 'all' ? null : selectedStrand.toLowerCase();
+
+        let fromTime: number | null = null;
+        let toTime: number | null = null;
+
+        if (dateRange?.from) {
+            const fromDate = new Date(dateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            fromTime = fromDate.getTime();
+
+            if (dateRange.to) {
+                const toDate = new Date(dateRange.to);
+                toDate.setHours(0, 0, 0, 0);
+                toTime = toDate.getTime();
+            }
+        }
+
         return applications.filter((a) => {
             const matchesSearch =
                 a.id.toString().includes(searchQuery) ||
-                a.application_number.toLowerCase().includes(searchQuery) ||
-                a.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.email?.toLowerCase().includes(searchQuery.toLowerCase());
+                a.application_number.toLowerCase().includes(query) ||
+                a.first_name?.toLowerCase().includes(query) ||
+                a.last_name?.toLowerCase().includes(query) ||
+                a.email?.toLowerCase().includes(query);
 
-            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === selectedGender.toLowerCase();
-            const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
-            const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
+            const matchesGender = !genderFilter || a.gender?.toLowerCase() === genderFilter;
+            const matchesStatus = !statusFilter || a.application_status?.toLowerCase() === statusFilter;
+            const matchesStrand = !strandFilter || a.strand?.toLowerCase() === strandFilter;
 
             let matchesDate = true;
-            if (dateRange?.from) {
+            if (fromTime !== null) {
                 if (!a.application_date) {
                     matchesDate = false;
                 } else {
                     const appDateStr = a.application_date.split(' ')[0];
                     const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
-
                     appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
+                    const appTime = appDate.getTime();
 
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
+                    if (toTime !== null) {
+                        matchesDate = appTime >= fromTime && appTime <= toTime;
                     } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
+                        matchesDate = appTime >= fromTime;
                     }
                 }
             }
@@ -230,16 +259,6 @@ export default function Index({ applications }: Props) {
 
     const totalPages = Math.ceil(sortedApplicants.length / pageSize);
 
-    const columns = [
-        { key: 'application_number' as keyof Applicant, label: 'Application Number' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'gender' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -492,7 +511,7 @@ export default function Index({ applications }: Props) {
                                 <PopoverContent className="w-56" align="end">
                                     <div className="space-y-2">
                                         <h4 className="mb-2 text-sm font-semibold">Toggle Columns</h4>
-                                        {columns.map((column) => (
+                                        {COLUMNS.map((column) => (
                                             <div key={String(column.key)} className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
@@ -556,7 +575,7 @@ export default function Index({ applications }: Props) {
                                             className="h-4 w-4 cursor-pointer rounded border-gray-300"
                                         />
                                     </th>
-                                    {columns
+                                    {COLUMNS
                                         .filter((col) => visibleColumns.includes(col.key))
                                         .map((column) => (
                                             <th
