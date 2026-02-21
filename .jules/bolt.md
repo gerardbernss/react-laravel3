@@ -1,0 +1,3 @@
+## 2025-02-21 - Optimizing list filtering with loop-invariant pre-calculation
+**Learning:** In React components that perform client-side filtering (e.g., using `.filter()` inside `useMemo`), calling expensive constructors or methods like `new Date()` or `setHours()` inside the filter callback for every item is a significant performance bottleneck. This is especially true when filtering large datasets or when the filter is triggered frequently (e.g., on every keystroke in a search input).
+**Action:** Always pre-calculate loop-invariant values (like date boundaries, normalized search queries, or converted filter values) outside the `.filter()` or `.map()` callback. This ensures they are calculated only once per render/memoization-update instead of N times.
