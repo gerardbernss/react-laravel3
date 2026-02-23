@@ -45,27 +45,26 @@ class ApplicantController extends Controller
      */
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
-            'personalData',
-        ])->get();
+        // Performance Optimization: Use a database join to fetch and flatten data in a single query.
+        // This avoids the overhead of hydrating thousands of Eloquent models and mapping them in PHP memory.
+        // We use leftJoin to ensure applications without personal data records (if any) are still included.
+        $flattenedApplications = ApplicantApplicationInfo::leftJoin('applicant_personal_data', 'applicant_application_info.applicant_personal_data_id', '=', 'applicant_personal_data.id')
+            ->select([
+                'applicant_application_info.id',
+                'applicant_application_info.application_number',
+                'applicant_application_info.application_date',
+                'applicant_application_info.application_status',
+                'applicant_application_info.strand',
 
-        $flattenedApplications = $applications->map(function ($application) {
-            return [
-                'id'                 => $application->id,
-                'application_number' => $application->application_number,
-                'application_date'   => $application->application_date,
-                'application_status' => $application->application_status,
-                'strand'             => $application->strand,
-
-                // Personal Data
-                'personal_data_id'   => $application->personalData->id ?? null,
-                'last_name'          => $application->personalData->last_name ?? null,
-                'first_name'         => $application->personalData->first_name ?? null,
-                'middle_name'        => $application->personalData->middle_name ?? null,
-                'gender'             => $application->personalData->gender ?? null,
-                'email'              => $application->personalData->email ?? null,
-            ];
-        });
+                // Flattened Personal Data
+                'applicant_personal_data.id as personal_data_id',
+                'applicant_personal_data.last_name',
+                'applicant_personal_data.first_name',
+                'applicant_personal_data.middle_name',
+                'applicant_personal_data.gender',
+                'applicant_personal_data.email',
+            ])
+            ->get();
 
         return Inertia::render('Admissions/Index', [
             'applications' => $flattenedApplications,
