@@ -16,8 +16,17 @@ class AuthenticatedSessionController extends Controller
     /**
      * Show the login page.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        // Redirect to appropriate dashboard if already authenticated
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('dashboard');
+        }
+
+        if (Auth::guard('student')->check()) {
+            return redirect()->route('student.dashboard');
+        }
+
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
@@ -33,6 +42,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Redirect based on which guard was used
+        if ($request->authenticatedGuard === 'student') {
+            return redirect()->intended(route('student.dashboard', absolute: false));
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -41,7 +55,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Logout from both guards
         Auth::guard('web')->logout();
+        Auth::guard('student')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

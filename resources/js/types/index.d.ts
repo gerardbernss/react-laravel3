@@ -2,7 +2,20 @@ import { InertiaLinkProps } from '@inertiajs/react';
 import { LucideIcon } from 'lucide-react';
 
 export interface Auth {
-    user: User;
+    user: User | null;
+    student: Student | null;
+}
+
+export interface Student {
+    id: number;
+    username: string;
+    password_changed: boolean;
+    name: string;
+    email: string;
+    personal_data?: {
+        first_name: string;
+        last_name: string;
+    } | null;
 }
 
 export interface BreadcrumbItem {
@@ -17,7 +30,7 @@ export interface NavGroup {
 
 export interface NavItem {
     title: string;
-    href: NonNullable<InertiaLinkProps['href']>;
+    href?: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
     permission?: string;
@@ -66,4 +79,5 @@ export interface Permission {
     created_at: string;
     updated_at: string;
     roles?: Role[];
+    roles_count?: number;
 }

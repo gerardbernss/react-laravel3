@@ -46,7 +46,7 @@ export default function ApplicationSuccess() {
                 <div className="flex gap-3">
                     <Button
                         onClick={() => (window.location.href = '/dashboard')}
-                        className="flex flex-1 items-center justify-center gap-2 bg-[#073066] text-white hover:bg-[#05509e]"
+                        className="flex flex-1 items-center justify-center gap-2"
                     >
                         <Home className="h-4 w-4" />
                         Home
@@ -55,7 +55,7 @@ export default function ApplicationSuccess() {
                     <Button
                         variant="outline"
                         onClick={() => (window.location.href = '/applications/start')}
-                        className="flex flex-1 items-center justify-center gap-2 border-2 border-[#073066] text-[#073066] hover:bg-blue-50"
+                        className="flex flex-1 items-center justify-center gap-2"
                     >
                         <FileText className="h-4 w-4" />
                         New Application

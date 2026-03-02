@@ -18,7 +18,7 @@ interface LoginProps {
 
 export default function Login({ status, canResetPassword }: LoginProps) {
     return (
-        <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
+        <AuthLayout title="Log in to your account" description="Students and staff can log in using their email and password">
             <Head title="Log in" />
 
             <Form {...AuthenticatedSessionController.store.form()} resetOnSuccess={['password']} className="flex flex-col gap-6">
@@ -38,7 +38,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
-                                    className="rounded-lg border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:border-[#073066] focus:bg-white focus:ring-2 focus:ring-[#073066]/20"
+                                    className="rounded-lg border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -51,7 +51,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-xs font-medium text-[#073066] hover:text-[#004c88]"
+                                            className="ml-auto text-xs font-medium text-primary hover:text-primary/80"
                                             tabIndex={5}
                                         >
                                             Forgot password?
@@ -66,7 +66,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
-                                    className="rounded-lg border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:border-[#073066] focus:bg-white focus:ring-2 focus:ring-[#073066]/20"
+                                    className="rounded-lg border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -80,7 +80,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full rounded-lg bg-linear-to-r from-[#073066] to-[#004c88] py-2.5 font-semibold text-white shadow-md transition-all duration-200 hover:from-[#052247] hover:to-[#003966] hover:shadow-lg"
+                                size="lg"
+                                className="mt-2 w-full"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -91,8 +92,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         </div>
 
                         <div className="text-center text-sm text-gray-700">
-                            Forgot password?{' '}
-                            <TextLink href={register()} className="font-semibold text-[#073066] hover:text-[#004c88]" tabIndex={5}>
+                            Need an account?{' '}
+                            <TextLink href={register()} className="font-semibold text-primary hover:text-primary/80" tabIndex={5}>
                                 Account request
                             </TextLink>
                         </div>

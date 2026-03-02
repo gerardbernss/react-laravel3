@@ -42,6 +42,14 @@ class RolePermissionSeeder extends Seeder
             // System permissions
             ['name' => 'View Settings', 'slug' => 'view-settings', 'description' => 'Can view system settings'],
             ['name' => 'Manage Settings', 'slug' => 'manage-settings', 'description' => 'Can manage system settings'],
+
+            // Grade permissions
+            ['name' => 'View Grades', 'slug' => 'view-grades', 'description' => 'Can view student grades'],
+            ['name' => 'Manage Grades', 'slug' => 'manage-grades', 'description' => 'Can enter and edit student grades'],
+
+            // Attendance permissions
+            ['name' => 'View Attendance', 'slug' => 'view-attendance', 'description' => 'Can view attendance records'],
+            ['name' => 'Manage Attendance', 'slug' => 'manage-attendance', 'description' => 'Can mark and edit attendance'],
         ];
 
         foreach ($permissions as $permission) {
@@ -70,6 +78,13 @@ class RolePermissionSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        $facultyRole = Role::firstOrCreate(['slug' => 'faculty'], [
+            'name' => 'Faculty',
+            'slug' => 'faculty',
+            'description' => 'Faculty member - can manage grades and attendance',
+            'is_active' => true,
+        ]);
+
         // Assign all permissions to super admin
         $superAdminRole->syncPermissions(Permission::all()->pluck('id')->toArray());
 
@@ -87,6 +102,13 @@ class RolePermissionSeeder extends Seeder
             'view-users', 'view-roles', 'view-permissions',
         ])->pluck('id')->toArray();
         $userRole->syncPermissions($userPermissions);
+
+        // Assign grade and attendance permissions to faculty role
+        $facultyPermissions = Permission::whereIn('slug', [
+            'view-grades', 'manage-grades',
+            'view-attendance', 'manage-attendance',
+        ])->pluck('id')->toArray();
+        $facultyRole->syncPermissions($facultyPermissions);
 
         // Create a super admin user
         $superAdmin = User::firstOrCreate(['email' => 'admin@example.com'], [

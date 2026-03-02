@@ -1,11 +1,23 @@
 <?php
 
-use App\Http\Controllers\ApplicantController2;
-use App\Http\Controllers\ApplicantController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\RolesController;
-use App\Http\Controllers\StudentIDController;
-use App\Http\Controllers\UsersController;
+use App\Http\Controllers\Admissions\ApplicantController2;
+use App\Http\Controllers\Admissions\ApplicantController;
+use App\Http\Controllers\Admin\ApplicantExamAssignmentController;
+use App\Http\Controllers\Admin\BlockSectionsController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AttendanceController;
+use App\Http\Controllers\Admin\GradesController;
+use App\Http\Controllers\Admin\DiscountTypeController;
+use App\Http\Controllers\Admin\ExaminationRoomsController;
+use App\Http\Controllers\Admin\ExamSchedulesController;
+use App\Http\Controllers\Admin\FeeRateController;
+use App\Http\Controllers\Admin\FeeTypeController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RolesController;
+use App\Http\Controllers\Admin\ProgramsController;
+use App\Http\Controllers\Admin\SubjectsController;
+use App\Http\Controllers\Student\StudentIDController;
+use App\Http\Controllers\Admin\UsersController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -48,9 +60,7 @@ Route::prefix('applications')->name('applications.')->group(function () {
  * AUTHENTICATED ROUTES
  */
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // applicant management
     Route::middleware(['permission:manage-applications'])->group(function () {
@@ -63,19 +73,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admissions/applicants/{id}/edit', [ApplicantController::class, 'edit'])->name('applicants.edit');
         Route::put('/admissions/applicants/{id}', [ApplicantController::class, 'update'])->name('applicants.update');
         Route::delete('/admissions/applicants/{id}', [ApplicantController::class, 'destroy'])->name('applicants.destroy');
-        Route::get('/admissions/applicants/{id}/send-final-result', [ApplicantController::class, 'sendFinalResult'])->name('applicants.send-final-result');
-        Route::get('/admissions/applicants/{id}/send-confirmation-email', [ApplicantController::class, 'sendConfirmationEmail'])->name('applicants.send-confirmation-email');
-        Route::get('/admissions/applicants/{id}/send-portal-password', [ApplicantController::class, 'sendPortalPassword'])->name('applicants.send-portal-password');
+        Route::post('/admissions/applicants/{id}/send-final-result', [ApplicantController::class, 'sendFinalResult'])->name('applicants.send-final-result');
+        Route::post('/admissions/applicants/{id}/send-confirmation-email', [ApplicantController::class, 'sendConfirmationEmail'])->name('applicants.send-confirmation-email');
+        Route::post('/admissions/applicants/{id}/send-portal-password', [ApplicantController::class, 'sendPortalPassword'])->name('applicants.send-portal-password');
 
         Route::get('/view-document/{path}', function ($path) {
-            // Verify user is admin
-
             $decodedPath = base64_decode($path);
-
-            // Files are in storage/app/public/documents
-            // Remove "documents/" from the path since we'll add it back
-            $filename = basename($decodedPath);
-            $fullPath = storage_path('app/public/documents/' . $filename);
+            $filename    = basename($decodedPath);
+            $fullPath    = storage_path('app/public/documents/' . $filename);
 
             if (! file_exists($fullPath)) {
                 abort(404, 'Document not found');
@@ -90,7 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:manage-student-id-assignment'])->group(function (): void {
         Route::get('/studentidassignment', [StudentIDController::class, 'index'])->name('studentidassignment.index');
         Route::post('/studentidassignment', [StudentIDController::class, 'assignStudentId'])->name('studentidassignment.assignStudentId');
-        Route::get('/studentidassignment/{id}/email-admission', [StudentIDController::class, 'emailStudentID'])->name('studentidassignment.emailStudentID');
+        Route::post('/studentidassignment/{id}/email-admission', [StudentIDController::class, 'emailStudentID'])->name('studentidassignment.emailStudentID');
 
     });
 
@@ -162,10 +167,77 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:delete-permissions'])->group(function () {
         Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
     });
+
+    // Subject Management Routes
+    Route::resource('subjects', SubjectsController::class);
+    Route::post('/subjects/{subject}/toggle-status', [SubjectsController::class, 'toggleStatus'])->name('subjects.toggle-status');
+
+    // Block Section Management Routes
+    Route::resource('block-sections', BlockSectionsController::class);
+    Route::post('/block-sections/{blockSection}/toggle-status', [BlockSectionsController::class, 'toggleStatus'])->name('block-sections.toggle-status');
+
+    // Program Management Routes
+    Route::resource('programs', ProgramsController::class);
+    Route::post('/programs/{program}/toggle-status', [ProgramsController::class, 'toggleStatus'])->name('programs.toggle-status');
+
+    // Examination Rooms Management Routes
+    Route::resource('examination-rooms', ExaminationRoomsController::class);
+    Route::get('/api/examination-rooms/active', [ExaminationRoomsController::class, 'getActiveRooms'])->name('examination-rooms.active');
+
+    // Exam Schedules Management Routes
+    Route::resource('exam-schedules', ExamSchedulesController::class);
+    Route::get('/api/exam-schedules/available', [ExamSchedulesController::class, 'getAvailableSchedules'])->name('exam-schedules.available');
+
+    // Exam Assignments Management Routes
+    Route::get('/exam-assignments', [ApplicantExamAssignmentController::class, 'index'])->name('exam-assignments.index');
+    Route::get('/exam-assignments/create', [ApplicantExamAssignmentController::class, 'create'])->name('exam-assignments.create');
+    Route::post('/exam-assignments', [ApplicantExamAssignmentController::class, 'store'])->name('exam-assignments.store');
+    Route::post('/exam-assignments/bulk', [ApplicantExamAssignmentController::class, 'bulkStore'])->name('exam-assignments.bulk-store');
+    Route::patch('/exam-assignments/{assignment}/status', [ApplicantExamAssignmentController::class, 'updateStatus'])->name('exam-assignments.update-status');
+    Route::delete('/exam-assignments/{assignment}', [ApplicantExamAssignmentController::class, 'destroy'])->name('exam-assignments.destroy');
+
+    // Grades Management Routes
+    Route::middleware(['permission:view-grades'])->group(function () {
+        Route::get('/grades', [GradesController::class, 'index'])->name('grades.index');
+        Route::get('/grades/{blockSection}', [GradesController::class, 'show'])->name('grades.show');
+    });
+
+    Route::middleware(['permission:manage-grades'])->group(function () {
+        Route::put('/grades/{blockSection}', [GradesController::class, 'update'])->name('grades.update');
+    });
+
+    // Attendance Management Routes
+    Route::middleware(['permission:view-attendance'])->group(function () {
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/{blockSection}', [AttendanceController::class, 'show'])->name('attendance.show');
+    });
+
+    Route::middleware(['permission:manage-attendance'])->group(function () {
+        Route::post('/attendance/{blockSection}', [AttendanceController::class, 'store'])->name('attendance.store');
+    });
+
+    // Fee Management Routes
+    Route::prefix('admin')->name('admin.')->group(function () {
+        // Fee Types
+        Route::resource('fee-types', FeeTypeController::class);
+        Route::post('/fee-types/{feeType}/toggle-status', [FeeTypeController::class, 'toggleStatus'])->name('fee-types.toggle-status');
+
+        // Fee Rates
+        Route::resource('fee-rates', FeeRateController::class);
+        Route::post('/fee-rates/{feeRate}/toggle-status', [FeeRateController::class, 'toggleStatus'])->name('fee-rates.toggle-status');
+        Route::post('/fee-rates/copy-from-year', [FeeRateController::class, 'copyFromYear'])->name('fee-rates.copy-from-year');
+
+        // Discount Types
+        Route::resource('discount-types', DiscountTypeController::class);
+        Route::post('/discount-types/{discountType}/toggle-status', [DiscountTypeController::class, 'toggleStatus'])->name('discount-types.toggle-status');
+    });
 });
 
 // Admission management routes
 require __DIR__ . '/admissions.php';
+
+// Student portal routes
+require __DIR__ . '/student.php';
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

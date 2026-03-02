@@ -1,12 +1,41 @@
 <?php
+
 namespace App\Models;
 
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class PortalCredential extends Model
+class PortalCredential extends Authenticatable implements CanResetPasswordContract
 {
-    use HasFactory;
+    use HasFactory, Notifiable, CanResetPassword;
+
+    /**
+     * The column used for authentication password.
+     */
+    public function getAuthPassword()
+    {
+        return $this->temporary_password;
+    }
+
+    /**
+     * Get the email address for password reset.
+     * Uses the email from the related personal data.
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->personalData?->email ?? $this->username;
+    }
+
+    /**
+     * Route notifications for the mail channel.
+     */
+    public function routeNotificationForMail($notification = null): string
+    {
+        return $this->getEmailForPasswordReset();
+    }
 
     protected $fillable = [
         'applicant_personal_data_id',

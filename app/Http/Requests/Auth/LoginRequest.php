@@ -2,14 +2,21 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\PortalCredential;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    /**
+     * Track which guard was used for authentication.
+     */
+    public ?string $authenticatedGuard = null;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -33,6 +40,7 @@ class LoginRequest extends FormRequest
 
     /**
      * Attempt to authenticate the request's credentials.
+     * Tries admin (web) guard first, then student guard.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -40,15 +48,53 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
-            ]);
+        // Try admin/staff login first (web guard)
+        if (Auth::guard('web')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            $this->authenticatedGuard = 'web';
+            RateLimiter::clear($this->throttleKey());
+            return;
         }
 
-        RateLimiter::clear($this->throttleKey());
+        // Try student login (student guard) - uses email as username
+        $credential = PortalCredential::where('username', $this->email)->first();
+
+        if ($credential) {
+            // Check if account is suspended
+            if ($credential->access_status === 'Suspended') {
+                throw ValidationException::withMessages([
+                    'email' => 'Your account has been suspended. Please contact the admissions office.',
+                ]);
+            }
+
+            // Check if account is inactive
+            if ($credential->access_status === 'Inactive') {
+                throw ValidationException::withMessages([
+                    'email' => 'Your account is inactive. Please contact the admissions office.',
+                ]);
+            }
+
+            // Verify password
+            if (Hash::check($this->password, $credential->temporary_password)) {
+                // Record the login
+                $credential->recordLogin();
+
+                // Login using student guard
+                Auth::guard('student')->login($credential, $this->boolean('remember'));
+                $this->authenticatedGuard = 'student';
+                RateLimiter::clear($this->throttleKey());
+                return;
+            }
+
+            // Increment failed attempts for student
+            $credential->incrementLoginAttempts();
+        }
+
+        // Neither guard authenticated
+        RateLimiter::hit($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => __('auth.failed'),
+        ]);
     }
 
     /**

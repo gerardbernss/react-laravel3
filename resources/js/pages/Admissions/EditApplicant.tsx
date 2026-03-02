@@ -1,3 +1,4 @@
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -98,6 +99,8 @@ export default function EditApplicant() {
     const applicant = props.applicant;
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState<ApplicantFormValues | null>(null);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+    const [showResetDialog, setShowResetDialog] = useState(false);
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema),
@@ -227,21 +230,15 @@ export default function EditApplicant() {
     function handleConfirmedSubmit() {
         if (!pendingFormData) return;
 
-        console.log('=== FORM SUBMISSION DEBUG ===');
-        console.log('Form Values:', pendingFormData);
-        console.log('Applicant ID:', applicant.id);
-
         router.put(`/admissions/applicants/${applicant.id}`, pendingFormData, {
             preserveScroll: true, // Stay at current scroll position
             preserveState: true, // Preserve current component state
             onSuccess: () => {
-                console.log('Applicant updated successfully!');
                 toast.success('Applicant updated successfully!');
                 setShowConfirmDialog(false);
                 setPendingFormData(null);
             },
             onError: (errors) => {
-                console.error('Backend errors:', errors);
                 Object.keys(errors).forEach((key) => {
                     form.setError(key as any, {
                         type: 'server',
@@ -1220,22 +1217,14 @@ export default function EditApplicant() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => {
-                                        if (confirm('Are you sure you want to discard changes? All unsaved changes will be lost.')) {
-                                            window.history.back();
-                                        }
-                                    }}
+                                    onClick={() => setShowDiscardDialog(true)}
                                 >
                                     Back
                                 </Button>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => {
-                                        if (confirm('Are you sure you want to reset the form? All unsaved changes will be lost.')) {
-                                            form.reset();
-                                        }
-                                    }}
+                                    onClick={() => setShowResetDialog(true)}
                                 >
                                     Reset
                                 </Button>
@@ -1247,6 +1236,30 @@ export default function EditApplicant() {
                     </TooltipProvider>
                 </Form>
             </div>
+            <ConfirmDialog
+                open={showDiscardDialog}
+                onClose={() => setShowDiscardDialog(false)}
+                onConfirm={() => {
+                    setShowDiscardDialog(false);
+                    window.history.back();
+                }}
+                title="Discard Changes"
+                description="Are you sure you want to discard changes? All unsaved changes will be lost."
+                confirmLabel="Discard"
+                variant="warning"
+            />
+            <ConfirmDialog
+                open={showResetDialog}
+                onClose={() => setShowResetDialog(false)}
+                onConfirm={() => {
+                    form.reset();
+                    setShowResetDialog(false);
+                }}
+                title="Reset Form"
+                description="Are you sure you want to reset the form? All unsaved changes will be lost."
+                confirmLabel="Reset"
+                variant="warning"
+            />
         </AppLayout>
     );
 }

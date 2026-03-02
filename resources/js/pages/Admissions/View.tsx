@@ -74,7 +74,7 @@ export default function Show({ applicant }: { applicant: any }) {
                                 <AlertDialog open={open} onOpenChange={setOpen}>
                                     <AlertDialogTrigger asChild>
                                         <button
-                                            className="flex items-center justify-center rounded-lg bg-red-500 p-2 text-white transition hover:bg-red-600"
+                                            className="flex items-center justify-center rounded-lg bg-destructive p-2 text-white transition hover:bg-destructive/90"
                                             title="Delete"
                                         >
                                             <HiTrash size={18} />

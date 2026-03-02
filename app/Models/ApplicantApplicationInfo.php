@@ -16,6 +16,7 @@ class ApplicantApplicationInfo extends Model
         'application_number',
         'application_date',
         'year_level',
+        'school_year',
         'semester',
         'student_category',
         'strand',
@@ -31,6 +32,7 @@ class ApplicantApplicationInfo extends Model
 
     public static $statuses = [
         'Pending',
+        'For Exam',
         'Exam Taken',
         'Enrolled',
     ];
@@ -51,11 +53,6 @@ class ApplicantApplicationInfo extends Model
         return $this->hasOne(ApplicantDocuments::class, 'applicant_application_info_id');
     }
 
-    public function assessments()
-    {
-        return $this->hasMany(Assessment::class, 'applicant_application_info_id');
-    }
-
     public function portalCredential()
     {
         return $this->hasOne(PortalCredential::class, 'applicant_application_info_id');
@@ -71,9 +68,9 @@ class ApplicantApplicationInfo extends Model
         return $this->hasMany(EnrollmentAuditLog::class, 'applicant_application_info_id');
     }
 
-    public function entranceExam()
+    public function examAssignment()
     {
-        return $this->hasOne(EntranceExam::class, 'applicant_application_info_id');
+        return $this->hasOne(ApplicantExamAssignment::class, 'applicant_application_info_id');
     }
 
     /**

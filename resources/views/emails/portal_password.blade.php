@@ -133,7 +133,7 @@
             <!-- Credentials Box -->
             <div class="credentials">
                 <div>
-                    <div class="credential-label">Portal Username</div>
+                    <div class="credential-label">Portal Username (Email)</div>
                     <div class="credential-value">{{ $credential->username }}</div>
                 </div>
                 <div>

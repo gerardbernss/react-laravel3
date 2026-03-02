@@ -52,28 +52,90 @@ class Student extends Model
         return $this->hasMany(EnrollmentAuditLog::class);
     }
 
-    public function assessments()
+    public function enrollments()
     {
-        return $this->hasManyThrough(
-            Assessment::class,
-            ApplicantApplicationInfo::class,
-            'applicant_personal_data_id',
-            'applicant_application_info_id',
-            'applicant_personal_data_id',
-            'id'
-        );
+        return $this->hasMany(StudentEnrollment::class);
     }
 
-    public function entranceExam()
+    /**
+     * Get complete enrollment history with subjects
+     */
+    public function getEnrollmentHistory()
     {
-        return $this->hasOneThrough(
-            EntranceExam::class,
-            ApplicantApplicationInfo::class,
-            'applicant_personal_data_id',
-            'applicant_application_info_id',
-            'applicant_personal_data_id',
-            'id'
-        );
+        return $this->enrollments()
+            ->with(['enrollmentSubjects.subject', 'blockSection'])
+            ->orderBy('school_year', 'desc')
+            ->orderByRaw("FIELD(semester, 'Summer', 'Second', 'First')")
+            ->get();
+    }
+
+    /**
+     * Get enrollment for a specific semester
+     */
+    public function getEnrollmentFor(string $schoolYear, string $semester)
+    {
+        return $this->enrollments()
+            ->where('school_year', $schoolYear)
+            ->where('semester', $semester)
+            ->with(['enrollmentSubjects.subject', 'blockSection'])
+            ->first();
+    }
+
+    /**
+     * Get all subjects ever taken by this student
+     */
+    public function getAllSubjectsTaken()
+    {
+        return StudentEnrollmentSubject::whereHas('enrollment', function ($query) {
+            $query->where('student_id', $this->id);
+        })->with('subject')->get();
+    }
+
+    /**
+     * Check if student has taken a specific subject
+     */
+    public function hasTakenSubject(int $subjectId): bool
+    {
+        return StudentEnrollmentSubject::whereHas('enrollment', function ($query) {
+            $query->where('student_id', $this->id);
+        })->where('subject_id', $subjectId)->exists();
+    }
+
+    /**
+     * Get cumulative GWA across all enrollments
+     */
+    public function getCumulativeGWA(): ?float
+    {
+        $enrollments = $this->enrollments()
+            ->whereNotNull('gwa')
+            ->where('status', 'Completed')
+            ->get();
+
+        if ($enrollments->isEmpty()) {
+            return null;
+        }
+
+        $totalWeightedGWA = 0;
+        $totalUnits = 0;
+
+        foreach ($enrollments as $enrollment) {
+            $totalWeightedGWA += $enrollment->gwa * $enrollment->total_units;
+            $totalUnits += $enrollment->total_units;
+        }
+
+        if ($totalUnits === 0) {
+            return null;
+        }
+
+        return round($totalWeightedGWA / $totalUnits, 2);
+    }
+
+    /**
+     * Get total units earned across all enrollments
+     */
+    public function getTotalUnitsEarned(): int
+    {
+        return (int) $this->enrollments()->sum('units_earned');
     }
 
     /**

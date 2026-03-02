@@ -9,14 +9,22 @@ import { Link } from '@inertiajs/react';
 import {
     BookOpen,
     Briefcase,
+    Building2,
+    Calculator,
+    Calendar,
+    CalendarCheck,
     ClipboardList,
+    DollarSign,
     FilePlus,
-    FileSearchIcon,
-    Folder,
+    GraduationCap,
+    IdCard,
     Key,
+    KeyRound,
     LayoutGrid,
+    Percent,
     Shield,
-    UserCheck,
+    SquareStack,
+    UserPlus,
     UserRoundPen,
     Users,
 } from 'lucide-react';
@@ -29,7 +37,7 @@ import AppLogo from './app-logo';
 
 const allNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Home',
         href: dashboard(),
         icon: LayoutGrid,
     },
@@ -46,36 +54,101 @@ const allNavItems: NavItem[] = [
         permission: 'view-permissions',
     },
     {
-        title: 'Entrance Exams',
-        href: '/admissions/entrance-exams',
-        icon: FileSearchIcon,
+        title: 'Exam Assignments',
+        icon: UserPlus,
         permission: 'view-permissions',
-    },
-    {
-        title: 'Assessments',
-        href: '/admissions/assessments',
-        icon: ClipboardList,
-        permission: 'view-permissions',
-    },
-    {
-        title: 'Portal Credentials',
-        href: '/admissions/portal-credentials',
-        icon: UserCheck,
-        permission: 'view-permissions',
-    },
-    {
-        title: 'Enrollments',
-        href: '/admissions/enrollments',
-        icon: UserRoundPen,
-        permission: 'view-permissions',
+        children: [
+            {
+                title: 'Assign Applicants',
+                href: '/exam-assignments',
+                icon: UserPlus,
+            },
+            {
+                title: 'Exam Schedules',
+                href: '/exam-schedules',
+                icon: Calendar,
+            },
+            {
+                title: 'Examination Rooms',
+                href: '/examination-rooms',
+                icon: Building2,
+            },
+        ],
     },
     {
         title: 'Student ID Assignment',
         href: '/studentidassignment',
+        icon: IdCard,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Portal Credentials',
+        href: '/portal-credentials',
+        icon: KeyRound,
+        permission: 'manage-portal-credentials',
+    },
+    {
+        title: 'Enrollments',
+        href: '/enrollment/dashboard',
         icon: UserRoundPen,
         permission: 'view-permissions',
     },
+    {
+        title: 'Grades',
+        href: '/grades',
+        icon: ClipboardList,
+        permission: 'view-grades',
+    },
+    {
+        title: 'Attendance',
+        href: '/attendance',
+        icon: CalendarCheck,
+        permission: 'view-attendance',
+    },
+    {
+        title: 'Subjects',
+        href: '/subjects',
+        icon: BookOpen,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Block Sections',
+        href: '/block-sections',
+        icon: SquareStack,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Courses/Programs',
+        href: '/programs',
+        icon: GraduationCap,
+        permission: 'view-permissions',
+    },
 
+    {
+        title: 'Fee Management',
+        icon: DollarSign,
+        permission: 'view-permissions',
+        children: [
+            {
+                title: 'Fee Types',
+                href: '/admin/fee-types',
+                icon: DollarSign,
+            },
+            {
+                title: 'Fee Rates',
+                href: '/admin/fee-rates',
+                icon: Calculator,
+            },
+            {
+                title: 'Discount Types',
+                href: '/admin/discount-types',
+                icon: Percent,
+            },
+        ],
+    },
+];
+
+const footerNavItems: NavItem[] = [
     {
         title: 'Users',
         href: '/users',
@@ -93,19 +166,6 @@ const allNavItems: NavItem[] = [
         href: '/permissions',
         icon: Key,
         permission: 'view-permissions',
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
     },
 ];
 

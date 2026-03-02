@@ -8,10 +8,12 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\StudentNewPasswordController;
+use App\Http\Controllers\Auth\StudentPasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest:web', 'guest:student'])->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
@@ -51,6 +53,19 @@ Route::middleware('guest')->group(function () {
     Route::options('auth/google/callback', function () {
         return response('', 200);
     });
+
+    // Student password reset routes
+    Route::get('student/forgot-password', [StudentPasswordResetLinkController::class, 'create'])
+        ->name('student.password.request');
+
+    Route::post('student/forgot-password', [StudentPasswordResetLinkController::class, 'store'])
+        ->name('student.password.email');
+
+    Route::get('student/reset-password/{token}', [StudentNewPasswordController::class, 'create'])
+        ->name('student.password.reset');
+
+    Route::post('student/reset-password', [StudentNewPasswordController::class, 'store'])
+        ->name('student.password.store');
 });
 
 Route::middleware('auth')->group(function () {

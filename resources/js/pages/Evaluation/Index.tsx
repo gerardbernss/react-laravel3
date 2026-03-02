@@ -1,3 +1,4 @@
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Chip } from '@mui/material';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -119,12 +120,17 @@ export default function Index({ applications }: Props) {
         setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
     };
 
+    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+
     const handleBulkDelete = () => {
-        if (confirm(`Delete ${selectedRows.length} selected items?`)) {
-            // Implement bulk delete logic here
-            toast.success(`${selectedRows.length} applicants deleted successfully!`);
-            setSelectedRows([]);
-        }
+        setShowBulkDeleteDialog(true);
+    };
+
+    const confirmBulkDelete = () => {
+        // TODO: implement actual bulk delete endpoint
+        toast.success(`${selectedRows.length} applicants deleted successfully!`);
+        setSelectedRows([]);
+        setShowBulkDeleteDialog(false);
     };
 
     const toggleColumnVisibility = (key: keyof Applicant) => {
@@ -277,7 +283,7 @@ export default function Index({ applications }: Props) {
                             <div className="hidden h-4 md:block" />
                             <Link
                                 href={`/admissions/applicants/create`}
-                                className="flex items-center gap-2 rounded-md bg-[#073066] px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-[#05254d] hover:shadow-lg"
+                                className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg"
                                 style={{ minWidth: 'fit-content', whiteSpace: 'nowrap' }}
                             >
                                 <HiPlus size={18} />
@@ -541,7 +547,7 @@ export default function Index({ applications }: Props) {
                         <span className="text-sm font-medium text-gray-700">{selectedRows.length} row(s) selected</span>
                         <button
                             onClick={handleBulkDelete}
-                            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                            className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90"
                         >
                             Delete Selected
                         </button>
@@ -625,41 +631,31 @@ export default function Index({ applications }: Props) {
                                             <td className="px-4 py-3">
                                                 {(() => {
                                                     const status = row.application_status?.toLowerCase() || '';
-                                                    let color: 'default' | 'success' | 'warning' | 'info' = 'default';
+                                                    let variant: 'outline' | 'success' | 'secondary' | 'default' = 'outline';
                                                     let label = row.application_status || 'Pending';
 
                                                     switch (status) {
                                                         case 'pending':
-                                                            color = 'default';
+                                                            variant = 'outline';
                                                             label = 'Pending';
                                                             break;
                                                         case 'exam taken':
                                                         case 'inactive':
-                                                            color = 'info';
+                                                            variant = 'default';
                                                             label = 'Exam Taken';
                                                             break;
                                                         case 'enrolled':
                                                         case 'active':
-                                                            color = 'success';
+                                                            variant = 'success';
                                                             label = 'Enrolled';
                                                             break;
                                                         default:
-                                                            color = 'default';
+                                                            variant = 'outline';
                                                             label = 'Pending';
                                                     }
 
                                                     return (
-                                                        <Chip
-                                                            label={label}
-                                                            color={color}
-                                                            size="small"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                textTransform: 'capitalize',
-                                                                fontSize: '0.7rem',
-                                                                height: '20px',
-                                                            }}
-                                                        />
+                                                        <Badge variant={variant}>{label}</Badge>
                                                     );
                                                 })()}
                                             </td>
@@ -765,6 +761,15 @@ export default function Index({ applications }: Props) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <ConfirmDialog
+                open={showBulkDeleteDialog}
+                onClose={() => setShowBulkDeleteDialog(false)}
+                onConfirm={confirmBulkDelete}
+                title="Delete Selected Applicants"
+                description={`Are you sure you want to delete ${selectedRows.length} selected applicant(s)? This action cannot be undone.`}
+                confirmLabel="Delete All"
+                processingLabel="Deleting..."
+            />
         </AppLayout>
     );
 }

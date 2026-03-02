@@ -1,21 +1,27 @@
+import { CitizenshipSelect } from '@/components/citizenship-select';
+import { FileUpload } from '@/components/file-upload';
+import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
-import { Box, Checkbox, FormControlLabel, Radio, RadioGroup } from '@mui/material';
-import TextareaAutosize from '@mui/material/TextareaAutosize';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { applicantFormSchema, type ApplicantFormValues } from '@/schemas/applicant-form';
+import axios from 'axios';
 import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, Trash2, User, UserPlus, Users } from 'lucide-react';
 
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Add New Applicant', href: '/admissions/applicants/create' }];
 
@@ -23,7 +29,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Add New Applicant', href: '/adm
 const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string }) => {
     return (
         <div className="flex items-center gap-2">
-            <FormLabel>{label}</FormLabel>
+            <Label>{label}</Label>
             {tooltip && (
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -37,145 +43,6 @@ const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string 
         </div>
     );
 };
-
-const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
-
-const applicantFormSchema = z.object({
-    // Application info
-    application_date: z.string().min(1, { message: 'Application date is required.' }),
-    school_year: z.string().min(1, { message: 'Application date is required.' }),
-    application_number: z.string().optional(),
-    application_status: z.string().min(1, { message: 'Application status is required.' }),
-    year_level: z.string().min(1, { message: 'Please select year level.' }),
-    semester: z.string().min(1, { message: 'Please select semester.' }),
-    strand: z.string().min(1, { message: 'Please select strand.' }),
-    classification: z.string().min(1, { message: 'Please select entry classification.' }),
-    learning_mode: z.string().min(1, { message: 'Please select learning mode.' }),
-    accomplished_by_name: z.string().optional(),
-
-    //Personal Data
-    last_name: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
-    first_name: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
-    middle_name: z.string().optional(),
-    suffix: z.string().optional(),
-    learner_reference_number: z.string().optional(),
-    gender: z.string().min(1, { message: 'Gender is required.' }),
-    citizenship: z.string().min(2, { message: 'Citizenship is required.' }),
-    religion: z.string().min(1, { message: 'Religion is required.' }),
-    date_of_birth: z.string().min(1, { message: 'Date of birth is required.' }),
-    place_of_birth: z.string().optional(),
-    has_sibling: z.boolean().default(false),
-    email: z.string().email({ message: 'Please enter a valid email address.' }),
-    alt_email: z.string().email({ message: 'Please enter a valid alternate email address.' }),
-    mobile_number: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
-    present_street: z.string().optional(),
-    present_brgy: z.string().min(1, { message: 'Barangay is required.' }),
-    present_city: z.string().min(1, { message: 'City is required.' }),
-    present_province: z.string().min(1, { message: 'Province is required.' }),
-    present_zip: z.string().min(1, { message: 'ZIP code is required.' }),
-    permanent_street: z.string().optional(),
-    permanent_brgy: z.string().min(1, { message: 'Barangay is required.' }),
-    permanent_city: z.string().min(1, { message: 'City is required.' }),
-    permanent_province: z.string().min(1, { message: 'Province is required.' }),
-    permanent_zip: z.string().min(1, { message: 'ZIP code is required.' }),
-    stopped_studying: z.string().optional(),
-    accelerated: z.string().optional(),
-    health_conditions: z.union([z.string(), z.array(z.string())]).optional(),
-
-    // Family info
-    father_lname: z.string().min(2, { message: "Father's last name must be at least 2 characters." }),
-    father_fname: z.string().min(2, { message: "Father's first name must be at least 2 characters." }),
-    father_mname: z.string().min(2, { message: "Father's middle name must be at least 2 characters." }),
-    father_living: z.string().min(1, { message: "Father's status is required." }),
-    father_citizenship: z.string().optional(),
-    father_religion: z.string().optional(),
-    father_highest_educ: z.string().optional(),
-    father_occupation: z.string().optional(),
-    father_income: z.string().optional(),
-    father_business_emp: z.string().optional(),
-    father_business_address: z.string().optional(),
-    father_contact_no: z.string().regex(phoneRegex, { message: 'Invalid phone number.' }).or(z.literal('')).optional(),
-    father_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
-
-    father_slu_employee: z.boolean().default(false),
-    father_slu_dept: z.string().optional(),
-    mother_lname: z.string().min(2, { message: "Mother's maiden last name must be at least 2 characters." }),
-    mother_fname: z.string().min(2, { message: "Mother's first name must be at least 2 characters." }),
-    mother_mname: z.string().min(2, { message: "Mother's middle name must be at least 2 characters." }),
-    mother_living: z.string().min(1, { message: "Mother's status is required." }),
-    mother_citizenship: z.string().optional(),
-    mother_religion: z.string().optional(),
-    mother_highest_educ: z.string().optional(),
-    mother_occupation: z.string().optional(),
-    mother_income: z.string().optional(),
-    mother_business_emp: z.string().optional(),
-    mother_business_address: z.string().optional(),
-    mother_contact_no: z.string().regex(phoneRegex, { message: 'Invalid phone number.' }).or(z.literal('')).optional(),
-    mother_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
-
-    mother_slu_employee: z.boolean().default(false),
-    mother_slu_dept: z.string().optional(),
-    guardian_lname: z.string().min(2, { message: "Guardian's last name must be at least 2 characters." }),
-    guardian_fname: z.string().min(2, { message: "Guardian's first name must be at least 2 characters." }),
-    guardian_mname: z.string().min(2, { message: "Guardian's middle name must be at least 2 characters." }),
-    guardian_relationship: z.string().optional(),
-    guardian_citizenship: z.string().optional(),
-    guardian_religion: z.string().optional(),
-    guardian_highest_educ: z.string().optional(),
-    guardian_occupation: z.string().optional(),
-    guardian_income: z.string().optional(),
-    guardian_business_emp: z.string().optional(),
-    guardian_business_address: z.string().optional(),
-    guardian_contact_no: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
-    guardian_email: z.string().email({ message: 'Please enter a valid email address.' }).or(z.literal('')).optional(),
-
-    guardian_slu_employee: z.boolean().default(false),
-    guardian_slu_dept: z.string().optional(),
-    emergency_contact_name: z.string().min(2, { message: "Please enter emergency contact's name." }),
-    emergency_relationship: z.string().min(1, { message: 'Relationship is required.' }),
-    emergency_home_phone: z.string().regex(phoneRegex).or(z.literal('')).optional(),
-    emergency_mobile_phone: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
-    emergency_email: z.string().email().or(z.literal('')).optional(),
-
-    //Siblings Info
-    siblings: z
-        .array(
-            z.object({
-                sibling_full_name: z.string().min(2, "Please enter sibling's name."),
-                sibling_grade_level: z.string().min(1, "Enter sibling's grade level."),
-                sibling_id_number: z.string().min(1, "Enter sibling's ID number."),
-            }),
-        )
-        .optional()
-        .default([]),
-
-    //Educ Background
-    schools: z
-        .array(
-            z.object({
-                school_name: z.string().min(2, { message: "Please enter school's name." }),
-                school_address: z.string().min(2, { message: "Please enter school's address." }),
-                from_grade: z.string().optional(),
-                to_grade: z.string().optional(),
-                from_year: z.string().optional(),
-                to_year: z.string().optional(),
-                honors_awards: z.string().optional(),
-                general_average: z.string().optional(),
-                class_rank: z.string().optional(),
-                class_size: z.string().optional(),
-            }),
-        )
-        .optional()
-        .default([]),
-
-    //Documents - Fix the file validation
-    certificate_of_enrollment: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Certificate of Enrollment is required.' }),
-    birth_certificate: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Birth Certificate is required.' }),
-    latest_report_card_front: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Front) is required.' }),
-    latest_report_card_back: z.any().refine((file) => file instanceof File && file.size > 0, { message: 'Latest Report Card (Back) is required.' }),
-});
-
-type ApplicantFormValues = z.infer<typeof applicantFormSchema>;
 
 const FormNavigation = () => {
     const [activeSection, setActiveSection] = React.useState('application');
@@ -238,7 +105,7 @@ const FormNavigation = () => {
                             <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                                     activeSection === item.id
-                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        ? 'border-[#073066] bg-primary text-white shadow-md'
                                         : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
                                 } `}
                             >
@@ -310,6 +177,8 @@ export default function AddApplicant() {
             stopped_studying: '',
             accelerated: '',
             health_conditions: [],
+            has_doctors_note: false,
+            doctors_note_file: null,
 
             //family
             father_lname: '',
@@ -430,6 +299,194 @@ export default function AddApplicant() {
         form.setValue('school_year', `${startYear}-${endYear}`);
     }, [applicationDate]);
 
+    // ==================== PSGC ADDRESS STATE ====================
+    type PsgcItem = {
+        code: string;
+        name: string;
+    };
+
+    // States for PRESENT address dropdowns
+    const [presentRegions, setPresentRegions] = useState<PsgcItem[]>([]);
+    const [presentProvinces, setPresentProvinces] = useState<PsgcItem[]>([]);
+    const [presentCities, setPresentCities] = useState<PsgcItem[]>([]);
+    const [presentBarangays, setPresentBarangays] = useState<PsgcItem[]>([]);
+
+    // Selected values for PRESENT address
+    const [selectedPresentRegion, setSelectedPresentRegion] = useState<string>('');
+    const [selectedPresentProvince, setSelectedPresentProvince] = useState<string>('');
+    const [selectedPresentCity, setSelectedPresentCity] = useState<string>('');
+
+    // States for PERMANENT address dropdowns
+    const [permanentRegions, setPermanentRegions] = useState<PsgcItem[]>([]);
+    const [permanentProvinces, setPermanentProvinces] = useState<PsgcItem[]>([]);
+    const [permanentCities, setPermanentCities] = useState<PsgcItem[]>([]);
+    const [permanentBarangays, setPermanentBarangays] = useState<PsgcItem[]>([]);
+
+    // Selected values for PERMANENT address
+    const [selectedPermanentRegion, setSelectedPermanentRegion] = useState<string>('');
+    const [selectedPermanentProvince, setSelectedPermanentProvince] = useState<string>('');
+    const [selectedPermanentCity, setSelectedPermanentCity] = useState<string>('');
+
+    // State to track if addresses should stay synced
+    const [isSameAddress, setIsSameAddress] = useState<boolean>(false);
+
+    // ==================== PSGC ADDRESS EFFECTS ====================
+    // Load regions on mount
+    useEffect(() => {
+        axios
+            .get<PsgcItem[]>('https://psgc.gitlab.io/api/regions')
+            .then((res) => {
+                setPresentRegions(res.data);
+                setPermanentRegions(res.data);
+            })
+            .catch(() => toast.error('Failed to load address data.'));
+    }, []);
+
+    // Load provinces when PRESENT region changes
+    useEffect(() => {
+        if (!selectedPresentRegion) return;
+
+        axios
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`)
+            .then((res) => setPresentProvinces(res.data))
+            .catch(() => toast.error('Failed to load address data.'));
+
+        setPresentCities([]);
+        setPresentBarangays([]);
+        setSelectedPresentProvince('');
+        setSelectedPresentCity('');
+        form.setValue('present_province', '');
+        form.setValue('present_city', '');
+        form.setValue('present_brgy', '');
+    }, [selectedPresentRegion]);
+
+    // Load cities when PRESENT province changes
+    useEffect(() => {
+        if (!selectedPresentProvince) return;
+
+        axios
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`)
+            .then((res) => setPresentCities(res.data))
+            .catch(() => toast.error('Failed to load address data.'));
+
+        setPresentBarangays([]);
+        setSelectedPresentCity('');
+        form.setValue('present_city', '');
+        form.setValue('present_brgy', '');
+    }, [selectedPresentProvince]);
+
+    // Load barangays when PRESENT city changes
+    useEffect(() => {
+        if (!selectedPresentCity) return;
+
+        axios
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`)
+            .then((res) => setPresentBarangays(res.data))
+            .catch(() => toast.error('Failed to load address data.'));
+
+        form.setValue('present_brgy', '');
+    }, [selectedPresentCity]);
+
+    // Auto-sync present to permanent when checkbox is enabled
+    useEffect(() => {
+        if (!isSameAddress) return;
+
+        if (presentRegions.length > 0) setPermanentRegions(presentRegions);
+        if (presentProvinces.length > 0) setPermanentProvinces(presentProvinces);
+        if (presentCities.length > 0) setPermanentCities(presentCities);
+        if (presentBarangays.length > 0) setPermanentBarangays(presentBarangays);
+
+        if (selectedPresentRegion !== selectedPermanentRegion) {
+            setSelectedPermanentRegion(selectedPresentRegion);
+        }
+        if (selectedPresentProvince !== selectedPermanentProvince) {
+            setSelectedPermanentProvince(selectedPresentProvince);
+        }
+        if (selectedPresentCity !== selectedPermanentCity) {
+            setSelectedPermanentCity(selectedPresentCity);
+        }
+
+        const presentStreet = form.getValues('present_street');
+        const presentZip = form.getValues('present_zip');
+        const presentProvince = form.getValues('present_province');
+        const presentCity = form.getValues('present_city');
+        const presentBrgy = form.getValues('present_brgy');
+
+        form.setValue('permanent_street', presentStreet || '', { shouldValidate: false, shouldDirty: false });
+        form.setValue('permanent_zip', presentZip || '', { shouldValidate: false, shouldDirty: false });
+        form.setValue('permanent_province', presentProvince || '', { shouldValidate: false, shouldDirty: false });
+        form.setValue('permanent_city', presentCity || '', { shouldValidate: false, shouldDirty: false });
+        form.setValue('permanent_brgy', presentBrgy || '', { shouldValidate: false, shouldDirty: false });
+    }, [
+        isSameAddress,
+        selectedPresentRegion,
+        selectedPresentProvince,
+        selectedPresentCity,
+        form.watch('present_street'),
+        form.watch('present_zip'),
+        form.watch('present_province'),
+        form.watch('present_city'),
+        form.watch('present_brgy'),
+        presentRegions,
+        presentProvinces,
+        presentCities,
+        presentBarangays,
+    ]);
+
+    // Load provinces when PERMANENT region changes
+    useEffect(() => {
+        if (isSameAddress) return;
+        if (!selectedPermanentRegion) return;
+
+        axios
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPermanentRegion}/provinces`)
+            .then((res) => setPermanentProvinces(res.data))
+            .catch(() => toast.error('Failed to load address data.'));
+
+        if (!isSameAddress) {
+            setPermanentCities([]);
+            setPermanentBarangays([]);
+            setSelectedPermanentProvince('');
+            setSelectedPermanentCity('');
+            form.setValue('permanent_province', '');
+            form.setValue('permanent_city', '');
+            form.setValue('permanent_brgy', '');
+        }
+    }, [selectedPermanentRegion, isSameAddress]);
+
+    // Load cities when PERMANENT province changes
+    useEffect(() => {
+        if (isSameAddress) return;
+        if (!selectedPermanentProvince) return;
+
+        axios
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPermanentProvince}/cities-municipalities`)
+            .then((res) => setPermanentCities(res.data))
+            .catch(() => toast.error('Failed to load address data.'));
+
+        if (!isSameAddress) {
+            setPermanentBarangays([]);
+            setSelectedPermanentCity('');
+            form.setValue('permanent_city', '');
+            form.setValue('permanent_brgy', '');
+        }
+    }, [selectedPermanentProvince, isSameAddress]);
+
+    // Load barangays when PERMANENT city changes
+    useEffect(() => {
+        if (isSameAddress) return;
+        if (!selectedPermanentCity) return;
+
+        axios
+            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPermanentCity}/barangays`)
+            .then((res) => setPermanentBarangays(res.data))
+            .catch(() => toast.error('Failed to load address data.'));
+
+        if (!isSameAddress) {
+            form.setValue('permanent_brgy', '');
+        }
+    }, [selectedPermanentCity, isSameAddress]);
+
     async function onSubmit(values: ApplicantFormValues) {
         try {
             const formData = new FormData();
@@ -441,32 +498,37 @@ export default function AddApplicant() {
                     if (Array.isArray(value) && value.length > 0) {
                         formData.append(key, JSON.stringify(value));
                     }
+                    return; // Skip further processing for these fields
                 }
                 // Handle health_conditions array
-                else if (key === 'health_conditions') {
+                if (key === 'health_conditions') {
                     if (Array.isArray(value) && value.length > 0) {
                         formData.append(key, JSON.stringify(value));
                     } else if (typeof value === 'string' && value) {
                         formData.append(key, value);
                     }
+                    return;
                 }
                 // Handle file uploads
-                else if (
+                if (
                     key === 'certificate_of_enrollment' ||
                     key === 'birth_certificate' ||
                     key === 'latest_report_card_front' ||
-                    key === 'latest_report_card_back'
+                    key === 'latest_report_card_back' ||
+                    key === 'doctors_note_file'
                 ) {
                     if (value instanceof File) {
                         formData.append(key, value);
                     }
+                    return;
                 }
                 // Handle boolean values
-                else if (typeof value === 'boolean') {
+                if (typeof value === 'boolean') {
                     formData.append(key, value ? '1' : '0');
+                    return;
                 }
                 // Handle all other fields
-                else if (value !== null && value !== undefined && value !== '') {
+                if (value !== null && value !== undefined && value !== '') {
                     formData.append(key, value.toString());
                 }
             });
@@ -481,8 +543,6 @@ export default function AddApplicant() {
                     });
                 },
                 onError: (errors) => {
-                    console.error('Submission errors:', errors);
-
                     // Show first error
                     const firstError = Object.values(errors)[0];
                     toast.error(firstError || 'Failed to submit application. Please check the form.');
@@ -496,8 +556,7 @@ export default function AddApplicant() {
                     });
                 },
             });
-        } catch (error) {
-            console.error('Submission error:', error);
+        } catch {
             toast.error('An unexpected error occurred. Please try again.');
         }
     }
@@ -527,7 +586,7 @@ export default function AddApplicant() {
                             Cancel
                         </Button>
                         <Button
-                            className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
+                            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
                             type="button"
                             onClick={handleConfirmAction}
                         >
@@ -577,7 +636,7 @@ export default function AddApplicant() {
                                 <Button
                                     type="submit"
                                     disabled={form.formState.isSubmitting} // --- DISABLE IF NOT AGREED ---
-                                    className="bg-[#073066] text-white hover:bg-[#05509e]"
+                                    className="bg-primary text-white hover:bg-[#05509e]"
                                 >
                                     {form.formState.isSubmitting ? (
                                         <>
@@ -690,7 +749,7 @@ export default function AddApplicant() {
                                                                         if (elementaryLevels.includes(value)) {
                                                                             form.setValue('strand', 'Laboratory Elementary School');
                                                                         } else if (juniorHighLevels.includes(value)) {
-                                                                            form.setValue('strand', 'Junior High School');
+                                                                            form.setValue('strand', 'Laboratory Junior High School');
                                                                         } else {
                                                                             // For Grade 11 and 12, clear the strand so user can choose
                                                                             form.setValue('strand', '');
@@ -802,7 +861,9 @@ export default function AddApplicant() {
                                                                         <SelectItem value="Laboratory Elementary School">
                                                                             Laboratory Elementary School
                                                                         </SelectItem>
-                                                                        <SelectItem value="Junior High School">Junior High School</SelectItem>
+                                                                        <SelectItem value="Laboratory Junior High School">
+                                                                            Laboratory Junior High School
+                                                                        </SelectItem>
 
                                                                         <SelectItem value="Accountancy, Business, and Management">
                                                                             ABM - Accountancy, Business, and Management
@@ -950,14 +1011,16 @@ export default function AddApplicant() {
                                                     control={form.control}
                                                     name="citizenship"
                                                     render={({ field }) => (
-                                                        <FormItem>
+                                                        <FormItem className="flex flex-col">
                                                             <LabelWithTooltip
                                                                 label="Citizenship *"
                                                                 tooltip="Enter applicant's citizenship (e.g., Filipino)."
                                                             />
-                                                            <FormControl>
-                                                                <Input placeholder="Filipino" {...field} />
-                                                            </FormControl>
+                                                            <CitizenshipSelect
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                placeholder="Select citizenship"
+                                                            />
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}
@@ -1058,7 +1121,101 @@ export default function AddApplicant() {
                                             <div className="mt-6">
                                                 <h2 className="text-l font-bold text-gray-900">Present Address</h2>
 
-                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                    {/* Region */}
+                                                    <div>
+                                                        <LabelWithTooltip label="Region *" tooltip="Select your region." />
+                                                        <div className="mt-2">
+                                                            <SearchableSelect
+                                                                value={selectedPresentRegion}
+                                                                onChange={setSelectedPresentRegion}
+                                                                options={(presentRegions ?? []).map((r) => ({
+                                                                    label: r.name,
+                                                                    value: r.code,
+                                                                }))}
+                                                                placeholder="Select Region"
+                                                                searchPlaceholder="Search region..."
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Province */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="present_province"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
+                                                                <SearchableSelect
+                                                                    value={selectedPresentProvince}
+                                                                    onChange={(value) => {
+                                                                        setSelectedPresentProvince(value);
+                                                                        const selected = presentProvinces.find((p) => p.code === value);
+                                                                        field.onChange(selected?.name || '');
+                                                                    }}
+                                                                    options={presentProvinces.map((p) => ({ label: p.name, value: p.code }))}
+                                                                    placeholder="Select Province"
+                                                                    searchPlaceholder="Search province..."
+                                                                    disabled={!selectedPresentRegion}
+                                                                />
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    {/* City/Municipality */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="present_city"
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="City/Municipality *"
+                                                                    tooltip="Enter city or municipality of residence."
+                                                                />
+                                                                <SearchableSelect
+                                                                    value={selectedPresentCity}
+                                                                    onChange={(value) => {
+                                                                        setSelectedPresentCity(value);
+                                                                        const selected = presentCities.find((c) => c.code === value);
+                                                                        field.onChange(selected?.name || '');
+                                                                    }}
+                                                                    options={presentCities.map((c) => ({ label: c.name, value: c.code }))}
+                                                                    placeholder="Select City/Municipality"
+                                                                    searchPlaceholder="Search city..."
+                                                                    disabled={!selectedPresentProvince}
+                                                                />
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                    {/* Barangay */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="present_brgy"
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
+                                                                <SearchableSelect
+                                                                    value={presentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    onChange={(value) => {
+                                                                        const selected = presentBarangays.find((b) => b.code === value);
+                                                                        field.onChange(selected?.name || '');
+                                                                    }}
+                                                                    options={presentBarangays.map((b) => ({ label: b.name, value: b.code }))}
+                                                                    placeholder="Select Barangay"
+                                                                    searchPlaceholder="Search barangay..."
+                                                                    disabled={!selectedPresentCity}
+                                                                />
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    {/* Street Address */}
                                                     <FormField
                                                         control={form.control}
                                                         name="present_street"
@@ -1075,51 +1232,8 @@ export default function AddApplicant() {
                                                             </FormItem>
                                                         )}
                                                     />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="present_brgy"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
-                                                                <FormControl>
-                                                                    <Input placeholder="Sample Barangay" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                </div>
 
-                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="present_city"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="City/Municipality *"
-                                                                    tooltip="Enter city or municipality of residence."
-                                                                />
-                                                                <FormControl>
-                                                                    <Input placeholder="Baguio City" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="present_province"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                <FormControl>
-                                                                    <Input placeholder="Benguet" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
+                                                    {/* ZIP Code */}
                                                     <FormField
                                                         control={form.control}
                                                         name="present_zip"
@@ -1127,7 +1241,7 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip
                                                                     label="ZIP Code *"
-                                                                    tooltip="Enter your 4–6 digit postal ZIP code."
+                                                                    tooltip="Enter your 4-6 digit postal ZIP code."
                                                                 />
                                                                 <FormControl>
                                                                     <Input type="text" inputMode="numeric" placeholder="2600" {...field} />
@@ -1138,21 +1252,21 @@ export default function AddApplicant() {
                                                     />
                                                 </div>
 
-                                                {/* ✅ Checkbox to copy address */}
+                                                {/* Checkbox to copy address */}
                                                 <div className="mt-4 flex items-center space-x-2 px-4">
                                                     <Checkbox
-                                                        size="small"
-                                                        onChange={(e) => {
-                                                            const checked = e.target.checked;
-                                                            if (checked) {
-                                                                // Copy present → permanent
-                                                                form.setValue('permanent_street', form.getValues('present_street'));
-                                                                form.setValue('permanent_brgy', form.getValues('present_brgy'));
-                                                                form.setValue('permanent_city', form.getValues('present_city'));
-                                                                form.setValue('permanent_province', form.getValues('present_province'));
-                                                                form.setValue('permanent_zip', form.getValues('present_zip'));
-                                                            } else {
+                                                        checked={isSameAddress}
+                                                        onCheckedChange={(checked) => {
+                                                            const isChecked = checked === true;
+                                                            setIsSameAddress(isChecked);
+                                                            if (!isChecked) {
                                                                 // Clear permanent fields when unchecked
+                                                                setSelectedPermanentRegion('');
+                                                                setSelectedPermanentProvince('');
+                                                                setSelectedPermanentCity('');
+                                                                setPermanentProvinces([]);
+                                                                setPermanentCities([]);
+                                                                setPermanentBarangays([]);
                                                                 form.setValue('permanent_street', '');
                                                                 form.setValue('permanent_brgy', '');
                                                                 form.setValue('permanent_city', '');
@@ -1168,7 +1282,103 @@ export default function AddApplicant() {
                                             {/* --- Permanent Address Section --- */}
                                             <div className="mt-4">
                                                 <h2 className="text-l font-bold text-gray-900">Permanent Address</h2>
-                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-2">
+
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                    {/* Region */}
+                                                    <div>
+                                                        <LabelWithTooltip label="Region *" tooltip="Select your region." />
+                                                        <div className="mt-2">
+                                                            <SearchableSelect
+                                                                value={selectedPermanentRegion}
+                                                                onChange={setSelectedPermanentRegion}
+                                                                options={(permanentRegions ?? []).map((r) => ({
+                                                                    label: r.name,
+                                                                    value: r.code,
+                                                                }))}
+                                                                placeholder="Select Region"
+                                                                searchPlaceholder="Search region..."
+                                                                disabled={isSameAddress}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Province */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="permanent_province"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
+                                                                <SearchableSelect
+                                                                    value={selectedPermanentProvince}
+                                                                    onChange={(value) => {
+                                                                        setSelectedPermanentProvince(value);
+                                                                        const selected = permanentProvinces.find((p) => p.code === value);
+                                                                        field.onChange(selected?.name || '');
+                                                                    }}
+                                                                    options={permanentProvinces.map((p) => ({ label: p.name, value: p.code }))}
+                                                                    placeholder="Select Province"
+                                                                    searchPlaceholder="Search province..."
+                                                                    disabled={isSameAddress || !selectedPermanentRegion}
+                                                                />
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    {/* City/Municipality */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="permanent_city"
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip
+                                                                    label="City/Municipality *"
+                                                                    tooltip="Enter city or municipality of residence."
+                                                                />
+                                                                <SearchableSelect
+                                                                    value={selectedPermanentCity}
+                                                                    onChange={(value) => {
+                                                                        setSelectedPermanentCity(value);
+                                                                        const selected = permanentCities.find((c) => c.code === value);
+                                                                        field.onChange(selected?.name || '');
+                                                                    }}
+                                                                    options={permanentCities.map((c) => ({ label: c.name, value: c.code }))}
+                                                                    placeholder="Select City/Municipality"
+                                                                    searchPlaceholder="Search city..."
+                                                                    disabled={isSameAddress || !selectedPermanentProvince}
+                                                                />
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+
+                                                <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
+                                                    {/* Barangay */}
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="permanent_brgy"
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex flex-col">
+                                                                <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
+                                                                <SearchableSelect
+                                                                    value={permanentBarangays.find((b) => b.name === field.value)?.code || ''}
+                                                                    onChange={(value) => {
+                                                                        const selected = permanentBarangays.find((b) => b.code === value);
+                                                                        field.onChange(selected?.name || '');
+                                                                    }}
+                                                                    options={permanentBarangays.map((b) => ({ label: b.name, value: b.code }))}
+                                                                    placeholder="Select Barangay"
+                                                                    searchPlaceholder="Search barangay..."
+                                                                    disabled={isSameAddress || !selectedPermanentCity}
+                                                                />
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    {/* Street Address */}
                                                     <FormField
                                                         control={form.control}
                                                         name="permanent_street"
@@ -1179,57 +1389,14 @@ export default function AddApplicant() {
                                                                     tooltip="Include house number, street name."
                                                                 />
                                                                 <FormControl>
-                                                                    <Input placeholder="123 Main Street" {...field} />
+                                                                    <Input placeholder="123 Main Street" {...field} disabled={isSameAddress} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
                                                     />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="permanent_brgy"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Barangay *" tooltip="Include barangay." />
-                                                                <FormControl>
-                                                                    <Input placeholder="Sample Barangay" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                </div>
 
-                                                <div className="mt-6 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="permanent_city"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="City/Municipality *"
-                                                                    tooltip="Enter city or municipality of residence."
-                                                                />
-                                                                <FormControl>
-                                                                    <Input placeholder="Baguio City" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="permanent_province"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <LabelWithTooltip label="Province/State *" tooltip="Specify province or state." />
-                                                                <FormControl>
-                                                                    <Input placeholder="Benguet" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
+                                                    {/* ZIP Code */}
                                                     <FormField
                                                         control={form.control}
                                                         name="permanent_zip"
@@ -1237,10 +1404,16 @@ export default function AddApplicant() {
                                                             <FormItem>
                                                                 <LabelWithTooltip
                                                                     label="ZIP Code *"
-                                                                    tooltip="Enter your 4–6 digit postal ZIP code."
+                                                                    tooltip="Enter your 4-6 digit postal ZIP code."
                                                                 />
                                                                 <FormControl>
-                                                                    <Input type="text" inputMode="numeric" placeholder="2600" {...field} />
+                                                                    <Input
+                                                                        type="text"
+                                                                        inputMode="numeric"
+                                                                        placeholder="2600"
+                                                                        {...field}
+                                                                        disabled={isSameAddress}
+                                                                    />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -1257,9 +1430,8 @@ export default function AddApplicant() {
                                                         <FormItem>
                                                             <LabelWithTooltip label="Have you ever stopped studying? If yes, give the date and reason/s." />
                                                             <FormControl>
-                                                                <TextareaAutosize
+                                                                <Textarea
                                                                     {...field}
-                                                                    minRows={3}
                                                                     placeholder=""
                                                                     className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                 />
@@ -1277,9 +1449,8 @@ export default function AddApplicant() {
                                                         <FormItem>
                                                             <LabelWithTooltip label="Have you ever been accelerated in any school? If yes, give the reason/s." />
                                                             <FormControl>
-                                                                <TextareaAutosize
+                                                                <Textarea
                                                                     {...field}
-                                                                    minRows={3}
                                                                     placeholder=""
                                                                     className="py-1.5m w-full rounded-md border border-input bg-background px-3 shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                 />
@@ -1297,14 +1468,7 @@ export default function AddApplicant() {
                                                         <FormItem className="mt-2">
                                                             <FormLabel>Health Conditions (Tick the box/es if applicable.)</FormLabel>
 
-                                                            <Box
-                                                                sx={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                                                    gap: 1,
-                                                                    mt: 1,
-                                                                }}
-                                                            >
+                                                            <div className="mt-2 grid grid-cols-3 gap-2">
                                                                 {[
                                                                     'Sensory Difficulties',
                                                                     'Intellectual Difficulties',
@@ -1315,80 +1479,51 @@ export default function AddApplicant() {
                                                                     'Medical Conditions',
                                                                     'Major Psychological Disorders',
                                                                 ].map((option) => (
-                                                                    <FormControlLabel
-                                                                        key={option}
-                                                                        control={
-                                                                            <Checkbox
-                                                                                size="small"
-                                                                                checked={Array.isArray(field.value) && field.value.includes(option)}
-                                                                                onChange={(e) => {
-                                                                                    const checked = e.target.checked;
-                                                                                    const currentValue = Array.isArray(field.value)
-                                                                                        ? field.value
-                                                                                        : [];
-
-                                                                                    if (checked) {
-                                                                                        field.onChange([...currentValue, option]);
-                                                                                    } else {
-                                                                                        field.onChange(
-                                                                                            currentValue.filter((v: string) => v !== option),
-                                                                                        );
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        }
-                                                                        label={option}
-                                                                        sx={{
-                                                                            alignItems: 'center',
-                                                                            '& .MuiFormControlLabel-label': {
-                                                                                fontSize: '0.875rem', // 👈 adjust text size here
-                                                                                color: '#374151', // Tailwind’s gray-700 equivalent
-                                                                                lineHeight: 1.4,
-                                                                            },
-                                                                        }}
-                                                                    />
-                                                                ))}
-
-                                                                {/* “Others” checkbox */}
-                                                                <FormControlLabel
-                                                                    control={
+                                                                    <div key={option} className="flex items-center space-x-2">
                                                                         <Checkbox
-                                                                            size="small"
-                                                                            checked={
-                                                                                Array.isArray(field.value) &&
-                                                                                field.value.some((v) => v.startsWith('Others'))
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const checked = e.target.checked;
+                                                                            checked={Array.isArray(field.value) && field.value.includes(option)}
+                                                                            onCheckedChange={(checked) => {
                                                                                 const currentValue = Array.isArray(field.value) ? field.value : [];
-
                                                                                 if (checked) {
-                                                                                    if (!currentValue.some((v) => v.startsWith('Others'))) {
-                                                                                        field.onChange([...currentValue, 'Others:']);
-                                                                                    }
+                                                                                    field.onChange([...currentValue, option]);
                                                                                 } else {
-                                                                                    field.onChange(
-                                                                                        currentValue.filter((v: string) => !v.startsWith('Others')),
-                                                                                    );
+                                                                                    field.onChange(currentValue.filter((v: string) => v !== option));
                                                                                 }
                                                                             }}
                                                                         />
-                                                                    }
-                                                                    label="Others (Please specify)"
-                                                                    sx={{
-                                                                        alignItems: 'center',
-                                                                        '& .MuiFormControlLabel-label': {
-                                                                            fontSize: '0.875rem',
-                                                                            color: '#374151',
-                                                                        },
-                                                                    }}
-                                                                />
-                                                            </Box>
+                                                                        <Label className="text-sm font-normal text-gray-700">{option}</Label>
+                                                                    </div>
+                                                                ))}
 
-                                                            {/* “Others” text box */}
+                                                                {/* "Others" checkbox */}
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Checkbox
+                                                                        checked={
+                                                                            Array.isArray(field.value) &&
+                                                                            field.value.some((v) => v.startsWith('Others'))
+                                                                        }
+                                                                        onCheckedChange={(checked) => {
+                                                                            const currentValue = Array.isArray(field.value) ? field.value : [];
+                                                                            if (checked) {
+                                                                                if (!currentValue.some((v) => v.startsWith('Others'))) {
+                                                                                    field.onChange([...currentValue, 'Others:']);
+                                                                                }
+                                                                            } else {
+                                                                                field.onChange(
+                                                                                    currentValue.filter((v: string) => !v.startsWith('Others')),
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <Label className="text-sm font-normal text-gray-700">
+                                                                        Others (Please specify)
+                                                                    </Label>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* "Others" text box */}
                                                             {Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others')) && (
-                                                                <TextareaAutosize
-                                                                    minRows={2}
+                                                                <Textarea
                                                                     className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                     placeholder="Please specify..."
                                                                     value={
@@ -1402,11 +1537,65 @@ export default function AddApplicant() {
                                                                         const currentValue = Array.isArray(field.value)
                                                                             ? field.value.filter((v: string) => !v.startsWith('Others'))
                                                                             : [];
-
-                                                                        // Always keep "Others:", even if empty
                                                                         field.onChange([...currentValue, `Others: ${otherValue}`]);
                                                                     }}
                                                                 />
+                                                            )}
+
+                                                            {/* Doctor's Note Checkbox - Shows when ANY health condition is checked */}
+                                                            {Array.isArray(field.value) && field.value.length > 0 && (
+                                                                <div className="mt-2 pt-2">
+                                                                    <FormField
+                                                                        control={form.control}
+                                                                        name="has_doctors_note"
+                                                                        render={({ field: noteField }) => (
+                                                                            <FormItem className="mt-5">
+                                                                                <div className="flex flex-row items-start space-y-0 space-x-3">
+                                                                                    <FormControl>
+                                                                                        <Checkbox
+                                                                                            checked={noteField.value}
+                                                                                            onCheckedChange={(checked) => {
+                                                                                                noteField.onChange(checked === true);
+                                                                                                if (!checked) {
+                                                                                                    form.setValue('doctors_note_file', null);
+                                                                                                }
+                                                                                            }}
+                                                                                            className="data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white"
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <div className="space-y-1 leading-none">
+                                                                                        <Label className="text-sm font-normal text-gray-700">
+                                                                                            With a physician's recommendation certifying that the
+                                                                                            student is fit to attend school, along with a medical
+                                                                                            certificate issued within the last two years.
+                                                                                        </Label>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </FormItem>
+                                                                        )}
+                                                                    />
+
+                                                                    {/* File Upload - Shows when "With doctor's note" is checked */}
+                                                                    {form.watch('has_doctors_note') && (
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name="doctors_note_file"
+                                                                            render={({ field }) => (
+                                                                                <FormItem className="mt-2">
+                                                                                    <FormControl>
+                                                                                        <FileUpload
+                                                                                            value={field.value}
+                                                                                            onChange={field.onChange}
+                                                                                            accept=".pdf,.jpg,.jpeg,.png"
+                                                                                            description="PDF, JPG, JPEG, PNG (Optional)"
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormMessage />
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    )}
+                                                                </div>
                                                             )}
 
                                                             <FormMessage />
@@ -1472,14 +1661,15 @@ export default function AddApplicant() {
                                                             <FormItem className="flex h-full flex-col justify-center">
                                                                 <LabelWithTooltip label="Father's Status" tooltip="" />
                                                                 <FormControl>
-                                                                    <RadioGroup
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                        value={field.value || ''}
-                                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                                    >
-                                                                        <FormControlLabel value="Living" control={<Radio />} label="Living" />
-                                                                        <FormControlLabel value="Deceased" control={<Radio />} label="Deceased" />
+                                                                    <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={(value) => field.onChange(value)}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <RadioGroupItem value="Living" id={`${field.name}-living`} />
+                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
+                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                        </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -1622,27 +1812,15 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={
-                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
-                                                                                field.onChange(boolValue);
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(value) => { field.onChange(value === 'true'); }}>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -1714,14 +1892,15 @@ export default function AddApplicant() {
                                                             <FormItem className="flex h-full flex-col justify-center">
                                                                 <LabelWithTooltip label="Mother's Status" tooltip="" />
                                                                 <FormControl>
-                                                                    <RadioGroup
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                        value={field.value || ''}
-                                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                                    >
-                                                                        <FormControlLabel value="Living" control={<Radio />} label="Living" />
-                                                                        <FormControlLabel value="Deceased" control={<Radio />} label="Deceased" />
+                                                                    <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={(value) => field.onChange(value)}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <RadioGroupItem value="Living" id={`${field.name}-living`} />
+                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
+                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                        </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -1864,27 +2043,15 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={
-                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
-                                                                                field.onChange(boolValue);
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(value) => { field.onChange(value === 'true'); }}>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -1913,9 +2080,8 @@ export default function AddApplicant() {
                                                 <div className="mt-4 flex gap-6 px-4">
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
-                                                            size="small"
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
                                                                     // Copy father's info to guardian fields
                                                                     form.setValue('guardian_lname', form.getValues('father_lname'));
                                                                     form.setValue('guardian_fname', form.getValues('father_fname'));
@@ -1949,9 +2115,8 @@ export default function AddApplicant() {
 
                                                     <div className="flex items-center space-x-2">
                                                         <Checkbox
-                                                            size="small"
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
                                                                     // Copy mother's info to guardian fields
                                                                     form.setValue('guardian_lname', form.getValues('mother_lname'));
                                                                     form.setValue('guardian_fname', form.getValues('mother_fname'));
@@ -2173,27 +2338,15 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={
-                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
-                                                                                field.onChange(boolValue);
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(value) => { field.onChange(value === 'true'); }}>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -2297,12 +2450,10 @@ export default function AddApplicant() {
 
                                                                 <FormControl>
                                                                     <RadioGroup
-                                                                        className="mt-2 pl-4"
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
+                                                                        className="mt-2 flex flex-row gap-4 pl-4"
                                                                         value={field.value === true ? 'true' : field.value === false ? 'false' : ''}
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value === 'true'; // convert to boolean
+                                                                        onValueChange={(value) => {
+                                                                            const val = value === 'true'; // convert to boolean
                                                                             field.onChange(val);
 
                                                                             const siblings = form.getValues('siblings') ?? [];
@@ -2320,16 +2471,14 @@ export default function AddApplicant() {
                                                                             }
                                                                         }}
                                                                     >
-                                                                        <FormControlLabel
-                                                                            value="true"
-                                                                            control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                            label="Yes"
-                                                                        />
-                                                                        <FormControlLabel
-                                                                            value="false"
-                                                                            control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                            label="No"
-                                                                        />
+                                                                        <div className="flex items-center gap-2">
+                                                                            <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                            <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                            <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                        </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                             </div>
@@ -2575,448 +2724,88 @@ export default function AddApplicant() {
                                                 <FormField
                                                     control={form.control}
                                                     name="certificate_of_enrollment"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Certificate of Enrollment"
-                                                                    tooltip="Upload your official Certificate of Enrollment."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Certificate of Enrollment"
+                                                                tooltip="Upload your official Certificate of Enrollment."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Birth Certificate */}
                                                 <FormField
                                                     control={form.control}
                                                     name="birth_certificate"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Birth Certificate"
-                                                                    tooltip="Upload your PSA or NSO Birth Certificate."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Birth Certificate"
+                                                                tooltip="Upload your PSA or NSO Birth Certificate."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Latest Report Card (Front) */}
                                                 <FormField
                                                     control={form.control}
                                                     name="latest_report_card_front"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Latest Report Card (Front)"
-                                                                    tooltip="Upload the front side of your most recent report card."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Latest Report Card (Front)"
+                                                                tooltip="Upload the front side of your most recent report card."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
 
                                                 {/* Latest Report Card (Back) */}
                                                 <FormField
                                                     control={form.control}
                                                     name="latest_report_card_back"
-                                                    render={({ field }) => {
-                                                        const [isDragging, setIsDragging] = React.useState(false);
-                                                        const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-                                                        const handleDragOver = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(true);
-                                                        };
-
-                                                        const handleDragLeave = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                        };
-
-                                                        const handleDrop = (e: React.DragEvent) => {
-                                                            e.preventDefault();
-                                                            setIsDragging(false);
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                                                            const files = e.target.files;
-                                                            if (files && files.length > 0) {
-                                                                field.onChange(files[0]);
-                                                            }
-                                                        };
-
-                                                        return (
-                                                            <FormItem>
-                                                                <LabelWithTooltip
-                                                                    label="Latest Report Card (Back)"
-                                                                    tooltip="Upload the back side of your most recent report card."
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <LabelWithTooltip
+                                                                label="Latest Report Card (Back)"
+                                                                tooltip="Upload the back side of your most recent report card."
+                                                            />
+                                                            <FormControl>
+                                                                <FileUpload
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                                 />
-                                                                <FormControl>
-                                                                    <div>
-                                                                        <div
-                                                                            onClick={() => fileInputRef.current?.click()}
-                                                                            onDragOver={handleDragOver}
-                                                                            onDragLeave={handleDragLeave}
-                                                                            onDrop={handleDrop}
-                                                                            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                                                                                isDragging
-                                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                                    : 'border-gray-300 hover:border-gray-400'
-                                                                            }`}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="truncate text-sm text-gray-700">
-                                                                                        {field.value.name}
-                                                                                    </span>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="sm"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            field.onChange(null);
-                                                                                            if (fileInputRef.current) {
-                                                                                                fileInputRef.current.value = '';
-                                                                                            }
-                                                                                        }}
-                                                                                        className="text-red-500 hover:text-red-700"
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center">
-                                                                                    <svg
-                                                                                        className="mb-3 h-12 w-12 text-gray-400"
-                                                                                        stroke="currentColor"
-                                                                                        fill="none"
-                                                                                        viewBox="0 0 24 24"
-                                                                                        aria-hidden="true"
-                                                                                    >
-                                                                                        <path
-                                                                                            strokeLinecap="round"
-                                                                                            strokeLinejoin="round"
-                                                                                            strokeWidth={2}
-                                                                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                                                        />
-                                                                                    </svg>
-                                                                                    <p className="text-sm text-gray-600">
-                                                                                        Click to upload or drag and drop
-                                                                                    </p>
-                                                                                    <p className="mt-1 text-xs text-gray-500">PDF, JPG, JPEG, PNG</p>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <input
-                                                                            ref={fileInputRef}
-                                                                            type="file"
-                                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                                            onChange={handleFileChange}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
                                                 />
                                             </div>
                                         </div>

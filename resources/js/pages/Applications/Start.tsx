@@ -44,7 +44,7 @@ export default function Start() {
     return (
         <div className="min-h-screen bg-[#f5f5f5]">
             {/* Header */}
-            <header className="bg-[#073066] text-white shadow-md">
+            <header className="bg-primary text-white shadow-md">
                 <div className="mx-auto flex max-w-[1800px] flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row md:px-10">
                     {/* Left Side: Logo + University Name */}
                     <div className="flex flex-col items-center gap-4 text-center md:flex-row md:text-left">
@@ -66,7 +66,7 @@ export default function Start() {
             <div className="mx-auto w-full max-w-[1400px] px-4 py-8 md:px-10 md:py-16">
                 {/* Welcome Section */}
                 <div className="mb-12 text-center">
-                    <h1 className="mb-4 text-2xl font-bold text-[#073066] md:text-3xl">Welcome to SLU Online Application</h1>
+                    <h1 className="mb-4 text-2xl font-bold text-primary md:text-3xl">Welcome to SLU Online Application</h1>
                     <p className="text-sm text-gray-600 md:text-base">
                         Please select the appropriate application type to begin your enrollment process
                     </p>
@@ -74,7 +74,7 @@ export default function Start() {
 
                 {/* Selection Cards */}
                 <div className="mb-16">
-                    <h3 className="mb-6 text-center text-xl font-semibold text-[#073066] md:text-2xl">Apply as:</h3>
+                    <h3 className="mb-6 text-center text-xl font-semibold text-primary md:text-2xl">Apply as:</h3>
 
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                         {applicationTypes.map((type) => (
@@ -83,8 +83,8 @@ export default function Start() {
                                 onClick={() => setSelectedType(type.id)}
                                 className={`group relative overflow-hidden rounded-lg border-4 p-8 shadow-lg transition-all duration-300 ${
                                     selectedType === type.id
-                                        ? 'scale-105 border-[#073066] bg-[#073066] shadow-2xl'
-                                        : 'bg-white hover:border-[#07306656] hover:shadow-xl'
+                                        ? 'scale-105 border-primary bg-primary shadow-2xl'
+                                        : 'bg-white hover:border-primary/40 hover:shadow-xl'
                                 }`}
                             >
                                 {/* Selected Indicator */}
@@ -92,7 +92,7 @@ export default function Start() {
                                     <div className="absolute top-4 right-4">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
                                             <svg
-                                                className="h-5 w-5 text-[#073066]"
+                                                className="h-5 w-5 text-primary"
                                                 fill="none"
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
@@ -109,14 +109,14 @@ export default function Start() {
                                 {/* Icon */}
                                 <div
                                     className={`mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full transition-all ${
-                                        selectedType === type.id ? 'bg-white text-[#073066]' : `${type.color} text-white group-hover:scale-110`
+                                        selectedType === type.id ? 'bg-white text-primary' : `${type.color} text-white group-hover:scale-110`
                                     }`}
                                 >
                                     {type.icon}
                                 </div>
 
                                 {/* Title */}
-                                <h3 className={`mb-2 text-3xl font-bold ${selectedType === type.id ? 'text-white' : 'text-[#073066]'}`}>
+                                <h3 className={`mb-2 text-3xl font-bold ${selectedType === type.id ? 'text-white' : 'text-primary'}`}>
                                     {type.title}
                                 </h3>
 
@@ -138,7 +138,7 @@ export default function Start() {
                         onClick={handleProceed}
                         disabled={!selectedType}
                         className={`rounded-lg px-12 py-4 text-lg font-semibold text-white shadow-lg transition-all duration-300 ${
-                            selectedType ? 'bg-[#073066] hover:bg-[#05509e] hover:shadow-xl' : 'cursor-not-allowed bg-gray-400'
+                            selectedType ? 'bg-primary hover:bg-primary/90 hover:shadow-xl' : 'cursor-not-allowed bg-gray-400'
                         }`}
                     >
                         {selectedType ? 'Proceed to Application Form' : 'Please Select Application Type'}
@@ -154,26 +154,26 @@ export default function Start() {
                         <img src="/images/slu-logo.png" alt="SLU Logo" className="h-32 w-32 object-contain md:h-40 md:w-40" />
 
                         <div className="flex flex-col gap-2">
-                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-2xl text-[#073066] md:text-4xl">
+                            <h1 style={{ fontFamily: "'Spectral SC', serif" }} className="text-2xl text-primary md:text-4xl">
                                 Saint Louis University
                             </h1>
 
-                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                            <p className="flex items-center justify-center text-primary md:justify-start">
                                 <MapPin className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 Upper Bonifacio, Baguio City, Benguet, Philippines 2600
                             </p>
 
-                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                            <p className="flex items-center justify-center text-primary md:justify-start">
                                 <Mail className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 admissions@slu.edu.ph
                             </p>
 
-                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                            <p className="flex items-center justify-center text-primary md:justify-start">
                                 <Phone className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 (74) 442 1234
                             </p>
 
-                            <p className="flex items-center justify-center text-[#073066] md:justify-start">
+                            <p className="flex items-center justify-center text-primary md:justify-start">
                                 <Facebook className="mr-2 inline-block h-5 w-5 shrink-0" />
                                 @SaintLouisUniversity
                             </p>
@@ -182,8 +182,8 @@ export default function Start() {
 
                     {/* Right side: copyright (stacked) */}
                     <div className="flex flex-col items-center text-center md:items-end md:text-right">
-                        <p className="text-[#073066]">Copyright © 2024 Saint Louis University</p>
-                        <p className="text-[#073066]">All rights reserved.</p>
+                        <p className="text-primary">Copyright © 2024 Saint Louis University</p>
+                        <p className="text-primary">All rights reserved.</p>
                     </div>
                 </div>
             </footer>

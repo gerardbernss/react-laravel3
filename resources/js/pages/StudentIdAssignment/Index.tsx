@@ -8,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Chip } from '@mui/material';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -253,11 +253,14 @@ export default function Index({ applications }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Student ID Number Assignment" />
 
-            <div className="p-10">
-                <h1 className="mb-6 text-3xl font-semibold text-gray-800">Student ID Number Assignment</h1>
+            <div className="space-y-6 p-6 md:p-10">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
+                    <p className="mt-1 text-gray-600">Assign and manage student identification numbers for enrolled applicants</p>
+                </div>
 
                 {/* Search + Filters + Columns + Export */}
-                <div className="mb-4 space-y-3">
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
                     {/* ... (Keep existing search/filters code same as before) ... */}
                     <div className="grid w-full grid-cols-1 items-start gap-3 md:grid-cols-[1fr_auto] md:items-start">
                         {/* LEFT: label + search input */}
@@ -453,10 +456,10 @@ export default function Index({ applications }: Props) {
                 {/* REMOVED BULK ACTIONS BUTTON (DELETE SELECTED) as requested */}
 
                 {/* Custom DataGrid Table */}
-                <div className="overflow-hidden rounded-lg bg-white shadow-md">
+                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-linear-to-r from-slate-700 to-slate-800 text-white">
+                            <thead className="bg-gray-50">
                                 <tr>
                                     {columns
                                         .filter((col) => visibleColumns.includes(col.key))
@@ -468,8 +471,8 @@ export default function Index({ applications }: Props) {
                                                         handleSort(column.key as keyof Applicant);
                                                     }
                                                 }}
-                                                className={`px-4 py-3 text-left font-semibold transition-colors ${
-                                                    column.key !== 'actions' ? 'cursor-pointer hover:bg-slate-600' : ''
+                                                className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 transition-colors ${
+                                                    column.key !== 'actions' ? 'cursor-pointer hover:bg-gray-100' : ''
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-1.5">
@@ -528,41 +531,31 @@ export default function Index({ applications }: Props) {
                                             <td className="px-4 py-3">
                                                 {(() => {
                                                     const status = row.application_status?.toLowerCase() || '';
-                                                    let color: 'default' | 'success' | 'warning' | 'info' = 'default';
+                                                    let variant: 'outline' | 'success' | 'secondary' | 'default' = 'outline';
                                                     let label = row.application_status || 'Pending';
 
                                                     switch (status) {
                                                         case 'pending':
-                                                            color = 'default';
+                                                            variant = 'outline';
                                                             label = 'Pending';
                                                             break;
                                                         case 'exam taken':
                                                         case 'inactive':
-                                                            color = 'info';
+                                                            variant = 'default';
                                                             label = 'Exam Taken';
                                                             break;
                                                         case 'enrolled':
                                                         case 'active':
-                                                            color = 'success';
+                                                            variant = 'success';
                                                             label = 'Enrolled';
                                                             break;
                                                         default:
-                                                            color = 'default';
+                                                            variant = 'outline';
                                                             label = 'Pending';
                                                     }
 
                                                     return (
-                                                        <Chip
-                                                            label={label}
-                                                            color={color}
-                                                            size="small"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                textTransform: 'capitalize',
-                                                                fontSize: '0.7rem',
-                                                                height: '20px',
-                                                            }}
-                                                        />
+                                                        <Badge variant={variant}>{label}</Badge>
                                                     );
                                                 })()}
                                             </td>
@@ -589,7 +582,7 @@ export default function Index({ applications }: Props) {
                     </div>
                 </div>
                 {/* Pagination Footer */}
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
+                <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-700">Rows per page:</span>
                         <select

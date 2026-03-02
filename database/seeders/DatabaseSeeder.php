@@ -15,6 +15,13 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolePermissionSeeder::class,
+            FeeTypeSeeder::class,
+            FeeRateSeeder::class,
+            DiscountTypeSeeder::class,
+            SubjectSeeder::class,
+            BlockSectionSeeder::class,
+            ExaminationRoomSeeder::class,
+            ExamScheduleSeeder::class,
         ]);
         Applicant::factory(10)->create();
         $this->command->info('✅ 10 Applicants created successfully!');

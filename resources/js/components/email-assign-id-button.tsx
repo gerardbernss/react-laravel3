@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button } from '@/components/ui/button';
 import { Loader, SendIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -10,10 +10,13 @@ function EmailAssignIdButton({ applicationId }: { applicationId: number }) {
         setIsSending(true);
 
         try {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
             const response = await fetch(`/studentidassignment/${applicationId}/email-admission`, {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
                 },
             });
 
@@ -34,14 +37,13 @@ function EmailAssignIdButton({ applicationId }: { applicationId: number }) {
 
     return (
         <Button
-            variant="outlined"
-            color="primary"
-            startIcon={isSending ? <Loader size={16} className="animate-spin" /> : <SendIcon size={16} />}
+            variant="outline"
+            size="sm"
             onClick={handleEmailAssignId}
             disabled={isSending}
-            size="small"
-            sx={{ whiteSpace: 'nowrap' }}
+            className="whitespace-nowrap"
         >
+            {isSending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
             {isSending ? 'Sending...' : 'Email Student ID'}
         </Button>
     );

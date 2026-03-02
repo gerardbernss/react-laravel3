@@ -1,6 +1,6 @@
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import { type BreadcrumbItem } from '@/types';
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { type ReactNode, useEffect } from 'react';
 import { Toaster, toast } from 'sonner';
 
@@ -19,6 +19,19 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
             warning?: string;
         };
     }>();
+
+    // Check authentication when page becomes visible (handles back button)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                // Reload to check auth status when user returns to page
+                router.reload({ only: ['auth'] });
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     useEffect(() => {
         console.log('AppLayout - Flash messages:', pageProps.flash);

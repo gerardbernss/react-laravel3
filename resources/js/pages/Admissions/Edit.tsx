@@ -1,4 +1,5 @@
-﻿import { Button } from '@/components/ui/button';
+﻿import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,9 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Box, Checkbox, FormControlLabel, Radio, RadioGroup, TextareaAutosize } from '@mui/material';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, School, Trash2, User, UserPlus, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -219,7 +222,7 @@ const FormNavigation = () => {
                             <div
                                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                                     activeSection === item.id
-                                        ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                        ? 'border-[#073066] bg-primary text-white shadow-md'
                                         : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
                                 } `}
                             >
@@ -248,9 +251,30 @@ export default function EditApplicant() {
     const applicant = props.applicant;
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState<ApplicantFormValues | null>(null);
+    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+    const [showResetDialog, setShowResetDialog] = useState(false);
 
     const toBoolean = (value: any): boolean => {
         return value === true || value === 1 || value === '1';
+    };
+
+    // Normalize health_conditions to always be an array
+    const normalizeHealthConditions = (value: any): string[] => {
+        if (Array.isArray(value)) {
+            return value.filter((item) => item && item !== 'None');
+        }
+        if (typeof value === 'string' && value !== '' && value !== 'None') {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter((item) => item && item !== 'None');
+                }
+            } catch {
+                // Not valid JSON, return as single item if not empty
+                return [value];
+            }
+        }
+        return [];
     };
 
     const form = useForm<ApplicantFormValues>({
@@ -297,7 +321,7 @@ export default function EditApplicant() {
                   permanent_zip: applicant.personal_data.permanent_zip || '',
                   stopped_studying: applicant.personal_data.stopped_studying || '',
                   accelerated: applicant.personal_data.accelerated || '',
-                  health_conditions: applicant.personal_data.health_conditions || [],
+                  health_conditions: normalizeHealthConditions(applicant.personal_data?.health_conditions),
 
                   // Family
                   father_lname: applicant.personal_data.family_background.father_lname || '',
@@ -425,7 +449,7 @@ export default function EditApplicant() {
                 permanent_zip: applicant.personal_data.permanent_zip || '',
                 stopped_studying: applicant.personal_data.stopped_studying || '',
                 accelerated: applicant.personal_data.accelerated || '',
-                health_conditions: applicant.personal_data.health_conditions || [],
+                health_conditions: normalizeHealthConditions(applicant.personal_data?.health_conditions),
 
                 // Family
                 father_lname: applicant.personal_data.family_background.father_lname || '',
@@ -509,8 +533,6 @@ export default function EditApplicant() {
     function handleConfirmedSubmit() {
         if (!pendingFormData) return;
 
-        console.log('Submitting data:', pendingFormData);
-
         router.put(`/admissions/applicants/${applicant.id}`, pendingFormData, {
             preserveScroll: true,
             preserveState: true,
@@ -519,8 +541,6 @@ export default function EditApplicant() {
                 setPendingFormData(null);
             },
             onError: (errors) => {
-                console.error('Backend errors:', errors);
-
                 // Show a toast for the error
                 toast.error('Failed to update applicant. Please check the form.', {
                     duration: 4000,
@@ -537,9 +557,6 @@ export default function EditApplicant() {
 
                 setShowConfirmDialog(false);
                 setPendingFormData(null);
-            },
-            onFinish: () => {
-                console.log('Request finished');
             },
         });
     }
@@ -567,7 +584,7 @@ export default function EditApplicant() {
                             Cancel
                         </Button>
                         <Button
-                            className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
+                            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
                             type="button"
                             onClick={handleConfirmedSubmit}
                         >
@@ -579,7 +596,7 @@ export default function EditApplicant() {
 
             <Form {...form}>
                 <TooltipProvider>
-                    <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.error('Validation Errors:', errors))} className="space-y-6">
+                    <form onSubmit={form.handleSubmit(onSubmit, () => toast.error('Please check the form for errors.'))} className="space-y-6">
                         <div className="min-h-screen bg-[#f5f5f5]">
                             <div className="sticky top-0 z-50 bg-white shadow-sm">
                                 <div className="mx-auto max-w-[1500px] px-10 pt-8 pb-4">
@@ -600,15 +617,11 @@ export default function EditApplicant() {
                                             <Button
                                                 type="button"
                                                 onClick={() => {
-                                                    // If the form is clean (no changes), just go back immediately
                                                     if (!form.formState.isDirty) {
                                                         window.history.back();
                                                         return;
                                                     }
-                                                    // If dirty, ask for confirmation
-                                                    if (confirm('Are you sure you want to discard changes? All unsaved changes will be lost.')) {
-                                                        window.history.back();
-                                                    }
+                                                    setShowDiscardDialog(true);
                                                 }}
                                                 className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                                             >
@@ -617,11 +630,7 @@ export default function EditApplicant() {
                                             <Button
                                                 type="button"
                                                 disabled={!form.formState.isDirty}
-                                                onClick={() => {
-                                                    if (confirm('Are you sure you want to reset the form? All unsaved changes will be lost.')) {
-                                                        form.reset();
-                                                    }
-                                                }}
+                                                onClick={() => setShowResetDialog(true)}
                                                 className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                                             >
                                                 Reset
@@ -630,8 +639,7 @@ export default function EditApplicant() {
                                             <Button
                                                 type="submit"
                                                 disabled={!form.formState.isDirty || form.formState.isSubmitting}
-                                                className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
-                                                onClick={() => console.log('Form state:', form.formState, 'Form values:', form.getValues())}
+                                                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#05509e]"
                                             >
                                                 Save Changes
                                             </Button>
@@ -696,24 +704,17 @@ export default function EditApplicant() {
                                                         if (status === 'Pending') return 'bg-yellow-100 border-yellow-400 text-yellow-800';
                                                         if (status === 'Exam Taken') return 'bg-blue-100 border-blue-400 text-blue-800';
                                                         if (status === 'Enrolled') return 'bg-green-100 border-green-400 text-green-800';
-                                                        return '';
+                                                        return 'bg-gray-100 border-gray-300 text-gray-700';
                                                     };
 
                                                     return (
                                                         <FormItem>
                                                             <LabelWithTooltip label="Applicant Status" />
-                                                            <Select onValueChange={field.onChange} value={field.value || ''}>
-                                                                <FormControl>
-                                                                    <SelectTrigger className={getStatusClass(field.value)}>
-                                                                        <SelectValue placeholder="Select" />
-                                                                    </SelectTrigger>
-                                                                </FormControl>
-                                                                <SelectContent>
-                                                                    <SelectItem value="Pending">Pending</SelectItem>
-                                                                    <SelectItem value="Exam Taken">Exam Taken</SelectItem>
-                                                                    <SelectItem value="Enrolled">Enrolled</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+                                                            <FormControl>
+                                                                <div className={`flex h-9 w-full items-center rounded-md border px-3 py-1 text-sm font-medium ${getStatusClass(field.value)}`}>
+                                                                    {field.value || 'No Status'}
+                                                                </div>
+                                                            </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
                                                     );
@@ -836,15 +837,17 @@ export default function EditApplicant() {
                                                                 <SelectItem value="Laboratory Elementary School">
                                                                     Laboratory Elementary School
                                                                 </SelectItem>
-                                                                <SelectItem value="Junior High School">Junior High School</SelectItem>
-                                                                <SelectItem value="Accountancy, Business, and Management">
-                                                                    ABM - Accountancy, Business, and Management
+                                                                <SelectItem value="Laboratory Junior High School">
+                                                                    Laboratory Junior High School
                                                                 </SelectItem>
-                                                                <SelectItem value="Humanities and Social Sciences">
-                                                                    HUMSS - Humanities and Social Sciences
+                                                                <SelectItem value="Accountancy, Business, and Management (ABM)">
+                                                                    Accountancy, Business, and Management (ABM)
                                                                 </SelectItem>
-                                                                <SelectItem value="Science, Technology, Engineering, and Mathematics">
-                                                                    STEM - Science, Technology, Engineering, and Mathematics
+                                                                <SelectItem value="Humanities and Social Sciences (HUMSS)">
+                                                                    Humanities and Social Sciences (HUMSS)
+                                                                </SelectItem>
+                                                                <SelectItem value="Science, Technology, Engineering, and Mathematics (STEM)">
+                                                                    Science, Technology, Engineering, and Mathematics (STEM)
                                                                 </SelectItem>
                                                                 <SelectItem value="General Academics">GAS - General Academic Strand</SelectItem>
                                                             </SelectContent>
@@ -1247,9 +1250,9 @@ export default function EditApplicant() {
                                                     <FormItem>
                                                         <LabelWithTooltip label="Have you ever stopped studying? If yes, give the date and reason/s." />
                                                         <FormControl>
-                                                            <TextareaAutosize
+                                                            <Textarea
                                                                 {...field}
-                                                                minRows={3}
+                                                                rows={3}
                                                                 placeholder=""
                                                                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                             />
@@ -1267,11 +1270,11 @@ export default function EditApplicant() {
                                                     <FormItem>
                                                         <LabelWithTooltip label="Have you ever been accelerated in any school? If yes, give the reason/s." />
                                                         <FormControl>
-                                                            <TextareaAutosize
+                                                            <Textarea
                                                                 {...field}
-                                                                minRows={3}
+                                                                rows={3}
                                                                 placeholder=""
-                                                                className="py-1.5m w-full rounded-md border border-input bg-background px-3 shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                                                                className="w-full rounded-md border border-input bg-background px-3 py-1.5 shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                             />
                                                         </FormControl>
                                                         <FormMessage />
@@ -1287,14 +1290,7 @@ export default function EditApplicant() {
                                                     <FormItem className="mt-2">
                                                         <FormLabel>Health Conditions (Tick the box/es if applicable.)</FormLabel>
 
-                                                        <Box
-                                                            sx={{
-                                                                display: 'grid',
-                                                                gridTemplateColumns: 'repeat(3, 1fr)',
-                                                                gap: 1,
-                                                                mt: 1,
-                                                            }}
-                                                        >
+                                                        <div className="mt-1 grid grid-cols-3 gap-1">
                                                             {[
                                                                 'Sensory Difficulties',
                                                                 'Intellectual Difficulties',
@@ -1305,76 +1301,50 @@ export default function EditApplicant() {
                                                                 'Medical Conditions',
                                                                 'Major Psychological Disorders',
                                                             ].map((option) => (
-                                                                <FormControlLabel
-                                                                    key={option}
-                                                                    control={
-                                                                        <Checkbox
-                                                                            size="small"
-                                                                            checked={Array.isArray(field.value) && field.value.includes(option)}
-                                                                            onChange={(e) => {
-                                                                                const checked = e.target.checked;
-                                                                                const currentValue = Array.isArray(field.value) ? field.value : [];
-
-                                                                                if (checked) {
-                                                                                    field.onChange([...currentValue, option]);
-                                                                                } else {
-                                                                                    field.onChange(currentValue.filter((v: string) => v !== option));
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                    }
-                                                                    label={option}
-                                                                    sx={{
-                                                                        alignItems: 'center',
-                                                                        '& .MuiFormControlLabel-label': {
-                                                                            fontSize: '0.875rem', // ðŸ‘ˆ adjust text size here
-                                                                            color: '#374151', // Tailwindâ€™s gray-700 equivalent
-                                                                            lineHeight: 1.4,
-                                                                        },
-                                                                    }}
-                                                                />
-                                                            ))}
-
-                                                            {/* â€œOthersâ€ checkbox */}
-                                                            <FormControlLabel
-                                                                control={
+                                                                <div key={option} className="flex items-center space-x-2">
                                                                     <Checkbox
-                                                                        size="small"
-                                                                        checked={
-                                                                            Array.isArray(field.value) &&
-                                                                            field.value.some((v) => v.startsWith('Others'))
-                                                                        }
-                                                                        onChange={(e) => {
-                                                                            const checked = e.target.checked;
+                                                                        checked={Array.isArray(field.value) && field.value.includes(option)}
+                                                                        onCheckedChange={(checked) => {
                                                                             const currentValue = Array.isArray(field.value) ? field.value : [];
-
                                                                             if (checked) {
-                                                                                if (!currentValue.some((v) => v.startsWith('Others'))) {
-                                                                                    field.onChange([...currentValue, 'Others:']);
-                                                                                }
+                                                                                field.onChange([...currentValue, option]);
                                                                             } else {
-                                                                                field.onChange(
-                                                                                    currentValue.filter((v: string) => !v.startsWith('Others')),
-                                                                                );
+                                                                                field.onChange(currentValue.filter((v: string) => v !== option));
                                                                             }
                                                                         }}
                                                                     />
-                                                                }
-                                                                label="Others (Please specify)"
-                                                                sx={{
-                                                                    alignItems: 'center',
-                                                                    '& .MuiFormControlLabel-label': {
-                                                                        fontSize: '0.875rem',
-                                                                        color: '#374151',
-                                                                    },
-                                                                }}
-                                                            />
-                                                        </Box>
+                                                                    <label className="text-sm text-gray-700">{option}</label>
+                                                                </div>
+                                                            ))}
+
+                                                            {/* â€œOthersâ€ checkbox */}
+                                                            <div className="flex items-center space-x-2">
+                                                                <Checkbox
+                                                                    checked={
+                                                                        Array.isArray(field.value) &&
+                                                                        field.value.some((v) => v.startsWith('Others'))
+                                                                    }
+                                                                    onCheckedChange={(checked) => {
+                                                                        const currentValue = Array.isArray(field.value) ? field.value : [];
+                                                                        if (checked) {
+                                                                            if (!currentValue.some((v) => v.startsWith('Others'))) {
+                                                                                field.onChange([...currentValue, 'Others:']);
+                                                                            }
+                                                                        } else {
+                                                                            field.onChange(
+                                                                                currentValue.filter((v: string) => !v.startsWith('Others')),
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <label className="text-sm text-gray-700">Others (Please specify)</label>
+                                                            </div>
+                                                        </div>
 
                                                         {/* â€œOthersâ€ text box */}
                                                         {Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others')) && (
-                                                            <TextareaAutosize
-                                                                minRows={2}
+                                                            <Textarea
+                                                                rows={2}
                                                                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                 placeholder="Please specify..."
                                                                 value={
@@ -1458,14 +1428,15 @@ export default function EditApplicant() {
                                                         <FormItem className="flex h-full flex-col justify-center">
                                                             <LabelWithTooltip label="Father's Status" tooltip="" />
                                                             <FormControl>
-                                                                <RadioGroup
-                                                                    row
-                                                                    sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                    value={field.value || ''}
-                                                                    onChange={(e) => field.onChange(e.target.value)}
-                                                                >
-                                                                    <FormControlLabel value="Living" control={<Radio />} label="Living" />
-                                                                    <FormControlLabel value="Deceased" control={<Radio />} label="Deceased" />
+                                                                <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={field.onChange}>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="Living" id={`${field.name}-living`} />
+                                                                        <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
+                                                                        <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                    </div>
                                                                 </RadioGroup>
                                                             </FormControl>
                                                             <FormMessage />
@@ -1615,29 +1586,21 @@ export default function EditApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={isEmployee ? 'true' : 'false'}
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
-                                                                                field.onChange(boolValue);
-                                                                                // Clear department when set to No
-                                                                                if (!boolValue) {
-                                                                                    form.setValue('father_slu_dept', '');
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                        <RadioGroup className="flex flex-row gap-4" value={isEmployee ? 'true' : 'false'} onValueChange={(val) => {
+                                                                            const boolValue = val === 'true';
+                                                                            field.onChange(boolValue);
+                                                                            if (!boolValue) {
+                                                                                form.setValue('father_slu_dept', '');
+                                                                            }
+                                                                        }}>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -1658,71 +1621,6 @@ export default function EditApplicant() {
                                                             </FormItem>
                                                         );
                                                     }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="mt-6">
-                                            <h2 className="text-l font-bold text-gray-900">Mother's Details *</h2>
-                                            <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-4">
-                                                <FormField
-                                                    control={form.control}
-                                                    name="mother_lname"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <LabelWithTooltip label="Mother's Last Name" tooltip="" />
-                                                            <FormControl>
-                                                                <Input placeholder="" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="mother_fname"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <LabelWithTooltip label="Mother's First Name" tooltip="" />
-                                                            <FormControl>
-                                                                <Input placeholder="" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="mother_mname"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <LabelWithTooltip label="Mother's Middle Name" tooltip="" />
-                                                            <FormControl>
-                                                                <Input placeholder="" {...field} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name="mother_living"
-                                                    render={({ field }) => (
-                                                        <FormItem className="flex h-full flex-col justify-center">
-                                                            <LabelWithTooltip label="Mother's Status" tooltip="" />
-                                                            <FormControl>
-                                                                <RadioGroup
-                                                                    row
-                                                                    sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                    value={field.value || ''}
-                                                                    onChange={(e) => field.onChange(e.target.value)}
-                                                                >
-                                                                    <FormControlLabel value="Living" control={<Radio />} label="Living" />
-                                                                    <FormControlLabel value="Deceased" control={<Radio />} label="Deceased" />
-                                                                </RadioGroup>
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
                                                 />
                                             </div>
                                             <div className="mt-4 grid grid-cols-1 gap-6 px-4 md:grid-cols-3">
@@ -1867,29 +1765,24 @@ export default function EditApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
+                                                                        <RadioGroup className="flex flex-row gap-4"
                                                                             value={isEmployee ? 'true' : 'false'}
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
+                                                                            onValueChange={(val) => {
+                                                                                const boolValue = val === 'true';
                                                                                 field.onChange(boolValue);
-                                                                                // Clear department when set to No
                                                                                 if (!boolValue) {
                                                                                     form.setValue('mother_slu_dept', '');
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                            <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                        <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                    </div>
+                                                                            <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                        <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                    </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -1918,10 +1811,8 @@ export default function EditApplicant() {
                                             {/* Auto-fill checkboxes */}
                                             <div className="mt-4 flex gap-6 px-4">
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        size="small"
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
+                                                    <Checkbox onCheckedChange={(checked) => {
+                                                            if (checked) {
                                                                 // Copy father's info to guardian fields
                                                                 form.setValue('guardian_lname', form.getValues('father_lname'));
                                                                 form.setValue('guardian_fname', form.getValues('father_fname'));
@@ -1948,10 +1839,8 @@ export default function EditApplicant() {
                                                 </div>
 
                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        size="small"
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
+                                                    <Checkbox onCheckedChange={(checked) => {
+                                                            if (checked) {
                                                                 // Copy mother's info to guardian fields
                                                                 form.setValue('guardian_lname', form.getValues('mother_lname'));
                                                                 form.setValue('guardian_fname', form.getValues('mother_fname'));
@@ -2174,29 +2063,24 @@ export default function EditApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
+                                                                        <RadioGroup className="flex flex-row gap-4"
                                                                             value={isEmployee ? 'true' : 'false'}
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
+                                                                            onValueChange={(val) => {
+                                                                                const boolValue = val === 'true';
                                                                                 field.onChange(boolValue);
-                                                                                // Clear department when set to No
                                                                                 if (!boolValue) {
                                                                                     form.setValue('guardian_slu_dept', '');
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                            <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                        <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                    </div>
+                                                                            <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                        <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                    </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -2307,40 +2191,41 @@ export default function EditApplicant() {
                                                                 />
 
                                                                 <FormControl>
-                                                                    <RadioGroup
-                                                                        className="mt-2 pl-4"
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                        value={hasSibling ? 'true' : 'false'}
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value === 'true';
+                                                                    <RadioGroup className="mt-2 pl-4"
+                                                                        value={hasSibling ? 'true' : 'false'} onValueChange={(v) => {
+                                                                            const val = v === 'true';
                                                                             field.onChange(val);
 
                                                                             const siblings = form.getValues('siblings') ?? [];
 
                                                                             if (val && siblings.length === 0) {
-                                                                                form.setValue('siblings', [
-                                                                                    {
-                                                                                        sibling_full_name: '',
-                                                                                        sibling_grade_level: '',
-                                                                                        sibling_id_number: '',
-                                                                                    },
-                                                                                ]);
+                                                                                form.setValue(
+                                                                                    'siblings',
+                                                                                    [
+                                                                                        {
+                                                                                            sibling_full_name: '',
+                                                                                            sibling_grade_level: '',
+                                                                                            sibling_id_number: '',
+                                                                                        },
+                                                                                    ],
+                                                                                    { shouldDirty: true, shouldValidate: true },
+                                                                                );
                                                                             } else if (!val) {
-                                                                                form.setValue('siblings', undefined);
+                                                                                form.setValue('siblings', [], {
+                                                                                    shouldDirty: true,
+                                                                                    shouldValidate: true,
+                                                                                });
                                                                             }
                                                                         }}
                                                                     >
-                                                                        <FormControlLabel
-                                                                            value="true"
-                                                                            control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                            label="Yes"
-                                                                        />
-                                                                        <FormControlLabel
-                                                                            value="false"
-                                                                            control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                            label="No"
-                                                                        />
+                                                                        <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                        <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                    </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                        <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                    </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                             </div>
@@ -2393,10 +2278,19 @@ export default function EditApplicant() {
                                                                                         updated.splice(index, 1);
 
                                                                                         if (updated.length === 0) {
-                                                                                            form.setValue('siblings', undefined);
-                                                                                            form.setValue('has_sibling', false);
+                                                                                            form.setValue('siblings', [], {
+                                                                                                shouldDirty: true,
+                                                                                                shouldValidate: true,
+                                                                                            });
+                                                                                            form.setValue('has_sibling', false, {
+                                                                                                shouldDirty: true,
+                                                                                                shouldValidate: true,
+                                                                                            });
                                                                                         } else {
-                                                                                            form.setValue('siblings', updated);
+                                                                                            form.setValue('siblings', updated, {
+                                                                                                shouldDirty: true,
+                                                                                                shouldValidate: true,
+                                                                                            });
                                                                                         }
                                                                                     }}
                                                                                     className="text-red-500 hover:text-red-700"
@@ -2412,14 +2306,18 @@ export default function EditApplicant() {
                                                                             variant="outline"
                                                                             size="sm"
                                                                             onClick={() =>
-                                                                                form.setValue('siblings', [
-                                                                                    ...(form.getValues('siblings') || []),
-                                                                                    {
-                                                                                        sibling_full_name: '',
-                                                                                        sibling_grade_level: '',
-                                                                                        sibling_id_number: '',
-                                                                                    },
-                                                                                ])
+                                                                                form.setValue(
+                                                                                    'siblings',
+                                                                                    [
+                                                                                        ...(form.getValues('siblings') || []),
+                                                                                        {
+                                                                                            sibling_full_name: '',
+                                                                                            sibling_grade_level: '',
+                                                                                            sibling_id_number: '',
+                                                                                        },
+                                                                                    ],
+                                                                                    { shouldDirty: true, shouldValidate: true },
+                                                                                )
                                                                             }
                                                                             className="mt-3"
                                                                         >
@@ -2547,12 +2445,15 @@ export default function EditApplicant() {
                                                                                         const updated = [...(form.getValues('schools') || [])];
                                                                                         updated.splice(index, 1);
 
-                                                                                        // If no schools left, set to undefined
-                                                                                        if (updated.length === 0) {
-                                                                                            form.setValue('schools', undefined);
-                                                                                        } else {
-                                                                                            form.setValue('schools', updated);
-                                                                                        }
+                                                                                        // If no schools left, set to empty array
+                                                                                        form.setValue(
+                                                                                            'schools',
+                                                                                            updated.length === 0 ? [] : updated,
+                                                                                            {
+                                                                                                shouldDirty: true,
+                                                                                                shouldValidate: true,
+                                                                                            },
+                                                                                        );
                                                                                     }}
                                                                                     className="absolute top-1/2 right-2 -translate-y-1/2 text-red-500 hover:text-red-700"
                                                                                 >
@@ -2567,21 +2468,25 @@ export default function EditApplicant() {
                                                                             variant="outline"
                                                                             size="sm"
                                                                             onClick={() =>
-                                                                                form.setValue('schools', [
-                                                                                    ...(form.getValues('schools') || []),
-                                                                                    {
-                                                                                        school_name: '',
-                                                                                        school_address: '',
-                                                                                        from_grade: '',
-                                                                                        to_grade: '',
-                                                                                        from_year: '',
-                                                                                        to_year: '',
-                                                                                        honors_awards: '',
-                                                                                        general_average: '',
-                                                                                        class_rank: '',
-                                                                                        class_size: '',
-                                                                                    },
-                                                                                ])
+                                                                                form.setValue(
+                                                                                    'schools',
+                                                                                    [
+                                                                                        ...(form.getValues('schools') || []),
+                                                                                        {
+                                                                                            school_name: '',
+                                                                                            school_address: '',
+                                                                                            from_grade: '',
+                                                                                            to_grade: '',
+                                                                                            from_year: '',
+                                                                                            to_year: '',
+                                                                                            honors_awards: '',
+                                                                                            general_average: '',
+                                                                                            class_rank: '',
+                                                                                            class_size: '',
+                                                                                        },
+                                                                                    ],
+                                                                                    { shouldDirty: true, shouldValidate: true },
+                                                                                )
                                                                             }
                                                                             className="mt-3"
                                                                         >
@@ -2597,20 +2502,24 @@ export default function EditApplicant() {
                                                                             variant="outline"
                                                                             size="sm"
                                                                             onClick={() =>
-                                                                                form.setValue('schools', [
-                                                                                    {
-                                                                                        school_name: '',
-                                                                                        school_address: '',
-                                                                                        from_grade: '',
-                                                                                        to_grade: '',
-                                                                                        from_year: '',
-                                                                                        to_year: '',
-                                                                                        honors_awards: '',
-                                                                                        general_average: '',
-                                                                                        class_rank: '',
-                                                                                        class_size: '',
-                                                                                    },
-                                                                                ])
+                                                                                form.setValue(
+                                                                                    'schools',
+                                                                                    [
+                                                                                        {
+                                                                                            school_name: '',
+                                                                                            school_address: '',
+                                                                                            from_grade: '',
+                                                                                            to_grade: '',
+                                                                                            from_year: '',
+                                                                                            to_year: '',
+                                                                                            honors_awards: '',
+                                                                                            general_average: '',
+                                                                                            class_rank: '',
+                                                                                            class_size: '',
+                                                                                        },
+                                                                                    ],
+                                                                                    { shouldDirty: true, shouldValidate: true },
+                                                                                )
                                                                             }
                                                                         >
                                                                             + Add School
@@ -2633,6 +2542,30 @@ export default function EditApplicant() {
                     </form>
                 </TooltipProvider>
             </Form>
+            <ConfirmDialog
+                open={showDiscardDialog}
+                onClose={() => setShowDiscardDialog(false)}
+                onConfirm={() => {
+                    setShowDiscardDialog(false);
+                    window.history.back();
+                }}
+                title="Discard Changes"
+                description="Are you sure you want to discard changes? All unsaved changes will be lost."
+                confirmLabel="Discard"
+                variant="warning"
+            />
+            <ConfirmDialog
+                open={showResetDialog}
+                onClose={() => setShowResetDialog(false)}
+                onConfirm={() => {
+                    form.reset();
+                    setShowResetDialog(false);
+                }}
+                title="Reset Form"
+                description="Are you sure you want to reset the form? All unsaved changes will be lost."
+                confirmLabel="Reset"
+                variant="warning"
+            />
         </AppLayout>
     );
 }

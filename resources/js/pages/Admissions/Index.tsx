@@ -1,3 +1,4 @@
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Chip } from '@mui/material';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -119,12 +120,17 @@ export default function Index({ applications }: Props) {
         setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
     };
 
+    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+
     const handleBulkDelete = () => {
-        if (confirm(`Delete ${selectedRows.length} selected items?`)) {
-            // Implement bulk delete logic here
-            toast.success(`${selectedRows.length} applicants deleted successfully!`);
-            setSelectedRows([]);
-        }
+        setShowBulkDeleteDialog(true);
+    };
+
+    const confirmBulkDelete = () => {
+        // TODO: implement actual bulk delete endpoint
+        toast.success(`${selectedRows.length} applicants deleted successfully!`);
+        setSelectedRows([]);
+        setShowBulkDeleteDialog(false);
     };
 
     const toggleColumnVisibility = (key: keyof Applicant) => {
@@ -245,12 +251,15 @@ export default function Index({ applications }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Evaluation/Assessment" />
 
-            <div className="p-10">
-                <div className="mb-6 flex items-center justify-between">
-                    <h1 className="text-3xl font-semibold text-gray-800">Evaluation/Assessment</h1>
+            <div className="space-y-6 p-6 md:p-10">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">Evaluation/Assessment</h1>
+                        <p className="mt-1 text-gray-600">Review and assess applicant submissions and exam results</p>
+                    </div>
                     <Link
                         href={`/admissions/applicants/create`}
-                        className="flex items-center gap-2 rounded-md bg-[#073066] px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-[#05254d] hover:shadow-lg"
+                        className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg"
                         style={{ minWidth: 'fit-content', whiteSpace: 'nowrap' }}
                     >
                         <HiPlus size={18} />
@@ -259,12 +268,12 @@ export default function Index({ applications }: Props) {
                 </div>
 
                 {/* Search + Filters + Columns + Export */}
-                <div className="mb-4 space-y-3">
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
                     {/* SEARCH ROW */}
                     <div>
                         <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
                         <div className="flex items-center">
-                            <div className="flex h-10 w-full items-center justify-start rounded-md border border-gray-300 bg-white text-sm shadow-sm focus-within:ring-2 focus-within:ring-blue-400 hover:bg-gray-50 md:w-[400px]">
+                            <div className="mb-3 flex h-10 w-full items-center justify-start rounded-md border border-gray-300 bg-white text-sm shadow-sm focus-within:ring-2 focus-within:ring-blue-400 hover:bg-gray-50 md:w-[400px]">
                                 <span className="pr-2 pl-3 text-gray-500">🔍</span>
                                 <input
                                     type="text"
@@ -542,11 +551,11 @@ export default function Index({ applications }: Props) {
                     </div>
                 )}
 
-                {/* Custom DataGrid Table */}
-                <div className="overflow-hidden rounded-lg bg-white shadow-md">
+                {/* Table */}
+                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-linear-to-r from-slate-700 to-slate-800 text-white">
+                            <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-4 py-3 text-left">
                                         <input
@@ -562,7 +571,7 @@ export default function Index({ applications }: Props) {
                                             <th
                                                 key={String(column.key)}
                                                 onClick={() => handleSort(column.key)}
-                                                className="cursor-pointer px-4 py-3 text-left font-semibold transition-colors hover:bg-slate-600"
+                                                className="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100"
                                             >
                                                 <div className="flex items-center gap-1.5">
                                                     {column.label}
@@ -575,7 +584,7 @@ export default function Index({ applications }: Props) {
                                                 </div>
                                             </th>
                                         ))}
-                                    <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -621,68 +630,56 @@ export default function Index({ applications }: Props) {
                                             <td className="px-4 py-3">
                                                 {(() => {
                                                     const status = row.application_status?.toLowerCase() || '';
-                                                    let color: 'default' | 'success' | 'warning' | 'info' = 'default';
+                                                    let variant: 'outline' | 'success' | 'secondary' | 'default' = 'outline';
                                                     let label = row.application_status || 'Pending';
 
                                                     switch (status) {
                                                         case 'pending':
-                                                            color = 'default';
+                                                            variant = 'outline';
                                                             label = 'Pending';
                                                             break;
                                                         case 'exam taken':
                                                         case 'inactive':
-                                                            color = 'info';
+                                                            variant = 'default';
                                                             label = 'Exam Taken';
                                                             break;
                                                         case 'enrolled':
                                                         case 'active':
-                                                            color = 'success';
+                                                            variant = 'success';
                                                             label = 'Enrolled';
                                                             break;
                                                         default:
-                                                            color = 'default';
+                                                            variant = 'outline';
                                                             label = 'Pending';
                                                     }
 
                                                     return (
-                                                        <Chip
-                                                            label={label}
-                                                            color={color}
-                                                            size="small"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                textTransform: 'capitalize',
-                                                                fontSize: '0.7rem',
-                                                                height: '20px',
-                                                            }}
-                                                        />
+                                                        <Badge variant={variant}>{label}</Badge>
                                                     );
                                                 })()}
                                             </td>
                                         )}
                                         <td className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <Link
-                                                    href={`/admissions/applicants/${row.id}/show`}
-                                                    className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-50"
-                                                    title="View"
-                                                >
-                                                    <HiEye size={16} />
+                                            <div className="flex items-center gap-1">
+                                                <Link href={`/admissions/applicants/${row.id}/show`}>
+                                                    <Button variant="outline" size="sm" title="View">
+                                                        <HiEye size={16} />
+                                                    </Button>
                                                 </Link>
-                                                <Link
-                                                    href={`/admissions/applicants/${row.id}/edit`}
-                                                    className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-50"
-                                                    title="Edit"
-                                                >
-                                                    <HiOutlinePencilAlt size={16} />
+                                                <Link href={`/admissions/applicants/${row.id}/edit`}>
+                                                    <Button variant="outline" size="sm" title="Edit">
+                                                        <HiOutlinePencilAlt size={16} />
+                                                    </Button>
                                                 </Link>
-                                                <button
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
                                                     onClick={() => handleDeleteClick(row.id)}
-                                                    className="cursor-pointer rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50"
+                                                    className="text-red-600 hover:text-red-700"
                                                     title="Delete"
                                                 >
                                                     <HiTrash size={16} />
-                                                </button>
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -692,8 +689,8 @@ export default function Index({ applications }: Props) {
                     </div>
                 </div>
 
-                {/* Pagination Footer */}
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
+                {/* Pagination */}
+                <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-700">Rows per page:</span>
                         <select
@@ -768,6 +765,15 @@ export default function Index({ applications }: Props) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <ConfirmDialog
+                open={showBulkDeleteDialog}
+                onClose={() => setShowBulkDeleteDialog(false)}
+                onConfirm={confirmBulkDelete}
+                title="Delete Selected Applicants"
+                description={`Are you sure you want to delete ${selectedRows.length} selected applicant(s)? This action cannot be undone.`}
+                confirmLabel="Delete All"
+                processingLabel="Deleting..."
+            />
         </AppLayout>
     );
 }

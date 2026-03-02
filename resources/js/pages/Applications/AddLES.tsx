@@ -19,8 +19,8 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
-import { FormControlLabel, Radio, RadioGroup } from '@mui/material';
-import TextareaAutosize from '@mui/material/TextareaAutosize';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import axios from 'axios';
 import { ClipboardList, Facebook, FileText, GraduationCap, HelpCircle, Info, Mail, MapPin, Phone, Trash2, User, UserPlus, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -2104,9 +2104,9 @@ export default function AddApplicant() {
                                                         <FormItem>
                                                             <LabelWithTooltip label="Have you ever stopped studying? If yes, give the date and reason/s." />
                                                             <FormControl>
-                                                                <TextareaAutosize
+                                                                <Textarea
                                                                     {...field}
-                                                                    minRows={3}
+                                                                    rows={3}
                                                                     placeholder=""
                                                                     className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                 />
@@ -2124,9 +2124,9 @@ export default function AddApplicant() {
                                                         <FormItem>
                                                             <LabelWithTooltip label="Have you ever been accelerated in any school? If yes, give the reason/s." />
                                                             <FormControl>
-                                                                <TextareaAutosize
+                                                                <Textarea
                                                                     {...field}
-                                                                    minRows={3}
+                                                                    rows={3}
                                                                     placeholder=""
                                                                     className="py-1.5m w-full rounded-md border border-input bg-background px-3 shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                 />
@@ -2207,8 +2207,8 @@ export default function AddApplicant() {
 
                                                             {/* "Others" text box */}
                                                             {Array.isArray(field.value) && field.value.some((v) => v.startsWith('Others')) && (
-                                                                <TextareaAutosize
-                                                                    minRows={2}
+                                                                <Textarea
+                                                                    rows={2}
                                                                     className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                                                     placeholder="Please specify..."
                                                                     value={
@@ -2347,14 +2347,15 @@ export default function AddApplicant() {
                                                             <FormItem className="flex h-full flex-col justify-center">
                                                                 <LabelWithTooltip label="Father's Status" tooltip="" />
                                                                 <FormControl>
-                                                                    <RadioGroup
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                        value={field.value || ''}
-                                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                                    >
-                                                                        <FormControlLabel value="Living" control={<Radio />} label="Living" />
-                                                                        <FormControlLabel value="Deceased" control={<Radio />} label="Deceased" />
+                                                                    <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={field.onChange}>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="Living" id={`${field.name}-living`} />
+                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
+                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                        </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -2539,27 +2540,18 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={
-                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
+                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(val) => {
+                                                                                const boolValue = val === 'true';
                                                                                 field.onChange(boolValue);
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                            }}>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -2631,14 +2623,15 @@ export default function AddApplicant() {
                                                             <FormItem className="flex h-full flex-col justify-center">
                                                                 <LabelWithTooltip label="Mother's Status" tooltip="" />
                                                                 <FormControl>
-                                                                    <RadioGroup
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                        value={field.value || ''}
-                                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                                    >
-                                                                        <FormControlLabel value="Living" control={<Radio />} label="Living" />
-                                                                        <FormControlLabel value="Deceased" control={<Radio />} label="Deceased" />
+                                                                    <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={field.onChange}>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="Living" id={`${field.name}-living`} />
+                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
+                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                        </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                                 <FormMessage />
@@ -2823,27 +2816,18 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={
-                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
+                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(val) => {
+                                                                                const boolValue = val === 'true';
                                                                                 field.onChange(boolValue);
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                                label="No"
-                                                                            />
+                                                                            }}>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -3147,37 +3131,18 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup
-                                                                            row
-                                                                            sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                            value={
-                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
-                                                                            }
-                                                                            onChange={(e) => {
-                                                                                const boolValue = e.target.value === 'true';
+                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(val) => {
+                                                                                const boolValue = val === 'true';
                                                                                 field.onChange(boolValue);
-                                                                            }}
-                                                                        >
-                                                                            <FormControlLabel
-                                                                                value="true"
-                                                                                control={
-                                                                                    <Radio
-                                                                                        sx={{ transform: 'scale(0.9)' }}
-                                                                                        disabled={guardianSource !== null}
-                                                                                    />
-                                                                                }
-                                                                                label="Yes"
-                                                                            />
-                                                                            <FormControlLabel
-                                                                                value="false"
-                                                                                control={
-                                                                                    <Radio
-                                                                                        sx={{ transform: 'scale(0.9)' }}
-                                                                                        disabled={guardianSource !== null}
-                                                                                    />
-                                                                                }
-                                                                                label="No"
-                                                                            />
+                                                                            }}>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="true" id={`${field.name}-yes`} disabled={guardianSource !== null} />
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            </div>
+                                                                            <div className="flex items-center space-x-2">
+                                                                                <RadioGroupItem value="false" id={`${field.name}-no`} disabled={guardianSource !== null} />
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
                                                                 </div>
@@ -3281,18 +3246,13 @@ export default function AddApplicant() {
                                                                 />
 
                                                                 <FormControl>
-                                                                    <RadioGroup
-                                                                        className="mt-2 pl-4"
-                                                                        row
-                                                                        sx={{ '& .MuiFormControlLabel-label': { fontSize: '0.80rem' } }}
-                                                                        value={field.value === true ? 'true' : field.value === false ? 'false' : ''}
-                                                                        onChange={(e) => {
-                                                                            const val = e.target.value === 'true'; // convert to boolean
-                                                                            field.onChange(val);
+                                                                    <RadioGroup className="mt-2 flex flex-row gap-4 pl-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(val) => {
+                                                                            const boolVal = val === 'true';
+                                                                            field.onChange(boolVal);
 
                                                                             const siblings = form.getValues('siblings') ?? [];
 
-                                                                            if (val && siblings.length === 0) {
+                                                                            if (boolVal && siblings.length === 0) {
                                                                                 form.setValue('siblings', [
                                                                                     {
                                                                                         sibling_full_name: '',
@@ -3300,21 +3260,18 @@ export default function AddApplicant() {
                                                                                         sibling_id_number: '',
                                                                                     },
                                                                                 ]);
-                                                                            } else if (!val) {
+                                                                            } else if (!boolVal) {
                                                                                 form.setValue('siblings', []);
                                                                             }
-                                                                        }}
-                                                                    >
-                                                                        <FormControlLabel
-                                                                            value="true"
-                                                                            control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                            label="Yes"
-                                                                        />
-                                                                        <FormControlLabel
-                                                                            value="false"
-                                                                            control={<Radio sx={{ transform: 'scale(0.9)' }} />}
-                                                                            label="No"
-                                                                        />
+                                                                        }}>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="true" id={`${field.name}-yes`} />
+                                                                            <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="false" id={`${field.name}-no`} />
+                                                                            <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                        </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
                                                             </div>

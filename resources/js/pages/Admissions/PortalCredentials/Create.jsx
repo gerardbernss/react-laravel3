@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import Authenticated from '@/Layouts/AuthenticatedLayout';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import TextInput from '@/Components/TextInput';
+import AppLayout from '@/layouts/app-layout';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 export default function CreatePortalCredential({ auth, applicants = [] }) {
     const { data, setData, post, processing, errors } = useForm({
         applicant_personal_data_id: '',
         applicant_application_info_id: '',
-        portal_username: '',
     });
 
     const [selectedApplicant, setSelectedApplicant] = useState(null);
@@ -29,18 +25,9 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
         post(route('portal-credentials.store'));
     };
 
-    const generateUsername = () => {
-        if (selectedApplicant) {
-            const firstName = selectedApplicant.applicant_personal_data?.first_name?.toLowerCase() || '';
-            const lastName = selectedApplicant.applicant_personal_data?.last_name?.toLowerCase() || '';
-            const randomNum = Math.floor(Math.random() * 1000);
-            const username = `${firstName}.${lastName}${randomNum}`;
-            setData('portal_username', username);
-        }
-    };
 
     return (
-        <Authenticated user={auth.user}>
+        <AppLayout>
             <div className="py-12">
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
                     {/* Header */}
@@ -54,12 +41,12 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
                         <form onSubmit={handleSubmit} className="p-6 space-y-6">
                             {/* Applicant Selection */}
                             <div>
-                                <InputLabel htmlFor="applicant" value="Select Applicant" />
+                                <Label htmlFor="applicant">Select Applicant</Label>
                                 <select
                                     id="applicant"
                                     value={data.applicant_application_info_id}
                                     onChange={handleApplicantChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                                     required
                                 >
                                     <option value="">Choose an applicant...</option>
@@ -69,7 +56,9 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
                                         </option>
                                     ))}
                                 </select>
-                                <InputError message={errors.applicant_application_info_id} />
+                                {errors.applicant_application_info_id && (
+                                    <p className="text-sm text-red-600 mt-1">{errors.applicant_application_info_id}</p>
+                                )}
                             </div>
 
                             {/* Applicant Summary */}
@@ -93,33 +82,23 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
                                 </div>
                             )}
 
-                            {/* Portal Username */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <InputLabel htmlFor="username" value="Portal Username" />
-                                    <button
-                                        type="button"
-                                        onClick={generateUsername}
-                                        disabled={!selectedApplicant}
-                                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium disabled:text-gray-400"
-                                    >
-                                        Auto-generate
-                                    </button>
+                            {/* Portal Username (Email) */}
+                            {selectedApplicant && (
+                                <div>
+                                    <Label>Portal Username</Label>
+                                    <div className="mt-1 p-3 bg-gray-100 rounded-md">
+                                        <p className="font-mono text-gray-900">
+                                            {selectedApplicant.applicant_personal_data?.email || selectedApplicant.applicant_personal_data?.email_address || 'No email available'}
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        The applicant's email address will be used as their portal username.
+                                    </p>
+                                    {errors.username && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.username}</p>
+                                    )}
                                 </div>
-                                <TextInput
-                                    id="username"
-                                    type="text"
-                                    value={data.portal_username}
-                                    onChange={(e) => setData('portal_username', e.target.value)}
-                                    placeholder="e.g., john.doe123"
-                                    className="w-full"
-                                    required
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Usernames must be unique and contain only alphanumeric characters and dots.
-                                </p>
-                                <InputError message={errors.portal_username} />
-                            </div>
+                            )}
 
                             {/* Information Box */}
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -134,17 +113,17 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
 
                             {/* Actions */}
                             <div className="flex justify-end space-x-3 pt-6 border-t">
-                                <SecondaryButton onClick={() => window.history.back()}>
+                                <Button type="button" variant="outline" onClick={() => window.history.back()}>
                                     Cancel
-                                </SecondaryButton>
-                                <PrimaryButton type="submit" disabled={processing || !selectedApplicant}>
+                                </Button>
+                                <Button type="submit" disabled={processing || !selectedApplicant}>
                                     Create Credentials
-                                </PrimaryButton>
+                                </Button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-        </Authenticated>
+        </AppLayout>
     );
 }

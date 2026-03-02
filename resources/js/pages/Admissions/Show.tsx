@@ -46,10 +46,13 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
         setSendingEmail(type);
 
         try {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
             const response = await fetch(`/admissions/applicants/${applicant.id}/send-${type}`, {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
                 },
             });
 
@@ -61,8 +64,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                 toast.error(data.message || 'Failed to send email');
             }
         } catch (error) {
-            toast.error('An error occurred while sending the email');
-            console.error('Email send error:', error);
+            toast.error('An error occurred while sending the email. Please try again.');
         } finally {
             setSendingEmail(null);
         }
@@ -136,7 +138,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 <div
                                     className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                                         activeSection === item.id
-                                            ? 'border-[#073066] bg-[#073066] text-white shadow-md'
+                                            ? 'border-[#073066] bg-primary text-white shadow-md'
                                             : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-500'
                                     } `}
                                 >
@@ -562,8 +564,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                                     }
 
                                                     return rows;
-                                                } catch (error) {
-                                                    console.error('Error rendering documents:', error);
+                                                } catch {
                                                     return (
                                                         <tr>
                                                             <td colSpan={3} className="px-4 py-8 text-center text-sm text-red-500">
