@@ -32,7 +32,7 @@ export const personalDataSchema = z.object({
     place_of_birth: z.string().optional(),
     has_sibling: z.boolean().default(false),
     email: z.string().email({ message: 'Please enter a valid email address.' }),
-    alt_email: z.string().email({ message: 'Please enter a valid alternate email address.' }),
+    alt_email: z.string().email({ message: 'Please enter a valid alternate email address.' }).or(z.literal('')).optional(),
     mobile_number: z.string().regex(phoneRegex, { message: 'Please enter a valid mobile number.' }),
     present_street: z.string().optional(),
     present_brgy: z.string().min(1, { message: 'Barangay is required.' }),
@@ -162,11 +162,12 @@ export const educationalBackgroundSchema = z.object({
 const fileSchema = (label: string) =>
     z
         .any()
-        .refine((file) => file instanceof File, { message: `${label} is required.` })
+        .refine((file) => !file || file instanceof File, { message: `${label} must be a valid file.` })
         .refine((file) => !file || file.size <= MAX_FILE_SIZE, { message: 'Max file size is 5MB.' })
         .refine((file) => !file || ACCEPTED_FILE_TYPES.includes(file.type), {
             message: 'Only .jpg, .jpeg, .png and .pdf formats are supported.',
-        });
+        })
+        .optional();
 
 export const documentsSchema = z.object({
     certificate_of_enrollment: fileSchema('Certificate of Enrollment'),

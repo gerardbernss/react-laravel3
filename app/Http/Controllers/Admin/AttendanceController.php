@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\BlockSection;
 use App\Models\StudentEnrollment;
+use App\Models\StudentEnrollmentSubject;
+use App\Models\Subject;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -17,6 +20,58 @@ class AttendanceController extends Controller
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
+
+        // Faculty see a subject-centric view of only their assigned subjects
+        if ($user && $user->hasRole('faculty')) {
+            $today = now()->toDateString();
+            $subjects = Subject::where('user_id', $user->id)
+                ->with(['blockSections', 'defaultSchedule'])
+                ->get();
+
+            $mySubjectSections = $subjects->flatMap(function ($subject) use ($today) {
+                return $subject->blockSections->map(function ($section) use ($subject, $today) {
+                    $enrolledCount = StudentEnrollmentSubject::whereHas('enrollment',
+                        fn($q) => $q->where('block_section_id', $section->id))
+                        ->where('subject_id', $subject->id)
+                        ->count();
+
+                    $todayQuery = Attendance::where('subject_id', $subject->id)
+                        ->whereHas('studentEnrollment', fn($q) => $q->where('block_section_id', $section->id))
+                        ->whereDate('date', $today);
+
+                    $todayTaken = (clone $todayQuery)->exists();
+                    $todayPresentCount = $todayTaken
+                        ? (clone $todayQuery)->where('status', 'Present')->count()
+                        : 0;
+
+                    return [
+                        'subject_id'          => $subject->id,
+                        'subject_code'        => $subject->code,
+                        'subject_name'        => $subject->name,
+                        'subject_schedule'    => $subject->defaultSchedule?->display,
+                        'block_section_id'    => $section->id,
+                        'section_code'        => $section->code,
+                        'section_name'        => $section->name,
+                        'grade_level'         => $section->grade_level,
+                        'enrolled_count'      => $enrolledCount,
+                        'today_taken'         => $todayTaken,
+                        'today_present_count' => $todayPresentCount,
+                        'missed_days_count'   => count($this->getMissedDates($subject->id, $section->id)),
+                    ];
+                });
+            })->values();
+
+            return Inertia::render('Admin/Attendance/Index', [
+                'isFaculty'         => true,
+                'mySubjectSections' => $mySubjectSections,
+                'groupedSections'   => [],
+                'filters'           => [],
+                'schoolYears'       => [],
+                'semesters'         => [],
+            ]);
+        }
+
         $query = BlockSection::query()
             ->withCount(['subjects'])
             ->addSelect(['enrolled_count' => StudentEnrollment::selectRaw('count(*)')
@@ -43,26 +98,14 @@ class AttendanceController extends Controller
             $query->where('semester', $request->semester);
         }
 
-        // Faculty filter — faculty members only see sections where they teach a subject
-        $user = auth()->user();
-        if ($user && $user->hasRole('faculty')) {
-            $query->whereHas('subjects', function ($q) use ($user) {
-                $q->where('subjects.user_id', $user->id);
-            });
-        }
-
         $sections = $query->orderBy('grade_level')
             ->orderBy('strand')
             ->orderBy('code')
             ->get();
 
-        // Group sections by grade_level + strand
+        // Group sections by grade_level only
         $grouped = $sections->groupBy(function ($section) {
-            $label = $section->grade_level ?? 'Unassigned';
-            if ($section->strand) {
-                $label .= ' — ' . $section->strand;
-            }
-            return $label;
+            return $section->grade_level ?? 'Unassigned';
         })->map(function ($sections, $label) {
             return [
                 'label' => $label,
@@ -74,10 +117,33 @@ class AttendanceController extends Controller
         $semesters = BlockSection::distinct()->pluck('semester')->filter()->values();
 
         return Inertia::render('Admin/Attendance/Index', [
-            'groupedSections' => $grouped,
-            'filters' => $request->only(['search', 'school_year', 'semester']),
-            'schoolYears' => $schoolYears,
-            'semesters' => $semesters,
+            'isFaculty'         => false,
+            'mySubjectSections' => [],
+            'groupedSections'   => $grouped,
+            'filters'           => $request->only(['search', 'school_year', 'semester']),
+            'schoolYears'       => $schoolYears,
+            'semesters'         => $semesters,
+        ]);
+    }
+
+    /**
+     * Display sections for a specific grade level.
+     */
+    public function showGrade(string $gradeLevel)
+    {
+        $sections = BlockSection::query()
+            ->withCount(['subjects'])
+            ->addSelect(['enrolled_count' => StudentEnrollment::selectRaw('count(*)')
+                ->whereColumn('block_section_id', 'block_sections.id')
+            ])
+            ->where('grade_level', $gradeLevel)
+            ->orderBy('strand')
+            ->orderBy('code')
+            ->get();
+
+        return Inertia::render('Admin/Attendance/GradeSections', [
+            'gradeLevel' => $gradeLevel,
+            'sections'   => $sections,
         ]);
     }
 
@@ -120,7 +186,7 @@ class AttendanceController extends Controller
         $existingAttendance = [];
         if ($subjectId) {
             $existingAttendance = Attendance::where('subject_id', $subjectId)
-                ->where('date', $date)
+                ->whereDate('date', $date)
                 ->whereIn('student_enrollment_id', $enrollments->pluck('id'))
                 ->get()
                 ->keyBy('student_enrollment_id');
@@ -176,6 +242,81 @@ class AttendanceController extends Controller
                 'code' => $s->code,
                 'name' => $s->name,
             ]),
+            'missedDates' => $subjectId ? $this->getMissedDates((int) $subjectId, $blockSection->id) : [],
+        ]);
+    }
+
+    /**
+     * Show the attendance history for a block section.
+     *
+     * Returns one summary row per date that has attendance records, grouped by
+     * subject. Optionally filtered by a date range (date_from / date_to).
+     */
+    public function history(BlockSection $blockSection, Request $request)
+    {
+        $blockSection->load('subjects');
+
+        $user     = auth()->user();
+        $subjects = $blockSection->subjects;
+
+        // Faculty may only see subjects they teach in this section
+        if ($user && $user->hasRole('faculty')) {
+            $subjects = $subjects->filter(fn ($s) => $s->user_id === $user->id)->values();
+        }
+
+        $subjectId = $request->input('subject_id');
+        if (! $subjectId && $subjects->isNotEmpty()) {
+            $subjectId = $subjects->first()->id;
+        }
+
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+
+        // Fetch all attendance rows for this section + subject, grouped by date
+        $query = Attendance::where('subject_id', $subjectId)
+            ->whereHas('studentEnrollment', fn ($q) => $q->where('block_section_id', $blockSection->id));
+
+        if ($dateFrom) {
+            $query->whereRaw('date(date) >= ?', [$dateFrom]);
+        }
+        if ($dateTo) {
+            $query->whereRaw('date(date) <= ?', [$dateTo]);
+        }
+
+        $rows = $query
+            ->orderBy('date', 'desc')
+            ->get();
+
+        // Summarise per date, including names of absent/late students
+        $byDate = $rows->groupBy(fn ($a) => $a->date->format('Y-m-d'));
+
+        $records = $byDate->map(function ($dayRows, $date) {
+            $present  = $dayRows->where('status', 'Present')->count();
+            $absent   = $dayRows->where('status', 'Absent')->count();
+            $late     = $dayRows->where('status', 'Late')->count();
+            $excused  = $dayRows->where('status', 'Excused')->count();
+            $total    = $dayRows->count();
+
+            return [
+                'date'            => $date,
+                'total_marked'    => $total,
+                'present'         => $present,
+                'absent'          => $absent,
+                'late'            => $late,
+                'excused'         => $excused,
+                'attendance_rate' => $total > 0
+                    ? round((($present + $late) / $total) * 100, 1)
+                    : null,
+            ];
+        })->values();
+
+        return Inertia::render('Admin/Attendance/History', [
+            'blockSection'      => $blockSection->only(['id', 'code', 'name', 'grade_level', 'strand', 'school_year', 'semester']),
+            'subjects'          => $subjects->map(fn ($s) => ['id' => $s->id, 'code' => $s->code, 'name' => $s->name]),
+            'selectedSubjectId' => (int) $subjectId,
+            'dateFrom'          => $dateFrom,
+            'dateTo'            => $dateTo,
+            'records'           => $records,
         ]);
     }
 
@@ -210,5 +351,38 @@ class AttendanceController extends Controller
         });
 
         return back()->with('success', 'Attendance saved successfully.');
+    }
+
+    /**
+     * Return weekdays (Mon–Fri) in the past $daysBack days where no attendance
+     * was recorded for the given subject + block section.
+     */
+    private function getMissedDates(int $subjectId, int $blockSectionId, int $daysBack = 30): array
+    {
+        $today     = now()->toDateString();
+        $startDate = now()->subDays($daysBack)->toDateString();
+
+        $taken = Attendance::where('subject_id', $subjectId)
+            ->whereHas('studentEnrollment', fn ($q) => $q->where('block_section_id', $blockSectionId))
+            ->whereRaw('date(date) >= ?', [$startDate])
+            ->whereRaw('date(date) < ?',  [$today])
+            ->selectRaw('date(date) as d')
+            ->distinct()
+            ->pluck('d')
+            ->flip()
+            ->all();
+
+        $missed = [];
+        $cursor    = Carbon::parse($startDate);
+        $yesterday = Carbon::yesterday();
+
+        while ($cursor->lte($yesterday)) {
+            if ($cursor->isWeekday() && ! array_key_exists($cursor->toDateString(), $taken)) {
+                $missed[] = $cursor->toDateString();
+            }
+            $cursor->addDay();
+        }
+
+        return array_reverse($missed); // most recent first
     }
 }

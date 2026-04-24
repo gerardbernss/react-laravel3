@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { applicantFormSchema, type ApplicantFormValues } from '@/schemas/applicant-form';
@@ -133,6 +133,8 @@ export default function AddApplicant() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingAction, setPendingAction] = useState<'discard' | 'reset' | null>(null);
 
+    const currentSemester = usePage().props.currentSemester as { name: string | null } | null;
+
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
         mode: 'onChange',
@@ -143,7 +145,7 @@ export default function AddApplicant() {
             application_number: '',
             application_status: 'Pending',
             year_level: '',
-            semester: '',
+            semester: currentSemester?.name ?? '',
             strand: '',
             classification: '',
             learning_mode: '',
@@ -805,8 +807,8 @@ export default function AddApplicant() {
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="1st Semester">1st Semester</SelectItem>
-                                                                    <SelectItem value="2nd Semester">2nd Semester</SelectItem>
+                                                                    <SelectItem value="First Semester">First Semester</SelectItem>
+                                                                    <SelectItem value="Second Semester">Second Semester</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />

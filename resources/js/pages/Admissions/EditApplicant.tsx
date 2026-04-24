@@ -467,8 +467,8 @@ export default function EditApplicant() {
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            <SelectItem value="1st Semester">1st Semester</SelectItem>
-                                                            <SelectItem value="2nd Semester">2nd Semester</SelectItem>
+                                                            <SelectItem value="First Semester">First Semester</SelectItem>
+                                                            <SelectItem value="Second Semester">Second Semester</SelectItem>
                                                             <SelectItem value="Summer">Summer</SelectItem>
                                                         </SelectContent>
                                                     </Select>

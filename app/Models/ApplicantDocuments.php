@@ -12,7 +12,7 @@ class ApplicantDocuments extends Model
 
     protected $fillable = [
         // Application Information
-        'applicant_application_info_id',
+        'applicant_id',
         'certificate_of_enrollment',
         'birth_certificate',
         'latest_report_card_front',
@@ -21,7 +21,7 @@ class ApplicantDocuments extends Model
 
     public function application()
     {
-        return $this->belongsTo(ApplicantApplicationInfo::class, 'applicant_application_info_id');
+        return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
     protected $casts = [];

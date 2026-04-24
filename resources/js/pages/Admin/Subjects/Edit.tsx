@@ -23,10 +23,9 @@ interface Subject {
     type: string;
     grade_level: string | null;
     semester: string | null;
-    schedule: string | null;
-    room: string | null;
     user_id: number | null;
     is_active: boolean;
+    default_schedule: { days: string; time: string; room: string | null } | null;
 }
 
 interface Props {
@@ -58,8 +57,9 @@ export default function Edit({ subject, facultyUsers }: Props) {
         type: subject.type,
         grade_level: subject.grade_level || '',
         semester: subject.semester || '',
-        schedule: subject.schedule || '',
-        room: subject.room || '',
+        days: subject.default_schedule?.days ?? '',
+        time: subject.default_schedule?.time ?? '',
+        room: subject.default_schedule?.room ?? '',
         user_id: subject.user_id as number | null,
         is_active: subject.is_active,
     });
@@ -202,18 +202,33 @@ export default function Edit({ subject, facultyUsers }: Props) {
                                 </div>
                             </div>
 
-                            {/* Schedule and Room */}
-                            <div className="grid gap-4 md:grid-cols-2">
+                            {/* Schedule */}
+                            <div className="grid gap-4 md:grid-cols-3">
                                 <div>
-                                    <Label htmlFor="schedule">Schedule</Label>
+                                    <Label htmlFor="days">Days</Label>
+                                    <Select value={data.days} onValueChange={(v) => setData('days', v)}>
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue placeholder="Select days" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="MWF">MWF</SelectItem>
+                                            <SelectItem value="TTh">TTh</SelectItem>
+                                            <SelectItem value="Daily">Daily</SelectItem>
+                                            <SelectItem value="MTWTHF">MTWTHF</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.days} className="mt-1" />
+                                </div>
+                                <div>
+                                    <Label htmlFor="time">Time</Label>
                                     <Input
-                                        id="schedule"
-                                        value={data.schedule}
-                                        onChange={(e) => setData('schedule', e.target.value)}
-                                        placeholder="e.g., MWF 8:00 AM - 9:00 AM"
+                                        id="time"
+                                        value={data.time}
+                                        onChange={(e) => setData('time', e.target.value)}
+                                        placeholder="e.g., 07:30-08:30"
                                         className="mt-1"
                                     />
-                                    <InputError message={errors.schedule} className="mt-1" />
+                                    <InputError message={errors.time} className="mt-1" />
                                 </div>
                                 <div>
                                     <Label htmlFor="room">Room</Label>

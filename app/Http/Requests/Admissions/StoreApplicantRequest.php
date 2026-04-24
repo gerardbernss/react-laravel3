@@ -18,7 +18,7 @@ class StoreApplicantRequest extends FormRequest
             // Application Info
             'application_date'           => 'required|date',
             'school_year'                => 'required|string|max:20',
-            'application_number'         => 'nullable|string|max:20|unique:applicant_application_info,application_number',
+            'application_number'         => 'nullable|string|max:20|unique:applicants,application_number',
             'application_status'         => 'nullable|string|in:Pending,For Exam,Exam Taken,Enrolled',
             'year_level'                 => 'required|string|max:50',
             'semester'                   => 'required|string|max:20',

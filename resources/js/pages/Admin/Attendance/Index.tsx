@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { CalendarCheck, ClipboardCheck, Search, Users, X } from 'lucide-react';
+import { AlertTriangle, CalendarCheck, ClipboardCheck, Search, Users, X } from 'lucide-react';
 
 interface BlockSection {
     id: number;
@@ -27,7 +27,24 @@ interface SectionGroup {
     sections: BlockSection[];
 }
 
+interface MySubjectSection {
+    subject_id: number;
+    subject_code: string;
+    subject_name: string;
+    subject_schedule: string | null;
+    block_section_id: number;
+    section_code: string;
+    section_name: string;
+    grade_level: string | null;
+    enrolled_count: number;
+    today_taken: boolean;
+    today_present_count: number;
+    missed_days_count: number;
+}
+
 interface Props {
+    isFaculty: boolean;
+    mySubjectSections: MySubjectSection[];
     groupedSections: SectionGroup[];
     filters: {
         search?: string;
@@ -43,7 +60,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Attendance', href: '/attendance' },
 ];
 
-export default function Index({ groupedSections, filters, schoolYears, semesters }: Props) {
+export default function Index({ isFaculty, mySubjectSections, groupedSections, filters, schoolYears, semesters }: Props) {
     const handleSearch = (value: string) => {
         router.get('/attendance', { ...filters, search: value || undefined }, { preserveState: true });
     };
@@ -59,6 +76,134 @@ export default function Index({ groupedSections, filters, schoolYears, semesters
     const hasFilters = filters.search || filters.school_year || filters.semester;
     const totalSections = groupedSections.reduce((sum, group) => sum + group.sections.length, 0);
 
+    // Faculty-specific subject-centric view
+    if (isFaculty) {
+        const totalStudents = mySubjectSections.reduce((sum, r) => sum + r.enrolled_count, 0);
+        const takenToday = mySubjectSections.filter((r) => r.today_taken).length;
+        const presentToday = mySubjectSections.reduce((sum, r) => sum + r.today_present_count, 0);
+        const attendanceRate = totalStudents > 0 && takenToday > 0
+            ? Math.round((presentToday / mySubjectSections.filter((r) => r.today_taken).reduce((s, r) => s + r.enrolled_count, 0)) * 100)
+            : null;
+
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="My Attendance" />
+                <div className="p-6 md:p-10">
+                    <div className="mb-6">
+                        <div className="flex items-center gap-3">
+                            <CalendarCheck className="h-7 w-7 text-primary" />
+                            <h1 className="text-3xl font-bold text-gray-900">My Attendance</h1>
+                        </div>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">My Classes</p>
+                            <p className="mt-1 text-2xl font-bold text-gray-900">{mySubjectSections.length}</p>
+                            <p className="text-xs text-gray-400">subject–section pairs</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Total Students</p>
+                            <p className="mt-1 text-2xl font-bold text-gray-900">{totalStudents}</p>
+                            <p className="text-xs text-gray-400">across all classes</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Taken Today</p>
+                            <p className={`mt-1 text-2xl font-bold ${takenToday === mySubjectSections.length && mySubjectSections.length > 0 ? 'text-green-600' : takenToday > 0 ? 'text-yellow-600' : 'text-gray-900'}`}>
+                                {takenToday}/{mySubjectSections.length}
+                            </p>
+                            <p className="text-xs text-gray-400">classes with attendance</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Present Today</p>
+                            <p className="mt-1 text-2xl font-bold text-blue-600">{presentToday}</p>
+                            <p className="text-xs text-gray-400">
+                                {attendanceRate !== null ? `${attendanceRate}% attendance rate` : 'no attendance taken'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {mySubjectSections.length > 0 ? (
+                        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                            <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="sticky top-0 z-10 bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Subject</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Section</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Schedule</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Enrolled</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Today</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Missed</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {mySubjectSections.map((row) => (
+                                            <tr key={`${row.subject_id}-${row.block_section_id}`} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3">
+                                                    <p className="font-medium text-gray-900">{row.subject_name}</p>
+                                                    <p className="text-xs text-gray-500">{row.subject_code}</p>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <p className="font-medium text-gray-900">{row.section_code}</p>
+                                                    <p className="text-xs text-gray-500">{row.grade_level || ''}</p>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600">{row.subject_schedule || '—'}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <Badge variant="outline" className="gap-1">
+                                                        <Users className="h-3 w-3" />
+                                                        {row.enrolled_count}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {row.today_taken ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                                            ✓ Taken ({row.today_present_count}/{row.enrolled_count})
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">— Not taken</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {row.missed_days_count > 0 ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                                            <AlertTriangle className="h-3 w-3" />
+                                                            {row.missed_days_count}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center">
+                                                        <Link href={`/attendance/${row.block_section_id}?subject_id=${row.subject_id}`}>
+                                                            <Button variant="outline" size="sm">
+                                                                <ClipboardCheck className="mr-1 h-4 w-4" />
+                                                                {row.today_taken ? 'View' : 'Take Attendance'}
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+                            <CalendarCheck className="mx-auto h-12 w-12 text-gray-400" />
+                            <h3 className="mt-4 text-lg font-semibold text-gray-900">No subjects assigned</h3>
+                            <p className="mt-2 text-gray-600">You have not been assigned to any subjects yet.</p>
+                        </div>
+                    )}
+                </div>
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Attendance" />
@@ -67,8 +212,10 @@ export default function Index({ groupedSections, filters, schoolYears, semesters
                 {/* Header */}
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Attendance</h1>
-                        <p className="mt-1 text-gray-600">Select a block section to take attendance</p>
+                        <div className="flex items-center gap-3">
+                            <CalendarCheck className="h-7 w-7 text-primary" />
+                            <h1 className="text-3xl font-bold text-gray-900">Attendance</h1>
+                        </div>
                     </div>
                 </div>
 
@@ -127,66 +274,48 @@ export default function Index({ groupedSections, filters, schoolYears, semesters
                     )}
                 </div>
 
-                {/* Grouped Sections */}
+                {/* Grade Level Table */}
                 {totalSections > 0 ? (
-                    <div className="space-y-6">
-                        {groupedSections.map((group) => (
-                            <div key={group.label} className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                                {/* Group Header */}
-                                <div className="border-b bg-gray-50 px-5 py-3">
-                                    <div className="flex items-center justify-between">
-                                        <h2 className="text-base font-semibold text-gray-800">{group.label}</h2>
-                                        <Badge variant="secondary">
-                                            {group.sections.length} {group.sections.length === 1 ? 'section' : 'sections'}
-                                        </Badge>
-                                    </div>
-                                </div>
-
-                                {/* Sections Table */}
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gray-50/50">
-                                        <tr>
-                                            <th className="px-5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Code</th>
-                                            <th className="px-5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Section Name</th>
-                                            <th className="px-5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Adviser</th>
-                                            <th className="px-5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">School Year</th>
-                                            <th className="px-5 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Semester</th>
-                                            <th className="px-5 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Subjects</th>
-                                            <th className="px-5 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Enrolled</th>
-                                            <th className="px-5 py-2.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                        <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Grade Level</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Sections</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Enrolled</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {groupedSections.map((group) => {
+                                    const totalEnrolled = group.sections.reduce((sum, s) => sum + s.enrolled_count, 0);
+                                    return (
+                                        <tr key={group.label} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 font-semibold text-gray-900">{group.label}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge variant="secondary">
+                                                    {group.sections.length} {group.sections.length === 1 ? 'section' : 'sections'}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge variant="outline" className="gap-1">
+                                                    <Users className="h-3 w-3" />
+                                                    {totalEnrolled}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Link href={`/attendance/grade/${encodeURIComponent(group.label)}`}>
+                                                    <Button variant="outline" size="sm">
+                                                        <ClipboardCheck className="mr-1 h-4 w-4" />
+                                                        View Sections
+                                                    </Button>
+                                                </Link>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {group.sections.map((section) => (
-                                            <tr key={section.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-5 py-3 font-medium text-gray-900">{section.code}</td>
-                                                <td className="px-5 py-3 text-gray-900">{section.name}</td>
-                                                <td className="px-5 py-3 text-gray-600">{section.adviser || '—'}</td>
-                                                <td className="px-5 py-3 text-gray-600">{section.school_year || '—'}</td>
-                                                <td className="px-5 py-3 text-gray-600">{section.semester || '—'}</td>
-                                                <td className="px-5 py-3 text-center">{section.subjects_count}</td>
-                                                <td className="px-5 py-3 text-center">
-                                                    <Badge variant="outline" className="gap-1">
-                                                        <Users className="h-3 w-3" />
-                                                        {section.enrolled_count}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-5 py-3">
-                                                    <div className="flex justify-center">
-                                                        <Link href={`/attendance/${section.id}`}>
-                                                            <Button variant="outline" size="sm">
-                                                                <ClipboardCheck className="mr-1 h-4 w-4" />
-                                                                Take Attendance
-                                                            </Button>
-                                                        </Link>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ))}
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 ) : (
                     <div className="rounded-lg border bg-white p-12 text-center shadow-sm">

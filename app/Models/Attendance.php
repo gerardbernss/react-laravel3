@@ -15,7 +15,8 @@ class Attendance extends Model
         'subject_id',
         'date',
         'status',
-        'remarks',
+        'remarks', // instructor/teacher note
+        'reason',  // student-supplied explanation
     ];
 
     protected $casts = [

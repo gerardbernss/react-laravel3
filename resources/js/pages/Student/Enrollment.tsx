@@ -1,44 +1,15 @@
+import { SearchableSelect } from '@/components/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useBarangays } from '@/hooks/use-barangays';
+import { useCities } from '@/hooks/use-cities';
+import { useProvinces } from '@/hooks/use-provinces';
+import { useRegions } from '@/hooks/use-regions';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import {
-    AlertCircle,
-    Check,
-    CheckCircle2,
-    ChevronRight,
-    Clock,
-    CreditCard,
-    FileText,
-    GraduationCap,
-    Loader2,
-    Users,
-} from 'lucide-react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { AlertCircle, CalendarX, Check, CheckCircle2, ChevronRight, Clock, CreditCard, Loader2, Printer, User } from 'lucide-react';
 import { useState } from 'react';
-
-interface Subject {
-    id: number;
-    code: string;
-    name: string;
-    units: number;
-    type: string;
-    strand: string | null;
-}
-
-interface BlockSection {
-    id: number;
-    name: string;
-    code: string;
-    grade_level: string;
-    adviser: string;
-    room: string;
-    capacity: number;
-    current_enrollment: number;
-    schedule: string;
-    subjects: Subject[];
-    total_units: number;
-}
 
 interface FeeItem {
     id: number;
@@ -69,13 +40,24 @@ interface Props {
         last_name: string;
         middle_name: string | null;
         email: string;
+        mobile_number: string | null;
+        present_street: string | null;
+        present_brgy: string | null;
+        present_city: string | null;
+        present_province: string | null;
+        present_zip: string | null;
+    } | null;
+    familyBackground: {
+        emergency_contact_name: string | null;
+        emergency_mobile_phone: string | null;
     } | null;
     application: {
         id: number;
         school_year: string;
+        semester: string | null;
         grade_level: string;
         student_type: string;
-        student_category?: string;
+        student_category: string;
         application_status: string;
         date_applied: string;
         exam_status: string | null;
@@ -91,784 +73,1605 @@ interface Props {
     } | null;
     canEnroll: boolean;
     isEnrolled: boolean;
+    awaitingPayment: boolean;
+    enrollmentOpen: boolean;
     documents: {
         birth_certificate: string | null;
         report_card: string | null;
         good_moral: string | null;
         id_photo: string | null;
     } | null;
-    // Program props
     maxLoad: number;
-    programName: string | null;
-    // Enrollment wizard props
-    blockSections?: BlockSection[];
-    fees?: FeeItem[];
-    availableDiscounts?: DiscountItem[];
+    fees: FeeItem[];
+    availableDiscounts: DiscountItem[];
+    assessment: {
+        assessment_number: string;
+        school_year: string;
+        semester: string;
+        status: string;
+        mode_of_payment: string | null;
+        payment_plan: string;
+        minimum_amount: number;
+        total_paid: number;
+        total_tuition: number;
+        total_misc_fees: number;
+        total_lab_fees: number;
+        total_other_fees: number;
+        gross_amount: number;
+        total_discounts: number;
+        net_amount: number;
+        finalized_at: string | null;
+    } | null;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/student/dashboard' },
-    { title: 'Enrollment', href: '/student/enrollment' },
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Enrollment', href: '/student/enrollment' }];
+
+const enrollmentSteps = [
+    { id: 1, name: 'Personal Info', icon: User },
+    { id: 2, name: 'Fee & Payment', icon: CreditCard },
+    { id: 3, name: 'Summary', icon: CheckCircle2 },
 ];
 
-// Enrollment wizard steps
-const enrollmentSteps = [
-    { id: 1, name: 'Select Section', icon: Users },
-    { id: 2, name: 'Fee Summary', icon: FileText },
-    { id: 3, name: 'Payment', icon: CreditCard },
+const confirmationSteps = [
+    { id: 1, name: 'Personal Info', icon: User },
+    { id: 2, name: 'Fee & Payment', icon: CreditCard },
+    { id: 3, name: 'Confirmation', icon: CheckCircle2 },
 ];
+
+const paymentModeLabels: Record<string, string> = {
+    cash: 'Cash',
+    bank_transfer: 'Bank Transfer',
+    online_banking: 'Online Banking',
+    gcash: 'GCash',
+};
+
+function PaymentModeEditor({ currentMode, onCancel, onSaved }: { currentMode: string; onCancel: () => void; onSaved: () => void }) {
+    const { data, setData, patch, processing } = useForm({ mode_of_payment: currentMode });
+
+    const handleSave = () => {
+        patch('/student/enrollment/payment-mode', { onSuccess: () => onSaved() });
+    };
+
+    return (
+        <div className="space-y-3 rounded-lg border p-4">
+            <p className="text-sm font-medium text-gray-700">Change Mode of Payment</p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {Object.entries(paymentModeLabels).map(([value, label]) => (
+                    <label
+                        key={value}
+                        className={`cursor-pointer rounded-lg border-2 p-2 text-center transition-all ${
+                            data.mode_of_payment === value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                        <input
+                            type="radio"
+                            name="payment_mode"
+                            value={value}
+                            checked={data.mode_of_payment === value}
+                            onChange={() => setData('mode_of_payment', value)}
+                            className="sr-only"
+                        />
+                        <p className="text-xs font-medium text-gray-900">{label}</p>
+                    </label>
+                ))}
+            </div>
+            <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={onCancel} disabled={processing}>
+                    Cancel
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={processing}>
+                    {processing && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
+                    Save
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 export default function Enrollment({
+    student,
     personalData,
+    familyBackground,
     application,
     studentRecord,
     canEnroll,
     isEnrolled,
+    awaitingPayment,
+    enrollmentOpen,
+    documents,
     maxLoad,
-    programName,
-    blockSections = [],
-    fees = [],
-    availableDiscounts = [],
+    fees,
+    availableDiscounts,
+    assessment,
 }: Props) {
-    // Enrollment wizard state
+    const currentSemester = usePage().props.currentSemester as { name: string | null; school_year: string } | null;
+
     const [wizardStep, setWizardStep] = useState(1);
-    const [selectedBlockSection, setSelectedBlockSection] = useState<BlockSection | null>(null);
     const [selectedDiscounts, setSelectedDiscounts] = useState<number[]>([]);
-    const [paymentMethod, setPaymentMethod] = useState<'full' | 'installment'>('full');
+    const [paymentMode, setPaymentMode] = useState<string>('cash');
+    const [paymentPlan, setPaymentPlan] = useState<'full' | 'installment'>('full');
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isSavingContact, setIsSavingContact] = useState(false);
+    // Enrolled view: which step is being viewed (1 = personal info, 2 = fee summary, 3 = payment, 4 = confirmation)
+    const [viewStep, setViewStep] = useState(3);
+    const [editingPaymentMode, setEditingPaymentMode] = useState(false);
 
-    const { processing } = useForm();
+    const {
+        data: contactData,
+        setData: setContactData,
+        put: putContact,
+        reset: resetContact,
+        isDirty: contactDirty,
+    } = useForm({
+        mobile_number: personalData?.mobile_number ?? '',
+        present_street: personalData?.present_street ?? '',
+        present_brgy: personalData?.present_brgy ?? '',
+        present_city: personalData?.present_city ?? '',
+        present_province: personalData?.present_province ?? '',
+        present_zip: personalData?.present_zip ?? '',
+        emergency_contact_name: familyBackground?.emergency_contact_name ?? '',
+        emergency_mobile_phone: familyBackground?.emergency_mobile_phone ?? '',
+    });
 
-    // Total units from selected block section
-    const totalUnits = selectedBlockSection?.total_units ?? 0;
+    // PSGC cascade state (not persisted — only drives cascaded dropdowns)
+    const [regionCode, setRegionCode] = useState<string | undefined>(undefined);
+    const [provinceCode, setProvinceCode] = useState<string | undefined>(undefined);
+    const [cityCode, setCityCode] = useState<string | undefined>(undefined);
 
-    // Max load enforcement
-    const remainingUnits = maxLoad > 0 ? maxLoad - totalUnits : Infinity;
-    const exceedsMaxLoad = maxLoad > 0 && totalUnits > maxLoad;
+    const { regions } = useRegions();
+    const { provinces } = useProvinces(regionCode);
+    const { cities } = useCities(provinceCode);
+    const { barangays } = useBarangays(cityCode);
 
-    // Check if a block section exceeds max load
-    const blockExceedsMaxLoad = (blockTotalUnits: number) => {
-        if (maxLoad <= 0) return false;
-        return blockTotalUnits > maxLoad;
+    const handleRegionChange = (name: string) => {
+        const opt = regions.find((r) => r.value === name);
+        setRegionCode(opt?.code);
+        setProvinceCode(undefined);
+        setCityCode(undefined);
+        setContactData('present_province', '');
+        setContactData('present_city', '');
+        setContactData('present_brgy', '');
     };
 
-    // Calculate fees
-    const calculateFees = () => {
-        let tuitionFee = 0;
-        let miscFees = 0;
-        let labFees = 0;
-        let specialFees = 0;
+    const handleProvinceChange = (name: string) => {
+        const opt = provinces.find((p) => p.value === name);
+        setProvinceCode(opt?.code);
+        setCityCode(undefined);
+        setContactData('present_province', name);
+        setContactData('present_city', '');
+        setContactData('present_brgy', '');
+    };
 
-        fees.forEach((fee) => {
-            const amount = fee.is_per_unit ? fee.amount * totalUnits : fee.amount;
-            switch (fee.category) {
-                case 'tuition':
-                    tuitionFee += amount;
-                    break;
-                case 'miscellaneous':
-                    miscFees += amount;
-                    break;
-                case 'laboratory':
-                    labFees += amount;
-                    break;
-                case 'special':
-                    specialFees += amount;
-                    break;
-            }
+    const handleCityChange = (name: string) => {
+        const opt = cities.find((c) => c.value === name);
+        setCityCode(opt?.code);
+        setContactData('present_city', name);
+        setContactData('present_brgy', '');
+    };
+
+    const handleBarangayChange = (name: string) => {
+        setContactData('present_brgy', name);
+    };
+
+    const handleCancel = () => {
+        resetContact();
+        setRegionCode(undefined);
+        setProvinceCode(undefined);
+        setCityCode(undefined);
+    };
+
+    const handlePersonalInfoSave = () => {
+        setIsSavingContact(true);
+        putContact('/student/personal-info', {
+            onFinish: () => setIsSavingContact(false),
         });
-
-        return { tuitionFee, miscFees, labFees, specialFees };
     };
 
-    const { tuitionFee, miscFees, labFees, specialFees } = calculateFees();
+    // Fee calculation
+    const totalUnits = maxLoad;
+
+    const tuitionFee = fees
+        .filter((f) => f.category === 'tuition')
+        .reduce((sum, fee) => sum + (fee.is_per_unit ? fee.amount * totalUnits : fee.amount), 0);
+
+    const miscFees = fees
+        .filter((f) => f.category === 'miscellaneous')
+        .reduce((sum, fee) => sum + (fee.is_per_unit ? fee.amount * totalUnits : fee.amount), 0);
+
+    const labFees = fees
+        .filter((f) => f.category === 'laboratory')
+        .reduce((sum, fee) => sum + (fee.is_per_unit ? fee.amount * totalUnits : fee.amount), 0);
+
+    const specialFees = fees
+        .filter((f) => f.category === 'special')
+        .reduce((sum, fee) => sum + (fee.is_per_unit ? fee.amount * totalUnits : fee.amount), 0);
+
     const grossTotal = tuitionFee + miscFees + labFees + specialFees;
 
-    // Calculate discounts
-    const calculateDiscounts = () => {
-        let totalDiscount = 0;
-        const appliedDiscounts: { name: string; amount: number }[] = [];
+    const totalDiscount = availableDiscounts
+        .filter((d) => selectedDiscounts.includes(d.id))
+        .reduce((sum, discount) => {
+            let baseAmount = grossTotal;
+            if (discount.applies_to === 'tuition_only') baseAmount = tuitionFee;
+            else if (discount.applies_to === 'miscellaneous_only') baseAmount = miscFees;
+            const amount = discount.discount_type === 'percentage' ? (baseAmount * discount.value) / 100 : discount.value;
+            return sum + amount;
+        }, 0);
 
-        availableDiscounts
-            .filter((d) => selectedDiscounts.includes(d.id))
-            .forEach((discount) => {
-                let discountAmount = 0;
-                const baseAmount =
-                    discount.applies_to === 'tuition_only'
-                        ? tuitionFee
-                        : discount.applies_to === 'miscellaneous_only'
-                          ? miscFees
-                          : grossTotal;
+    const netTotal = Math.max(0, grossTotal - totalDiscount);
 
-                if (discount.discount_type === 'percentage') {
-                    discountAmount = (baseAmount * discount.value) / 100;
-                } else {
-                    discountAmount = discount.value;
-                }
-
-                totalDiscount += discountAmount;
-                appliedDiscounts.push({ name: discount.name, amount: discountAmount });
-            });
-
-        return { totalDiscount, appliedDiscounts };
-    };
-
-    const { totalDiscount, appliedDiscounts } = calculateDiscounts();
-    const netTotal = grossTotal - totalDiscount;
-
-    // Handle discount selection
-    const toggleDiscount = (discountId: number) => {
-        setSelectedDiscounts((prev) =>
-            prev.includes(discountId) ? prev.filter((id) => id !== discountId) : [...prev, discountId],
-        );
-    };
-
-    // Handle enrollment submission
-    const handleSubmit = () => {
-        const data = {
-            selection_type: 'block',
-            block_section_id: selectedBlockSection?.id,
-            discount_ids: selectedDiscounts,
-            payment_method: paymentMethod,
-            total_amount: netTotal,
-        };
-
-        router.post('/student/enrollment/process', data);
-    };
-
-    // Can proceed to next step
     const canProceedWizard = () => {
-        if (wizardStep === 1) {
-            if (exceedsMaxLoad) return false;
-            return !!selectedBlockSection;
-        }
-        if (wizardStep === 2) {
-            return true;
-        }
-        if (wizardStep === 3) {
-            return acceptedTerms && !!paymentMethod;
-        }
+        if (wizardStep === 1) return true;
+        if (wizardStep === 2) return acceptedTerms;
+        if (wizardStep === 3) return true;
         return false;
     };
 
-    const getStatusDetails = () => {
-        if (isEnrolled) {
-            return {
-                color: 'bg-blue-100 text-blue-800 border-blue-200',
-                icon: <GraduationCap className="h-6 w-6 text-blue-600" />,
-                label: 'Enrolled',
-                description: 'You are officially enrolled. Welcome to the school!',
-            };
-        }
-        return {
-            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            icon: <Clock className="h-6 w-6 text-yellow-600" />,
-            label: 'Pending Enrollment',
-            description: 'Please complete the enrollment process below.',
-        };
+    const toggleDiscount = (id: number) => {
+        setSelectedDiscounts((prev) => (prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]));
     };
 
-    const statusDetails = application ? getStatusDetails() : null;
+    const handlePrint = () => window.print();
+
+    const handleSubmit = () => {
+        setIsProcessing(true);
+        router.post(
+            '/student/enrollment/process',
+            {
+                discount_ids: selectedDiscounts,
+                mode_of_payment: paymentMode,
+                payment_plan: paymentPlan,
+                total_amount: netTotal,
+            },
+            {
+                onFinish: () => setIsProcessing(false),
+            },
+        );
+    };
+
+    const formatCurrency = (amount: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="Enrollment" />
 
-            <div className="p-6 md:p-10">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Enrollment</h1>
-                    <p className="mt-2 text-gray-600">
-                        {canEnroll
-                            ? 'Complete your enrollment process'
-                            : isEnrolled
-                              ? 'View your enrollment details'
-                              : 'Track the progress of your enrollment application'}
-                    </p>
+            <div className="mx-auto max-w-4xl px-4 py-8 print:hidden">
+                {/* Page header */}
+                <div className="mb-6">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Enrollment</h1>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {awaitingPayment
+                                    ? 'Your fee assessment has been submitted. Please proceed to the Cashier\'s Office to complete payment.'
+                                    : canEnroll && enrollmentOpen
+                                      ? 'Complete your enrollment process'
+                                      : canEnroll && !enrollmentOpen
+                                        ? 'Enrollment is currently closed'
+                                        : isEnrolled
+                                          ? 'View your enrollment details'
+                                          : 'Track the progress of your enrollment application'}
+                            </p>
+                        </div>
+                        {currentSemester?.name && (
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                {currentSemester.name} · {currentSemester.school_year}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {application ? (
-                    <div className="space-y-8">
-                        {/* Status Card */}
-                        <div className="rounded-lg border bg-white p-6 shadow-sm transition-all hover:shadow-md">
-                            <div className="flex items-start gap-4">
-                                {statusDetails?.icon}
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className={`inline-flex rounded-full border px-4 py-1.5 text-sm font-semibold ${statusDetails?.color}`}
+                {/* Enrolled — simple confirmation, no steps */}
+                {isEnrolled && (
+                    <div className="rounded-lg border-2 border-green-200 bg-green-50 p-10 text-center shadow-sm">
+                        <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-500" />
+                        <h3 className="text-xl font-bold text-green-800">You are enrolled</h3>
+                        <p className="mt-2 text-sm text-green-600">
+                            {application?.school_year}
+                            {application?.semester ? ` · ${application.semester}` : ''}
+                        </p>
+                        {studentRecord?.student_id && (
+                            <p className="mt-3 text-sm text-gray-600">
+                                Student ID: <span className="font-mono font-semibold text-gray-800">{studentRecord.student_id}</span>
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Awaiting payment — wizard-style layout, opens at step 3 */}
+                {awaitingPayment && (
+                    <>
+                        {/* Step indicator — completed steps are clickable */}
+                        <div className="mb-6 flex items-center">
+                            {confirmationSteps.map((step, idx) => (
+                                <div key={step.id} className="flex items-center">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setViewStep(step.id)}
+                                            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-opacity ${
+                                                viewStep > step.id
+                                                    ? 'cursor-pointer bg-green-500 text-white hover:opacity-80'
+                                                    : viewStep === step.id
+                                                      ? 'cursor-default bg-blue-600 text-white'
+                                                      : 'cursor-default bg-gray-200 text-gray-500'
+                                            }`}
+                                            disabled={step.id > viewStep}
                                         >
-                                            {statusDetails?.label}
+                                            {viewStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                                        </button>
+                                        <span className={`text-sm font-medium ${viewStep === step.id ? 'text-blue-600' : 'text-gray-500'}`}>
+                                            {step.name}
                                         </span>
                                     </div>
-                                    <p className="mt-2 text-gray-600">{statusDetails?.description}</p>
+                                    {idx < confirmationSteps.length - 1 && <ChevronRight className="mx-3 h-4 w-4 text-gray-300" />}
                                 </div>
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Enrollment Wizard - Only show when canEnroll is true */}
-                        {canEnroll && (
-                            <div className="rounded-lg border-2 border-green-200 bg-white shadow-sm">
-                                {/* Horizontal Progress Stepper */}
-                                <div className="border-b bg-gray-50 px-6 py-4">
-                                    <div className="mx-auto flex max-w-md items-center justify-center">
-                                        {enrollmentSteps.map((s, index) => {
-                                            const isCompleted = wizardStep > s.id;
-                                            const isCurrent = wizardStep === s.id;
-                                            const Icon = s.icon;
+                        <div className="rounded-lg border-2 border-gray-100 bg-white shadow-sm">
+                            {/* View step 1: Personal Info (editable) */}
+                            {viewStep === 1 && (
+                                <div className="p-6">
+                                    <h2 className="mb-1 text-lg font-semibold text-gray-900">Personal Information</h2>
+                                    <p className="mb-6 text-sm text-gray-500">Update your contact details below.</p>
 
-                                            return (
-                                                <div key={s.id} className="flex items-center">
-                                                    {/* Step Badge */}
-                                                    <div className="flex flex-col items-center">
-                                                        <div
-                                                            className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all ${
-                                                                isCompleted
-                                                                    ? 'border-green-500 bg-green-500 text-white'
-                                                                    : isCurrent
-                                                                      ? 'border-green-500 bg-green-50 text-green-600'
-                                                                      : 'border-gray-300 bg-white text-gray-400'
-                                                            }`}
-                                                        >
-                                                            {isCompleted ? (
-                                                                <Check className="h-4 w-4" />
-                                                            ) : (
-                                                                <Icon className="h-4 w-4" />
-                                                            )}
-                                                        </div>
-                                                        <span
-                                                            className={`mt-1.5 text-xs font-medium ${
-                                                                isCompleted || isCurrent
-                                                                    ? 'text-green-600'
-                                                                    : 'text-gray-500'
-                                                            }`}
-                                                        >
-                                                            {s.name}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Connector Line */}
-                                                    {index < enrollmentSteps.length - 1 && (
-                                                        <div className="mx-3 w-16">
-                                                            <div
-                                                                className={`h-0.5 rounded-full transition-all ${
-                                                                    wizardStep > s.id ? 'bg-green-500' : 'bg-gray-200'
-                                                                }`}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Step 1: Select Block Section */}
-                                {wizardStep === 1 && (
-                                    <div className="p-6">
-                                        <div className="mb-4 flex items-center justify-between">
-                                            <h2 className="text-xl font-semibold text-gray-900">
-                                                Select Your Section
-                                            </h2>
-                                            {maxLoad > 0 && (
-                                                <div className="flex items-center gap-3">
-                                                    {programName && (
-                                                        <span className="text-sm text-gray-500">{programName}</span>
-                                                    )}
-                                                    <Badge variant={exceedsMaxLoad ? 'destructive' : remainingUnits <= 5 && remainingUnits > 0 ? 'secondary' : 'outline'}>
-                                                        {totalUnits} / {maxLoad} units
-                                                    </Badge>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Block Section Selection */}
-                                        <div className="space-y-4">
-                                            <p className="text-sm text-gray-600">
-                                                Select a block section to enroll in all its subjects together.
-                                            </p>
-                                            {blockSections.length > 0 ? (
-                                                <div className="grid gap-4 md:grid-cols-2">
-                                                    {blockSections.map((block) => {
-                                                        const isBlockDisabled = blockExceedsMaxLoad(block.total_units);
-                                                        return (
-                                                        <div
-                                                            key={block.id}
-                                                            onClick={() => !isBlockDisabled && setSelectedBlockSection(block)}
-                                                            className={`rounded-lg border-2 p-4 transition-all ${
-                                                                isBlockDisabled
-                                                                    ? 'cursor-not-allowed border-orange-300 bg-orange-50 opacity-75'
-                                                                    : selectedBlockSection?.id === block.id
-                                                                      ? 'cursor-pointer border-green-500 bg-green-50'
-                                                                      : 'cursor-pointer border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-start justify-between">
-                                                                <div>
-                                                                    <h3 className="font-semibold text-gray-900">
-                                                                        {block.name}
-                                                                    </h3>
-                                                                    <p className="text-sm text-gray-500">{block.code}</p>
-                                                                </div>
-                                                                {isBlockDisabled ? (
-                                                                    <Lock className="h-5 w-5 text-orange-500" />
-                                                                ) : selectedBlockSection?.id === block.id ? (
-                                                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                                                ) : null}
-                                                            </div>
-                                                            {blockExceedsMaxLoad(block.total_units) && (
-                                                                <div className="mt-2 flex items-center gap-1 text-sm text-orange-600">
-                                                                    <Lock className="h-4 w-4" />
-                                                                    <span>Exceeds maximum unit load ({maxLoad})</span>
-                                                                </div>
-                                                            )}
-                                                            <div className="mt-3 flex flex-wrap gap-2 text-sm text-gray-600">
-                                                                <span>Adviser: {block.adviser}</span>
-                                                                <span>•</span>
-                                                                <span>Room: {block.room}</span>
-                                                            </div>
-                                                            <div className="mt-2 flex items-center justify-between text-sm">
-                                                                <span className="text-gray-600">
-                                                                    {block.subjects.length} subjects • {block.total_units} units
-                                                                </span>
-                                                                <Badge
-                                                                    variant={
-                                                                        block.current_enrollment < block.capacity
-                                                                            ? 'success'
-                                                                            : 'destructive'
-                                                                    }
-                                                                >
-                                                                    {block.capacity - block.current_enrollment} slots left
-                                                                </Badge>
-                                                            </div>
-                                                        </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <div className="rounded-lg border border-dashed p-8 text-center">
-                                                    <Users className="mx-auto h-12 w-12 text-gray-400" />
-                                                    <p className="mt-2 text-gray-500">No block sections available for your grade level.</p>
-                                                </div>
-                                            )}
-
-                                            {/* Show selected block's subjects */}
-                                            {selectedBlockSection && (
-                                                <div className="mt-6 rounded-lg border bg-gray-50 p-4">
-                                                    <h4 className="mb-3 font-medium text-gray-900">
-                                                        Subjects in {selectedBlockSection.name}
-                                                    </h4>
-                                                    <div className="grid gap-2 md:grid-cols-2">
-                                                        {selectedBlockSection.subjects.map((subject) => (
-                                                            <div
-                                                                key={subject.id}
-                                                                className="flex items-center justify-between rounded bg-white p-2 text-sm"
-                                                            >
-                                                                <div className="flex items-center gap-2">
-                                                                    <span>{subject.name}</span>
-                                                                </div>
-                                                                <Badge variant="outline">{subject.units} units</Badge>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Step 2: Fee Summary */}
-                                {wizardStep === 2 && (
-                                    <div className="p-6">
-                                        <h2 className="mb-4 text-xl font-semibold text-gray-900">Fee Summary</h2>
-
-                                        {/* Enrollment Summary */}
-                                        <div className="mb-6 rounded-lg border bg-gray-50 p-4">
-                                            <h3 className="mb-2 font-medium text-gray-900">Enrollment Details</h3>
-                                            <div className="grid gap-2 text-sm md:grid-cols-2">
-                                                <div>
-                                                    <span className="text-gray-500">Student:</span>{' '}
-                                                    <span className="font-medium">
-                                                        {personalData?.last_name}, {personalData?.first_name}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-500">Grade Level:</span>{' '}
-                                                    <span className="font-medium">{application?.grade_level}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-500">School Year:</span>{' '}
-                                                    <span className="font-medium">{application?.school_year}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-gray-500">Total Units:</span>{' '}
-                                                    <span className="font-medium">{totalUnits} units</span>
-                                                </div>
-                                                {selectedBlockSection && (
-                                                    <div className="md:col-span-2">
-                                                        <span className="text-gray-500">Block Section:</span>{' '}
-                                                        <span className="font-medium">{selectedBlockSection.name}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Fee Breakdown */}
-                                        <div className="mb-6 space-y-4">
-                                            <h3 className="font-medium text-gray-900">Fee Breakdown</h3>
-
-                                            {/* Tuition */}
-                                            <div className="rounded-lg border p-4">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-medium text-gray-900">Tuition Fee</span>
-                                                    <span className="font-semibold">
-                                                        ₱{tuitionFee.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    {totalUnits} units × ₱{fees.find((f) => f.category === 'tuition')?.amount.toLocaleString() || 0}/unit
-                                                </p>
-                                            </div>
-
-                                            {/* Miscellaneous Fees */}
-                                            {miscFees > 0 && (
-                                                <div className="rounded-lg border p-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-900">Miscellaneous Fees</span>
-                                                        <span className="font-semibold">
-                                                            ₱{miscFees.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mt-2 space-y-1">
-                                                        {fees
-                                                            .filter((f) => f.category === 'miscellaneous')
-                                                            .map((fee) => (
-                                                                <div key={fee.id} className="flex justify-between text-sm text-gray-600">
-                                                                    <span>{fee.name}</span>
-                                                                    <span>₱{fee.amount.toLocaleString()}</span>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Laboratory Fees */}
-                                            {labFees > 0 && (
-                                                <div className="rounded-lg border p-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-900">Laboratory Fees</span>
-                                                        <span className="font-semibold">
-                                                            ₱{labFees.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mt-2 space-y-1">
-                                                        {fees
-                                                            .filter((f) => f.category === 'laboratory')
-                                                            .map((fee) => (
-                                                                <div key={fee.id} className="flex justify-between text-sm text-gray-600">
-                                                                    <span>{fee.name}</span>
-                                                                    <span>₱{fee.amount.toLocaleString()}</span>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Special Fees */}
-                                            {specialFees > 0 && (
-                                                <div className="rounded-lg border p-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-900">Special Fees</span>
-                                                        <span className="font-semibold">
-                                                            ₱{specialFees.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mt-2 space-y-1">
-                                                        {fees
-                                                            .filter((f) => f.category === 'special')
-                                                            .map((fee) => (
-                                                                <div key={fee.id} className="flex justify-between text-sm text-gray-600">
-                                                                    <span>{fee.name}</span>
-                                                                    <span>₱{fee.amount.toLocaleString()}</span>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Available Discounts */}
-                                        {availableDiscounts.length > 0 && (
-                                            <div className="mb-6">
-                                                <h3 className="mb-3 font-medium text-gray-900">Available Discounts</h3>
-                                                <div className="space-y-2">
-                                                    {availableDiscounts.map((discount) => (
-                                                        <label
-                                                            key={discount.id}
-                                                            className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all ${
-                                                                selectedDiscounts.includes(discount.id)
-                                                                    ? 'border-green-500 bg-green-50'
-                                                                    : 'hover:border-gray-300'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selectedDiscounts.includes(discount.id)}
-                                                                    onChange={() => toggleDiscount(discount.id)}
-                                                                    className="h-4 w-4 rounded border-gray-300 text-green-600"
-                                                                />
-                                                                <div>
-                                                                    <p className="font-medium text-gray-900">{discount.name}</p>
-                                                                    <p className="text-sm text-gray-500">
-                                                                        {discount.discount_type === 'percentage'
-                                                                            ? `${discount.value}% off`
-                                                                            : `₱${discount.value.toLocaleString()} off`}
-                                                                        {' • '}
-                                                                        {discount.applies_to === 'tuition_only'
-                                                                            ? 'Tuition only'
-                                                                            : discount.applies_to === 'miscellaneous_only'
-                                                                              ? 'Misc fees only'
-                                                                              : 'All fees'}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            {selectedDiscounts.includes(discount.id) && (
-                                                                <Badge variant="success">Applied</Badge>
-                                                            )}
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Total Summary */}
-                                        <div className="rounded-lg border-2 border-green-500 bg-green-50 p-4">
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between text-gray-600">
-                                                    <span>Gross Total</span>
-                                                    <span>₱{grossTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                                                </div>
-                                                {appliedDiscounts.length > 0 && (
-                                                    <>
-                                                        {appliedDiscounts.map((d, i) => (
-                                                            <div key={i} className="flex justify-between text-green-600">
-                                                                <span>Less: {d.name}</span>
-                                                                <span>-₱{d.amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                                                            </div>
-                                                        ))}
-                                                    </>
-                                                )}
-                                                <div className="border-t border-green-200 pt-2">
-                                                    <div className="flex justify-between text-lg font-bold text-green-700">
-                                                        <span>Net Total</span>
-                                                        <span>₱{netTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Step 3: Payment Options */}
-                                {wizardStep === 3 && (
-                                    <div className="p-6">
-                                        <h2 className="mb-4 text-xl font-semibold text-gray-900">Payment Options</h2>
-
-                                        {/* Amount Due */}
-                                        <div className="mb-6 rounded-lg border-2 border-green-500 bg-green-50 p-4 text-center">
-                                            <p className="text-sm text-gray-600">Amount Due</p>
-                                            <p className="text-3xl font-bold text-green-700">
-                                                ₱{netTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                            </p>
-                                        </div>
-
-                                        {/* Payment Method Selection */}
-                                        <div className="mb-6">
-                                            <h3 className="mb-3 font-medium text-gray-900">Select Payment Method</h3>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <button
-                                                    onClick={() => setPaymentMethod('full')}
-                                                    className={`rounded-lg border-2 p-4 text-left transition-all ${
-                                                        paymentMethod === 'full'
-                                                            ? 'border-green-500 bg-green-50'
-                                                            : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div>
-                                                            <h4 className="font-semibold text-gray-900">Full Payment</h4>
-                                                            <p className="mt-1 text-sm text-gray-500">
-                                                                Pay the full amount now
-                                                            </p>
-                                                        </div>
-                                                        {paymentMethod === 'full' && (
-                                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                                        )}
-                                                    </div>
-                                                    <p className="mt-3 text-lg font-bold text-green-700">
-                                                        ₱{netTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                    </p>
-                                                </button>
-
-                                                <button
-                                                    onClick={() => setPaymentMethod('installment')}
-                                                    className={`rounded-lg border-2 p-4 text-left transition-all ${
-                                                        paymentMethod === 'installment'
-                                                            ? 'border-green-500 bg-green-50'
-                                                            : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div>
-                                                            <h4 className="font-semibold text-gray-900">Installment</h4>
-                                                            <p className="mt-1 text-sm text-gray-500">
-                                                                Pay in 3 monthly installments
-                                                            </p>
-                                                        </div>
-                                                        {paymentMethod === 'installment' && (
-                                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                                        )}
-                                                    </div>
-                                                    <p className="mt-3 text-lg font-bold text-green-700">
-                                                        ₱{(netTotal / 3).toLocaleString('en-PH', { minimumFractionDigits: 2 })}/month
-                                                    </p>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Installment Schedule */}
-                                        {paymentMethod === 'installment' && (
-                                            <div className="mb-6 rounded-lg border bg-gray-50 p-4">
-                                                <h4 className="mb-3 font-medium text-gray-900">Payment Schedule</h4>
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between text-sm">
-                                                        <span>1st Payment (Upon Enrollment)</span>
-                                                        <span className="font-medium">
-                                                            ₱{(netTotal / 3).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span>2nd Payment (Mid-term)</span>
-                                                        <span className="font-medium">
-                                                            ₱{(netTotal / 3).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span>3rd Payment (Before Finals)</span>
-                                                        <span className="font-medium">
-                                                            ₱{(netTotal / 3).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Payment Instructions */}
-                                        <div className="mb-6 rounded-lg border bg-blue-50 p-4">
-                                            <h4 className="mb-2 font-medium text-blue-900">Payment Instructions</h4>
-                                            <ul className="space-y-1 text-sm text-blue-800">
-                                                <li>• Visit the Finance Office to complete your payment</li>
-                                                <li>• Bring a copy of your enrollment summary</li>
-                                                <li>• Accepted payment methods: Cash, Check, Bank Transfer, GCash</li>
-                                                <li>• Keep your official receipt for your records</li>
-                                            </ul>
-                                        </div>
-
-                                        {/* Terms and Conditions */}
-                                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all hover:border-gray-300">
+                                    <div className="space-y-5">
+                                        {/* Phone Number */}
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-gray-700">Phone Number</label>
                                             <input
-                                                type="checkbox"
-                                                checked={acceptedTerms}
-                                                onChange={(e) => setAcceptedTerms(e.target.checked)}
-                                                className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600"
+                                                type="text"
+                                                value={contactData.mobile_number}
+                                                onChange={(e) => setContactData('mobile_number', e.target.value)}
+                                                placeholder="e.g. 09171234567"
+                                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                             />
-                                            <div>
-                                                <p className="font-medium text-gray-900">Accept Terms and Conditions</p>
-                                                <p className="text-sm text-gray-500">
-                                                    I agree to pay the assessed fees and comply with the school's enrollment policies
-                                                    and payment terms.
-                                                </p>
+                                        </div>
+
+                                        {/* Present Address */}
+                                        <div>
+                                            <h3 className="mb-2 text-sm font-medium text-gray-700">Present Address</h3>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-gray-700">Street / House No.</label>
+                                                    <input
+                                                        type="text"
+                                                        value={contactData.present_street}
+                                                        onChange={(e) => setContactData('present_street', e.target.value)}
+                                                        placeholder="e.g. 123 Rizal St."
+                                                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-gray-700">Region</label>
+                                                    <SearchableSelect
+                                                        value={regions.find((r) => r.code === regionCode)?.value ?? ''}
+                                                        onChange={handleRegionChange}
+                                                        options={regions}
+                                                        placeholder="Select region"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">Province</label>
+                                                        <SearchableSelect
+                                                            value={contactData.present_province}
+                                                            onChange={handleProvinceChange}
+                                                            options={provinces}
+                                                            placeholder="Select province"
+                                                            disabled={!regionCode}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">City / Municipality</label>
+                                                        <SearchableSelect
+                                                            value={contactData.present_city}
+                                                            onChange={handleCityChange}
+                                                            options={cities}
+                                                            placeholder="Select city"
+                                                            disabled={!provinceCode}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">Barangay</label>
+                                                        <SearchableSelect
+                                                            value={contactData.present_brgy}
+                                                            onChange={handleBarangayChange}
+                                                            options={barangays}
+                                                            placeholder="Select barangay"
+                                                            disabled={!cityCode}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">ZIP Code</label>
+                                                        <input
+                                                            type="text"
+                                                            value={contactData.present_zip}
+                                                            onChange={(e) => setContactData('present_zip', e.target.value)}
+                                                            placeholder="e.g. 2600"
+                                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </label>
-                                    </div>
-                                )}
+                                        </div>
 
-                                {/* Navigation Buttons */}
-                                <div className="flex items-center justify-between border-t bg-gray-50 p-4">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setWizardStep(wizardStep - 1)}
-                                        disabled={wizardStep === 1}
-                                    >
-                                        Back
-                                    </Button>
+                                        {/* Emergency Contact */}
+                                        <div>
+                                            <h3 className="mb-2 text-sm font-medium text-gray-700">Emergency Contact</h3>
+                                            <div className="space-y-2">
+                                                <input
+                                                    type="text"
+                                                    value={contactData.emergency_contact_name}
+                                                    onChange={(e) => setContactData('emergency_contact_name', e.target.value)}
+                                                    placeholder="Full Name"
+                                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={contactData.emergency_mobile_phone}
+                                                    onChange={(e) => setContactData('emergency_mobile_phone', e.target.value)}
+                                                    placeholder="Contact Number"
+                                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
 
-                                    <div className="flex items-center gap-2">
-                                        {wizardStep < 3 ? (
-                                            <Button onClick={() => setWizardStep(wizardStep + 1)} disabled={!canProceedWizard()}>
-                                                Continue
-                                                <ChevronRight className="ml-1 h-4 w-4" />
+                                        {/* Actions */}
+                                        <div className="flex justify-end gap-2 border-t pt-4">
+                                            <Button size="sm" variant="outline" onClick={handleCancel} disabled={!contactDirty || isSavingContact}>
+                                                Cancel
                                             </Button>
-                                        ) : (
-                                            <Button
-                                                onClick={handleSubmit}
-                                                disabled={!canProceedWizard() || processing}
-                                                variant="success"
-                                            >
-                                                {processing ? (
+                                            <Button size="sm" onClick={handlePersonalInfoSave} disabled={!contactDirty || isSavingContact}>
+                                                {isSavingContact ? (
                                                     <>
                                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                        Processing...
+                                                        Saving...
                                                     </>
                                                 ) : (
-                                                    <>
-                                                        <GraduationCap className="mr-2 h-4 w-4" />
-                                                        Confirm Enrollment
-                                                    </>
+                                                    'Save'
                                                 )}
                                             </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* View step 2: Fee Summary (read-only) */}
+                            {viewStep === 2 && assessment && (
+                                <div className="p-6">
+                                    <h2 className="mb-4 text-lg font-semibold text-gray-900">Fee Summary</h2>
+                                    <div className="mb-4 rounded-lg bg-gray-50 p-4">
+                                        <h3 className="mb-3 text-sm font-medium text-gray-700">Enrollment Details</h3>
+                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span className="text-gray-500">Student</span>
+                                                <p className="font-medium">
+                                                    {personalData?.last_name}, {personalData?.first_name} {personalData?.middle_name ?? ''}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Grade Level</span>
+                                                <p className="font-medium">{application?.grade_level}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">School Year</span>
+                                                <p className="font-medium">{assessment.school_year}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Semester</span>
+                                                <p className="font-medium">{assessment.semester}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg bg-gray-50 p-4">
+                                        <div className="space-y-1 text-sm">
+                                            {assessment.total_tuition > 0 && (
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Tuition Fees</span>
+                                                    <span>{formatCurrency(assessment.total_tuition)}</span>
+                                                </div>
+                                            )}
+                                            {assessment.total_misc_fees > 0 && (
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Miscellaneous Fees</span>
+                                                    <span>{formatCurrency(assessment.total_misc_fees)}</span>
+                                                </div>
+                                            )}
+                                            {assessment.total_lab_fees > 0 && (
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Laboratory Fees</span>
+                                                    <span>{formatCurrency(assessment.total_lab_fees)}</span>
+                                                </div>
+                                            )}
+                                            {assessment.total_other_fees > 0 && (
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Other Fees</span>
+                                                    <span>{formatCurrency(assessment.total_other_fees)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between border-t pt-1 text-gray-600">
+                                                <span>Gross Total</span>
+                                                <span>{formatCurrency(assessment.gross_amount)}</span>
+                                            </div>
+                                            {assessment.total_discounts > 0 && (
+                                                <div className="flex justify-between text-green-600">
+                                                    <span>Less: Discounts</span>
+                                                    <span>− {formatCurrency(assessment.total_discounts)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between border-t pt-2 text-base font-bold text-gray-900">
+                                                <span>Net Amount Due</span>
+                                                <span>{formatCurrency(assessment.net_amount)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Payment */}
+                                    <div className="mt-6">
+                                        <div className="mb-4 flex items-center justify-between rounded-lg bg-green-50 px-4 py-3">
+                                            <p className="text-sm text-gray-500">Total Amount Due</p>
+                                            <p className="text-lg font-bold text-green-700">{formatCurrency(assessment.net_amount)}</p>
+                                        </div>
+                                        {editingPaymentMode ? (
+                                            <PaymentModeEditor
+                                                currentMode={assessment.mode_of_payment ?? 'cash'}
+                                                onCancel={() => setEditingPaymentMode(false)}
+                                                onSaved={() => setEditingPaymentMode(false)}
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                                <div>
+                                                    <p className="mb-1 text-sm text-gray-500">Mode of Payment</p>
+                                                    <p className="font-semibold text-gray-900">
+                                                        {assessment.mode_of_payment ? paymentModeLabels[assessment.mode_of_payment] : 'Not set'}
+                                                    </p>
+                                                </div>
+                                                {assessment.status !== 'paid' && (
+                                                    <Button variant="outline" size="sm" onClick={() => setEditingPaymentMode(true)}>
+                                                        {assessment.mode_of_payment ? 'Change' : 'Select'}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Student ID (if enrolled) */}
-                        {studentRecord && isEnrolled && (
-                            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
-                                <div className="flex items-center gap-4">
-                                    <GraduationCap className="h-8 w-8 text-blue-600" />
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-blue-900">
-                                            You are officially enrolled!
-                                        </h2>
-                                        {studentRecord.student_id && (
-                                            <p className="text-2xl font-bold text-blue-700">
-                                                Student ID: {studentRecord.student_id}
-                                            </p>
-                                        )}
-                                        {studentRecord.enrollment_date && (
-                                            <p className="mt-1 text-sm text-blue-600">
-                                                Enrolled on:{' '}
-                                                {new Date(studentRecord.enrollment_date).toLocaleDateString()}
-                                            </p>
-                                        )}
-                                    </div>
+                            {/* View step 3: Confirmation */}
+                            {viewStep === 3 && (
+                                <div className="space-y-4 p-6">
+                                    {/* Status header — varies by payment status */}
+                                    {assessment?.status === 'paid' ? (
+                                        <div className="rounded-lg border-2 border-green-200 bg-green-50 p-6 shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <CheckCircle2 className="h-8 w-8 shrink-0 text-green-500" />
+                                                <div>
+                                                    <h3 className="text-lg font-semibold text-green-800">Payment Complete</h3>
+                                                    <p className="text-sm text-green-600">
+                                                        You are fully enrolled.
+                                                        {application?.semester ? ` · ${application.semester}` : ''}
+                                                    </p>
+                                                </div>
+                                                <div className="ml-auto text-right">
+                                                    <p className="text-xs text-gray-500">Assessment No.</p>
+                                                    <p className="font-mono text-sm font-semibold text-gray-800">{assessment.assessment_number}</p>
+                                                    {assessment.finalized_at && <p className="text-xs text-gray-400">{assessment.finalized_at}</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : application?.application_status === 'Enrolled' && assessment ? (
+                                        <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <CheckCircle2 className="h-8 w-8 shrink-0 text-blue-500" />
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold text-blue-800">Enrolled</h3>
+                                                    <p className="text-sm text-blue-600">
+                                                        Minimum payment received. You are officially enrolled.
+                                                    </p>
+                                                    <p className="mt-1 text-sm text-blue-600">
+                                                        Please settle your remaining balance at the Cashier's Office.
+                                                    </p>
+                                                </div>
+                                                <div className="ml-auto text-right">
+                                                    <p className="text-xs text-gray-500">Assessment No.</p>
+                                                    <p className="font-mono text-sm font-semibold text-gray-800">{assessment.assessment_number}</p>
+                                                    {assessment.finalized_at && <p className="text-xs text-gray-400">{assessment.finalized_at}</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : assessment ? (
+                                        <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <Clock className="h-8 w-8 shrink-0 text-amber-500" />
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold text-amber-800">Awaiting Payment</h3>
+                                                    <p className="text-sm text-amber-600">
+                                                        Please present your assessment to the Cashier's Office to complete your enrollment.
+                                                    </p>
+                                                    <p className="mt-1 text-sm font-medium text-amber-700">
+                                                        Minimum payment upon enrollment:{' '}
+                                                        <span className="font-bold">{formatCurrency(assessment.minimum_amount)}</span>
+                                                    </p>
+                                                </div>
+                                                <div className="ml-auto text-right">
+                                                    <p className="text-xs text-gray-500">Assessment No.</p>
+                                                    <p className="font-mono text-sm font-semibold text-gray-800">{assessment.assessment_number}</p>
+                                                    {assessment.finalized_at && <p className="text-xs text-gray-400">{assessment.finalized_at}</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-lg border-2 border-green-200 bg-green-50 p-6 shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <CheckCircle2 className="h-8 w-8 shrink-0 text-green-500" />
+                                                <div>
+                                                    <h3 className="text-lg font-semibold text-green-800">Enrollment Confirmed</h3>
+                                                    <p className="text-sm text-green-600">
+                                                        {application?.school_year}
+                                                        {application?.semester ? ` · ${application.semester}` : ''}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Fee summary card */}
+                                    {assessment && (
+                                        <div className="rounded-lg border border-gray-200 bg-white">
+                                            <div className="border-b p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Student ID</p>
+                                                        <p className="text-xl font-bold text-gray-900">{studentRecord?.student_id ?? '—'}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-gray-500">Grade Level</p>
+                                                        <p className="font-medium text-gray-800">{application?.grade_level}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="p-4">
+                                                <h4 className="mb-3 text-sm font-semibold text-gray-700">Fee Assessment</h4>
+                                                <div className="space-y-1 text-sm">
+                                                    {assessment.total_tuition > 0 && (
+                                                        <div className="flex justify-between text-gray-600">
+                                                            <span>Tuition Fees</span>
+                                                            <span>{formatCurrency(assessment.total_tuition)}</span>
+                                                        </div>
+                                                    )}
+                                                    {assessment.total_misc_fees > 0 && (
+                                                        <div className="flex justify-between text-gray-600">
+                                                            <span>Miscellaneous Fees</span>
+                                                            <span>{formatCurrency(assessment.total_misc_fees)}</span>
+                                                        </div>
+                                                    )}
+                                                    {assessment.total_lab_fees > 0 && (
+                                                        <div className="flex justify-between text-gray-600">
+                                                            <span>Laboratory Fees</span>
+                                                            <span>{formatCurrency(assessment.total_lab_fees)}</span>
+                                                        </div>
+                                                    )}
+                                                    {assessment.total_other_fees > 0 && (
+                                                        <div className="flex justify-between text-gray-600">
+                                                            <span>Other Fees</span>
+                                                            <span>{formatCurrency(assessment.total_other_fees)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between border-t pt-1 text-gray-600">
+                                                        <span>Gross Total</span>
+                                                        <span>{formatCurrency(assessment.gross_amount)}</span>
+                                                    </div>
+                                                    {assessment.total_discounts > 0 && (
+                                                        <div className="flex justify-between text-green-600">
+                                                            <span>Less: Discounts</span>
+                                                            <span>− {formatCurrency(assessment.total_discounts)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between border-t pt-2 text-base font-bold text-gray-900">
+                                                        <span>Net Amount Due</span>
+                                                        <span>{formatCurrency(assessment.net_amount)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between rounded bg-amber-50 px-2 py-1.5 text-sm font-semibold text-amber-800">
+                                                        <span>Minimum Payment Upon Enrollment</span>
+                                                        <span>{formatCurrency(assessment.net_amount / 3)}</span>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    onClick={handlePrint}
+                                                    variant={awaitingPayment ? 'outline' : undefined}
+                                                    className={awaitingPayment ? 'mt-4 w-full' : 'mt-4 w-full bg-green-600 hover:bg-green-700'}
+                                                >
+                                                    <Printer className="mr-2 h-4 w-4" />
+                                                    {awaitingPayment ? 'Print Assessment' : 'Print Receipt'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                    </div>
-                ) : (
-                    <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
-                        <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
-                        <h2 className="mt-4 text-lg font-semibold text-gray-900">No Application Found</h2>
-                        <p className="mt-2 text-gray-600">
-                            We couldn&apos;t find an application associated with your account. Please contact the
-                            admissions office for assistance.
+                            {/* Navigation */}
+                            <div className="flex items-center justify-between border-t p-4">
+                                <Button variant="outline" onClick={() => setViewStep((s) => s - 1)} disabled={viewStep === 1}>
+                                    Back
+                                </Button>
+                                {viewStep < 3 && <Button onClick={() => setViewStep((s) => s + 1)}>Next</Button>}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+
+                {/* Enrollment closed */}
+                {canEnroll && !enrollmentOpen && (
+                    <div className="rounded-lg border-2 border-gray-200 bg-gray-50 p-10 text-center shadow-sm">
+                        <CalendarX className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                        <h3 className="text-lg font-semibold text-gray-800">Enrollment is Currently Closed</h3>
+                        <p className="mt-2 text-sm text-gray-500">
+                            Enrollment for your semester is not yet open or has ended.
+                            <br />
+                            Please check back later for enrollment updates.
                         </p>
                     </div>
                 )}
+
+                {/* Enrollment wizard */}
+                {canEnroll && enrollmentOpen && (
+                    <>
+                        {/* Step indicator */}
+                        <div className="mb-6 flex items-center">
+                            {enrollmentSteps.map((step, idx) => (
+                                <div key={step.id} className="flex items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                                                wizardStep > step.id
+                                                    ? 'bg-green-500 text-white'
+                                                    : wizardStep === step.id
+                                                      ? 'bg-blue-600 text-white'
+                                                      : 'bg-gray-200 text-gray-500'
+                                            }`}
+                                        >
+                                            {wizardStep > step.id ? <Check className="h-4 w-4" /> : step.id}
+                                        </div>
+                                        <span className={`text-sm font-medium ${wizardStep === step.id ? 'text-blue-600' : 'text-gray-500'}`}>
+                                            {step.name}
+                                        </span>
+                                    </div>
+                                    {idx < enrollmentSteps.length - 1 && <ChevronRight className="mx-3 h-4 w-4 text-gray-300" />}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="rounded-lg border-2 border-gray-100 bg-white shadow-sm">
+                            {/* Step 1: Personal Info */}
+                            {wizardStep === 1 && (
+                                <div className="p-6">
+                                    <h2 className="mb-1 text-lg font-semibold text-gray-900">Personal Information</h2>
+                                    <p className="mb-6 text-sm text-gray-500">
+                                        Please verify or update your contact details before proceeding with enrollment.
+                                    </p>
+
+                                    <div className="space-y-5">
+                                        {/* Phone Number */}
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-gray-700">Phone Number</label>
+                                            <input
+                                                type="text"
+                                                value={contactData.mobile_number}
+                                                onChange={(e) => setContactData('mobile_number', e.target.value)}
+                                                placeholder="e.g. 09171234567"
+                                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+
+                                        {/* Present Address */}
+                                        <div>
+                                            <h3 className="mb-2 text-sm font-medium text-gray-700">Present Address</h3>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-gray-700">Street / House No.</label>
+                                                    <input
+                                                        type="text"
+                                                        value={contactData.present_street}
+                                                        onChange={(e) => setContactData('present_street', e.target.value)}
+                                                        placeholder="e.g. 123 Rizal St."
+                                                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-medium text-gray-700">Region</label>
+                                                    <SearchableSelect
+                                                        value={regions.find((r) => r.code === regionCode)?.value ?? ''}
+                                                        onChange={handleRegionChange}
+                                                        options={regions}
+                                                        placeholder="Select region"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">Province</label>
+                                                        <SearchableSelect
+                                                            value={contactData.present_province}
+                                                            onChange={handleProvinceChange}
+                                                            options={provinces}
+                                                            placeholder="Select province"
+                                                            disabled={!regionCode}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">City / Municipality</label>
+                                                        <SearchableSelect
+                                                            value={contactData.present_city}
+                                                            onChange={handleCityChange}
+                                                            options={cities}
+                                                            placeholder="Select city"
+                                                            disabled={!provinceCode}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">Barangay</label>
+                                                        <SearchableSelect
+                                                            value={contactData.present_brgy}
+                                                            onChange={handleBarangayChange}
+                                                            options={barangays}
+                                                            placeholder="Select barangay"
+                                                            disabled={!cityCode}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-1 block text-sm font-medium text-gray-700">ZIP Code</label>
+                                                        <input
+                                                            type="text"
+                                                            value={contactData.present_zip}
+                                                            onChange={(e) => setContactData('present_zip', e.target.value)}
+                                                            placeholder="e.g. 2600"
+                                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Emergency Contact */}
+                                        <div>
+                                            <h3 className="mb-2 text-sm font-medium text-gray-700">Emergency Contact</h3>
+                                            <div className="space-y-2">
+                                                <input
+                                                    type="text"
+                                                    value={contactData.emergency_contact_name}
+                                                    onChange={(e) => setContactData('emergency_contact_name', e.target.value)}
+                                                    placeholder="Full Name"
+                                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={contactData.emergency_mobile_phone}
+                                                    onChange={(e) => setContactData('emergency_mobile_phone', e.target.value)}
+                                                    placeholder="Contact Number"
+                                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex justify-end gap-2 border-t pt-4">
+                                            <Button size="sm" variant="outline" onClick={handleCancel} disabled={!contactDirty || isSavingContact}>
+                                                Cancel
+                                            </Button>
+                                            <Button size="sm" onClick={handlePersonalInfoSave} disabled={!contactDirty || isSavingContact}>
+                                                {isSavingContact ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    'Save'
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 2: Fee Summary */}
+                            {wizardStep === 2 && (
+                                <div className="p-6">
+                                    <h2 className="mb-4 text-lg font-semibold text-gray-900">Fee Summary</h2>
+
+                                    {/* Enrollment details */}
+                                    <div className="mb-6 rounded-lg bg-gray-50 p-4">
+                                        <h3 className="mb-3 text-sm font-medium text-gray-700">Enrollment Details</h3>
+                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span className="text-gray-500">Student</span>
+                                                <p className="font-medium">
+                                                    {personalData?.last_name}, {personalData?.first_name} {personalData?.middle_name ?? ''}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Grade Level</span>
+                                                <p className="font-medium">{application?.grade_level}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">School Year</span>
+                                                <p className="font-medium">{application?.school_year}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Total Units</span>
+                                                <p className="font-medium">{totalUnits} units</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Fee breakdown */}
+                                    <div className="mb-6 space-y-3">
+                                        {tuitionFee > 0 && (
+                                            <div className="rounded-lg border p-4">
+                                                <h4 className="mb-2 text-sm font-medium text-gray-700">Tuition Fee</h4>
+                                                {fees
+                                                    .filter((f) => f.category === 'tuition')
+                                                    .map((fee) => (
+                                                        <div key={fee.id} className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">
+                                                                {fee.name}
+                                                                {fee.is_per_unit && (
+                                                                    <span className="ml-1 text-xs text-gray-400">× {totalUnits} units</span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-medium">
+                                                                {formatCurrency(fee.is_per_unit ? fee.amount * totalUnits : fee.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        )}
+
+                                        {miscFees > 0 && (
+                                            <div className="rounded-lg border p-4">
+                                                <h4 className="mb-2 text-sm font-medium text-gray-700">Miscellaneous Fees</h4>
+                                                {fees
+                                                    .filter((f) => f.category === 'miscellaneous')
+                                                    .map((fee) => (
+                                                        <div key={fee.id} className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">
+                                                                {fee.name}
+                                                                {fee.is_per_unit && (
+                                                                    <span className="ml-1 text-xs text-gray-400">× {totalUnits} units</span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-medium">
+                                                                {formatCurrency(fee.is_per_unit ? fee.amount * totalUnits : fee.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        )}
+
+                                        {labFees > 0 && (
+                                            <div className="rounded-lg border p-4">
+                                                <h4 className="mb-2 text-sm font-medium text-gray-700">Laboratory Fees</h4>
+                                                {fees
+                                                    .filter((f) => f.category === 'laboratory')
+                                                    .map((fee) => (
+                                                        <div key={fee.id} className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">
+                                                                {fee.name}
+                                                                {fee.is_per_unit && (
+                                                                    <span className="ml-1 text-xs text-gray-400">× {totalUnits} units</span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-medium">
+                                                                {formatCurrency(fee.is_per_unit ? fee.amount * totalUnits : fee.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        )}
+
+                                        {specialFees > 0 && (
+                                            <div className="rounded-lg border p-4">
+                                                <h4 className="mb-2 text-sm font-medium text-gray-700">Special Fees</h4>
+                                                {fees
+                                                    .filter((f) => f.category === 'special')
+                                                    .map((fee) => (
+                                                        <div key={fee.id} className="flex justify-between text-sm">
+                                                            <span className="text-gray-600">
+                                                                {fee.name}
+                                                                {fee.is_per_unit && (
+                                                                    <span className="ml-1 text-xs text-gray-400">× {totalUnits} units</span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-medium">
+                                                                {formatCurrency(fee.is_per_unit ? fee.amount * totalUnits : fee.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        )}
+
+                                        {fees.length === 0 && (
+                                            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-gray-400">
+                                                No fees configured for your grade level.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Discounts */}
+                                    {availableDiscounts.length > 0 && (
+                                        <div className="mb-6">
+                                            <h3 className="mb-3 text-sm font-medium text-gray-700">Available Discounts</h3>
+                                            <div className="space-y-2">
+                                                {availableDiscounts.map((discount) => (
+                                                    <label
+                                                        key={discount.id}
+                                                        className="flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedDiscounts.includes(discount.id)}
+                                                                onChange={() => toggleDiscount(discount.id)}
+                                                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                                            />
+                                                            <div>
+                                                                <p className="text-sm font-medium text-gray-900">{discount.name}</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    Applies to:{' '}
+                                                                    {discount.applies_to === 'tuition_only'
+                                                                        ? 'Tuition only'
+                                                                        : discount.applies_to === 'miscellaneous_only'
+                                                                          ? 'Miscellaneous only'
+                                                                          : 'All fees'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <Badge variant="secondary">
+                                                            {discount.discount_type === 'percentage'
+                                                                ? `${discount.value}%`
+                                                                : formatCurrency(discount.value)}
+                                                        </Badge>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Totals */}
+                                    <div className="rounded-lg bg-gray-50 p-4">
+                                        <div className="space-y-1 text-sm">
+                                            <div className="flex justify-between text-gray-600">
+                                                <span>Gross Total</span>
+                                                <span>{formatCurrency(grossTotal)}</span>
+                                            </div>
+                                            {totalDiscount > 0 && (
+                                                <div className="flex justify-between text-green-600">
+                                                    <span>Less: Discounts</span>
+                                                    <span>− {formatCurrency(totalDiscount)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between border-t pt-2 text-base font-bold text-gray-900">
+                                                <span>Net Total</span>
+                                                <span>{formatCurrency(netTotal)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Amount due */}
+                                    <div className="mt-6 flex items-center justify-between rounded-lg bg-green-50 px-4 py-3">
+                                        <p className="text-sm text-gray-500">Total Amount Due</p>
+                                        <p className="text-lg font-bold text-green-700">{formatCurrency(netTotal)}</p>
+                                    </div>
+
+                                    {/* Payment Plan */}
+                                    <div className="mt-6">
+                                        <h3 className="mb-3 text-sm font-medium text-gray-700">Payment Plan</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {([
+                                                {
+                                                    value: 'full' as const,
+                                                    label: 'Full Payment',
+                                                    description: `Pay ${formatCurrency(netTotal)} in full`,
+                                                    minimum: netTotal,
+                                                },
+                                                {
+                                                    value: 'installment' as const,
+                                                    label: 'Installment',
+                                                    description: `Pay ${formatCurrency(Math.round(netTotal * 0.30 * 100) / 100)} down (30%)`,
+                                                    minimum: Math.round(netTotal * 0.30 * 100) / 100,
+                                                },
+                                            ] as const).map((plan) => (
+                                                <label
+                                                    key={plan.value}
+                                                    className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                                                        paymentPlan === plan.value
+                                                            ? 'border-blue-500 bg-blue-50'
+                                                            : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="payment_plan"
+                                                        value={plan.value}
+                                                        checked={paymentPlan === plan.value}
+                                                        onChange={() => setPaymentPlan(plan.value)}
+                                                        className="sr-only"
+                                                    />
+                                                    <p className="font-medium text-gray-900">{plan.label}</p>
+                                                    <p className="mt-1 text-sm text-gray-500">{plan.description}</p>
+                                                    <p className="mt-1 text-xs font-semibold text-blue-600">
+                                                        Min. to enroll: {formatCurrency(plan.minimum)}
+                                                    </p>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Mode of Payment */}
+                                    <div className="mt-6">
+                                        <h3 className="mb-3 text-sm font-medium text-gray-700">Mode of Payment</h3>
+                                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                            {[
+                                                { value: 'cash', label: 'Cash' },
+                                                { value: 'bank_transfer', label: 'Bank Transfer' },
+                                                { value: 'online_banking', label: 'Online Banking' },
+                                                { value: 'gcash', label: 'GCash' },
+                                            ].map((m) => (
+                                                <label
+                                                    key={m.value}
+                                                    className={`cursor-pointer rounded-lg border-2 p-3 text-center transition-all ${
+                                                        paymentMode === m.value
+                                                            ? 'border-blue-500 bg-blue-50'
+                                                            : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="payment_mode"
+                                                        value={m.value}
+                                                        checked={paymentMode === m.value}
+                                                        onChange={() => setPaymentMode(m.value)}
+                                                        className="sr-only"
+                                                    />
+                                                    <p className="text-sm font-medium text-gray-900">{m.label}</p>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Payment instructions */}
+                                    <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                        <div className="flex gap-2">
+                                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                            <div className="text-sm text-amber-700">
+                                                <p className="font-medium">Payment Instructions</p>
+                                                <ul className="mt-1 list-disc space-y-1 pl-4">
+                                                    <li>Proceed to the Finance Office to complete payment</li>
+                                                    <li>Bring a copy of your enrollment summary</li>
+                                                    <li>Accepted: Cash, Check, Bank Transfer, GCash</li>
+                                                    <li>Keep your official receipt</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Terms */}
+                                    <label className="mt-6 flex cursor-pointer items-start gap-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={acceptedTerms}
+                                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600"
+                                        />
+                                        <span className="text-sm text-gray-600">
+                                            I understand and agree to the payment terms. I confirm that the enrollment details above are correct.
+                                        </span>
+                                    </label>
+                                </div>
+                            )}
+
+                            {/* Step 3: Summary */}
+                            {wizardStep === 3 && (
+                                <div className="p-6">
+                                    <h2 className="mb-1 text-lg font-semibold text-gray-900">Enrollment Summary</h2>
+                                    <p className="mb-6 text-sm text-gray-500">
+                                        Please review your enrollment details before confirming.
+                                    </p>
+
+                                    {/* Enrollment details */}
+                                    <div className="mb-4 rounded-lg bg-gray-50 p-4">
+                                        <h3 className="mb-3 text-sm font-medium text-gray-700">Enrollment Details</h3>
+                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span className="text-gray-500">Student</span>
+                                                <p className="font-medium">
+                                                    {personalData?.last_name}, {personalData?.first_name} {personalData?.middle_name ?? ''}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Grade Level</span>
+                                                <p className="font-medium">{application?.grade_level}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">School Year</span>
+                                                <p className="font-medium">{application?.school_year}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Semester</span>
+                                                <p className="font-medium">{application?.semester ?? '—'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Payment Plan</span>
+                                                <p className="font-medium capitalize">{paymentPlan === 'full' ? 'Full Payment' : 'Installment (30% down)'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-500">Mode of Payment</span>
+                                                <p className="font-medium">{paymentModeLabels[paymentMode] ?? paymentMode}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Fee breakdown */}
+                                    <div className="rounded-lg border border-gray-200 bg-white">
+                                        <div className="border-b p-4">
+                                            <h4 className="text-sm font-semibold text-gray-700">Fee Assessment</h4>
+                                        </div>
+                                        <div className="p-4">
+                                            <div className="space-y-1 text-sm">
+                                                {tuitionFee > 0 && (
+                                                    <div className="flex justify-between text-gray-600">
+                                                        <span>Tuition Fees</span>
+                                                        <span>{formatCurrency(tuitionFee)}</span>
+                                                    </div>
+                                                )}
+                                                {miscFees > 0 && (
+                                                    <div className="flex justify-between text-gray-600">
+                                                        <span>Miscellaneous Fees</span>
+                                                        <span>{formatCurrency(miscFees)}</span>
+                                                    </div>
+                                                )}
+                                                {labFees > 0 && (
+                                                    <div className="flex justify-between text-gray-600">
+                                                        <span>Laboratory Fees</span>
+                                                        <span>{formatCurrency(labFees)}</span>
+                                                    </div>
+                                                )}
+                                                {specialFees > 0 && (
+                                                    <div className="flex justify-between text-gray-600">
+                                                        <span>Special Fees</span>
+                                                        <span>{formatCurrency(specialFees)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between border-t pt-1 text-gray-600">
+                                                    <span>Gross Total</span>
+                                                    <span>{formatCurrency(grossTotal)}</span>
+                                                </div>
+                                                {totalDiscount > 0 && (
+                                                    <div className="flex justify-between text-green-600">
+                                                        <span>Less: Discounts</span>
+                                                        <span>− {formatCurrency(totalDiscount)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between border-t pt-2 text-base font-bold text-gray-900">
+                                                    <span>Net Amount Due</span>
+                                                    <span>{formatCurrency(netTotal)}</span>
+                                                </div>
+                                                {paymentPlan === 'installment' && (
+                                                    <div className="flex justify-between rounded bg-amber-50 px-2 py-1.5 text-sm font-semibold text-amber-800">
+                                                        <span>Minimum Payment Upon Enrollment (30%)</span>
+                                                        <span>{formatCurrency(Math.round(netTotal * 0.3 * 100) / 100)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Button onClick={handlePrint} variant="outline" className="mt-4 w-full">
+                                                <Printer className="mr-2 h-4 w-4" />
+                                                Print Summary
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Navigation */}
+                            <div className="flex items-center justify-between border-t p-4">
+                                <Button variant="outline" onClick={() => setWizardStep((s) => s - 1)} disabled={wizardStep === 1}>
+                                    Back
+                                </Button>
+
+                                {wizardStep < enrollmentSteps.length ? (
+                                    <Button
+                                        onClick={() => setWizardStep((s) => s + 1)}
+                                        disabled={!canProceedWizard()}
+                                    >
+                                        Continue
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={handleSubmit}
+                                        disabled={!canProceedWizard() || isProcessing}
+                                        className="bg-green-600 hover:bg-green-700"
+                                    >
+                                        {isProcessing ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            'Confirm Enrollment'
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* No application */}
+                {!application && (
+                    <div className="rounded-lg border-2 border-gray-200 bg-gray-50 p-10 text-center shadow-sm">
+                        <AlertCircle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                        <h3 className="text-lg font-semibold text-gray-800">No Application Found</h3>
+                        <p className="mt-2 text-sm text-gray-500">No application record found. Please contact the Registrar&apos;s Office.</p>
+                    </div>
+                )}
             </div>
+
+            {/* ── Printable assessment (awaiting-payment state) ── */}
+            {awaitingPayment && assessment && (
+                <div className="hidden p-10 font-sans text-sm text-black print:block">
+                    <div className="mb-6 border-b-2 border-black pb-4 text-center">
+                        <h1 className="text-2xl font-bold tracking-wide uppercase">St. Louis University</h1>
+                        <h2 className="text-base font-semibold">Student Fee Assessment</h2>
+                    </div>
+                    <div className="mb-4 flex justify-between text-xs">
+                        <div>
+                            <p><strong>Assessment No.:</strong> {assessment.assessment_number}</p>
+                            <p><strong>Date:</strong> {assessment.finalized_at ?? '—'}</p>
+                        </div>
+                        <div className="text-right">
+                            <p><strong>School Year:</strong> {assessment.school_year}</p>
+                            <p><strong>Semester:</strong> {assessment.semester}</p>
+                        </div>
+                    </div>
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">Student Information</p>
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                            <p>
+                                <strong>Name:</strong>{' '}
+                                {personalData
+                                    ? `${personalData.last_name}, ${personalData.first_name}${personalData.middle_name ? ' ' + personalData.middle_name : ''}`
+                                    : '—'}
+                            </p>
+                            <p><strong>Grade Level:</strong> {application?.grade_level ?? '—'}</p>
+                        </div>
+                    </div>
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">Fee Assessment</p>
+                        <table className="w-full text-xs">
+                            <tbody>
+                                {assessment.total_tuition > 0 && (
+                                    <tr><td className="py-0.5">Tuition Fees</td><td className="py-0.5 text-right">{formatCurrency(assessment.total_tuition)}</td></tr>
+                                )}
+                                {assessment.total_misc_fees > 0 && (
+                                    <tr><td className="py-0.5">Miscellaneous Fees</td><td className="py-0.5 text-right">{formatCurrency(assessment.total_misc_fees)}</td></tr>
+                                )}
+                                {assessment.total_lab_fees > 0 && (
+                                    <tr><td className="py-0.5">Laboratory Fees</td><td className="py-0.5 text-right">{formatCurrency(assessment.total_lab_fees)}</td></tr>
+                                )}
+                                {assessment.total_other_fees > 0 && (
+                                    <tr><td className="py-0.5">Other Fees</td><td className="py-0.5 text-right">{formatCurrency(assessment.total_other_fees)}</td></tr>
+                                )}
+                                <tr className="border-t border-black">
+                                    <td className="py-1">Gross Total</td>
+                                    <td className="py-1 text-right">{formatCurrency(assessment.gross_amount)}</td>
+                                </tr>
+                                {assessment.total_discounts > 0 && (
+                                    <tr><td className="py-0.5">Less: Discounts</td><td className="py-0.5 text-right">− {formatCurrency(assessment.total_discounts)}</td></tr>
+                                )}
+                                <tr className="border-t-2 border-black text-sm font-bold">
+                                    <td className="pt-1">NET AMOUNT DUE</td>
+                                    <td className="pt-1 text-right">{formatCurrency(assessment.net_amount)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="pt-1">Minimum Payment Upon Enrollment</td>
+                                    <td className="pt-1 text-right">{formatCurrency(assessment.minimum_amount)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="mt-8 text-center text-xs text-gray-500">Please present this assessment at the Cashier&apos;s Office for payment.</p>
+                </div>
+            )}
+
+            {/* ── Printable summary for wizard step 3 (pre-enrollment) ── */}
+            {canEnroll && enrollmentOpen && wizardStep === 3 && (
+                <div className="hidden p-10 font-sans text-sm text-black print:block">
+                    <div className="mb-6 border-b-2 border-black pb-4 text-center">
+                        <h1 className="text-2xl font-bold tracking-wide uppercase">St. Louis University</h1>
+                        <h2 className="text-base font-semibold">Student Enrollment Summary</h2>
+                    </div>
+                    <div className="mb-4 flex justify-between text-xs">
+                        <div>
+                            <p><strong>School Year:</strong> {application?.school_year}</p>
+                            <p><strong>Semester:</strong> {application?.semester ?? '—'}</p>
+                        </div>
+                        <div className="text-right">
+                            <p><strong>Payment Plan:</strong> {paymentPlan === 'full' ? 'Full Payment' : 'Installment'}</p>
+                            <p><strong>Mode of Payment:</strong> {paymentModeLabels[paymentMode] ?? paymentMode}</p>
+                        </div>
+                    </div>
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">Student Information</p>
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                            <p>
+                                <strong>Name:</strong>{' '}
+                                {personalData
+                                    ? `${personalData.last_name}, ${personalData.first_name}${personalData.middle_name ? ' ' + personalData.middle_name : ''}`
+                                    : '—'}
+                            </p>
+                            <p><strong>Grade Level:</strong> {application?.grade_level ?? '—'}</p>
+                        </div>
+                    </div>
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">Fee Assessment</p>
+                        <table className="w-full text-xs">
+                            <tbody>
+                                {tuitionFee > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Tuition Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(tuitionFee)}</td>
+                                    </tr>
+                                )}
+                                {miscFees > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Miscellaneous Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(miscFees)}</td>
+                                    </tr>
+                                )}
+                                {labFees > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Laboratory Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(labFees)}</td>
+                                    </tr>
+                                )}
+                                {specialFees > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Special Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(specialFees)}</td>
+                                    </tr>
+                                )}
+                                <tr className="border-t border-black">
+                                    <td className="py-1">Gross Total</td>
+                                    <td className="py-1 text-right">{formatCurrency(grossTotal)}</td>
+                                </tr>
+                                {totalDiscount > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Less: Discounts</td>
+                                        <td className="py-0.5 text-right">− {formatCurrency(totalDiscount)}</td>
+                                    </tr>
+                                )}
+                                <tr className="border-t-2 border-black text-sm font-bold">
+                                    <td className="pt-1">NET AMOUNT DUE</td>
+                                    <td className="pt-1 text-right">{formatCurrency(netTotal)}</td>
+                                </tr>
+                                {paymentPlan === 'installment' && (
+                                    <tr>
+                                        <td className="pt-1">Minimum Payment (30%)</td>
+                                        <td className="pt-1 text-right">{formatCurrency(Math.round(netTotal * 0.3 * 100) / 100)}</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="mt-8 text-center text-xs text-gray-500">Please present this summary at the Cashier&apos;s Office for payment.</p>
+                </div>
+            )}
+
+            {/* ── Printable receipt ── hidden on screen, shown only when printing ── */}
+            {isEnrolled && assessment && (
+                <div className="hidden p-10 font-sans text-sm text-black print:block">
+                    {/* Header */}
+                    <div className="mb-6 border-b-2 border-black pb-4 text-center">
+                        <h1 className="text-2xl font-bold tracking-wide uppercase">St. Louis University</h1>
+                        <h2 className="text-base font-semibold">Student Enrollment Receipt</h2>
+                    </div>
+
+                    {/* Assessment metadata */}
+                    <div className="mb-4 flex justify-between text-xs">
+                        <div>
+                            <p>
+                                <strong>Assessment No.:</strong> {assessment.assessment_number}
+                            </p>
+                            <p>
+                                <strong>Date:</strong> {assessment.finalized_at ?? '—'}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p>
+                                <strong>School Year:</strong> {assessment.school_year}
+                            </p>
+                            <p>
+                                <strong>Semester:</strong> {assessment.semester}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Student info */}
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">Student Information</p>
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                            <p>
+                                <strong>Name:</strong>{' '}
+                                {personalData
+                                    ? `${personalData.last_name}, ${personalData.first_name}${personalData.middle_name ? ' ' + personalData.middle_name : ''}`
+                                    : '—'}
+                            </p>
+                            <p>
+                                <strong>Student ID:</strong> {studentRecord?.student_id ?? '—'}
+                            </p>
+                            <p>
+                                <strong>Grade Level:</strong> {application?.grade_level ?? '—'}
+                            </p>
+                            <p>
+                                <strong>Status:</strong> Enrolled
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Fee table */}
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">Fee Assessment</p>
+                        <table className="w-full text-xs">
+                            <tbody>
+                                {assessment.total_tuition > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Tuition Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(assessment.total_tuition)}</td>
+                                    </tr>
+                                )}
+                                {assessment.total_misc_fees > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Miscellaneous Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(assessment.total_misc_fees)}</td>
+                                    </tr>
+                                )}
+                                {assessment.total_lab_fees > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Laboratory Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(assessment.total_lab_fees)}</td>
+                                    </tr>
+                                )}
+                                {assessment.total_other_fees > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Other Fees</td>
+                                        <td className="py-0.5 text-right">{formatCurrency(assessment.total_other_fees)}</td>
+                                    </tr>
+                                )}
+                                <tr className="border-t border-black">
+                                    <td className="py-1">Gross Total</td>
+                                    <td className="py-1 text-right">{formatCurrency(assessment.gross_amount)}</td>
+                                </tr>
+                                {assessment.total_discounts > 0 && (
+                                    <tr>
+                                        <td className="py-0.5">Less: Discounts</td>
+                                        <td className="py-0.5 text-right">− {formatCurrency(assessment.total_discounts)}</td>
+                                    </tr>
+                                )}
+                                <tr className="border-t-2 border-black text-sm font-bold">
+                                    <td className="pt-1">NET AMOUNT DUE</td>
+                                    <td className="pt-1 text-right">{formatCurrency(assessment.net_amount)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Footer */}
+                    <p className="mt-8 text-center text-xs text-gray-500">Please present this receipt at the Cashier&apos;s Office for payment.</p>
+                </div>
+            )}
         </StudentLayout>
     );
 }

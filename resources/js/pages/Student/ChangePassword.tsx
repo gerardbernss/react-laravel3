@@ -18,10 +18,6 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
-        href: '/student/dashboard',
-    },
-    {
         title: 'Change Password',
         href: '/student/change-password',
     },
@@ -48,9 +44,6 @@ export default function ChangePassword({ student }: Props) {
             <div className="p-6 md:p-10">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Change Password</h1>
-                    <p className="mt-2 text-gray-600">
-                        Update your password to keep your account secure
-                    </p>
                 </div>
 
                 {/* Password Change Warning (if not changed yet) */}
@@ -60,9 +53,7 @@ export default function ChangePassword({ student }: Props) {
                             <AlertCircle className="h-5 w-5 text-yellow-600" />
                             <div>
                                 <h3 className="font-medium text-yellow-800">Password Change Required</h3>
-                                <p className="text-sm text-yellow-700">
-                                    For security purposes, please change your temporary password to a new one.
-                                </p>
+                                <p className="text-sm text-yellow-700">For security purposes, please change your temporary password to a new one.</p>
                             </div>
                         </div>
                     </div>
@@ -95,7 +86,7 @@ export default function ChangePassword({ student }: Props) {
                             <div>
                                 <Label htmlFor="current_password">Current Password</Label>
                                 <div className="relative mt-1">
-                                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <Input
                                         id="current_password"
                                         type="password"
@@ -113,7 +104,7 @@ export default function ChangePassword({ student }: Props) {
                             <div>
                                 <Label htmlFor="password">New Password</Label>
                                 <div className="relative mt-1">
-                                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <Input
                                         id="password"
                                         type="password"
@@ -125,16 +116,14 @@ export default function ChangePassword({ student }: Props) {
                                     />
                                 </div>
                                 <InputError message={errors.password} className="mt-2" />
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Password must be at least 8 characters long
-                                </p>
+                                <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters long</p>
                             </div>
 
                             {/* Confirm Password */}
                             <div>
                                 <Label htmlFor="password_confirmation">Confirm New Password</Label>
                                 <div className="relative mt-1">
-                                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <Input
                                         id="password_confirmation"
                                         type="password"

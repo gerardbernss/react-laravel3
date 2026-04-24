@@ -18,6 +18,9 @@ class ExamSchedule extends Model
         'start_time',
         'end_time',
         'examination_room_id',
+        'capacity',
+        'description',
+        'instructions',
         'is_active',
     ];
 

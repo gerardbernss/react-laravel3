@@ -110,7 +110,6 @@ export default function ShowEnrollment({ applicant }: Props) {
                 <div className="flex items-start justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Applicant Enrollment Details</h1>
-                        <p className="mt-1 text-gray-600">View and manage enrollment status for this applicant</p>
                     </div>
                     <Link href="/enrollment/dashboard">
                         <Button variant="outline">

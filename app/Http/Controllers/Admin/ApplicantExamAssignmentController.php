@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ApplicantApplicationInfo;
+use App\Models\Applicant;
 use App\Models\ApplicantExamAssignment;
 use App\Models\ExamSchedule;
 use Illuminate\Http\Request;
@@ -14,49 +14,21 @@ class ApplicantExamAssignmentController extends Controller
     /**
      * Display a listing of exam assignments.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = ApplicantExamAssignment::with([
+        $assignments = ApplicantExamAssignment::with([
             'applicationInfo.personalData',
             'examSchedule.examinationRoom',
-        ]);
-
-        // Search filter
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('applicationInfo', function ($q) use ($search) {
-                $q->where('application_number', 'like', "%{$search}%")
-                    ->orWhereHas('personalData', function ($pq) use ($search) {
-                        $pq->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Schedule filter
-        if ($request->filled('schedule_id')) {
-            $query->where('exam_schedule_id', $request->schedule_id);
-        }
-
-        $assignments = $query->orderBy('created_at', 'desc')
-            ->paginate(20)
-            ->withQueryString();
+        ])->orderBy('created_at', 'desc')->get();
 
         $schedules = ExamSchedule::with('examinationRoom')
             ->active()
-            ->upcoming()
             ->orderBy('exam_date')
             ->get(['id', 'name', 'exam_date', 'examination_room_id']);
 
         return Inertia::render('Admin/ExamAssignments/Index', [
             'assignments' => $assignments,
             'schedules' => $schedules,
-            'filters' => $request->only(['search', 'status', 'schedule_id']),
         ]);
     }
 
@@ -66,9 +38,9 @@ class ApplicantExamAssignmentController extends Controller
     public function create(Request $request)
     {
         // Get applicants without exam assignments
-        $applicantsQuery = ApplicantApplicationInfo::with('personalData')
+        $applicantsQuery = Applicant::with('personalData')
             ->whereDoesntHave('examAssignment')
-            ->whereIn('application_status', ['Pending', 'For Exam']);
+            ->whereIn('application_status', ['For Exam']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -86,7 +58,6 @@ class ApplicantExamAssignmentController extends Controller
         // Get available schedules with slot info
         $schedules = ExamSchedule::with('examinationRoom')
             ->active()
-            ->upcoming()
             ->withCount(['applicantAssignments as assigned_count' => function ($q) {
                 $q->whereNotIn('status', ['cancelled']);
             }])
@@ -124,14 +95,13 @@ class ApplicantExamAssignmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'applicant_application_info_id' => 'required|exists:applicant_application_info,id',
+            'applicant_id' => 'required|exists:applicants,id',
             'exam_schedule_id' => 'required|exists:exam_schedules,id',
-            'seat_number' => 'nullable|string|max:20',
-            'notes' => 'nullable|string',
+'notes' => 'nullable|string',
         ]);
 
         // Check if already assigned
-        $exists = ApplicantExamAssignment::where('applicant_application_info_id', $validated['applicant_application_info_id'])
+        $exists = ApplicantExamAssignment::where('applicant_id', $validated['applicant_id'])
             ->where('exam_schedule_id', $validated['exam_schedule_id'])
             ->exists();
 
@@ -158,7 +128,7 @@ class ApplicantExamAssignmentController extends Controller
         ApplicantExamAssignment::create($validated);
 
         // Update application status to indicate exam scheduled
-        ApplicantApplicationInfo::where('id', $validated['applicant_application_info_id'])
+        Applicant::where('id', $validated['applicant_id'])
             ->update(['application_status' => 'For Exam']);
 
         return redirect()->route('exam-assignments.index')
@@ -172,7 +142,7 @@ class ApplicantExamAssignmentController extends Controller
     {
         $validated = $request->validate([
             'applicant_ids' => 'required|array|min:1',
-            'applicant_ids.*' => 'exists:applicant_application_info,id',
+            'applicant_ids.*' => 'exists:applicants,id',
             'exam_schedule_id' => 'required|exists:exam_schedules,id',
         ]);
 
@@ -190,20 +160,20 @@ class ApplicantExamAssignmentController extends Controller
         $assigned = 0;
         foreach ($validated['applicant_ids'] as $applicantId) {
             // Check if already assigned
-            $exists = ApplicantExamAssignment::where('applicant_application_info_id', $applicantId)
+            $exists = ApplicantExamAssignment::where('applicant_id', $applicantId)
                 ->where('exam_schedule_id', $validated['exam_schedule_id'])
                 ->exists();
 
             if (!$exists) {
                 ApplicantExamAssignment::create([
-                    'applicant_application_info_id' => $applicantId,
+                    'applicant_id' => $applicantId,
                     'exam_schedule_id' => $validated['exam_schedule_id'],
                     'status' => 'assigned',
                     'assigned_at' => now(),
                 ]);
 
                 // Update application status
-                ApplicantApplicationInfo::where('id', $applicantId)
+                Applicant::where('id', $applicantId)
                     ->update(['application_status' => 'For Exam']);
 
                 $assigned++;

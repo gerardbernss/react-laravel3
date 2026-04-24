@@ -10,7 +10,7 @@ class EnrollmentAuditLog extends Model
 
     protected $fillable = [
         'student_id',
-        'applicant_application_info_id',
+        'applicant_id',
         'action',
         'previous_status',
         'new_status',
@@ -34,7 +34,7 @@ class EnrollmentAuditLog extends Model
 
     public function application()
     {
-        return $this->belongsTo(ApplicantApplicationInfo::class, 'applicant_application_info_id');
+        return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
     /**
@@ -66,17 +66,17 @@ class EnrollmentAuditLog extends Model
         ?string $description = null,
         ?string $performedBy = null,
         ?string $ipAddress = null,
-        ?ApplicantApplicationInfo $application = null
+        ?Applicant $application = null
     ) {
         return self::create([
-            'student_id'                    => $student->id,
-            'applicant_application_info_id' => $application?->id,
-            'action'                        => $action,
-            'new_status'                    => $newStatus,
-            'previous_status'               => $previousStatus,
-            'description'                   => $description,
-            'performed_by'                  => $performedBy,
-            'ip_address'                    => $ipAddress,
+            'student_id'   => $student->id,
+            'applicant_id' => $application?->id,
+            'action'       => $action,
+            'new_status'   => $newStatus,
+            'previous_status' => $previousStatus,
+            'description'  => $description,
+            'performed_by' => $performedBy,
+            'ip_address'   => $ipAddress,
         ]);
     }
 }

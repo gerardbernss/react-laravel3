@@ -10,7 +10,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp } from 'lucide-react';
+import { Briefcase, CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiOutlinePencilAlt, HiPlus, HiTrash } from 'react-icons/hi';
@@ -254,8 +254,10 @@ export default function Index({ applications }: Props) {
             <div className="space-y-6 p-6 md:p-10">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Evaluation/Assessment</h1>
-                        <p className="mt-1 text-gray-600">Review and assess applicant submissions and exam results</p>
+                        <div className="flex items-center gap-3">
+                            <Briefcase className="h-7 w-7 text-primary" />
+                            <h1 className="text-3xl font-bold text-gray-900">Evaluation/Assessment</h1>
+                        </div>
                     </div>
                     <Link
                         href={`/admissions/applicants/create`}
@@ -555,7 +557,7 @@ export default function Index({ applications }: Props) {
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     <th className="px-4 py-3 text-left">
                                         <input
@@ -571,7 +573,7 @@ export default function Index({ applications }: Props) {
                                             <th
                                                 key={String(column.key)}
                                                 onClick={() => handleSort(column.key)}
-                                                className="cursor-pointer px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100"
+                                                className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100"
                                             >
                                                 <div className="flex items-center gap-1.5">
                                                     {column.label}
@@ -584,7 +586,7 @@ export default function Index({ applications }: Props) {
                                                 </div>
                                             </th>
                                         ))}
-                                    <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Actions</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -687,10 +689,9 @@ export default function Index({ applications }: Props) {
                             </tbody>
                         </table>
                     </div>
-                </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between border-t bg-white px-4 py-3">
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-700">Rows per page:</span>
                         <select
@@ -746,11 +747,12 @@ export default function Index({ applications }: Props) {
                         </button>
                     </div>
                 </div>
+                </div>
             </div>
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Delete Applicant</DialogTitle>
                         <DialogDescription>Are you sure you want to delete this applicant? This action cannot be undone.</DialogDescription>

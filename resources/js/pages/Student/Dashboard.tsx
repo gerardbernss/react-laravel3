@@ -1,7 +1,8 @@
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Clock, FileText, GraduationCap, Megaphone, User } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, GraduationCap, Megaphone, User } from 'lucide-react';
+import { useState } from 'react';
 
 interface Props {
     student: {
@@ -18,13 +19,6 @@ interface Props {
         middle_name: string | null;
         suffix: string | null;
         email: string;
-        gender: string | null;
-        date_of_birth: string | null;
-        place_of_birth: string | null;
-        citizenship: string | null;
-        religion: string | null;
-        mobile_number: string | null;
-        present_address: string | null;
     } | null;
     application: {
         id: number;
@@ -34,18 +28,21 @@ interface Props {
         grade_level: string;
         strand: string | null;
         student_category: string | null;
-        classification: string | null;
-        learning_mode: string | null;
         application_status: string;
-        date_applied: string;
-        examination_date: string | null;
     } | null;
     studentRecord: {
         id: number;
         student_id_number: string | null;
         enrollment_status: string | null;
         enrollment_date: string | null;
-    } | null;
+    };
+    announcements: {
+        announcement_id: number;
+        title: string;
+        content: string;
+        attachment: string | null;
+        publish_start: string | null;
+    }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -55,7 +52,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ student, personalData, application, studentRecord }: Props) {
+export default function Dashboard({ student, personalData, application, studentRecord, announcements }: Props) {
+    const [openIds, setOpenIds] = useState<Set<number>>(new Set());
+
+    const toggleAnnouncement = (id: number) => {
+        setOpenIds((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return 'N/A';
         return new Date(dateStr).toLocaleDateString('en-PH', {
@@ -64,8 +71,6 @@ export default function Dashboard({ student, personalData, application, studentR
             day: 'numeric',
         });
     };
-
-    const isEnrolled = studentRecord?.enrollment_status === 'enrolled';
 
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>
@@ -115,24 +120,77 @@ export default function Dashboard({ student, personalData, application, studentR
 
                 {/* Announcements (left) & Student Status (right) */}
                 <div className="mb-8 grid gap-6 lg:grid-cols-3">
-                    {/* Announcements Section - takes 2 columns */}
+                    {/* Announcements Section */}
                     <div className="rounded-lg border bg-white shadow-sm lg:col-span-2">
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <div className="flex items-center gap-2">
                                 <Megaphone className="h-5 w-5 text-gray-600" />
                                 <h2 className="text-lg font-semibold text-gray-900">Announcements</h2>
+                                {announcements.length > 0 && (
+                                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                        {announcements.length}
+                                    </span>
+                                )}
                             </div>
                         </div>
-                        <div className="p-6">
-                            <div className="flex flex-col items-center justify-center py-8 text-center">
-                                <Megaphone className="h-12 w-12 text-gray-300" />
-                                <p className="mt-3 text-sm text-gray-500">No announcements at this time.</p>
-                                <p className="text-xs text-gray-400">Check back later for updates and important notices.</p>
-                            </div>
+                        <div className="max-h-96 divide-y overflow-y-auto">
+                            {announcements.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-8 text-center">
+                                    <Megaphone className="h-12 w-12 text-gray-300" />
+                                    <p className="mt-3 text-sm text-gray-500">No announcements at this time.</p>
+                                    <p className="text-xs text-gray-400">Check back later for updates and important notices.</p>
+                                </div>
+                            ) : (
+                                announcements.map((a) => {
+                                    const isOpen = openIds.has(a.announcement_id);
+                                    return (
+                                        <div key={a.announcement_id} className="border-b last:border-b-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleAnnouncement(a.announcement_id)}
+                                                className="w-full px-5 py-4 text-left transition-colors hover:bg-gray-50"
+                                            >
+                                                <div className="mb-1.5 flex items-start justify-between gap-3">
+                                                    <p className="font-semibold text-gray-900">{a.title}</p>
+                                                    <div className="flex shrink-0 items-center gap-1.5">
+                                                        {a.publish_start && (
+                                                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                                                                {new Date(a.publish_start).toLocaleDateString('en-PH', {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric',
+                                                                })}
+                                                            </span>
+                                                        )}
+                                                        <ChevronDown
+                                                            className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className={`text-sm text-gray-600 ${isOpen ? 'whitespace-pre-line' : 'line-clamp-2'}`}>
+                                                    {a.content}
+                                                </p>
+                                            </button>
+                                            {isOpen && a.attachment && (
+                                                <div className="px-5 pb-4">
+                                                    <a
+                                                        href={`/storage/${a.attachment}`}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                                                    >
+                                                        📎 View attachment
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
 
-                    {/* Student Status Section - takes 1 column */}
+                    {/* Student Status */}
                     <div className="rounded-lg border bg-white shadow-sm">
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <div className="flex items-center gap-2">
@@ -142,8 +200,7 @@ export default function Dashboard({ student, personalData, application, studentR
                         </div>
                         <div className="p-6">
                             <div className="space-y-5">
-                                {/* Student ID */}
-                                {studentRecord?.student_id_number && (
+                                {studentRecord.student_id_number && (
                                     <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
                                         <GraduationCap className="mx-auto h-8 w-8 text-primary" />
                                         <p className="mt-2 text-xs font-medium text-gray-500 uppercase">Student ID</p>
@@ -151,26 +208,12 @@ export default function Dashboard({ student, personalData, application, studentR
                                     </div>
                                 )}
 
-                                {/* Enrollment Status Banner */}
-                                <div
-                                    className={`rounded-lg p-4 text-center ${
-                                        isEnrolled ? 'border border-green-200 bg-green-50' : 'border border-yellow-200 bg-yellow-50'
-                                    }`}
-                                >
-                                    {isEnrolled ? (
-                                        <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
-                                    ) : (
-                                        <Clock className="mx-auto h-10 w-10 text-yellow-500" />
-                                    )}
-                                    <p className={`mt-2 text-lg font-bold ${isEnrolled ? 'text-green-700' : 'text-yellow-700'}`}>
-                                        {isEnrolled ? 'Enrolled' : 'Pending Enrollment'}
-                                    </p>
-                                    <p className={`text-xs ${isEnrolled ? 'text-green-600' : 'text-yellow-600'}`}>
-                                        {isEnrolled ? 'You are officially enrolled this semester.' : 'Please complete the enrollment process.'}
-                                    </p>
+                                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                                    <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+                                    <p className="mt-2 text-lg font-bold text-green-700">Enrolled</p>
+                                    <p className="text-xs text-green-600">You are officially enrolled this semester.</p>
                                 </div>
 
-                                {/* Grade Level */}
                                 {application?.grade_level && (
                                     <div>
                                         <p className="text-xs font-medium text-gray-500 uppercase">Grade Level</p>
@@ -178,7 +221,6 @@ export default function Dashboard({ student, personalData, application, studentR
                                     </div>
                                 )}
 
-                                {/* Strand / Track */}
                                 {application?.strand && (
                                     <div>
                                         <p className="text-xs font-medium text-gray-500 uppercase">Strand / Track</p>
@@ -186,7 +228,6 @@ export default function Dashboard({ student, personalData, application, studentR
                                     </div>
                                 )}
 
-                                {/* School Year */}
                                 {application?.school_year && (
                                     <div>
                                         <p className="text-xs font-medium text-gray-500 uppercase">School Year</p>
@@ -194,8 +235,7 @@ export default function Dashboard({ student, personalData, application, studentR
                                     </div>
                                 )}
 
-                                {/* Enrollment Date */}
-                                {studentRecord?.enrollment_date && (
+                                {studentRecord.enrollment_date && (
                                     <div>
                                         <p className="text-xs font-medium text-gray-500 uppercase">Enrolled On</p>
                                         <p className="mt-1 font-medium text-gray-900">{formatDate(studentRecord.enrollment_date)}</p>
@@ -203,51 +243,6 @@ export default function Dashboard({ student, personalData, application, studentR
                                 )}
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                {/* Quick Links */}
-                <div>
-                    <h2 className="mb-4 text-lg font-semibold text-gray-900">Quick Links</h2>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <a
-                            href="/student/enrollment"
-                            className="flex items-center gap-3 rounded-lg border bg-white p-4 shadow-sm transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
-                        >
-                            <div className="rounded-lg bg-blue-100 p-2">
-                                <FileText className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-gray-900">Enrollment</p>
-                                <p className="text-sm text-gray-500">Proceed with enrollment</p>
-                            </div>
-                        </a>
-
-                        <a
-                            href="/student/personal-info"
-                            className="flex items-center gap-3 rounded-lg border bg-white p-4 shadow-sm transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
-                        >
-                            <div className="rounded-lg bg-green-100 p-2">
-                                <User className="h-5 w-5 text-green-600" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-gray-900">Personal Information</p>
-                                <p className="text-sm text-gray-500">View and update your info</p>
-                            </div>
-                        </a>
-
-                        <a
-                            href="/student/change-password"
-                            className="flex items-center gap-3 rounded-lg border bg-white p-4 shadow-sm transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:shadow-md"
-                        >
-                            <div className="rounded-lg bg-purple-100 p-2">
-                                <Clock className="h-5 w-5 text-purple-600" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-gray-900">Change Password</p>
-                                <p className="text-sm text-gray-500">Update your login credentials</p>
-                            </div>
-                        </a>
                     </div>
                 </div>
             </div>

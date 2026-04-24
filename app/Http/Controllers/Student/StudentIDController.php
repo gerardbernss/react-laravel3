@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 
 use App\Mail\Admissions\StudentAdmissionsMail;
-use App\Models\ApplicantApplicationInfo;
+use App\Models\Applicant;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -16,7 +16,7 @@ class StudentIDController extends Controller
     // Display all applications with full relationships.
     public function index()
     {
-        $applications = ApplicantApplicationInfo::with([
+        $applications = Applicant::with([
             'personalData.student',
         ])
             ->get();
@@ -75,7 +75,7 @@ class StudentIDController extends Controller
     {
         try {
             // First, find the application and its related student
-            $application = ApplicantApplicationInfo::with([
+            $application = Applicant::with([
                 'personalData.student',
             ])->findOrFail($request->applicant_id);
 
@@ -83,7 +83,7 @@ class StudentIDController extends Controller
 
             // Validate with conditional uniqueness rule
             $validated = $request->validate([
-                'applicant_id'   => 'required|integer|exists:applicant_application_info,id',
+                'applicant_id'   => 'required|integer|exists:applicants,id',
                 'student_number' => [
                     'required',
                     'string',
@@ -96,14 +96,15 @@ class StudentIDController extends Controller
             if ($student) {
                 // Update existing student record
                 $student->update([
-                    'student_id_number' => $validated['student_number'],
+                    'student_id_number'             => $validated['student_number'],
+                    'applicant_id' => $student->applicant_id ?? $application->id,
                 ]);
             } else {
                 // Create new student record if it doesn't exist
                 Student::create([
-                    'applicant_personal_data_id' => $application->personalData->id,
-                    'student_id_number'          => $validated['student_number'],
-                    // Add other required fields here
+                    'applicant_personal_data_id'    => $application->personalData->id,
+                    'applicant_id' => $application->id,
+                    'student_id_number'             => $validated['student_number'],
                 ]);
             }
 
@@ -120,7 +121,7 @@ class StudentIDController extends Controller
     public function emailStudentID($id)
     {
         try {
-            $application = ApplicantApplicationInfo::with('personalData')->findOrFail($id);
+            $application = Applicant::with('personalData')->findOrFail($id);
 
             if (! $application->personalData || ! $application->personalData->email) {
                 return response()->json([

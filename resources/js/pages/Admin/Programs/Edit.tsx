@@ -13,7 +13,6 @@ interface Program {
     code: string;
     description: string;
     school: string;
-    vocational: boolean;
     is_active: boolean;
     max_load: number;
 }
@@ -35,7 +34,6 @@ export default function Edit({ program, schools }: Props) {
         code: program.code,
         description: program.description,
         school: program.school,
-        vocational: program.vocational,
         is_active: program.is_active,
         max_load: program.max_load,
     });
@@ -126,20 +124,6 @@ export default function Edit({ program, schools }: Props) {
                                         Maximum number of units a student can enroll in per enrollment period
                                     </p>
                                 </div>
-                            </div>
-
-                            {/* Vocational */}
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="vocational"
-                                    checked={data.vocational}
-                                    onChange={(e) => setData('vocational', e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <Label htmlFor="vocational" className="cursor-pointer">
-                                    Vocational Program
-                                </Label>
                             </div>
 
                             {/* Active Status */}

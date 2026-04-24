@@ -53,7 +53,7 @@ class ApplicantPersonalData extends Model
     //1 student -> many applications
     public function applications()
     {
-        return $this->hasMany(ApplicantApplicationInfo::class, 'applicant_personal_data_id');
+        return $this->hasMany(Applicant::class, 'applicant_personal_data_id');
     }
 
     public function familyBackground()

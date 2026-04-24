@@ -44,9 +44,9 @@ interface Props {
         category?: string;
     };
     statistics: {
-        total: number;
         pending: number;
         enrolled: number;
+        total: number;
     };
 }
 
@@ -92,21 +92,10 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                 {/* Header */}
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Enrollment Management</h1>
-                    <p className="mt-1 text-gray-600">Manage applicants with Pending and Enrolled status</p>
                 </div>
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600">Total Applicants</p>
-                                <p className="text-3xl font-bold text-gray-900">{statistics?.total || 0}</p>
-                            </div>
-                            <Users className="h-8 w-8 text-blue-600" />
-                        </div>
-                    </div>
-
                     <div className="rounded-lg border bg-white p-6 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
@@ -124,6 +113,16 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                                 <p className="text-3xl font-bold text-green-600">{statistics?.enrolled || 0}</p>
                             </div>
                             <CheckCircle className="h-8 w-8 text-green-600" />
+                        </div>
+                    </div>
+
+                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Total</p>
+                                <p className="text-3xl font-bold text-gray-900">{statistics?.total || 0}</p>
+                            </div>
+                            <Users className="h-8 w-8 text-blue-600" />
                         </div>
                     </div>
                 </div>

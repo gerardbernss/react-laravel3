@@ -23,7 +23,6 @@ export default function Create({ schools }: Props) {
         code: '',
         description: '',
         school: 'Senior High School',
-        vocational: false,
         is_active: true,
         max_load: 30,
     });
@@ -112,20 +111,6 @@ export default function Create({ schools }: Props) {
                                         Maximum number of units a student can enroll in per enrollment period
                                     </p>
                                 </div>
-                            </div>
-
-                            {/* Vocational */}
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="vocational"
-                                    checked={data.vocational}
-                                    onChange={(e) => setData('vocational', e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <Label htmlFor="vocational" className="cursor-pointer">
-                                    Vocational Program
-                                </Label>
                             </div>
 
                             {/* Active Status */}

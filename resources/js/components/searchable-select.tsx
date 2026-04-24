@@ -41,7 +41,7 @@ export function SearchableSelect({
                     disabled={disabled}
                     className={cn('w-full justify-between', !value && 'text-muted-foreground')}
                 >
-                    {value ? options.find((option) => option.value === value)?.label || 'Select option' : placeholder}
+                    {value ? options.find((option) => option.value === value)?.label || value : placeholder}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>

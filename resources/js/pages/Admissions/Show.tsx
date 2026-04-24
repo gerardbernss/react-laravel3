@@ -1,8 +1,11 @@
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
+    ClipboardCheck,
     ClipboardList,
     Download,
     Edit,
@@ -33,6 +36,10 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
     const [activeSection, setActiveSection] = useState('application');
     const [open, setOpen] = useState(false);
     const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+    const [evaluateOpen, setEvaluateOpen] = useState(false);
+    const [evaluating, setEvaluating] = useState(false);
+    const [evalOutcome, setEvalOutcome] = useState<'approve' | 'revise' | 'reject' | ''>('');
+    const [evalRemarks, setEvalRemarks] = useState<string>(applicant.remarks ?? '');
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Applicant List', href: '/admissions/applicants' },
@@ -73,6 +80,42 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
     const handleFinalResult = () => sendEmail('final-result');
     const handleConfirmationEmail = () => sendEmail('confirmation-email');
     const handlePortalPassword = () => sendEmail('portal-password');
+
+    const handleEvaluate = async () => {
+        if (!evalOutcome) {
+            toast.warning('Please select an evaluation outcome.');
+            return;
+        }
+        if (evalOutcome === 'revise' && !evalRemarks.trim()) {
+            toast.warning('Please describe what needs to be revised.');
+            return;
+        }
+        setEvaluating(true);
+        try {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            const response = await fetch(`/admissions/applicants/${applicant.id}/evaluate`, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                },
+                body: JSON.stringify({ evaluation: evalOutcome, remarks: evalRemarks }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                toast.success(data.message || 'Application evaluated successfully.');
+                setEvaluateOpen(false);
+                router.reload({ only: ['applicant'] });
+            } else {
+                toast.error(data.message || 'Failed to evaluate application.');
+            }
+        } catch {
+            toast.error('An error occurred. Please try again.');
+        } finally {
+            setEvaluating(false);
+        }
+    };
 
     const FormNavigation = () => {
         const [activeSection, setActiveSection] = React.useState('application');
@@ -173,6 +216,10 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
         const colors: Record<string, string> = {
             Enrolled: 'bg-green-100 text-green-800',
             Pending: 'bg-yellow-100 text-yellow-800',
+            'For Exam': 'bg-blue-100 text-blue-800',
+            'For Revision': 'bg-orange-100 text-orange-800',
+            Rejected: 'bg-red-100 text-red-800',
+            Approved: 'bg-indigo-100 text-indigo-800',
             ExamTaken: 'bg-blue-100 text-blue-800',
         };
         return <span className={`rounded-full px-3 py-1 text-sm font-medium ${colors[status] || 'bg-gray-100 text-gray-800'}`}>{status}</span>;
@@ -205,6 +252,17 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 </div>
                             </div>
                             <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        setEvalRemarks(applicant.remarks ?? '');
+                                        setEvalOutcome('');
+                                        setEvaluateOpen(true);
+                                    }}
+                                    className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#052550]"
+                                >
+                                    <ClipboardCheck className="h-4 w-4" />
+                                    Evaluate
+                                </button>
                                 <button
                                     onClick={handleFinalResult}
                                     disabled={sendingEmail !== null}
@@ -356,67 +414,73 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 <h2 className="text-xl font-bold text-white">Family Background</h2>
                             </div>
                             <div className="p-6">
-                                <div className="mb-6">
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Father's Details</h3>
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <InfoRow
-                                            label="Full Name"
-                                            value={`${applicant.personal_data.family_background.father_fname || ''} ${applicant.personal_data.family_background.father_lname || ''}`}
-                                        />
-                                        <InfoRow label="Citizenship" value={applicant.personal_data.family_background.father_citizenship} />
-                                        <InfoRow label="Religion" value={applicant.personal_data.family_background.father_religion} />
-                                        <InfoRow label="Education" value={applicant.personal_data.family_background.father_highest_educ} />
-                                        <InfoRow label="Occupation" value={applicant.personal_data.family_background.father_occupation} />
-                                        <InfoRow label="Monthly Income" value={applicant.personal_data.family_background.father_income} />
-                                        <InfoRow label="Contact Number" value={applicant.personal_data.family_background.father_contact_no} />
-                                        <InfoRow label="Email" value={applicant.personal_data.family_background.father_email} />
-                                    </div>
-                                </div>
+                                {applicant.personal_data.family_background ? (
+                                    <>
+                                        <div className="mb-6">
+                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Father's Details</h3>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <InfoRow
+                                                    label="Full Name"
+                                                    value={`${applicant.personal_data.family_background.father_fname || ''} ${applicant.personal_data.family_background.father_lname || ''}`}
+                                                />
+                                                <InfoRow label="Citizenship" value={applicant.personal_data.family_background.father_citizenship} />
+                                                <InfoRow label="Religion" value={applicant.personal_data.family_background.father_religion} />
+                                                <InfoRow label="Education" value={applicant.personal_data.family_background.father_highest_educ} />
+                                                <InfoRow label="Occupation" value={applicant.personal_data.family_background.father_occupation} />
+                                                <InfoRow label="Monthly Income" value={applicant.personal_data.family_background.father_income} />
+                                                <InfoRow label="Contact Number" value={applicant.personal_data.family_background.father_contact_no} />
+                                                <InfoRow label="Email" value={applicant.personal_data.family_background.father_email} />
+                                            </div>
+                                        </div>
 
-                                <div className="mb-6">
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Mother's Details</h3>
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <InfoRow
-                                            label="Full Name"
-                                            value={`${applicant.personal_data.family_background.mother_fname || ''} ${applicant.personal_data.family_background.mother_lname || ''}`}
-                                        />
-                                        <InfoRow label="Citizenship" value={applicant.personal_data.family_background.mother_citizenship} />
-                                        <InfoRow label="Religion" value={applicant.personal_data.family_background.mother_religion} />
-                                        <InfoRow label="Education" value={applicant.personal_data.family_background.mother_highest_educ} />
-                                        <InfoRow label="Occupation" value={applicant.personal_data.family_background.mother_occupation} />
-                                        <InfoRow label="Monthly Income" value={applicant.personal_data.family_background.mother_income} />
-                                        <InfoRow label="Contact Number" value={applicant.personal_data.family_background.mother_contact_no} />
-                                        <InfoRow label="Email" value={applicant.personal_data.family_background.mother_email} />
-                                    </div>
-                                </div>
+                                        <div className="mb-6">
+                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Mother's Details</h3>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <InfoRow
+                                                    label="Full Name"
+                                                    value={`${applicant.personal_data.family_background.mother_fname || ''} ${applicant.personal_data.family_background.mother_lname || ''}`}
+                                                />
+                                                <InfoRow label="Citizenship" value={applicant.personal_data.family_background.mother_citizenship} />
+                                                <InfoRow label="Religion" value={applicant.personal_data.family_background.mother_religion} />
+                                                <InfoRow label="Education" value={applicant.personal_data.family_background.mother_highest_educ} />
+                                                <InfoRow label="Occupation" value={applicant.personal_data.family_background.mother_occupation} />
+                                                <InfoRow label="Monthly Income" value={applicant.personal_data.family_background.mother_income} />
+                                                <InfoRow label="Contact Number" value={applicant.personal_data.family_background.mother_contact_no} />
+                                                <InfoRow label="Email" value={applicant.personal_data.family_background.mother_email} />
+                                            </div>
+                                        </div>
 
-                                <div className="mb-6">
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Guardian's Details</h3>
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <InfoRow
-                                            label="Full Name"
-                                            value={`${applicant.personal_data.family_background.guardian_fname || ''} ${applicant.personal_data.family_background.guardian_lname || ''}`}
-                                        />
-                                        <InfoRow label="Citizenship" value={applicant.personal_data.family_background.guardian_relationship} />
-                                        <InfoRow label="Citizenship" value={applicant.personal_data.family_background.guardian_citizenship} />
-                                        <InfoRow label="Religion" value={applicant.personal_data.family_background.guardian_religion} />
-                                        <InfoRow label="Education" value={applicant.personal_data.family_background.guardian_highest_educ} />
-                                        <InfoRow label="Occupation" value={applicant.personal_data.family_background.guardian_occupation} />
-                                        <InfoRow label="Monthly Income" value={applicant.personal_data.family_background.guardian_income} />
-                                        <InfoRow label="Contact Number" value={applicant.personal_data.family_background.guardian_contact_no} />
-                                        <InfoRow label="Email" value={applicant.personal_data.family_background.guardian_email} />
-                                    </div>
-                                </div>
+                                        <div className="mb-6">
+                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Guardian's Details</h3>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <InfoRow
+                                                    label="Full Name"
+                                                    value={`${applicant.personal_data.family_background.guardian_fname || ''} ${applicant.personal_data.family_background.guardian_lname || ''}`}
+                                                />
+                                                <InfoRow label="Relationship" value={applicant.personal_data.family_background.guardian_relationship} />
+                                                <InfoRow label="Citizenship" value={applicant.personal_data.family_background.guardian_citizenship} />
+                                                <InfoRow label="Religion" value={applicant.personal_data.family_background.guardian_religion} />
+                                                <InfoRow label="Education" value={applicant.personal_data.family_background.guardian_highest_educ} />
+                                                <InfoRow label="Occupation" value={applicant.personal_data.family_background.guardian_occupation} />
+                                                <InfoRow label="Monthly Income" value={applicant.personal_data.family_background.guardian_income} />
+                                                <InfoRow label="Contact Number" value={applicant.personal_data.family_background.guardian_contact_no} />
+                                                <InfoRow label="Email" value={applicant.personal_data.family_background.guardian_email} />
+                                            </div>
+                                        </div>
 
-                                <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Emergency Contact</h3>
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <InfoRow label="Contact Person" value={applicant.personal_data.family_background.emergency_contact_name} />
-                                        <InfoRow label="Relationship" value={applicant.personal_data.family_background.emergency_relationship} />
-                                        <InfoRow label="Mobile Phone" value={applicant.personal_data.family_background.emergency_mobile_phone} />
-                                        <InfoRow label="Email" value={applicant.personal_data.family_background.emergency_email} />
-                                    </div>
-                                </div>
+                                        <div>
+                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Emergency Contact</h3>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <InfoRow label="Contact Person" value={applicant.personal_data.family_background.emergency_contact_name} />
+                                                <InfoRow label="Relationship" value={applicant.personal_data.family_background.emergency_relationship} />
+                                                <InfoRow label="Mobile Phone" value={applicant.personal_data.family_background.emergency_mobile_phone} />
+                                                <InfoRow label="Email" value={applicant.personal_data.family_background.emergency_email} />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="py-4 text-sm text-gray-500">No family background information submitted.</p>
+                                )}
                             </div>
                         </div>
 
@@ -582,6 +646,74 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                     </div>
                 </div>
             </div>
+            {/* Evaluation Dialog */}
+            <Dialog open={evaluateOpen} onOpenChange={setEvaluateOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Evaluate Application</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        <div>
+                            <p className="mb-2 text-sm font-medium text-gray-700">Evaluation Outcome</p>
+                            <div className="flex gap-2">
+                                {(
+                                    [
+                                        { key: 'approve', label: 'Approve', active: 'border-green-600 bg-green-50 text-green-700', inactive: '' },
+                                        { key: 'revise', label: 'For Revision', active: 'border-yellow-500 bg-yellow-50 text-yellow-700', inactive: '' },
+                                        { key: 'reject', label: 'Reject', active: 'border-red-600 bg-red-50 text-red-700', inactive: '' },
+                                    ] as const
+                                ).map(({ key, label, active }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setEvalOutcome(key)}
+                                        className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                                            evalOutcome === key ? active : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                                Feedback / Remarks
+                                {evalOutcome === 'revise' && <span className="ml-1 text-red-500">*</span>}
+                            </label>
+                            <Textarea
+                                value={evalRemarks}
+                                onChange={(e) => setEvalRemarks(e.target.value)}
+                                placeholder={
+                                    evalOutcome === 'revise'
+                                        ? 'Describe what the applicant needs to fix (e.g., "Please reupload a clearer photo of your birth certificate").'
+                                        : 'Optional message to the student...'
+                                }
+                                rows={4}
+                                className="resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <button
+                            onClick={() => setEvaluateOpen(false)}
+                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleEvaluate}
+                            disabled={evaluating || !evalOutcome}
+                            className="flex items-center gap-2 rounded-lg bg-[#073066] px-4 py-2 text-sm font-medium text-white hover:bg-[#052550] disabled:opacity-50"
+                        >
+                            {evaluating && <Loader className="h-4 w-4 animate-spin" />}
+                            {evaluating ? 'Saving...' : 'Submit Evaluation'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

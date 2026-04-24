@@ -1,22 +1,27 @@
 <?php
 
-use App\Http\Controllers\Admissions\ApplicantController2;
+use App\Http\Controllers\Admissions\ApplicationController;
 use App\Http\Controllers\Admissions\ApplicantController;
 use App\Http\Controllers\Admin\ApplicantExamAssignmentController;
 use App\Http\Controllers\Admin\BlockSectionsController;
+use App\Http\Controllers\Admin\StudentsController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EnrollmentPeriodController;
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\GradesController;
+use App\Http\Controllers\Admin\MyStudentsController;
 use App\Http\Controllers\Admin\DiscountTypeController;
 use App\Http\Controllers\Admin\ExaminationRoomsController;
 use App\Http\Controllers\Admin\ExamSchedulesController;
-use App\Http\Controllers\Admin\FeeRateController;
-use App\Http\Controllers\Admin\FeeTypeController;
+use App\Http\Controllers\Admin\FeeController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\ProgramsController;
 use App\Http\Controllers\Admin\SubjectsController;
 use App\Http\Controllers\Student\StudentIDController;
+use App\Http\Controllers\Admin\AnnouncementsController;
+use App\Http\Controllers\Admin\SemesterPeriodController;
+use App\Http\Controllers\Admin\StudentAssessmentsController;
 use App\Http\Controllers\Admin\UsersController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -40,20 +45,17 @@ Route::get('/test-cors', function () {
  * These routes are accessible without authentication
  */
 Route::prefix('applications')->name('applications.')->group(function () {
-    Route::get('/start', [ApplicantController2::class, 'start'])->name('applications.start');
-    Route::get('/apply-shs', [ApplicantController2::class, 'createSHS'])->name('applications.shs');
-    Route::get('/apply-jhs', [ApplicantController2::class, 'createJHS'])->name('applications.jhs');
-    Route::get('/apply-les', [ApplicantController2::class, 'createLES'])->name('applications.les');
+    Route::get('/start', [ApplicationController::class, 'start'])->name('applications.start');
+    Route::get('/apply-shs', [ApplicationController::class, 'createSHS'])->name('applications.shs');
+    Route::get('/apply-jhs', [ApplicationController::class, 'createJHS'])->name('applications.jhs');
+    Route::get('/apply-les', [ApplicationController::class, 'createLES'])->name('applications.les');
 
-    Route::post('/apply-shs', [ApplicantController2::class, 'storeSHS'])->name('applications.shs.store');
-    Route::post('/apply-jhs', [ApplicantController2::class, 'storeJHS'])->name('applications.jhs.store');
-    Route::post('/apply-les', [ApplicantController2::class, 'storeLES'])->name('applications.les.store');
+    Route::post('/apply-shs', [ApplicationController::class, 'storeSHS'])->name('applications.shs.store');
+    Route::post('/apply-jhs', [ApplicationController::class, 'storeJHS'])->name('applications.jhs.store');
+    Route::post('/apply-les', [ApplicationController::class, 'storeLES'])->name('applications.les.store');
 
-    Route::post('/check-email', [ApplicantController2::class, 'checkEmail'])->name('check-email');
-
-    // Route::get('/create', [ApplicantController2::class, 'create'])->name('create');
-    // Route::post('/applicants', [ApplicantController2::class, 'store'])->name('store');
-    Route::get('/success', [ApplicantController2::class, 'success'])->name('success');
+    Route::post('/check-email', [ApplicationController::class, 'checkEmail'])->name('check-email');
+    Route::get('/success', [ApplicationController::class, 'success'])->name('success');
 });
 
 /**
@@ -76,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admissions/applicants/{id}/send-final-result', [ApplicantController::class, 'sendFinalResult'])->name('applicants.send-final-result');
         Route::post('/admissions/applicants/{id}/send-confirmation-email', [ApplicantController::class, 'sendConfirmationEmail'])->name('applicants.send-confirmation-email');
         Route::post('/admissions/applicants/{id}/send-portal-password', [ApplicantController::class, 'sendPortalPassword'])->name('applicants.send-portal-password');
+        Route::post('/admissions/applicants/{id}/evaluate', [ApplicantController::class, 'evaluate'])->name('applicants.evaluate');
 
         Route::get('/view-document/{path}', function ($path) {
             $decodedPath = base64_decode($path);
@@ -172,12 +175,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('subjects', SubjectsController::class);
     Route::post('/subjects/{subject}/toggle-status', [SubjectsController::class, 'toggleStatus'])->name('subjects.toggle-status');
 
+    // Student Management Routes
+    Route::resource('students', StudentsController::class)->names([
+        'index'   => 'admin.students.index',
+        'create'  => 'admin.students.create',
+        'store'   => 'admin.students.store',
+        'show'    => 'admin.students.show',
+        'edit'    => 'admin.students.edit',
+        'update'  => 'admin.students.update',
+        'destroy' => 'admin.students.destroy',
+    ]);
+
     // Block Section Management Routes
     Route::resource('block-sections', BlockSectionsController::class);
     Route::post('/block-sections/{blockSection}/toggle-status', [BlockSectionsController::class, 'toggleStatus'])->name('block-sections.toggle-status');
+    Route::post('/block-sections/{blockSection}/add-student', [BlockSectionsController::class, 'addStudent'])->name('block-sections.add-student');
+    Route::delete('/block-sections/{blockSection}/students/{studentEnrollment}', [BlockSectionsController::class, 'removeStudent'])->name('block-sections.remove-student');
+
+    // Enrollment Period Management Routes
+    Route::get('/enrollment-periods', [EnrollmentPeriodController::class, 'index'])->name('enrollment-periods.index');
+    Route::post('/enrollment-periods', [EnrollmentPeriodController::class, 'store'])->name('enrollment-periods.store');
+    Route::put('/enrollment-periods/{period}', [EnrollmentPeriodController::class, 'update'])->name('enrollment-periods.update');
+    Route::post('/enrollment-periods/{period}/open', [EnrollmentPeriodController::class, 'open'])->name('enrollment-periods.open');
+    Route::post('/enrollment-periods/{period}/close', [EnrollmentPeriodController::class, 'close'])->name('enrollment-periods.close');
+    Route::delete('/enrollment-periods/{period}', [EnrollmentPeriodController::class, 'destroy'])->name('enrollment-periods.destroy');
 
     // Program Management Routes
-    Route::resource('programs', ProgramsController::class);
+    Route::resource('programs', ProgramsController::class)->except(['show']);
     Route::post('/programs/{program}/toggle-status', [ProgramsController::class, 'toggleStatus'])->name('programs.toggle-status');
 
     // Examination Rooms Management Routes
@@ -200,6 +224,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:view-grades'])->group(function () {
         Route::get('/grades', [GradesController::class, 'index'])->name('grades.index');
         Route::get('/grades/{blockSection}', [GradesController::class, 'show'])->name('grades.show');
+        Route::get('/grades/{blockSection}/student/{studentEnrollment}', [GradesController::class, 'showStudent'])->name('grades.student');
+        Route::get('/my-students/{blockSection}', [MyStudentsController::class, 'show'])->name('my-students.show');
     });
 
     Route::middleware(['permission:manage-grades'])->group(function () {
@@ -209,6 +235,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Attendance Management Routes
     Route::middleware(['permission:view-attendance'])->group(function () {
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/grade/{gradeLevel}', [AttendanceController::class, 'showGrade'])->name('attendance.grade');
+        Route::get('/attendance/{blockSection}/history', [AttendanceController::class, 'history'])->name('attendance.history');
         Route::get('/attendance/{blockSection}', [AttendanceController::class, 'show'])->name('attendance.show');
     });
 
@@ -218,18 +246,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Fee Management Routes
     Route::prefix('admin')->name('admin.')->group(function () {
-        // Fee Types
-        Route::resource('fee-types', FeeTypeController::class);
-        Route::post('/fee-types/{feeType}/toggle-status', [FeeTypeController::class, 'toggleStatus'])->name('fee-types.toggle-status');
-
-        // Fee Rates
-        Route::resource('fee-rates', FeeRateController::class);
-        Route::post('/fee-rates/{feeRate}/toggle-status', [FeeRateController::class, 'toggleStatus'])->name('fee-rates.toggle-status');
-        Route::post('/fee-rates/copy-from-year', [FeeRateController::class, 'copyFromYear'])->name('fee-rates.copy-from-year');
+        // Fees
+        Route::post('/fees/copy-from-year', [FeeController::class, 'copyFromYear'])->name('fees.copy-from-year');
+        Route::resource('fees', FeeController::class);
+        Route::post('/fees/{fee}/toggle-status', [FeeController::class, 'toggleStatus'])->name('fees.toggle-status');
 
         // Discount Types
         Route::resource('discount-types', DiscountTypeController::class);
         Route::post('/discount-types/{discountType}/toggle-status', [DiscountTypeController::class, 'toggleStatus'])->name('discount-types.toggle-status');
+
+        // Announcements
+        Route::resource('announcements', AnnouncementsController::class);
+
+        // Semester Periods
+        Route::get('semester-periods', [SemesterPeriodController::class, 'index'])->name('semester-periods.index');
+        Route::put('semester-periods/{semesterPeriod}', [SemesterPeriodController::class, 'update'])->name('semester-periods.update');
+
+        // Finance — Student Assessments & Payments
+        Route::get('finance/assessments', [StudentAssessmentsController::class, 'index'])->name('finance.assessments.index');
+        Route::get('finance/assessments/{assessment}', [StudentAssessmentsController::class, 'show'])->name('finance.assessments.show');
+        Route::post('finance/assessments/{assessment}/payments', [StudentAssessmentsController::class, 'processPayment'])->name('finance.assessments.payment');
+        Route::put('finance/assessments/{assessment}/payments/{payment}', [StudentAssessmentsController::class, 'updatePayment'])->name('finance.assessments.payment.update');
+        Route::delete('finance/assessments/{assessment}/payments/{payment}', [StudentAssessmentsController::class, 'deletePayment'])->name('finance.assessments.payment.delete');
+        Route::patch('finance/assessments/{assessment}/minimum-amount', [StudentAssessmentsController::class, 'updateMinimumAmount'])->name('finance.assessments.minimum-amount');
+        Route::post('finance/assessments/{assessment}/sync-status', [StudentAssessmentsController::class, 'syncStatus'])->name('finance.assessments.sync-status');
+        Route::get('finance/assessments/{assessment}/debug', [StudentAssessmentsController::class, 'debugStatus'])->name('finance.assessments.debug');
     });
 });
 

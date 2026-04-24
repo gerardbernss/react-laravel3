@@ -60,9 +60,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Register custom middleware aliases
         $middleware->alias([
-            'role'       => CheckRole::class,
-            'permission' => CheckPermission::class,
-            'guest'      => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'role'             => CheckRole::class,
+            'permission'       => CheckPermission::class,
+            'guest'            => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'student.enrolled' => \App\Http\Middleware\EnsureEnrolledStudent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

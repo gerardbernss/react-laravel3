@@ -32,7 +32,7 @@ interface Props {
 export default function Show({ discountType, discountTypeOptions, appliesToOptions }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Discount Types', href: '/admin/discount-types' },
+        { title: 'Discounts', href: '/admin/discount-types' },
         { title: discountType.name, href: `/admin/discount-types/${discountType.id}` },
     ];
 
@@ -62,7 +62,7 @@ export default function Show({ discountType, discountTypeOptions, appliesToOptio
                     <div>
                         <Link href="/admin/discount-types" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                             <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back to Discount Types
+                            Back to Discounts
                         </Link>
                         <h1 className="mt-2 text-3xl font-bold text-gray-900">{discountType.name}</h1>
                         <p className="mt-1 font-mono text-gray-600">{discountType.code}</p>

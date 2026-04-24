@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Applicant;
 use App\Models\ExamSchedule;
 use App\Models\ExaminationRoom;
 use Illuminate\Http\Request;
@@ -13,51 +14,21 @@ class ExamSchedulesController extends Controller
     /**
      * Display a listing of exam schedules.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = ExamSchedule::with('examinationRoom')
+        $schedules = ExamSchedule::with('examinationRoom')
             ->withCount(['applicantAssignments as assigned_count' => function ($q) {
                 $q->whereNotIn('status', ['cancelled']);
-            }]);
-
-        // Search filter
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('exam_type', 'like', "%{$search}%");
-            });
-        }
-
-        // Date filter
-        if ($request->filled('date_from')) {
-            $query->where('exam_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->where('exam_date', '<=', $request->date_to);
-        }
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
-
-        // Room filter
-        if ($request->filled('room_id')) {
-            $query->where('examination_room_id', $request->room_id);
-        }
-
-        $schedules = $query->orderBy('exam_date', 'desc')
+            }])
+            ->orderBy('exam_date', 'desc')
             ->orderBy('start_time')
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         $rooms = ExaminationRoom::active()->orderBy('name')->get(['id', 'name', 'building']);
 
         return Inertia::render('Admin/ExamSchedules/Index', [
             'schedules' => $schedules,
             'rooms' => $rooms,
-            'filters' => $request->only(['search', 'date_from', 'date_to', 'status', 'room_id']),
         ]);
     }
 
@@ -107,8 +78,38 @@ class ExamSchedulesController extends Controller
             'applicantAssignments.applicationInfo.personalData',
         ]);
 
+        // IDs already assigned to THIS schedule (excluding cancelled).
+        $assignedToThisSchedule = $examSchedule->applicantAssignments()
+            ->whereNotIn('status', ['cancelled'])
+            ->pluck('applicant_id')
+            ->toArray();
+
+        // For all other active assignments, build a map of applicant_id → schedule name.
+        $assignedElsewhere = \App\Models\ApplicantExamAssignment::with('examSchedule:id,name')
+            ->whereNotIn('status', ['cancelled'])
+            ->where('exam_schedule_id', '!=', $examSchedule->id)
+            ->get()
+            ->keyBy('applicant_id')
+            ->map(fn ($a) => $a->examSchedule?->name);
+
+        $availableApplicants = Applicant::with('personalData')
+            ->whereIn('application_status', ['Pending', 'For Exam'])
+            ->whereNotIn('id', $assignedToThisSchedule)
+            ->orderBy('application_number')
+            ->get()
+            ->map(fn ($a) => [
+                'id'                   => $a->id,
+                'application_number'   => $a->application_number,
+                'application_status'   => $a->application_status,
+                'first_name'           => $a->personalData?->first_name,
+                'last_name'            => $a->personalData?->last_name,
+                'middle_name'          => $a->personalData?->middle_name,
+                'assigned_to_schedule' => $assignedElsewhere->get($a->id),
+            ]);
+
         return Inertia::render('Admin/ExamSchedules/Show', [
-            'schedule' => $examSchedule,
+            'schedule'            => $examSchedule,
+            'availableApplicants' => $availableApplicants,
         ]);
     }
 

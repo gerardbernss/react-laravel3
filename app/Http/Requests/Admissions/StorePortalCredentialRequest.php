@@ -21,7 +21,7 @@ class StorePortalCredentialRequest extends FormRequest
     {
         return [
             'applicant_personal_data_id'    => 'required|exists:applicant_personal_data,id|unique:portal_credentials,applicant_personal_data_id',
-            'applicant_application_info_id' => 'required|exists:applicant_application_info,id',
+            'applicant_id' => 'required|exists:applicants,id',
             'username'                      => 'nullable|string|max:255|unique:portal_credentials,username',
             'personal_name'                 => 'nullable|string|max:255',
         ];

@@ -12,15 +12,13 @@ class Program extends Model
         'code',
         'description',
         'school',
-        'vocational',
         'is_active',
         'max_load',
     ];
 
     protected $casts = [
-        'vocational' => 'boolean',
-        'is_active'  => 'boolean',
-        'max_load'   => 'integer',
+        'is_active' => 'boolean',
+        'max_load'  => 'integer',
     ];
 
     public static $schools = [

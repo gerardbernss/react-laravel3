@@ -2,7 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { BookOpen, GraduationCap, Home, Key, User } from 'lucide-react';
+import { BookOpen, CalendarDays, ClipboardList, Download, GraduationCap, Home, Key, User } from 'lucide-react';
 import AppLogo from './app-logo';
 import { NavMain } from './nav-main';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -17,10 +17,29 @@ import {
 
 /**
  * Student portal sidebar navigation
- * Limited tabs: Dashboard, Enrollment, Personal Info
+ * Applicants see: Home, Personal Info, Change Password
+ * Enrolled students see: all items
  */
 
-const studentNavItems: NavItem[] = [
+const applicantNavItems: NavItem[] = [
+    {
+        title: 'Home',
+        href: '/applicant/dashboard',
+        icon: Home,
+    },
+    {
+        title: 'Application Information',
+        href: '/applicant/personal-info',
+        icon: User,
+    },
+    {
+        title: 'Change Password',
+        href: '/student/change-password',
+        icon: Key,
+    },
+];
+
+const enrolledNavItems: NavItem[] = [
     {
         title: 'Home',
         href: '/student/dashboard',
@@ -32,6 +51,16 @@ const studentNavItems: NavItem[] = [
         icon: GraduationCap,
     },
     {
+        title: 'Schedule',
+        href: '/student/schedule',
+        icon: CalendarDays,
+    },
+    {
+        title: 'Attendance',
+        href: '/student/attendance',
+        icon: ClipboardList,
+    },
+    {
         title: 'Personal Information',
         href: '/student/personal-info',
         icon: User,
@@ -40,6 +69,11 @@ const studentNavItems: NavItem[] = [
         title: 'Change Password',
         href: '/student/change-password',
         icon: Key,
+    },
+    {
+        title: 'Downloadable Forms',
+        href: '/student/downloadable-forms',
+        icon: Download,
     },
 ];
 
@@ -107,13 +141,21 @@ function StudentNavUser() {
 }
 
 export function StudentSidebar() {
+    const { auth } = usePage<{
+        auth: { student: { is_applicant: boolean } | null };
+    }>().props;
+
+    const isApplicant = auth.student?.is_applicant ?? true;
+    const navItems = isApplicant ? applicantNavItems : enrolledNavItems;
+    const homeHref = isApplicant ? '/applicant/dashboard' : '/student/dashboard';
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/student/dashboard" prefetch>
+                            <Link href={homeHref} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -122,7 +164,7 @@ export function StudentSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={studentNavItems} />
+                <NavMain items={navItems} />
             </SidebarContent>
 
             <SidebarFooter>

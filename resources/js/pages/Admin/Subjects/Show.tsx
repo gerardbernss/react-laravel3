@@ -15,8 +15,6 @@ interface BlockSection {
     school_year: string;
     pivot: {
         teacher: string | null;
-        schedule: string | null;
-        room: string | null;
     };
 }
 
@@ -29,7 +27,7 @@ interface Subject {
     type: string;
     grade_level: string | null;
     semester: string | null;
-    schedule: string | null;
+    default_schedule: { display: string; room: string | null } | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -131,7 +129,11 @@ export default function Show({ subject }: Props) {
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <dt className="text-sm text-gray-500">Schedule</dt>
-                                <dd className="text-sm font-medium text-gray-900">{subject.schedule || '—'}</dd>
+                                <dd className="text-sm font-medium text-gray-900">{subject.default_schedule?.display ?? '—'}</dd>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <dt className="text-sm text-gray-500">Room</dt>
+                                <dd className="text-sm font-medium text-gray-900">{subject.default_schedule?.room ?? '—'}</dd>
                             </div>
                             {subject.description && (
                                 <div className="border-t pt-4">
@@ -165,11 +167,9 @@ export default function Show({ subject }: Props) {
                                                 </Button>
                                             </Link>
                                         </div>
-                                        {(section.pivot.teacher || section.pivot.schedule || section.pivot.room) && (
+                                        {section.pivot.teacher && (
                                             <div className="mt-2 border-t pt-2 text-xs text-gray-500">
-                                                {section.pivot.teacher && <span>Teacher: {section.pivot.teacher}</span>}
-                                                {section.pivot.schedule && <span> • {section.pivot.schedule}</span>}
-                                                {section.pivot.room && <span> • Room: {section.pivot.room}</span>}
+                                                <span>Teacher: {section.pivot.teacher}</span>
                                             </div>
                                         )}
                                     </div>

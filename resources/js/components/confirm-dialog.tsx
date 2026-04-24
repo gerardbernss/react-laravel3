@@ -41,7 +41,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-md">
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
                     <AlertDialogDescription>{description}</AlertDialogDescription>

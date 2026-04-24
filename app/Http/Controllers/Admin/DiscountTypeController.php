@@ -12,35 +12,12 @@ class DiscountTypeController extends Controller
     /**
      * Display a listing of discount types.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = DiscountType::query();
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('type')) {
-            $query->where('discount_type', $request->type);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
-
-        $discountTypes = $query->orderBy('name')->paginate(15);
+        $discountTypes = DiscountType::orderBy('name')->get();
 
         return Inertia::render('Admin/DiscountTypes/Index', [
             'discountTypes' => $discountTypes,
-            'filters' => [
-                'search' => $request->search,
-                'type' => $request->type,
-                'status' => $request->status,
-            ],
             'discountTypeOptions' => DiscountType::$discountTypes,
             'appliesToOptions' => DiscountType::$appliesTo,
         ]);

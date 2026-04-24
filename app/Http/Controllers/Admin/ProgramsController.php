@@ -12,31 +12,12 @@ class ProgramsController extends Controller
     /**
      * Display a listing of programs.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = Program::query();
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('school')) {
-            $query->where('school', $request->school);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
-
-        $programs = $query->orderBy('code')->paginate(15)->withQueryString();
+        $programs = Program::orderBy('code')->get();
 
         return Inertia::render('Admin/Programs/Index', [
             'programs' => $programs,
-            'filters' => $request->only(['search', 'school', 'status']),
             'schools' => Program::$schools,
         ]);
     }
@@ -60,7 +41,6 @@ class ProgramsController extends Controller
             'code' => 'required|string|max:20|unique:programs,code',
             'description' => 'required|string|max:255',
             'school' => 'required|in:Laboratory Elementary School,Junior High School,Senior High School',
-            'vocational' => 'boolean',
             'is_active' => 'boolean',
             'max_load' => 'required|integer|min:0|max:100',
         ]);
@@ -91,7 +71,6 @@ class ProgramsController extends Controller
             'code' => 'required|string|max:20|unique:programs,code,' . $program->id,
             'description' => 'required|string|max:255',
             'school' => 'required|in:Laboratory Elementary School,Junior High School,Senior High School',
-            'vocational' => 'boolean',
             'is_active' => 'boolean',
             'max_load' => 'required|integer|min:0|max:100',
         ]);

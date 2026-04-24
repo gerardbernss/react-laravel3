@@ -317,11 +317,11 @@ export default function Index() {
                 {/* Table */}
                 {roles?.length > 0 ? (
                     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                                <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left">
+                                        <th className="px-4 py-3 text-left">
                                             <input
                                                 type="checkbox"
                                                 checked={paginatedRoles.length > 0 && selectedRows.length === paginatedRoles.length}
@@ -335,7 +335,7 @@ export default function Index() {
                                                 <th
                                                     key={String(column.key)}
                                                     onClick={() => !['permissions', 'users'].includes(column.key) && handleSort(column.key)}
-                                                    className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 ${
+                                                    className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 ${
                                                         !['permissions', 'users'].includes(column.key) ? 'cursor-pointer hover:bg-gray-100' : ''
                                                     }`}
                                                 >
@@ -351,7 +351,7 @@ export default function Index() {
                                                 </th>
                                             ))}
                                         {visibleColumns.includes('actions') && (
-                                            <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Actions
                                             </th>
                                         )}
@@ -463,26 +463,7 @@ export default function Index() {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                ) : (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
-                        <Shield className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No roles found</h3>
-                        <p className="mt-2 text-gray-600">Get started by creating your first role.</p>
-                        {hasPermission('create-roles') && (
-                            <Link href="/roles/create">
-                                <Button className="mt-4">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create Role
-                                </Button>
-                            </Link>
-                        )}
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {roles?.length > 0 && (
-                    <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
+                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
                         <div className="flex items-center gap-3">
                             <span className="text-sm text-gray-700">Rows per page:</span>
                             <select
@@ -503,41 +484,39 @@ export default function Index() {
                                 {Math.min(currentPage * pageSize, sortedRoles.length)} of {sortedRoles.length}
                             </span>
                         </div>
-
                         <div className="flex items-center gap-1">
                             <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
                                 <ChevronsLeft className="h-4 w-4" />
                             </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
-                            <span className="px-3 py-1 text-sm">
-                                Page {currentPage} of {totalPages || 1}
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                            >
+                            <span className="px-3 py-1 text-sm">Page {currentPage} of {totalPages || 1}</span>
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}>
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(totalPages)}
-                                disabled={currentPage === totalPages || totalPages === 0}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0}>
                                 <ChevronsRight className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
+                    </div>
+                ) : (
+                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+                        <Shield className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No roles found</h3>
+                        <p className="mt-2 text-gray-600">Get started by creating your first role.</p>
+                        {hasPermission('create-roles') && (
+                            <Link href="/roles/create">
+                                <Button className="mt-4">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Create Role
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
                 )}
+
             </div>
             <ConfirmDialog
                 open={deleteDialog.open}

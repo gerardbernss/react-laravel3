@@ -1,41 +1,37 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Edit, GraduationCap, Plus, Search, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import {
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronUp,
+    ChevronsLeft,
+    ChevronsRight,
+    Edit,
+    GraduationCap,
+    Plus,
+    Search,
+    Trash2,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface Program {
     id: number;
     code: string;
     description: string;
     school: string;
-    vocational: boolean;
     is_active: boolean;
     max_load: number;
     created_at: string;
 }
 
-interface PaginatedData {
-    data: Program[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    links: { url: string | null; label: string; active: boolean }[];
-}
-
 interface Props {
-    programs: PaginatedData;
-    filters: {
-        search?: string;
-        school?: string;
-        status?: string;
-    };
+    programs: Program[];
     schools: Record<string, string>;
 }
 
@@ -44,33 +40,76 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Programs', href: '/programs' },
 ];
 
-export default function Index({ programs, filters, schools }: Props) {
+type SortKey = 'code' | 'description' | 'school' | 'max_load' | 'status';
+
+export default function Index({ programs, schools }: Props) {
     const { delete: destroy, processing } = useForm();
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedSchool, setSelectedSchool] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
-    const handleSearch = (value: string) => {
-        router.get('/programs', { ...filters, search: value || undefined }, { preserveState: true });
+    const filteredItems = useMemo(() => {
+        return programs.filter((p) => {
+            const q = searchQuery.toLowerCase();
+            const matchesSearch = !q || p.code.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
+            const matchesSchool = !selectedSchool || p.school === selectedSchool;
+            const matchesStatus = !selectedStatus || (selectedStatus === 'active' ? p.is_active : !p.is_active);
+            return matchesSearch && matchesSchool && matchesStatus;
+        });
+    }, [programs, searchQuery, selectedSchool, selectedStatus]);
+
+    const sortedItems = useMemo(() => {
+        if (!sortConfig.key) return filteredItems;
+        return [...filteredItems].sort((a, b) => {
+            let aVal = '';
+            let bVal = '';
+            if (sortConfig.key === 'code') { aVal = a.code; bVal = b.code; }
+            else if (sortConfig.key === 'description') { aVal = a.description; bVal = b.description; }
+            else if (sortConfig.key === 'school') { aVal = a.school; bVal = b.school; }
+            else if (sortConfig.key === 'max_load') { aVal = String(a.max_load); bVal = String(b.max_load); }
+            else if (sortConfig.key === 'status') { aVal = a.is_active ? 'active' : 'inactive'; bVal = b.is_active ? 'active' : 'inactive'; }
+            return aVal.localeCompare(bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
+        });
+    }, [filteredItems, sortConfig]);
+
+    const totalPages = Math.ceil(sortedItems.length / pageSize);
+    const paginatedItems = useMemo(
+        () => sortedItems.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+        [sortedItems, currentPage, pageSize],
+    );
+
+    const toggleSort = (key: SortKey) =>
+        setSortConfig((prev) =>
+            prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' },
+        );
+
+    const SortIcon = ({ col }: { col: SortKey }) =>
+        sortConfig.key !== col ? (
+            <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />
+        ) : sortConfig.direction === 'asc' ? (
+            <ChevronUp className="ml-1 inline h-3 w-3" />
+        ) : (
+            <ChevronDown className="ml-1 inline h-3 w-3" />
+        );
+
+    const clearFilters = () => {
+        setSearchQuery('');
+        setSelectedSchool('');
+        setSelectedStatus('');
+        setCurrentPage(1);
     };
 
-    const handleFilter = (key: string, value: string) => {
-        router.get('/programs', { ...filters, [key]: value === 'all' ? undefined : value }, { preserveState: true });
-    };
-
-    const handleDelete = (id: number, name: string) => {
-        setDeleteDialog({ open: true, id, name });
-    };
+    const hasFilters = searchQuery || selectedSchool || selectedStatus;
 
     const confirmDelete = () => {
         destroy(`/programs/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };
-
-    const clearFilters = () => {
-        router.get('/programs');
-    };
-
-    const hasFilters = filters.search || filters.school || filters.status;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -80,8 +119,10 @@ export default function Index({ programs, filters, schools }: Props) {
                 {/* Header */}
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Programs</h1>
-                        <p className="mt-1 text-gray-600">Manage academic programs</p>
+                        <div className="flex items-center gap-3">
+                            <GraduationCap className="h-7 w-7 text-primary" />
+                            <h1 className="text-3xl font-bold text-gray-900">Programs</h1>
+                        </div>
                     </div>
                     <Link href="/programs/create">
                         <Button>
@@ -92,160 +133,142 @@ export default function Index({ programs, filters, schools }: Props) {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
-                    <div className="grid gap-4 md:grid-cols-4">
-                        {/* Search */}
-                        <div className="relative md:col-span-2">
-                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            <Input
+                <div className="mb-6 rounded-lg border bg-white p-6 shadow-sm">
+                    <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
+                        <div className="mb-3 flex h-10 w-full items-center rounded-lg border border-gray-300 bg-white md:w-[400px]">
+                            <span className="pl-3 pr-2 text-gray-500"><Search className="h-4 w-4" /></span>
+                            <input
+                                className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
                                 placeholder="Search by code or description..."
-                                defaultValue={filters.search}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                className="pl-10"
+                                value={searchQuery}
+                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                             />
                         </div>
-
-                        {/* School Filter */}
-                        <Select value={filters.school || 'all'} onValueChange={(v) => handleFilter('school', v)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="School" />
-                            </SelectTrigger>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3">
+                        <Select value={selectedSchool || 'all'} onValueChange={(v) => { setSelectedSchool(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-56"><SelectValue placeholder="School" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Schools</SelectItem>
                                 {Object.entries(schools).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                        {label}
-                                    </SelectItem>
+                                    <SelectItem key={key} value={key}>{label}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-
-                        {/* Status Filter */}
-                        <Select value={filters.status || 'all'} onValueChange={(v) => handleFilter('status', v)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
+                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="active">Active</SelectItem>
                                 <SelectItem value="inactive">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
+                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                     </div>
-
-                    {hasFilters && (
-                        <div className="mt-3 flex items-center gap-2">
-                            <span className="text-sm text-gray-500">Active filters:</span>
-                            <Button variant="ghost" size="sm" onClick={clearFilters}>
-                                <X className="mr-1 h-3 w-3" />
-                                Clear all
-                            </Button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Table */}
-                {programs.data.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
-                            <table className="w-full text-sm">
-                                <thead className="sticky top-0 z-10 bg-gray-50">
+                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
+                        <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
+                                <tr>
+                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('code')}>
+                                        Code <SortIcon col="code" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('description')}>
+                                        Description <SortIcon col="description" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('school')}>
+                                        School <SortIcon col="school" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('max_load')}>
+                                        Max Load <SortIcon col="max_load" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('status')}>
+                                        Status <SortIcon col="status" />
+                                    </th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedItems.length === 0 ? (
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Code</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                            Description
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">School</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                            Vocational
-                                        </th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Max Load</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Status</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Actions</th>
+                                        <td colSpan={6} className="px-4 py-12 text-center">
+                                            <GraduationCap className="mx-auto h-10 w-10 text-gray-300" />
+                                            <p className="mt-2 text-gray-500">
+                                                {hasFilters ? 'No programs match your filters.' : 'No programs found.'}
+                                            </p>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {programs.data.map((program) => (
-                                        <tr key={program.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-medium text-gray-900">{program.code}</td>
-                                            <td className="px-4 py-3 text-gray-900">{program.description}</td>
-                                            <td className="px-4 py-3 text-gray-600">{program.school}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <Badge variant="outline" className={program.vocational ? 'bg-purple-50 text-purple-700' : ''}>
-                                                    {program.vocational ? 'Yes' : 'No'}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">{program.max_load}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <Badge className={program.is_active ? 'bg-green-100 text-green-800' : ''}>
-                                                    {program.is_active ? 'Active' : 'Inactive'}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center gap-1">
-                                                    <Link href={`/programs/${program.id}/edit`}>
-                                                        <Button variant="outline" size="sm">
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(program.id, program.code)}
-                                                        disabled={processing}
-                                                        className="text-red-600 hover:text-red-700"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ) : paginatedItems.map((program) => (
+                                    <tr key={program.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
+                                        <td className="px-4 py-3 font-medium text-gray-900">{program.code}</td>
+                                        <td className="px-4 py-3 text-gray-900">{program.description}</td>
+                                        <td className="px-4 py-3 text-gray-600">{program.school}</td>
+                                        <td className="px-4 py-3 text-center">{program.max_load}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <Badge className={program.is_active ? 'bg-green-100 text-green-800' : ''}>
+                                                {program.is_active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex justify-center gap-1">
+                                                <Link href={`/programs/${program.id}/edit`}>
+                                                    <Button variant="outline" size="sm"><Edit className="h-4 w-4" /></Button>
+                                                </Link>
+                                                <Button
+                                                    variant="outline" size="sm"
+                                                    onClick={() => setDeleteDialog({ open: true, id: program.id, name: program.code })}
+                                                    disabled={processing}
+                                                    className="text-red-600 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        {/* Pagination */}
-                        {programs.last_page > 1 && (
-                            <div className="flex items-center justify-between border-t px-4 py-3">
-                                <p className="text-sm text-gray-600">
-                                    Showing {(programs.current_page - 1) * programs.per_page + 1} to{' '}
-                                    {Math.min(programs.current_page * programs.per_page, programs.total)} of {programs.total} results
-                                </p>
-                                <div className="flex gap-1">
-                                    {programs.links.map((link, index) => (
-                                        <Button
-                                            key={index}
-                                            variant={link.active ? 'default' : 'outline'}
-                                            size="sm"
-                                            disabled={!link.url}
-                                            onClick={() => link.url && router.get(link.url)}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                    {/* Pagination Bar */}
+                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-700">Rows per page:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none"
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={25}>25</option>
+                                <option value={50}>50</option>
+                            </select>
+                            <span className="text-sm text-gray-700">
+                                {sortedItems.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, sortedItems.length)} of {sortedItems.length}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronsLeft className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <span className="px-4 py-2 text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
+                            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronsRight className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
-                ) : (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
-                        <GraduationCap className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No programs found</h3>
-                        <p className="mt-2 text-gray-600">
-                            {hasFilters
-                                ? 'No programs match your filters. Try adjusting your search criteria.'
-                                : 'Get started by creating your first program.'}
-                        </p>
-                        {!hasFilters && (
-                            <Link href="/programs/create">
-                                <Button className="mt-4">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Program
-                                </Button>
-                            </Link>
-                        )}
-                    </div>
-                )}
+                </div>
             </div>
 
             <ConfirmDialog

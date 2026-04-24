@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Subject extends Model
 {
@@ -18,8 +20,6 @@ class Subject extends Model
         'grade_level',
         'strand',
         'semester',
-        'schedule',
-        'room',
         'user_id',
         'is_active',
     ];
@@ -41,6 +41,21 @@ class Subject extends Model
     public function faculty()
     {
         return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
+    }
+
+    public function defaultSchedule(): HasOne
+    {
+        return $this->hasOne(Schedule::class)->whereNull('block_section_id');
+    }
+
+    public function scheduleFor(int $blockSectionId): ?Schedule
+    {
+        return $this->schedules()->where('block_section_id', $blockSectionId)->first();
     }
 
     /**

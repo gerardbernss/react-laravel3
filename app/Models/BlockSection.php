@@ -39,9 +39,14 @@ class BlockSection extends Model
             ->withTimestamps();
     }
 
-    public function students()
+    public function enrollments()
     {
-        return $this->hasMany(Student::class);
+        return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class);
     }
 
     /**

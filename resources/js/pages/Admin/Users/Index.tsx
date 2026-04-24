@@ -309,11 +309,11 @@ export default function Index() {
 
                 {/* Table */}
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left">
+                                    <th className="px-4 py-3 text-left">
                                         <input
                                             type="checkbox"
                                             checked={paginatedUsers.length > 0 && selectedRows.length === paginatedUsers.length}
@@ -327,7 +327,7 @@ export default function Index() {
                                             <th
                                                 key={String(column.key)}
                                                 onClick={() => column.key !== 'roles' && handleSort(column.key)}
-                                                className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 ${
+                                                className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 ${
                                                     column.key !== 'roles' ? 'cursor-pointer hover:bg-gray-100' : ''
                                                 }`}
                                             >
@@ -343,7 +343,7 @@ export default function Index() {
                                             </th>
                                         ))}
                                     {visibleColumns.includes('actions') && (
-                                        <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                                             Actions
                                         </th>
                                     )}
@@ -442,10 +442,9 @@ export default function Index() {
                             </tbody>
                         </table>
                     </div>
-                </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between border-t bg-white px-4 py-3">
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-700">Rows per page:</span>
                         <select
@@ -504,6 +503,7 @@ export default function Index() {
                             <ChevronsRight className="h-4 w-4" />
                         </Button>
                     </div>
+                </div>
                 </div>
             </div>
             <ConfirmDialog

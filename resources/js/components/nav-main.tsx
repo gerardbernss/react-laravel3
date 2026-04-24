@@ -66,7 +66,7 @@ function NavMenuItem({ item, currentUrl }: { item: NavItem; currentUrl: string }
       {hasChildren && hovered && (
         <div className="ml-6 mt-1 space-y-1 border-l border-muted-foreground/20 pl-3">
           {item.children!.map((child) => (
-            <SidebarMenuItem key={child.title}>
+            <div key={child.title}>
               <SidebarMenuButton
                 asChild
                 isActive={
@@ -86,7 +86,7 @@ function NavMenuItem({ item, currentUrl }: { item: NavItem; currentUrl: string }
                   <span>{child.title}</span>
                 </Link>
               </SidebarMenuButton>
-            </SidebarMenuItem>
+            </div>
           ))}
         </div>
       )}

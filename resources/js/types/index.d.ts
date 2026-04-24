@@ -42,6 +42,10 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    currentSemester: {
+        name: string | null;
+        school_year: string;
+    };
     [key: string]: unknown;
 }
 

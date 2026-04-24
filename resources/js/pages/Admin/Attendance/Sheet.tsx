@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, Clock, Loader2, Save, UserX, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle, Clock, History, Loader2, Save, ShieldCheck, UserX, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 interface StudentRow {
@@ -36,23 +38,13 @@ interface BlockSection {
     adviser: string | null;
 }
 
-interface Statistics {
-    total_students: number;
-    marked_count: number;
-    present_count: number;
-    absent_count: number;
-    late_count: number;
-    excused_count: number;
-    attendance_rate: number | null;
-}
-
 interface Props {
     blockSection: BlockSection;
     students: StudentRow[];
-    statistics: Statistics;
     selectedDate: string;
     selectedSubjectId: number;
     subjects: SubjectOption[];
+    missedDates: string[];
 }
 
 type AttendanceChange = {
@@ -61,31 +53,41 @@ type AttendanceChange = {
     remarks: string;
 };
 
-const STATUS_OPTIONS = ['Present', 'Absent', 'Late', 'Excused'] as const;
+const STATUS_ICONS = [
+    { status: 'Present', icon: CheckCircle, activeClass: 'text-green-600 bg-green-100', title: 'Present' },
+    { status: 'Absent', icon: XCircle, activeClass: 'text-red-600 bg-red-100', title: 'Absent' },
+    { status: 'Late', icon: Clock, activeClass: 'text-yellow-600 bg-yellow-100', title: 'Late' },
+    { status: 'Excused', icon: ShieldCheck, activeClass: 'text-blue-600 bg-blue-100', title: 'Excused' },
+] as const;
 
 function getStatusColor(status: string | null): string {
     switch (status) {
-        case 'Present': return 'bg-green-50';
-        case 'Absent': return 'bg-red-50';
-        case 'Late': return 'bg-yellow-50';
-        case 'Excused': return 'bg-blue-50';
-        default: return '';
+        case 'Present':
+            return 'bg-green-50';
+        case 'Absent':
+            return 'bg-red-50';
+        case 'Late':
+            return 'bg-yellow-50';
+        case 'Excused':
+            return 'bg-blue-50';
+        default:
+            return '';
     }
 }
 
-function getStatusBadgeClass(status: string): string {
-    switch (status) {
-        case 'Present': return 'bg-green-100 text-green-800 border-green-200';
-        case 'Absent': return 'bg-red-100 text-red-800 border-red-200';
-        case 'Late': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-        case 'Excused': return 'bg-blue-100 text-blue-800 border-blue-200';
-        default: return 'bg-gray-100 text-gray-600 border-gray-200';
-    }
+function formatDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
 }
 
-export default function Sheet({ blockSection, students, statistics, selectedDate, selectedSubjectId, subjects }: Props) {
+export default function Sheet({ blockSection, students, selectedDate, selectedSubjectId, subjects, missedDates }: Props) {
     const [changes, setChanges] = useState<Map<number, AttendanceChange>>(new Map());
     const [saving, setSaving] = useState(false);
+    const [missedOpen, setMissedOpen] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -129,24 +131,31 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
         });
     }, []);
 
-    const markAllAs = useCallback((status: string) => {
-        setChanges((prev) => {
-            const next = new Map(prev);
-            for (const student of students) {
-                const existing = next.get(student.enrollment_id);
-                next.set(student.enrollment_id, {
-                    student_enrollment_id: student.enrollment_id,
-                    status,
-                    remarks: existing?.remarks ?? student.remarks ?? '',
-                });
-            }
-            return next;
-        });
-    }, [students]);
+    const markAllAs = useCallback(
+        (status: string) => {
+            setChanges((prev) => {
+                const next = new Map(prev);
+                for (const student of students) {
+                    const existing = next.get(student.enrollment_id);
+                    next.set(student.enrollment_id, {
+                        student_enrollment_id: student.enrollment_id,
+                        status,
+                        remarks: existing?.remarks ?? student.remarks ?? '',
+                    });
+                }
+                return next;
+            });
+        },
+        [students],
+    );
 
     // Live statistics based on current changes
     const liveStats = useMemo(() => {
-        let present = 0, absent = 0, late = 0, excused = 0, marked = 0;
+        let present = 0,
+            absent = 0,
+            late = 0,
+            excused = 0,
+            marked = 0;
         for (const student of students) {
             const { status } = getCurrentValue(student);
             if (status) {
@@ -171,17 +180,25 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
     const hasChanges = changes.size > 0;
 
     const handleSubjectChange = (subjectId: string) => {
-        router.get(`/attendance/${blockSection.id}`, {
-            date: selectedDate,
-            subject_id: subjectId,
-        }, { preserveState: false });
+        router.get(
+            `/attendance/${blockSection.id}`,
+            {
+                date: selectedDate,
+                subject_id: subjectId,
+            },
+            { preserveState: false },
+        );
     };
 
     const handleDateChange = (date: string) => {
-        router.get(`/attendance/${blockSection.id}`, {
-            date,
-            subject_id: selectedSubjectId,
-        }, { preserveState: false });
+        router.get(
+            `/attendance/${blockSection.id}`,
+            {
+                date,
+                subject_id: selectedSubjectId,
+            },
+            { preserveState: false },
+        );
     };
 
     const handleSave = () => {
@@ -214,86 +231,106 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
             <div className="p-6 md:p-10">
                 {/* Header */}
                 <div className="mb-6">
-                    <Link href="/attendance" className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
-                        <ArrowLeft className="mr-1 h-4 w-4" />
-                        Back to Attendance
-                    </Link>
+                    <div className="mb-4 flex items-center gap-4">
+                        <Link href="/attendance" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Back to Attendance
+                        </Link>
+                        <Link
+                            href={`/attendance/${blockSection.id}/history?subject_id=${selectedSubjectId}`}
+                            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                        >
+                            <History className="mr-1 h-4 w-4" />
+                            View History
+                        </Link>
+                        {missedDates.length > 0 && (
+                            <Button variant="outline" size="sm" onClick={() => setMissedOpen(true)} className="border-amber-300 text-amber-700 hover:bg-amber-50">
+                                <AlertTriangle className="mr-1.5 h-3.5 w-3.5 text-amber-500" />
+                                {missedDates.length} Missed Day{missedDates.length !== 1 ? 's' : ''}
+                            </Button>
+                        )}
+                    </div>
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">
                                 {blockSection.code} — {blockSection.name}
                             </h1>
-                            <p className="mt-1 text-gray-600">
-                                {blockSection.grade_level}
-                                {blockSection.strand && ` • ${blockSection.strand}`}
-                                {blockSection.school_year && ` • ${blockSection.school_year}`}
-                                {blockSection.semester && ` • ${blockSection.semester}`}
-                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 ring-1 ring-blue-200">
+                                    <CalendarDays className="h-3.5 w-3.5" />
+                                    {formatDate(selectedDate)}
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                    {blockSection.grade_level}
+                                    {blockSection.strand && ` • ${blockSection.strand}`}
+                                    {blockSection.school_year && ` • ${blockSection.school_year}`}
+                                    {blockSection.semester && ` • ${blockSection.semester}`}
+                                </span>
+                            </div>
                         </div>
                         <Button onClick={handleSave} disabled={!hasChanges || saving}>
-                            {saving ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="mr-2 h-4 w-4" />
-                            )}
+                            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             {saving ? 'Saving...' : 'Save Attendance'}
                         </Button>
                     </div>
                 </div>
 
-                {/* Statistics Cards */}
-                <div className="mb-6 grid gap-4 md:grid-cols-5">
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <Users className="h-8 w-8 text-blue-500" />
-                            <div>
-                                <p className="text-sm text-gray-500">Total</p>
-                                <p className="text-2xl font-bold">{liveStats.total_students}</p>
+                {/* Missed-dates dialog */}
+                <Dialog open={missedOpen} onOpenChange={setMissedOpen}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                Missed Attendance Days
+                            </DialogTitle>
+                        </DialogHeader>
+                        {missedDates.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-gray-500">No missed days in the past 30 days.</p>
+                        ) : (
+                            <div className="max-h-96 overflow-y-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="sticky top-0 bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Day</th>
+                                            <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {missedDates.map((d, i) => {
+                                            const dt = new Date(d + 'T00:00:00');
+                                            return (
+                                                <tr key={d} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-2 text-gray-400">{i + 1}</td>
+                                                    <td className="px-4 py-2 font-medium text-gray-900">
+                                                        {dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                    </td>
+                                                    <td className="px-4 py-2 text-gray-500">
+                                                        {dt.toLocaleDateString('en-US', { weekday: 'long' })}
+                                                    </td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <Link
+                                                            href={`/attendance/${blockSection.id}?date=${d}&subject_id=${selectedSubjectId}`}
+                                                            onClick={() => setMissedOpen(false)}
+                                                            className="inline-flex items-center gap-1 rounded bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200"
+                                                        >
+                                                            <CalendarDays className="h-3 w-3" />
+                                                            Go
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <CheckCircle className="h-8 w-8 text-green-500" />
-                            <div>
-                                <p className="text-sm text-gray-500">Present</p>
-                                <p className="text-2xl font-bold">{liveStats.present_count}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <UserX className="h-8 w-8 text-red-500" />
-                            <div>
-                                <p className="text-sm text-gray-500">Absent</p>
-                                <p className="text-2xl font-bold">{liveStats.absent_count}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <Clock className="h-8 w-8 text-yellow-500" />
-                            <div>
-                                <p className="text-sm text-gray-500">Late</p>
-                                <p className="text-2xl font-bold">{liveStats.late_count}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
-                        <div>
-                            <p className="text-sm text-gray-500">Attendance Rate</p>
-                            <p className="text-2xl font-bold">
-                                {liveStats.attendance_rate !== null ? `${liveStats.attendance_rate}%` : '—'}
-                            </p>
-                            {liveStats.excused_count > 0 && (
-                                <p className="text-xs text-gray-400">{liveStats.excused_count} excused</p>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
 
                 {/* Controls: Subject + Date */}
-                <div className="mb-6 flex flex-wrap items-end gap-4 rounded-lg border bg-white p-4 shadow-sm">
+                <div className="mb-4 flex flex-wrap items-end gap-4 rounded-lg border bg-white p-4 shadow-sm">
                     <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">Subject</label>
                         <Select value={String(selectedSubjectId)} onValueChange={handleSubjectChange}>
@@ -311,12 +348,7 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                     </div>
                     <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">Date</label>
-                        <Input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => handleDateChange(e.target.value)}
-                            className="w-48"
-                        />
+                        <Input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="w-48" />
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => markAllAs('Present')}>
@@ -335,6 +367,35 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                     )}
                 </div>
 
+                {/* Statistics Bar */}
+                <div className="mb-4 flex flex-wrap items-center gap-12 px-2 pt-6">
+                    <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 shrink-0 text-blue-500" />
+                        <span className="text-sm font-bold">{liveStats.total_students}</span>
+                        <span className="text-xs text-gray-500">Total</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
+                        <span className="text-sm font-bold">{liveStats.present_count}</span>
+                        <span className="text-xs text-gray-500">Present</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <UserX className="h-4 w-4 shrink-0 text-red-500" />
+                        <span className="text-sm font-bold">{liveStats.absent_count}</span>
+                        <span className="text-xs text-gray-500">Absent</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 shrink-0 text-yellow-500" />
+                        <span className="text-sm font-bold">{liveStats.late_count}</span>
+                        <span className="text-xs text-gray-500">Late</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold">{liveStats.attendance_rate !== null ? `${liveStats.attendance_rate}%` : '—'}</span>
+                        <span className="text-xs text-gray-500">Rate</span>
+                        {liveStats.excused_count > 0 && <span className="text-xs text-gray-400">({liveStats.excused_count} exc.)</span>}
+                    </div>
+                </div>
+
                 {/* Attendance Table */}
                 {students.length > 0 ? (
                     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -342,19 +403,19 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
                                             #
                                         </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
                                             Student ID
                                         </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
                                             Student Name
                                         </th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
                                             Status
                                         </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
                                             Remarks
                                         </th>
                                     </tr>
@@ -367,35 +428,37 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                                         return (
                                             <tr
                                                 key={student.enrollment_id}
-                                                className={`${getStatusColor(current.status)} ${isChanged ? 'ring-1 ring-inset ring-amber-300' : ''}`}
+                                                className={`${getStatusColor(current.status)} ${isChanged ? 'ring-1 ring-amber-300 ring-inset' : ''}`}
                                             >
                                                 <td className="px-4 py-3 text-gray-400">{index + 1}</td>
-                                                <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                                                <td className="px-4 py-3 font-medium whitespace-nowrap text-gray-900">
                                                     {student.student_id_number || '—'}
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap">
                                                     <span className="font-medium text-gray-900">
                                                         {student.last_name}, {student.first_name}
                                                     </span>
-                                                    {student.middle_name && (
-                                                        <span className="text-gray-500"> {student.middle_name.charAt(0)}.</span>
-                                                    )}
+                                                    {student.middle_name && <span className="text-gray-500"> {student.middle_name.charAt(0)}.</span>}
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <div className="flex justify-center gap-1">
-                                                        {STATUS_OPTIONS.map((statusOption) => (
-                                                            <button
-                                                                key={statusOption}
-                                                                type="button"
-                                                                onClick={() => handleStatusChange(student.enrollment_id, student, statusOption)}
-                                                                className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
-                                                                    current.status === statusOption
-                                                                        ? getStatusBadgeClass(statusOption)
-                                                                        : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
-                                                                }`}
-                                                            >
-                                                                {statusOption}
-                                                            </button>
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        {STATUS_ICONS.map(({ status: s, icon: Icon, activeClass, title }) => (
+                                                            <Tooltip key={s}>
+                                                                <TooltipTrigger asChild>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleStatusChange(student.enrollment_id, student, s)}
+                                                                        className={`rounded-full p-1.5 transition-colors ${
+                                                                            current.status === s
+                                                                                ? activeClass
+                                                                                : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500'
+                                                                        }`}
+                                                                    >
+                                                                        <Icon className="h-5 w-5" />
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>{title}</TooltipContent>
+                                                            </Tooltip>
                                                         ))}
                                                     </div>
                                                 </td>
@@ -403,8 +466,8 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                                                     <Input
                                                         type="text"
                                                         placeholder="Optional remarks..."
-                                                        defaultValue={current.remarks}
-                                                        onBlur={(e) => handleRemarksChange(student.enrollment_id, student, e.target.value)}
+                                                        value={current.remarks}
+                                                        onChange={(e) => handleRemarksChange(student.enrollment_id, student, e.target.value)}
                                                         className="h-8 text-xs"
                                                     />
                                                 </td>
@@ -419,9 +482,7 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                     <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
                         <Users className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-4 text-lg font-semibold text-gray-900">No students enrolled</h3>
-                        <p className="mt-2 text-gray-600">
-                            No students are enrolled in this section yet.
-                        </p>
+                        <p className="mt-2 text-gray-600">No students are enrolled in this section yet.</p>
                     </div>
                 )}
 
@@ -431,19 +492,11 @@ export default function Sheet({ blockSection, students, statistics, selectedDate
                         <span className="text-sm text-amber-700">
                             You have {changes.size} unsaved change{changes.size !== 1 ? 's' : ''}
                         </span>
-                        <Button
-                            variant="outline"
-                            onClick={() => setChanges(new Map())}
-                            disabled={saving}
-                        >
+                        <Button variant="outline" onClick={() => setChanges(new Map())} disabled={saving}>
                             Discard
                         </Button>
                         <Button onClick={handleSave} disabled={saving}>
-                            {saving ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="mr-2 h-4 w-4" />
-                            )}
+                            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             {saving ? 'Saving...' : 'Save Attendance'}
                         </Button>
                     </div>

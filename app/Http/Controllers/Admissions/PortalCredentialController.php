@@ -5,7 +5,7 @@ use App\Http\Controllers\Controller;
 
 use App\Http\Requests\Admissions\StorePortalCredentialRequest;
 use App\Mail\Admissions\PortalPasswordMail;
-use App\Models\ApplicantApplicationInfo;
+use App\Models\Applicant;
 use App\Models\PortalCredential;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,32 +19,14 @@ class PortalCredentialController extends Controller
     /**
      * Display all portal credentials
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = PortalCredential::with(['personalData', 'application'])
-            ->orderBy('created_at', 'desc');
-
-        if ($request->filled('status')) {
-            $query->where('access_status', $request->status);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('personalData', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            })->orWhere('username', 'like', "%{$search}%");
-        }
-
-        $credentials = $query->paginate(15);
+        $credentials = PortalCredential::with(['personalData', 'application'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return Inertia::render('Admissions/PortalCredentials/Index', [
             'credentials' => $credentials,
-            'filters'     => [
-                'status' => $request->status,
-                'search' => $request->search,
-            ],
         ]);
     }
 
@@ -53,7 +35,7 @@ class PortalCredentialController extends Controller
      */
     public function create()
     {
-        $applicants = ApplicantApplicationInfo::with('applicantPersonalData')->get();
+        $applicants = Applicant::with('applicantPersonalData')->get();
 
         return Inertia::render('Admissions/PortalCredentials/Create', [
             'applicants' => $applicants,
@@ -88,7 +70,7 @@ class PortalCredentialController extends Controller
 
         $credential = PortalCredential::create([
             'applicant_personal_data_id'    => $validated['applicant_personal_data_id'],
-            'applicant_application_info_id' => $validated['applicant_application_info_id'],
+            'applicant_id' => $validated['applicant_id'],
             'username'                      => $username,
             'temporary_password'            => bcrypt($temporaryPassword), // Hash the password
             'credentials_generated_at'      => now(),

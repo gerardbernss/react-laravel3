@@ -110,9 +110,8 @@ class StudentEnrollmentSubject extends Model
     {
         $this->grade = $grade;
 
-        // Assuming 3.00 or lower is passing (Philippine grading system)
-        // 5.00 is failing
-        if ($grade <= 3.00) {
+        // K-12 percentage grading: 75 and above is passing
+        if ($grade >= 75) {
             $this->grade_status = self::STATUS_PASSED;
         } else {
             $this->grade_status = self::STATUS_FAILED;

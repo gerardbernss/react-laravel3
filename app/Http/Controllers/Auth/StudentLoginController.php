@@ -18,9 +18,11 @@ class StudentLoginController extends Controller
      */
     public function create(Request $request): Response|RedirectResponse
     {
-        // If already logged in as student, redirect to dashboard
+        // If already logged in as student, redirect to appropriate dashboard
         if (Auth::guard('student')->check()) {
-            return redirect()->route('student.dashboard');
+            $credential = Auth::guard('student')->user();
+            $studentRecord = $credential->personalData?->student;
+            return redirect()->route($studentRecord ? 'student.dashboard' : 'applicant.dashboard');
         }
 
         return Inertia::render('auth/student-login', [
@@ -86,8 +88,9 @@ class StudentLoginController extends Controller
 
         $request->session()->regenerate();
 
-        // Redirect to student dashboard
-        return redirect()->intended(route('student.dashboard'));
+        $studentRecord = $credential->personalData?->student;
+        $defaultRoute = $studentRecord ? route('student.dashboard') : route('applicant.dashboard');
+        return redirect()->intended($defaultRoute);
     }
 
     /**

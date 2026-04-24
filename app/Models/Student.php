@@ -11,12 +11,10 @@ class Student extends Model
     protected $fillable = [
         'student_id_number',
         'applicant_personal_data_id',
-        'applicant_application_info_id',
+        'student_personal_data_id',
+        'applicant_id',
         'enrollment_date',
         'enrollment_status',
-        'portal_enrollment_date',
-        'portal_username',
-        'portal_access_active',
         'current_year_level',
         'current_semester',
         'current_school_year',
@@ -24,9 +22,7 @@ class Student extends Model
     ];
 
     protected $casts = [
-        'enrollment_date'        => 'datetime',
-        'portal_enrollment_date' => 'datetime',
-        'portal_access_active'   => 'boolean',
+        'enrollment_date' => 'datetime',
     ];
 
     /**
@@ -39,7 +35,12 @@ class Student extends Model
 
     public function application()
     {
-        return $this->belongsTo(ApplicantApplicationInfo::class, 'applicant_application_info_id');
+        return $this->belongsTo(Applicant::class, 'applicant_id');
+    }
+
+    public function studentPersonalData()
+    {
+        return $this->belongsTo(StudentPersonalData::class, 'student_personal_data_id');
     }
 
     public function portalCredential()
@@ -154,29 +155,6 @@ class Student extends Model
     public function scopeInactive($query)
     {
         return $query->where('enrollment_status', 'Inactive');
-    }
-
-    public function scopePortalAccessActive($query)
-    {
-        return $query->where('portal_access_active', true);
-    }
-
-    /**
-     * Methods
-     */
-    public function activatePortalAccess()
-    {
-        $this->update([
-            'portal_access_active'   => true,
-            'portal_enrollment_date' => now(),
-        ]);
-    }
-
-    public function deactivatePortalAccess()
-    {
-        $this->update([
-            'portal_access_active' => false,
-        ]);
     }
 
     public function completeEnrollment()

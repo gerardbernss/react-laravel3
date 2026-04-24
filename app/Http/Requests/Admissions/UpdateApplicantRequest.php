@@ -19,11 +19,12 @@ class UpdateApplicantRequest extends FormRequest
 
         return [
             // Application Info
+            'application_status'         => 'nullable|string|max:50',
             'application_date'           => 'required|date',
             'school_year'                => 'required|string|max:20',
             'application_number'         => [
                 'nullable', 'string', 'max:20',
-                Rule::unique('applicant_application_info', 'application_number')->ignore($applicationId),
+                Rule::unique('applicants', 'application_number')->ignore($applicationId),
             ],
             'year_level'                 => 'required|string|max:50',
             'semester'                   => 'required|string|max:20',

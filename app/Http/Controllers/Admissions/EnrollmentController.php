@@ -3,10 +3,16 @@
 namespace App\Http\Controllers\Admissions;
 
 use App\Http\Controllers\Controller;
-use App\Models\ApplicantApplicationInfo;
+use App\Models\Applicant;
 use App\Models\EnrollmentAuditLog;
+use App\Models\Fee;
+use App\Models\Program;
+use App\Models\Student;
+use App\Models\StudentAssessment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class EnrollmentController extends Controller
@@ -17,7 +23,7 @@ class EnrollmentController extends Controller
      */
     public function dashboard(Request $request)
     {
-        $query = ApplicantApplicationInfo::with(['personalData', 'documents', 'portalCredential'])
+        $query = Applicant::with(['personalData', 'documents', 'portalCredential'])
             ->whereIn('application_status', ['Pending', 'Enrolled'])
             ->orderBy('created_at', 'desc');
 
@@ -41,9 +47,9 @@ class EnrollmentController extends Controller
         $applicants = $query->paginate(15);
 
         $statistics = [
-            'total'    => ApplicantApplicationInfo::whereIn('application_status', ['Pending', 'Enrolled'])->count(),
-            'pending'  => ApplicantApplicationInfo::where('application_status', 'Pending')->count(),
-            'enrolled' => ApplicantApplicationInfo::where('application_status', 'Enrolled')->count(),
+            'pending'  => Applicant::where('application_status', 'Pending')->count(),
+            'enrolled' => Applicant::where('application_status', 'Enrolled')->count(),
+            'total'    => Applicant::whereIn('application_status', ['Pending', 'Enrolled'])->count(),
         ];
 
         return Inertia::render('Admissions/Enrollment/Dashboard', [
@@ -60,7 +66,7 @@ class EnrollmentController extends Controller
     /**
      * Show applicant enrollment details
      */
-    public function show(ApplicantApplicationInfo $applicant)
+    public function show(Applicant $applicant)
     {
         $applicant->load([
             'personalData.familyBackground',
@@ -73,18 +79,185 @@ class EnrollmentController extends Controller
             },
         ]);
 
+        $fees    = $this->getApplicableFees($applicant->year_level ?? '', $applicant->school_year ?? '');
+        $program = $this->resolveProgram($applicant);
+        $units   = $program?->max_load ?? 0;
+
+        $studentRecord      = $applicant->personalData?->student;
+        $existingAssessment = $studentRecord
+            ? StudentAssessment::where('student_id', $studentRecord->id)
+                ->where('school_year', $applicant->school_year)
+                ->where('semester', $applicant->semester ?? 'First Semester')
+                ->first()
+            : null;
+
         return Inertia::render('Admissions/Enrollment/Show', [
-            'applicant' => $applicant,
+            'applicant'          => $applicant,
+            'fees'               => $fees,
+            'units'              => $units,
+            'existingAssessment' => $existingAssessment ? [
+                'assessment_number' => $existingAssessment->assessment_number,
+                'net_amount'        => $existingAssessment->net_amount,
+                'payment_plan'      => $existingAssessment->payment_plan,
+                'status'            => $existingAssessment->status,
+            ] : null,
         ]);
+    }
+
+    /**
+     * Process onsite enrollment on behalf of an applicant.
+     */
+    public function processOnsiteEnrollment(Request $request, Applicant $applicant)
+    {
+        $validated = $request->validate([
+            'student_id_number' => ['required', 'string', Rule::unique('applicants', 'student_id_number')->ignore($applicant->id)],
+            'payment_plan'      => ['required', 'in:full,installment'],
+            'mode_of_payment'   => ['nullable', 'in:cash,check,bank_transfer,gcash,maya'],
+            'total_amount'      => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $personalData = $applicant->personalData;
+        if (!$personalData) {
+            return back()->withErrors(['error' => 'Applicant personal data not found.']);
+        }
+
+        $semester = $applicant->semester ?? 'First Semester';
+
+        $studentRecord = $personalData->student;
+        $alreadyExists = $studentRecord && StudentAssessment::where('student_id', $studentRecord->id)
+            ->where('school_year', $applicant->school_year)
+            ->where('semester', $semester)
+            ->exists();
+
+        if ($alreadyExists) {
+            return back()->withErrors(['error' => 'A fee assessment already exists for this applicant.']);
+        }
+
+        DB::transaction(function () use ($applicant, $personalData, $validated, $semester) {
+            $studentRecord = $personalData->student;
+
+            if (!$studentRecord) {
+                $studentRecord = Student::create([
+                    'applicant_personal_data_id' => $personalData->id,
+                    'applicant_id'               => $applicant->id,
+                    'enrollment_status'          => 'Pending',
+                    'enrollment_date'            => now(),
+                    'current_year_level'         => $applicant->year_level,
+                    'current_semester'           => $semester,
+                    'current_school_year'        => $applicant->school_year,
+                ]);
+            } else {
+                $studentRecord->update([
+                    'enrollment_status'  => 'Pending',
+                    'enrollment_date'    => now(),
+                    'current_year_level' => $applicant->year_level,
+                    'current_semester'   => $semester,
+                    'current_school_year'=> $applicant->school_year,
+                ]);
+            }
+
+            $applicant->update(['student_id_number' => $validated['student_id_number']]);
+
+            $fees        = $this->getApplicableFees($applicant->year_level ?? '', $applicant->school_year ?? '');
+            $program     = $this->resolveProgram($applicant);
+            $units       = $program?->max_load ?? 0;
+            $grossAmount = collect($fees)->sum(fn($f) => $f['is_per_unit'] ? $f['amount'] * $units : $f['amount']);
+            $netAmount   = (float) $validated['total_amount'];
+            $discount    = max(0, $grossAmount - $netAmount);
+
+            $assessment = StudentAssessment::create([
+                'student_id'       => $studentRecord->id,
+                'school_year'      => $applicant->school_year,
+                'semester'         => $semester,
+                'mode_of_payment'  => $validated['mode_of_payment'] ?? null,
+                'payment_plan'     => $validated['payment_plan'],
+                'gross_amount'     => $grossAmount,
+                'total_discounts'  => $discount,
+                'net_amount'       => $netAmount,
+                'status'           => 'finalized',
+                'generated_at'     => now(),
+                'finalized_at'     => now(),
+                'finalized_by'     => Auth::id(),
+            ]);
+
+            $previousStatus = $applicant->application_status;
+            $applicant->update(['application_status' => 'Pending']);
+
+            EnrollmentAuditLog::create([
+                'applicant_id'   => $applicant->id,
+                'action'         => 'Onsite Enrollment Processed',
+                'previous_status'=> $previousStatus,
+                'new_status'     => 'Pending',
+                'performed_by'   => Auth::user()->name,
+                'details'        => json_encode([
+                    'assessment_id'     => $assessment->id,
+                    'student_id_number' => $validated['student_id_number'],
+                    'payment_plan'      => $validated['payment_plan'],
+                    'gross_amount'      => $grossAmount,
+                    'net_amount'        => $netAmount,
+                ]),
+                'ip_address'     => request()->ip(),
+            ]);
+        });
+
+        return back()->with('success', 'Onsite enrollment processed successfully.');
+    }
+
+    private function getApplicableFees(string $gradeLevel, string $schoolYear): array
+    {
+        $schoolLevel = $this->getStudentCategory($gradeLevel);
+
+        return Fee::where('is_active', true)
+            ->where('school_year', $schoolYear)
+            ->where(function ($q) use ($schoolLevel) {
+                $q->where('school_level', 'all')->orWhere('school_level', $schoolLevel);
+            })
+            ->orderByRaw("CASE WHEN school_level = ? THEN 0 ELSE 1 END", [$schoolLevel])
+            ->get()
+            ->map(fn($fee) => [
+                'id'          => $fee->id,
+                'name'        => $fee->name,
+                'code'        => $fee->code,
+                'category'    => $fee->category,
+                'is_per_unit' => $fee->is_per_unit,
+                'amount'      => (float) $fee->amount,
+            ])
+            ->toArray();
+    }
+
+    private function getStudentCategory(string $gradeLevel): string
+    {
+        if (in_array($gradeLevel, ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6'])) {
+            return 'LES';
+        }
+        if (in_array($gradeLevel, ['Grade 7','Grade 8','Grade 9','Grade 10'])) {
+            return 'JHS';
+        }
+        if (in_array($gradeLevel, ['Grade 11','Grade 12'])) {
+            return 'SHS';
+        }
+        return 'all';
+    }
+
+    private function resolveProgram(Applicant $applicant): ?Program
+    {
+        $strand = $applicant->strand ?? '';
+        if ($strand && preg_match('/\(([A-Z]+)\)/', $strand, $matches)) {
+            $program = Program::where('is_active', true)->where('code', $matches[1])->first();
+            if ($program) {
+                return $program;
+            }
+        }
+        return Program::where('is_active', true)->where('code', $applicant->student_category)->first();
     }
 
     /**
      * Update applicant status to Enrolled
      */
-    public function enroll(Request $request, ApplicantApplicationInfo $applicant)
+    public function enroll(Request $request, Applicant $applicant)
     {
         $validated = $request->validate([
-            'student_id_number' => 'required|string|unique:applicant_application_info,student_id_number,' . $applicant->id,
+            'student_id_number' => 'required|string|unique:applicants,student_id_number,' . $applicant->id,
         ]);
 
         $previousStatus = $applicant->application_status;
@@ -95,7 +268,7 @@ class EnrollmentController extends Controller
         ]);
 
         EnrollmentAuditLog::create([
-            'applicant_application_info_id' => $applicant->id,
+            'applicant_id' => $applicant->id,
             'action'                        => 'Status Changed to Enrolled',
             'new_status'                    => 'Enrolled',
             'previous_status'               => $previousStatus,
@@ -113,7 +286,7 @@ class EnrollmentController extends Controller
     /**
      * Revert applicant status back to Pending
      */
-    public function revertToPending(Request $request, ApplicantApplicationInfo $applicant)
+    public function revertToPending(Request $request, Applicant $applicant)
     {
         $previousStatus = $applicant->application_status;
 
@@ -123,7 +296,7 @@ class EnrollmentController extends Controller
         ]);
 
         EnrollmentAuditLog::create([
-            'applicant_application_info_id' => $applicant->id,
+            'applicant_id' => $applicant->id,
             'action'                        => 'Status Reverted to Pending',
             'new_status'                    => 'Pending',
             'previous_status'               => $previousStatus,
@@ -141,13 +314,13 @@ class EnrollmentController extends Controller
     /**
      * View enrollment audit trail
      */
-    public function auditLog(ApplicantApplicationInfo $applicant, Request $request)
+    public function auditLog(Applicant $applicant)
     {
         $applicant->load('personalData');
 
         $logs = $applicant->auditLogs()
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->get();
 
         return Inertia::render('Admissions/Enrollment/AuditLog', [
             'applicant' => $applicant,
@@ -160,7 +333,7 @@ class EnrollmentController extends Controller
      */
     public function report(Request $request)
     {
-        $query = ApplicantApplicationInfo::with(['personalData'])
+        $query = Applicant::with(['personalData'])
             ->whereIn('application_status', ['Pending', 'Enrolled']);
 
         if ($request->filled('status')) {
@@ -196,7 +369,7 @@ class EnrollmentController extends Controller
         ];
 
         // Get unique school years for filter
-        $schoolYears = ApplicantApplicationInfo::distinct()
+        $schoolYears = Applicant::distinct()
             ->pluck('school_year')
             ->filter()
             ->sort()

@@ -1,4 +1,5 @@
 import EmailAssignIdButton from '@/components/email-assign-id-button';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,9 +9,8 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp, UserPlus } from 'lucide-react';
+import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp, IdCard, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { toast } from 'sonner';
@@ -255,8 +255,10 @@ export default function Index({ applications }: Props) {
 
             <div className="space-y-6 p-6 md:p-10">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
-                    <p className="mt-1 text-gray-600">Assign and manage student identification numbers for enrolled applicants</p>
+                    <div className="flex items-center gap-3">
+                        <IdCard className="h-7 w-7 text-primary" />
+                        <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
+                    </div>
                 </div>
 
                 {/* Search + Filters + Columns + Export */}
@@ -459,7 +461,7 @@ export default function Index({ applications }: Props) {
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     {columns
                                         .filter((col) => visibleColumns.includes(col.key))
@@ -471,7 +473,7 @@ export default function Index({ applications }: Props) {
                                                         handleSort(column.key as keyof Applicant);
                                                     }
                                                 }}
-                                                className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 transition-colors ${
+                                                className={`px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase transition-colors ${
                                                     column.key !== 'actions' ? 'cursor-pointer hover:bg-gray-100' : ''
                                                 }`}
                                             >
@@ -493,8 +495,7 @@ export default function Index({ applications }: Props) {
                                 {paginatedApplicants.map((row) => (
                                     <tr
                                         key={row.id}
-                                        onClick={() => handleSelectRow(row.id)}
-                                        className={`cursor-pointer border-b border-gray-200 transition-all hover:bg-slate-50 ${
+                                        className={`border-b border-gray-200 transition-all hover:bg-slate-50 ${
                                             selectedRowId === row.id ? 'bg-blue-50' : ''
                                         }`}
                                     >
@@ -554,24 +555,28 @@ export default function Index({ applications }: Props) {
                                                             label = 'Pending';
                                                     }
 
-                                                    return (
-                                                        <Badge variant={variant}>{label}</Badge>
-                                                    );
+                                                    return <Badge variant={variant}>{label}</Badge>;
                                                 })()}
                                             </td>
                                         )}
                                         {visibleColumns.includes('actions') && (
-                                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                                <div className="group relative inline-block">
-                                                    <div className={!row.student_id_number ? 'pointer-events-none opacity-50' : ''}>
-                                                        <EmailAssignIdButton applicationId={row.id} />
-                                                    </div>
-                                                    {!row.student_id_number && (
-                                                        <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 hidden -translate-x-1/2 rounded bg-gray-800 px-3 py-1.5 text-xs whitespace-nowrap text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100">
-                                                            Assign ID number first
-                                                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Button variant="outline" size="sm" onClick={() => handleSelectRow(row.id)}>
+                                                        <UserPlus className="mr-1 h-4 w-4" />
+                                                        Assign ID
+                                                    </Button>
+                                                    <div className="group relative inline-block">
+                                                        <div className={!row.student_id_number ? 'pointer-events-none opacity-50' : ''}>
+                                                            <EmailAssignIdButton applicationId={row.id} />
                                                         </div>
-                                                    )}
+                                                        {!row.student_id_number && (
+                                                            <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 rounded bg-gray-800 px-3 py-1.5 text-xs whitespace-nowrap text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100">
+                                                                Assign ID number first
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                         )}

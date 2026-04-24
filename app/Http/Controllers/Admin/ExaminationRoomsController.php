@@ -12,29 +12,12 @@ class ExaminationRoomsController extends Controller
     /**
      * Display a listing of examination rooms.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = ExaminationRoom::query();
-
-        // Search filter
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('building', 'like', "%{$search}%");
-            });
-        }
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
-
-        $rooms = $query->orderBy('building')->orderBy('name')->paginate(15)->withQueryString();
+        $rooms = ExaminationRoom::orderBy('building')->orderBy('name')->get();
 
         return Inertia::render('Admin/ExaminationRooms/Index', [
             'rooms' => $rooms,
-            'filters' => $request->only(['search', 'status']),
         ]);
     }
 

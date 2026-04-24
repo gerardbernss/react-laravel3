@@ -21,7 +21,7 @@ interface Applicant {
     first_name: string;
     last_name: string;
     email: string;
-    sex?: string;
+    gender?: string;
     application_date?: string;
     application_status?: string;
     strand?: string;
@@ -58,7 +58,7 @@ export default function Index({ applications }: Props) {
         'first_name',
         'last_name',
         'email',
-        'sex',
+        'gender',
         'strand',
         'application_date',
         'application_status',
@@ -177,7 +177,7 @@ export default function Index({ applications }: Props) {
                 a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 a.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchesGender = selectedGender === 'all' || a.sex?.toLowerCase() === selectedGender.toLowerCase();
+            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === selectedGender.toLowerCase();
             const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
             const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
 
@@ -240,7 +240,7 @@ export default function Index({ applications }: Props) {
         { key: 'first_name' as keyof Applicant, label: 'First Name' },
         { key: 'last_name' as keyof Applicant, label: 'Last Name' },
         { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'sex' as keyof Applicant, label: 'Gender' },
+        { key: 'gender' as keyof Applicant, label: 'Gender' },
         { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
         { key: 'application_date' as keyof Applicant, label: 'Application Date' },
         { key: 'application_status' as keyof Applicant, label: 'Application Status' },
@@ -555,10 +555,10 @@ export default function Index({ applications }: Props) {
                 )}
 
                 {/* Custom DataGrid Table */}
-                <div className="overflow-hidden rounded-lg bg-white shadow-md">
-                    <div className="overflow-x-auto">
+                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-linear-to-r from-slate-700 to-slate-800 text-white">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     <th className="px-4 py-3 text-left">
                                         <input
@@ -574,7 +574,7 @@ export default function Index({ applications }: Props) {
                                             <th
                                                 key={String(column.key)}
                                                 onClick={() => handleSort(column.key)}
-                                                className="cursor-pointer px-4 py-3 text-left font-semibold transition-colors hover:bg-slate-600"
+                                                className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 transition-colors hover:bg-gray-100"
                                             >
                                                 <div className="flex items-center gap-1.5">
                                                     {column.label}
@@ -587,7 +587,7 @@ export default function Index({ applications }: Props) {
                                                 </div>
                                             </th>
                                         ))}
-                                    <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -614,7 +614,7 @@ export default function Index({ applications }: Props) {
                                             <td className="px-4 py-3 font-medium text-gray-900">{row.last_name}</td>
                                         )}
                                         {visibleColumns.includes('email') && <td className="px-4 py-3 text-gray-600">{row.email}</td>}
-                                        {visibleColumns.includes('sex') && <td className="px-4 py-3 text-gray-900">{row.sex}</td>}
+                                        {visibleColumns.includes('gender') && <td className="px-4 py-3 text-gray-900">{row.gender}</td>}
                                         {visibleColumns.includes('strand') && <td className="px-4 py-3 text-gray-900">{row.strand}</td>}
                                         {visibleColumns.includes('application_date') && (
                                             <td className="px-4 py-3 text-gray-900">

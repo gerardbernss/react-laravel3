@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Schedule;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -13,39 +14,12 @@ class SubjectsController extends Controller
     /**
      * Display a listing of subjects.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = Subject::query();
-
-        // Search filter
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%");
-            });
-        }
-
-        // Grade level filter
-        if ($request->filled('grade_level')) {
-            $query->where('grade_level', $request->grade_level);
-        }
-
-        // Type filter
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
-
-        $subjects = $query->orderBy('code')->paginate(15)->withQueryString();
+        $subjects = Subject::with('defaultSchedule')->orderBy('code')->get();
 
         return Inertia::render('Admin/Subjects/Index', [
             'subjects' => $subjects,
-            'filters' => $request->only(['search', 'grade_level', 'type', 'status']),
         ]);
     }
 
@@ -69,20 +43,31 @@ class SubjectsController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:subjects,code',
-            'name' => 'required|string|max:255',
+            'code'        => 'required|string|max:50|unique:subjects,code',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'units' => 'required|integer|min:1|max:10',
-            'type' => 'required|in:Core,Major,Minor,Elective,Specialized',
+            'units'       => 'required|integer|min:1|max:10',
+            'type'        => 'required|in:Core,Major,Minor,Elective,Specialized',
             'grade_level' => 'nullable|string',
-            'semester' => 'nullable|in:First Semester,Second Semester,Summer,Full Year',
-            'schedule' => 'nullable|string|max:255',
-            'room' => 'nullable|string|max:100',
-            'user_id' => 'nullable|exists:users,id',
-            'is_active' => 'boolean',
+            'semester'    => 'nullable|in:First Semester,Second Semester,Summer,Full Year',
+            'days'        => 'nullable|string|max:10',
+            'time'        => 'nullable|string|max:20',
+            'room'        => 'nullable|string|max:100',
+            'user_id'     => 'nullable|exists:users,id',
+            'is_active'   => 'boolean',
         ]);
 
-        Subject::create($validated);
+        $subject = Subject::create(collect($validated)->except(['days', 'time', 'room'])->toArray());
+
+        if ($request->filled('days') && $request->filled('time')) {
+            Schedule::create([
+                'subject_id'       => $subject->id,
+                'block_section_id' => null,
+                'days'             => $validated['days'],
+                'time'             => $validated['time'],
+                'room'             => $validated['room'] ?? null,
+            ]);
+        }
 
         return redirect()->route('subjects.index')
             ->with('success', 'Subject created successfully.');
@@ -93,7 +78,7 @@ class SubjectsController extends Controller
      */
     public function show(Subject $subject)
     {
-        $subject->load('blockSections');
+        $subject->load(['blockSections', 'defaultSchedule']);
 
         return Inertia::render('Admin/Subjects/Show', [
             'subject' => $subject,
@@ -105,6 +90,8 @@ class SubjectsController extends Controller
      */
     public function edit(Subject $subject)
     {
+        $subject->load('defaultSchedule');
+
         $facultyUsers = User::whereHas('roles', fn($q) => $q->where('slug', 'faculty'))
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -121,20 +108,30 @@ class SubjectsController extends Controller
     public function update(Request $request, Subject $subject)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:subjects,code,' . $subject->id,
-            'name' => 'required|string|max:255',
+            'code'        => 'required|string|max:50|unique:subjects,code,' . $subject->id,
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'units' => 'required|integer|min:1|max:10',
-            'type' => 'required|in:Core,Major,Minor,Elective,Specialized',
+            'units'       => 'required|integer|min:1|max:10',
+            'type'        => 'required|in:Core,Major,Minor,Elective,Specialized',
             'grade_level' => 'nullable|string',
-            'semester' => 'nullable|in:First Semester,Second Semester,Summer,Full Year',
-            'schedule' => 'nullable|string|max:255',
-            'room' => 'nullable|string|max:100',
-            'user_id' => 'nullable|exists:users,id',
-            'is_active' => 'boolean',
+            'semester'    => 'nullable|in:First Semester,Second Semester,Summer,Full Year',
+            'days'        => 'nullable|string|max:10',
+            'time'        => 'nullable|string|max:20',
+            'room'        => 'nullable|string|max:100',
+            'user_id'     => 'nullable|exists:users,id',
+            'is_active'   => 'boolean',
         ]);
 
-        $subject->update($validated);
+        $subject->update(collect($validated)->except(['days', 'time', 'room'])->toArray());
+
+        if ($request->filled('days') && $request->filled('time')) {
+            Schedule::updateOrCreate(
+                ['subject_id' => $subject->id, 'block_section_id' => null],
+                ['days' => $validated['days'], 'time' => $validated['time'], 'room' => $validated['room'] ?? null]
+            );
+        } else {
+            Schedule::where('subject_id', $subject->id)->whereNull('block_section_id')->delete();
+        }
 
         return redirect()->route('subjects.index')
             ->with('success', 'Subject updated successfully.');

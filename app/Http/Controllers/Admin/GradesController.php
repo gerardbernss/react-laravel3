@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\BlockSection;
 use App\Models\StudentEnrollment;
 use App\Models\StudentEnrollmentSubject;
+
+use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -15,61 +17,72 @@ class GradesController extends Controller
     /**
      * Display a listing of block sections for grade management.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = BlockSection::query()
+        $user = auth()->user();
+
+        // Faculty see a subject-centric view of only their assigned subjects
+        if ($user && $user->hasRole('faculty')) {
+            $subjects = Subject::where('user_id', $user->id)
+                ->with('blockSections')
+                ->get();
+
+            $mySubjects = $subjects->flatMap(function ($subject) {
+                return $subject->blockSections->map(function ($section) use ($subject) {
+                    $enrolledCount = StudentEnrollmentSubject::whereHas('enrollment',
+                        fn($q) => $q->where('block_section_id', $section->id))
+                        ->where('subject_id', $subject->id)
+                        ->count();
+
+                    $gradedCount = StudentEnrollmentSubject::whereHas('enrollment',
+                        fn($q) => $q->where('block_section_id', $section->id))
+                        ->where('subject_id', $subject->id)
+                        ->whereNotNull('grade')
+                        ->count();
+
+                    return [
+                        'subject_id'       => $subject->id,
+                        'subject_code'     => $subject->code,
+                        'subject_name'     => $subject->name,
+                        'block_section_id' => $section->id,
+                        'section_code'     => $section->code,
+                        'section_name'     => $section->name,
+                        'grade_level'      => $section->grade_level,
+                        'enrolled_count'   => $enrolledCount,
+                        'graded_count'     => $gradedCount,
+                    ];
+                });
+            })->values();
+
+            return Inertia::render('Admin/Grades/Index', [
+                'isFaculty'     => true,
+                'mySubjects'    => $mySubjects,
+                'blockSections' => ['data' => [], 'last_page' => 1, 'current_page' => 1, 'total' => 0, 'per_page' => 15, 'links' => []],
+                'filters'       => [],
+                'schoolYears'   => [],
+                'semesters'     => [],
+            ]);
+        }
+
+        $blockSections = BlockSection::query()
             ->withCount(['subjects'])
             ->addSelect(['enrolled_count' => StudentEnrollment::selectRaw('count(*)')
                 ->whereColumn('block_section_id', 'block_sections.id')
-            ]);
-
-        // Search filter
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%")
-                    ->orWhere('adviser', 'like', "%{$search}%");
-            });
-        }
-
-        // School year filter
-        if ($request->filled('school_year')) {
-            $query->where('school_year', $request->school_year);
-        }
-
-        // Semester filter
-        if ($request->filled('semester')) {
-            $query->where('semester', $request->semester);
-        }
-
-        // Grade level filter
-        if ($request->filled('grade_level')) {
-            $query->where('grade_level', $request->grade_level);
-        }
-
-        // Faculty filter — faculty members only see sections where they teach a subject
-        $user = auth()->user();
-        if ($user && $user->hasRole('faculty')) {
-            $query->whereHas('subjects', function ($q) use ($user) {
-                $q->where('subjects.user_id', $user->id);
-            });
-        }
-
-        $blockSections = $query->orderBy('school_year', 'desc')
+            ])
+            ->orderBy('school_year', 'desc')
             ->orderBy('code')
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
-        // Get distinct school years and semesters for filter dropdowns
         $schoolYears = BlockSection::distinct()->orderBy('school_year', 'desc')->pluck('school_year')->filter()->values();
         $semesters = BlockSection::distinct()->pluck('semester')->filter()->values();
 
         return Inertia::render('Admin/Grades/Index', [
+            'isFaculty'     => false,
+            'mySubjects'    => [],
             'blockSections' => $blockSections,
-            'filters' => $request->only(['search', 'school_year', 'semester', 'grade_level']),
-            'schoolYears' => $schoolYears,
-            'semesters' => $semesters,
+            'filters'       => [],
+            'schoolYears'   => $schoolYears,
+            'semesters'     => $semesters,
         ]);
     }
 
@@ -139,7 +152,7 @@ class GradesController extends Controller
                         'grade' => $es->grade,
                         'grade_status' => $es->grade_status,
                     ];
-                }),
+                })->values(),
             ];
         });
 
@@ -178,6 +191,66 @@ class GradesController extends Controller
     }
 
     /**
+     * Display the grade editing page for a single student in a block section.
+     */
+    public function showStudent(BlockSection $blockSection, StudentEnrollment $studentEnrollment)
+    {
+        $blockSection->load('subjects');
+        $user = auth()->user();
+
+        $assignedSubjectIds = null;
+        if ($user && $user->hasRole('faculty')) {
+            $assignedSubjectIds = $blockSection->subjects()
+                ->where('subjects.user_id', $user->id)
+                ->pluck('subjects.id')
+                ->toArray();
+        }
+
+        $studentEnrollment->load([
+            'student.personalData:id,last_name,first_name,middle_name',
+            'enrollmentSubjects.subject:id,code,name,units',
+        ]);
+
+        $enrollmentSubjects = $studentEnrollment->enrollmentSubjects;
+        if ($assignedSubjectIds !== null) {
+            $enrollmentSubjects = $enrollmentSubjects->whereIn('subject_id', $assignedSubjectIds)->values();
+        }
+
+        $student      = $studentEnrollment->student;
+        $personalData = $student?->personalData;
+
+        return Inertia::render('Admin/Grades/StudentGradeSheet', [
+            'blockSection' => [
+                'id'          => $blockSection->id,
+                'code'        => $blockSection->code,
+                'name'        => $blockSection->name,
+                'grade_level' => $blockSection->grade_level,
+            ],
+            'enrollment' => [
+                'id'     => $studentEnrollment->id,
+                'gwa'    => $studentEnrollment->gwa,
+                'status' => $studentEnrollment->status,
+            ],
+            'student' => [
+                'id'                => $student?->id,
+                'student_id_number' => $student?->student_id_number,
+                'last_name'         => $personalData?->last_name,
+                'first_name'        => $personalData?->first_name,
+                'middle_name'       => $personalData?->middle_name,
+            ],
+            'subjects' => $enrollmentSubjects->map(fn($es) => [
+                'id'           => $es->id,
+                'subject_id'   => $es->subject_id,
+                'subject_code' => $es->subject?->code,
+                'subject_name' => $es->subject?->name,
+                'units'        => $es->units,
+                'grade'        => $es->grade,
+                'grade_status' => $es->grade_status,
+            ])->values(),
+        ]);
+    }
+
+    /**
      * Update grades for a block section.
      */
     public function update(Request $request, BlockSection $blockSection)
@@ -185,7 +258,7 @@ class GradesController extends Controller
         $request->validate([
             'grades' => 'required|array',
             'grades.*.id' => 'required|exists:student_enrollment_subjects,id',
-            'grades.*.grade' => 'nullable|numeric|min:1|max:5',
+            'grades.*.grade' => 'nullable|numeric|min:0|max:100',
             'grades.*.grade_status' => 'nullable|in:Passed,Failed,INC,DRP,W',
         ]);
 

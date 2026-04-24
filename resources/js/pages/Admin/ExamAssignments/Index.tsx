@@ -1,13 +1,23 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Calendar, Plus, Search, Trash2, UserCheck, Users, X } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import {
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronUp,
+    ChevronsLeft,
+    ChevronsRight,
+    Plus,
+    Search,
+    Trash2,
+    UserCheck,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface PersonalData {
     first_name: string;
@@ -37,30 +47,15 @@ interface Schedule {
 
 interface Assignment {
     id: number;
-    seat_number: string | null;
     status: string;
     assigned_at: string;
     application_info: ApplicationInfo;
     exam_schedule: Schedule;
 }
 
-interface PaginatedData {
-    data: Assignment[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    links: { url: string | null; label: string; active: boolean }[];
-}
-
 interface Props {
-    assignments: PaginatedData;
+    assignments: Assignment[];
     schedules: Schedule[];
-    filters: {
-        search?: string;
-        status?: string;
-        schedule_id?: string;
-    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -68,56 +63,91 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Exam Assignments', href: '/exam-assignments' },
 ];
 
-export default function Index({ assignments, schedules, filters }: Props) {
+type SortKey = 'application_number' | 'name' | 'schedule' | 'status';
+
+const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+export default function Index({ assignments, schedules }: Props) {
     const { delete: destroy, processing } = useForm();
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number }>({ open: false, id: 0 });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedScheduleId, setSelectedScheduleId] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
-    const handleSearch = (value: string) => {
-        router.get('/exam-assignments', { ...filters, search: value || undefined }, { preserveState: true });
+    const filteredItems = useMemo(() => {
+        return assignments.filter((a) => {
+            const q = searchQuery.toLowerCase();
+            const appNum = (a.application_info?.application_number ?? '').toLowerCase();
+            const name = `${a.application_info?.personal_data?.last_name ?? ''} ${a.application_info?.personal_data?.first_name ?? ''}`.toLowerCase();
+            const matchesSearch = !q || appNum.includes(q) || name.includes(q);
+            const matchesSchedule = !selectedScheduleId || String(a.exam_schedule?.id) === selectedScheduleId;
+            const matchesStatus = !selectedStatus || a.status === selectedStatus;
+            return matchesSearch && matchesSchedule && matchesStatus;
+        });
+    }, [assignments, searchQuery, selectedScheduleId, selectedStatus]);
+
+    const sortedItems = useMemo(() => {
+        if (!sortConfig.key) return filteredItems;
+        return [...filteredItems].sort((a, b) => {
+            let aVal = '';
+            let bVal = '';
+            if (sortConfig.key === 'application_number') { aVal = a.application_info?.application_number ?? ''; bVal = b.application_info?.application_number ?? ''; }
+            else if (sortConfig.key === 'name') {
+                aVal = `${a.application_info?.personal_data?.last_name ?? ''} ${a.application_info?.personal_data?.first_name ?? ''}`;
+                bVal = `${b.application_info?.personal_data?.last_name ?? ''} ${b.application_info?.personal_data?.first_name ?? ''}`;
+            } else if (sortConfig.key === 'schedule') { aVal = a.exam_schedule?.name ?? ''; bVal = b.exam_schedule?.name ?? ''; }
+            else if (sortConfig.key === 'status') { aVal = a.status; bVal = b.status; }
+            return aVal.localeCompare(bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
+        });
+    }, [filteredItems, sortConfig]);
+
+    const totalPages = Math.ceil(sortedItems.length / pageSize);
+    const paginatedItems = useMemo(
+        () => sortedItems.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+        [sortedItems, currentPage, pageSize],
+    );
+
+    const toggleSort = (key: SortKey) =>
+        setSortConfig((prev) =>
+            prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' },
+        );
+
+    const SortIcon = ({ col }: { col: SortKey }) =>
+        sortConfig.key !== col ? (
+            <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />
+        ) : sortConfig.direction === 'asc' ? (
+            <ChevronUp className="ml-1 inline h-3 w-3" />
+        ) : (
+            <ChevronDown className="ml-1 inline h-3 w-3" />
+        );
+
+    const clearFilters = () => {
+        setSearchQuery('');
+        setSelectedScheduleId('');
+        setSelectedStatus('');
+        setCurrentPage(1);
     };
 
-    const handleFilter = (key: string, value: string) => {
-        router.get('/exam-assignments', { ...filters, [key]: value === 'all' ? undefined : value }, { preserveState: true });
-    };
+    const hasFilters = searchQuery || selectedScheduleId || selectedStatus;
 
-    const handleDelete = (id: number) => {
-        setDeleteDialog({ open: true, id });
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'assigned': return <Badge variant="outline">Assigned</Badge>;
+            case 'confirmed': return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>;
+            case 'attended': return <Badge className="bg-green-100 text-green-800">Attended</Badge>;
+            case 'absent': return <Badge variant="destructive">Absent</Badge>;
+            case 'cancelled': return <Badge variant="secondary">Cancelled</Badge>;
+            default: return <Badge variant="outline">{status}</Badge>;
+        }
     };
 
     const confirmDelete = () => {
         destroy(`/exam-assignments/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0 }),
-        });
-    };
-
-    const clearFilters = () => {
-        router.get('/exam-assignments');
-    };
-
-    const hasFilters = filters.search || filters.status || filters.schedule_id;
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'assigned':
-                return <Badge variant="outline">Assigned</Badge>;
-            case 'confirmed':
-                return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>;
-            case 'attended':
-                return <Badge className="bg-green-100 text-green-800">Attended</Badge>;
-            case 'absent':
-                return <Badge variant="destructive">Absent</Badge>;
-            case 'cancelled':
-                return <Badge variant="secondary">Cancelled</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
-    };
-
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
         });
     };
 
@@ -141,39 +171,33 @@ export default function Index({ assignments, schedules, filters }: Props) {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
-                    <div className="grid gap-4 md:grid-cols-4">
-                        {/* Search */}
-                        <div className="relative md:col-span-2">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            <Input
+                <div className="mb-6 rounded-lg border bg-white p-6 shadow-sm">
+                    <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
+                        <div className="mb-3 flex h-10 w-full items-center rounded-lg border border-gray-300 bg-white md:w-[400px]">
+                            <span className="pl-3 pr-2 text-gray-500"><Search className="h-4 w-4" /></span>
+                            <input
+                                className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
                                 placeholder="Search by application # or name..."
-                                defaultValue={filters.search}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                className="pl-10"
+                                value={searchQuery}
+                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                             />
                         </div>
-
-                        {/* Schedule Filter */}
-                        <Select value={filters.schedule_id || 'all'} onValueChange={(v) => handleFilter('schedule_id', v)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Schedule" />
-                            </SelectTrigger>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3">
+                        <Select value={selectedScheduleId || 'all'} onValueChange={(v) => { setSelectedScheduleId(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-56"><SelectValue placeholder="Schedule" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Schedules</SelectItem>
-                                {schedules.map((schedule) => (
-                                    <SelectItem key={schedule.id} value={schedule.id.toString()}>
-                                        {schedule.name} - {formatDate(schedule.exam_date)}
+                                {schedules.map((s) => (
+                                    <SelectItem key={s.id} value={String(s.id)}>
+                                        {s.name} - {formatDate(s.exam_date)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-
-                        {/* Status Filter */}
-                        <Select value={filters.status || 'all'} onValueChange={(v) => handleFilter('status', v)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
+                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="assigned">Assigned</SelectItem>
@@ -183,116 +207,111 @@ export default function Index({ assignments, schedules, filters }: Props) {
                                 <SelectItem value="cancelled">Cancelled</SelectItem>
                             </SelectContent>
                         </Select>
+                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                     </div>
-
-                    {hasFilters && (
-                        <div className="mt-3 flex items-center gap-2">
-                            <span className="text-sm text-gray-500">Active filters:</span>
-                            <Button variant="ghost" size="sm" onClick={clearFilters}>
-                                <X className="mr-1 h-3 w-3" />
-                                Clear all
-                            </Button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Table */}
-                {assignments.data.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
-                            <table className="w-full text-sm">
-                                <thead className="sticky top-0 z-10 bg-gray-50">
+                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
+                        <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
+                                <tr>
+                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('application_number')}>
+                                        Application # <SortIcon col="application_number" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('name')}>
+                                        Applicant Name <SortIcon col="name" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('schedule')}>
+                                        Exam Schedule <SortIcon col="schedule" />
+                                    </th>
+                                    <th className="cursor-pointer px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('status')}>
+                                        Status <SortIcon col="status" />
+                                    </th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedItems.length === 0 ? (
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Application #</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Applicant Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Exam Schedule</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Seat #</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                        <td colSpan={5} className="px-4 py-12 text-center">
+                                            <UserCheck className="mx-auto h-10 w-10 text-gray-300" />
+                                            <p className="mt-2 text-gray-500">
+                                                {hasFilters ? 'No assignments match your filters.' : 'No exam assignments found.'}
+                                            </p>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {assignments.data.map((assignment) => (
-                                        <tr key={assignment.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-medium text-gray-900">
-                                                {assignment.application_info?.application_number}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {assignment.application_info?.personal_data?.last_name},{' '}
-                                                {assignment.application_info?.personal_data?.first_name}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{assignment.exam_schedule?.name}</p>
-                                                    <p className="text-sm text-gray-500">
-                                                        {formatDate(assignment.exam_schedule?.exam_date)} •{' '}
-                                                        {assignment.exam_schedule?.examination_room?.name}
-                                                    </p>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">{assignment.seat_number || '—'}</td>
-                                            <td className="px-4 py-3 text-center">{getStatusBadge(assignment.status)}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(assignment.id)}
-                                                        disabled={processing}
-                                                        className="text-red-600 hover:text-red-700"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ) : paginatedItems.map((assignment) => (
+                                    <tr key={assignment.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
+                                        <td className="px-4 py-3 font-medium text-gray-900">
+                                            {assignment.application_info?.application_number}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {assignment.application_info?.personal_data?.last_name},{' '}
+                                            {assignment.application_info?.personal_data?.first_name}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <p className="font-medium text-gray-900">{assignment.exam_schedule?.name}</p>
+                                            <p className="text-sm text-gray-500">
+                                                {formatDate(assignment.exam_schedule?.exam_date)} •{' '}
+                                                {assignment.exam_schedule?.examination_room?.name}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">{getStatusBadge(assignment.status)}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex justify-center gap-1">
+                                                <Button
+                                                    variant="ghost" size="sm"
+                                                    onClick={() => setDeleteDialog({ open: true, id: assignment.id })}
+                                                    disabled={processing}
+                                                    className="text-red-600 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                        {/* Pagination */}
-                        {assignments.last_page > 1 && (
-                            <div className="flex items-center justify-between border-t px-4 py-3">
-                                <p className="text-sm text-gray-600">
-                                    Showing {(assignments.current_page - 1) * assignments.per_page + 1} to{' '}
-                                    {Math.min(assignments.current_page * assignments.per_page, assignments.total)} of{' '}
-                                    {assignments.total} results
-                                </p>
-                                <div className="flex gap-1">
-                                    {assignments.links.map((link, index) => (
-                                        <Button
-                                            key={index}
-                                            variant={link.active ? 'default' : 'outline'}
-                                            size="sm"
-                                            disabled={!link.url}
-                                            onClick={() => link.url && router.get(link.url)}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                    {/* Pagination Bar */}
+                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-700">Rows per page:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none"
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={25}>25</option>
+                                <option value={50}>50</option>
+                            </select>
+                            <span className="text-sm text-gray-700">
+                                {sortedItems.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, sortedItems.length)} of {sortedItems.length}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronsLeft className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <span className="px-4 py-2 text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
+                            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                                <ChevronsRight className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
-                ) : (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
-                        <UserCheck className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No assignments found</h3>
-                        <p className="mt-2 text-gray-600">
-                            {hasFilters
-                                ? 'No assignments match your filters. Try adjusting your search criteria.'
-                                : 'Get started by assigning applicants to exam schedules.'}
-                        </p>
-                        {!hasFilters && (
-                            <Link href="/exam-assignments/create">
-                                <Button className="mt-4">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Assign Applicants
-                                </Button>
-                            </Link>
-                        )}
-                    </div>
-                )}
+                </div>
             </div>
 
             <ConfirmDialog

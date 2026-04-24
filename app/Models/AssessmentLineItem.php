@@ -11,7 +11,7 @@ class AssessmentLineItem extends Model
 
     protected $fillable = [
         'assessment_id',
-        'fee_type_id',
+        'fee_id',
         'description',
         'quantity',
         'unit_price',
@@ -29,9 +29,9 @@ class AssessmentLineItem extends Model
         return $this->belongsTo(StudentAssessment::class, 'assessment_id');
     }
 
-    public function feeType()
+    public function fee()
     {
-        return $this->belongsTo(FeeType::class);
+        return $this->belongsTo(Fee::class);
     }
 
     /**

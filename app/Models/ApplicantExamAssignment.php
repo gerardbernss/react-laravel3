@@ -11,9 +11,8 @@ class ApplicantExamAssignment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'applicant_application_info_id',
+        'applicant_id',
         'exam_schedule_id',
-        'seat_number',
         'status',
         'notes',
         'assigned_at',
@@ -30,7 +29,7 @@ class ApplicantExamAssignment extends Model
      */
     public function applicationInfo(): BelongsTo
     {
-        return $this->belongsTo(ApplicantApplicationInfo::class, 'applicant_application_info_id');
+        return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
     /**

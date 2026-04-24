@@ -84,7 +84,6 @@ export default function StudentLayout({ children, breadcrumbs = [] }: StudentLay
             <SidebarProvider defaultOpen>
                 <StudentSidebar />
                 <SidebarInset>
-                <div className="flex h-full flex-1 flex-col overflow-hidden rounded-xl">
                     {/* Header with breadcrumbs */}
                     {breadcrumbs.length > 0 && (
                         <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-6">
@@ -101,13 +100,10 @@ export default function StudentLayout({ children, breadcrumbs = [] }: StudentLay
                         </header>
                     )}
 
-                    {/* Main content */}
-                    <main className="flex-1 overflow-auto bg-gray-50">
-                        {children}
-                    </main>
-                </div>
-            </SidebarInset>
-        </SidebarProvider>
+                    {/* Main content — no overflow wrapper so sticky in children works */}
+                    {children}
+                </SidebarInset>
+            </SidebarProvider>
         </>
     );
 }

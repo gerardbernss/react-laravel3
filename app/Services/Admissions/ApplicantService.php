@@ -1,73 +1,93 @@
 <?php
 namespace App\Services\Admissions;
 
-use App\Models\ApplicantApplicationInfo;
+use App\Models\Applicant;
 use App\Models\ApplicantPersonalData;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+/**
+ * ApplicantService
+ *
+ * Centralises all write operations for the applicant admissions flow.
+ * Every public method wraps its work in a DB transaction so that a failure
+ * at any step (e.g. a document upload error) rolls back all preceding writes
+ * and leaves the database in a clean state.
+ *
+ * The six steps executed for every create/update are:
+ *   1. Personal Data      — upsert by email to avoid duplicates
+ *   2. Family Background  — upsert via updateOrCreate
+ *   3. Siblings           — delete-and-recreate (simplest sync strategy)
+ *   4. Application Info   — create or update the Applicant row
+ *   5. Educational Background — delete-and-recreate
+ *   6. Documents          — store new file uploads, skip unchanged
+ */
 class ApplicantService
 {
-    public function createApplicant(array $data, $request): ApplicantApplicationInfo
+    /**
+     * Create a brand-new applicant with all related data.
+     *
+     * Runs all six steps inside a single transaction. Returns the newly
+     * created Applicant model on success, or throws on any failure.
+     */
+    public function createApplicant(array $data, $request): Applicant
     {
         return DB::transaction(function () use ($data, $request) {
-            // 1. Personal Data
-            $personalData = $this->handlePersonalData($data, $request);
-
-            // 2. Family Background
-            $this->handleFamilyBackground($personalData, $data);
-
-            // 3. Siblings
-            $this->handleSiblings($personalData, $data);
-
-            // 4. Application Info
-            $application = $this->handleApplicationInfo($personalData, $data);
-
-            // 5. Educational Background
-            $this->handleEducationalBackground($application, $data);
-
-            // 6. Documents
-            $this->handleDocuments($application, $personalData, $request);
+            $personalData = $this->handlePersonalData($data, $request);           // Step 1
+            $this->handleFamilyBackground($personalData, $data);                  // Step 2
+            $this->handleSiblings($personalData, $data);                          // Step 3
+            $application = $this->handleApplicationInfo($personalData, $data);    // Step 4
+            $this->handleEducationalBackground($application, $data);              // Step 5
+            $this->handleDocuments($application, $personalData, $request);        // Step 6
 
             return $application;
         });
     }
 
-    public function updateApplicant(ApplicantApplicationInfo $application, array $data, $request): ApplicantApplicationInfo
+    /**
+     * Update an existing applicant with potentially changed data.
+     *
+     * Identical six-step flow to createApplicant(). Additionally, when the
+     * status is being changed to 'Enrolled', step 5.5 creates (or links) the
+     * corresponding Student record.
+     */
+    public function updateApplicant(Applicant $application, array $data, $request): Applicant
     {
         return DB::transaction(function () use ($application, $data, $request) {
-            // 1. Personal Data
-            $personalData = $this->handlePersonalData($data, $request, $application->personalData);
+            $personalData = $this->handlePersonalData($data, $request, $application->personalData); // Step 1
+            $this->handleFamilyBackground($personalData, $data);                                    // Step 2
+            $this->handleSiblings($personalData, $data);                                            // Step 3
+            $this->updateApplicationInfo($application, $data);                                      // Step 4
 
-            // 2. Family Background
-            $this->handleFamilyBackground($personalData, $data);
+            $this->handleEducationalBackground($application, $data);                                // Step 5
 
-            // 3. Siblings
-            $this->handleSiblings($personalData, $data);
-
-            // 4. Application Info (Update)
-            $this->updateApplicationInfo($application, $data);
-
-            // 5. Educational Background
-            $this->handleEducationalBackground($application, $data);
-
-            // 5.5 Handle Enrollment (Student Record)
+            // Step 5.5 — Promote to enrolled student when status changes to Enrolled.
             if (($data['application_status'] ?? '') === 'Enrolled') {
                 $this->handleEnrollment($application);
             }
 
-            // 6. Documents (Update/Add new)
-            $this->handleDocuments($application, $personalData, $request);
+            $this->handleDocuments($application, $personalData, $request);                         // Step 6
 
             return $application;
         });
     }
 
+    /**
+     * Upsert personal data for an applicant.
+     *
+     * Deduplication strategy: if no existing record is provided (create flow),
+     * we look up an existing ApplicantPersonalData row by email address. This
+     * prevents duplicate personal-data rows when the same person applies more
+     * than once. If no match is found, a new row is created.
+     *
+     * A doctor's note file (optional) is handled inline here because it belongs
+     * directly to the personal data record rather than the documents table.
+     */
     private function handlePersonalData(array $data, $request, ?ApplicantPersonalData $existing = null): ApplicantPersonalData
     {
-        // If not provided explicit existing record, try to find by email
         if (! $existing) {
+            // Try to reuse an existing personal data row for the same email.
             $existing = ApplicantPersonalData::where('email', $data['email'])->first();
         }
 
@@ -108,7 +128,7 @@ class ApplicantService
             $existing = ApplicantPersonalData::create($payload);
         }
 
-        // Handle Doctors Note File
+        // Store the doctor's note PDF/image if one was uploaded in this request.
         if ($request->hasFile('doctors_note_file')) {
             $file      = $request->file('doctors_note_file');
             $lastName  = $this->sanitizeFileName($existing->last_name);
@@ -124,6 +144,12 @@ class ApplicantService
         return $existing;
     }
 
+    /**
+     * Upsert the family background record for a personal data entry.
+     *
+     * Uses updateOrCreate keyed on applicant_personal_data_id so repeated
+     * calls are idempotent — the second call updates instead of inserting.
+     */
     private function handleFamilyBackground(ApplicantPersonalData $personalData, array $data): void
     {
         $payload = [
@@ -185,8 +211,17 @@ class ApplicantService
         );
     }
 
+    /**
+     * Sync sibling records for an applicant.
+     *
+     * Delete-and-recreate is simpler than diffing the incoming list against
+     * existing rows — siblings are a small set and referential integrity is
+     * not a concern here. Only rows with a non-empty sibling_full_name are
+     * persisted so blank form entries are discarded silently.
+     */
     private function handleSiblings(ApplicantPersonalData $personalData, array $data): void
     {
+        // Remove all existing siblings before inserting the fresh list.
         $personalData->siblings()->delete();
         $siblings = $this->decodeJsonOrArray($data['siblings'] ?? []);
 
@@ -203,21 +238,27 @@ class ApplicantService
         }
     }
 
-    private function handleApplicationInfo(ApplicantPersonalData $personalData, array $data): ApplicantApplicationInfo
+    /**
+     * Create the Applicant row and link it to the personal data record.
+     *
+     * Resolves the student category from year level, then either uses the
+     * manually provided application number (validated for uniqueness) or
+     * auto-generates a sequential one with the appropriate E/H prefix.
+     */
+    private function handleApplicationInfo(ApplicantPersonalData $personalData, array $data): Applicant
     {
         $studentCategory = $this->determineStudentCategory($data['year_level']);
 
-        // Handle Application Number
         if (! empty($data['application_number'])) {
             $applicationNumber = strtoupper(trim($data['application_number']));
-            if (ApplicantApplicationInfo::where('application_number', $applicationNumber)->exists()) {
+            if (Applicant::where('application_number', $applicationNumber)->exists()) {
                 throw new \Exception("The application number '$applicationNumber' is already taken.");
             }
         } else {
             $applicationNumber = $this->generateApplicationNumber($data['year_level']);
         }
 
-        return ApplicantApplicationInfo::forceCreate([
+        return Applicant::forceCreate([
             'applicant_personal_data_id' => $personalData->id,
             'application_number'         => $applicationNumber,
             'application_date'           => $data['application_date'],
@@ -230,11 +271,18 @@ class ApplicantService
             'classification'             => $data['classification'] ?? null,
             'learning_mode'              => $data['learning_mode'] ?? null,
             'accomplished_by_name'       => $data['accomplished_by_name'] ?? null,
-            'application_type'           => $data['application_type'] ?? 'Onsite', // Default to Onsite if not passed (though Controller2 passes 'Online')
+            'application_type'           => $data['application_type'] ?? 'Onsite',
         ]);
     }
 
-    private function updateApplicationInfo(ApplicantApplicationInfo $application, array $data): void
+    /**
+     * Update the Applicant row's mutable fields.
+     *
+     * application_number can be changed manually as long as it doesn't clash
+     * with another record. forceCreate is not used here because the row
+     * already exists.
+     */
+    private function updateApplicationInfo(Applicant $application, array $data): void
     {
         $studentCategory = $this->determineStudentCategory($data['year_level']);
 
@@ -251,11 +299,12 @@ class ApplicantService
             'accomplished_by_name' => $data['accomplished_by_name'] ?? null,
         ];
 
-        // Handle application number update
+        // Only update the application number if a new one was supplied and it
+        // differs from the current value (to avoid a needless uniqueness check).
         if (! empty($data['application_number']) && $data['application_number'] !== $application->application_number) {
             $manualNumber = strtoupper(trim($data['application_number']));
 
-            if (ApplicantApplicationInfo::where('application_number', $manualNumber)
+            if (Applicant::where('application_number', $manualNumber)
                 ->where('id', '!=', $application->id)
                 ->exists()) {
                 throw new \Exception("The application number '$manualNumber' is already taken.");
@@ -267,7 +316,13 @@ class ApplicantService
         $application->update($payload);
     }
 
-    private function handleEducationalBackground(ApplicantApplicationInfo $application, array $data): void
+    /**
+     * Sync previous school records for an applicant.
+     *
+     * Same delete-and-recreate pattern used for siblings. Only entries with
+     * a non-empty school_name are stored.
+     */
+    private function handleEducationalBackground(Applicant $application, array $data): void
     {
         $application->educationalBackground()->delete();
         $schools = $this->decodeJsonOrArray($data['schools'] ?? []);
@@ -292,7 +347,17 @@ class ApplicantService
         }
     }
 
-    private function handleDocuments(ApplicantApplicationInfo $application, ApplicantPersonalData $personalData, $request): void
+    /**
+     * Store newly uploaded document files and link them to the applicant.
+     *
+     * Files are named deterministically:
+     *   {APPLICATION_NUMBER}_{LASTNAME}_{FIRSTNAME}_{DOCTYPE}.{ext}
+     *
+     * Only files present in the current request are processed; existing paths
+     * are preserved via updateOrCreate so a partial re-upload doesn't wipe
+     * previously saved documents.
+     */
+    private function handleDocuments(Applicant $application, ApplicantPersonalData $personalData, $request): void
     {
         $lastName   = $this->sanitizeFileName($personalData->last_name);
         $firstName  = $this->sanitizeFileName($personalData->first_name);
@@ -306,14 +371,6 @@ class ApplicantService
             'latest_report_card_back'   => 'REPORTCARD_BACK',
         ];
 
-        // If documents record exists, we might need to update it?
-        // Actually, the original code doesn't seem to update existing records gracefully, it just creates if not empty.
-        // But since it's one-to-one (hasOne), we should probably use updateOrCreate or update if exists.
-        // The original code uses `$application->documents()->create($uploads)`.
-
-        // Let's check if documents already exist
-        $documents = $application->documents;
-
         foreach ($fileKeys as $fileKey => $docType) {
             if ($request->hasFile($fileKey)) {
                 $file              = $request->file($fileKey);
@@ -324,15 +381,23 @@ class ApplicantService
             }
         }
 
+        // Only write to the DB when at least one new file was uploaded.
         if (! empty($uploads)) {
             $application->documents()->updateOrCreate(
-                ['applicant_application_info_id' => $application->id],
+                ['applicant_id' => $application->id],
                 $uploads
             );
         }
     }
 
-    private function handleEnrollment(ApplicantApplicationInfo $application): void
+    /**
+     * Create or link a Student record when an applicant is marked Enrolled.
+     *
+     * Looks for an existing Student row by either application_id or
+     * applicant_personal_data_id (handles edge cases where a student record
+     * was created through a different flow). If none exists, creates one.
+     */
+    private function handleEnrollment(Applicant $application): void
     {
         $student = Student::where('application_id', $application->id)
             ->orWhere('applicant_personal_data_id', $application->personalData->id)
@@ -341,12 +406,13 @@ class ApplicantService
         if (! $student) {
             $student                             = new Student();
             $student->applicant_personal_data_id = $application->personalData->id;
-            $student->application_id             = $application->id; // Assuming we want to link it
+            $student->application_id             = $application->id;
             $student->enrollment_date            = now();
             $student->save();
         } else {
             $student->applicant_personal_data_id = $application->personalData->id;
-            // Preserve the existing enrollment_date
+            // Preserve the original enrollment_date; only backfill application_id
+            // if the existing record is missing it.
             if (! $student->application_id) {
                 $student->application_id = $application->id;
             }
@@ -354,8 +420,15 @@ class ApplicantService
         }
     }
 
-    // Helper Methods
+    // ─── Helper Methods ───────────────────────────────────────────────────────
 
+    /**
+     * Map a year level string to one of the three student categories.
+     *
+     * LES — Lower Elementary School (Kinder–Grade 6)
+     * JHS — Junior High School      (Grade 7–10)
+     * SHS — Senior High School      (Grade 11–12)
+     */
     private function determineStudentCategory($yearLevel): ?string
     {
         if (in_array($yearLevel, ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])) {
@@ -368,6 +441,15 @@ class ApplicantService
         return null;
     }
 
+    /**
+     * Return the single-letter prefix used in application numbers.
+     *
+     * 'E' — Elementary (Grades 1–6, Kindergarten)
+     * 'H' — High School (Grades 7–12)
+     *
+     * Numeric grade extraction is attempted first (most reliable), with string
+     * keyword matching as a fallback for non-numeric inputs like "Kindergarten".
+     */
     private function getApplicationPrefixLetter($yearLevel): string
     {
         $normalized = Str::of((string) $yearLevel)->lower()->trim()->__toString();
@@ -397,30 +479,39 @@ class ApplicantService
         return 'E';
     }
 
+    /**
+     * Generate the next sequential application number for a given year level.
+     *
+     * Format: {prefix}{4-digit sequence}  e.g. E0001, H0042
+     *
+     * Finds the highest existing number with the same prefix and increments it.
+     * The sequence is zero-padded to 4 digits up to 9999; beyond that it
+     * grows naturally (E10000, E10001, …).
+     */
     private function generateApplicationNumber(string $yearLevel): string
     {
         $letter = $this->getApplicationPrefixLetter($yearLevel);
 
-        $last = ApplicantApplicationInfo::where('application_number', 'like', $letter . '%')
+        $last = Applicant::where('application_number', 'like', $letter . '%')
             ->orderBy('application_number', 'desc')
             ->first();
 
-        if ($last) {
-            $lastSeq = (int) substr($last->application_number, 1);
-            $nextSeq = $lastSeq + 1;
-        } else {
-            $nextSeq = 1;
-        }
+        $nextSeq = $last ? ((int) substr($last->application_number, 1)) + 1 : 1;
 
-        if ($nextSeq < 10000) {
-            $numberPart = str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
-        } else {
-            $numberPart = (string) $nextSeq;
-        }
+        $numberPart = $nextSeq < 10000
+            ? str_pad($nextSeq, 4, '0', STR_PAD_LEFT)
+            : (string) $nextSeq;
 
         return $letter . $numberPart;
     }
 
+    /**
+     * Normalise health condition data for storage.
+     *
+     * Arrays are filtered of nulls/empty strings and JSON-encoded.
+     * An empty array or null input is stored as the literal string 'None'
+     * so the column is never empty — making NULL checks unnecessary downstream.
+     */
     private function formatHealthConditions($input)
     {
         if (is_array($input)) {
@@ -430,11 +521,20 @@ class ApplicantService
         return ($input === null || $input === '') ? 'None' : $input;
     }
 
+    /**
+     * Strip non-alphanumeric characters from a name for use in filenames.
+     * Result is uppercased, e.g. "De la Cruz" → "DELACRUZ".
+     */
     private function sanitizeFileName(string $name): string
     {
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $name));
     }
 
+    /**
+     * Accept either a JSON string or a plain PHP array and always return an array.
+     * Handles the inconsistency between multipart form data (JSON string) and
+     * direct array inputs (e.g. from tests or API calls).
+     */
     private function decodeJsonOrArray($input)
     {
         return is_string($input) ? json_decode($input, true) : $input;

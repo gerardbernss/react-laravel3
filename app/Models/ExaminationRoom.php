@@ -15,6 +15,8 @@ class ExaminationRoom extends Model
         'building',
         'capacity',
         'floor',
+        'description',
+        'facilities',
         'is_active',
     ];
 

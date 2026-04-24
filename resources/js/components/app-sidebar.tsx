@@ -7,12 +7,14 @@ import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
+    Banknote,
     BookOpen,
     Briefcase,
     Building2,
-    Calculator,
     Calendar,
     CalendarCheck,
+    CalendarClock,
+    CalendarDays,
     ClipboardList,
     DollarSign,
     FilePlus,
@@ -21,10 +23,10 @@ import {
     Key,
     KeyRound,
     LayoutGrid,
+    Megaphone,
     Percent,
     Shield,
     SquareStack,
-    UserPlus,
     UserRoundPen,
     Users,
 } from 'lucide-react';
@@ -54,15 +56,16 @@ const allNavItems: NavItem[] = [
         permission: 'view-permissions',
     },
     {
-        title: 'Exam Assignments',
-        icon: UserPlus,
+        title: 'Students',
+        href: '/students',
+        icon: Users,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Examinations',
+        icon: Calendar,
         permission: 'view-permissions',
         children: [
-            {
-                title: 'Assign Applicants',
-                href: '/exam-assignments',
-                icon: UserPlus,
-            },
             {
                 title: 'Exam Schedules',
                 href: '/exam-schedules',
@@ -91,6 +94,12 @@ const allNavItems: NavItem[] = [
         title: 'Enrollments',
         href: '/enrollment/dashboard',
         icon: UserRoundPen,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Enrollment Periods',
+        href: '/enrollment-periods',
+        icon: CalendarClock,
         permission: 'view-permissions',
     },
     {
@@ -125,26 +134,39 @@ const allNavItems: NavItem[] = [
     },
 
     {
-        title: 'Fee Management',
+        title: 'Fees Maintenance',
         icon: DollarSign,
         permission: 'view-permissions',
         children: [
             {
-                title: 'Fee Types',
-                href: '/admin/fee-types',
+                title: 'Fees',
+                href: '/admin/fees',
                 icon: DollarSign,
             },
             {
-                title: 'Fee Rates',
-                href: '/admin/fee-rates',
-                icon: Calculator,
-            },
-            {
-                title: 'Discount Types',
+                title: 'Discounts',
                 href: '/admin/discount-types',
                 icon: Percent,
             },
         ],
+    },
+    {
+        title: 'Announcements',
+        href: '/admin/announcements',
+        icon: Megaphone,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Semester Periods',
+        href: '/admin/semester-periods',
+        icon: CalendarDays,
+        permission: 'view-permissions',
+    },
+    {
+        title: 'Payments',
+        href: '/admin/finance/assessments',
+        icon: Banknote,
+        permission: 'view-permissions',
     },
 ];
 

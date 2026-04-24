@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,65 +10,83 @@ class Applicant extends Model
 
     protected $fillable = [
         // Application Information
+        'applicant_personal_data_id',
+        'application_status',
+        'application_number',
         'application_date',
-        'prio_no',
-        'business_unit',
-        'campus_site',
-        'entry_class',
-        'stud_batch',
-        'semester',
-        'schedule_pref',
-        'pchoice1',
-        'pchoice2',
-        'pchoice3',
-        'curr_code',
         'year_level',
+        'school_year',
+        'semester',
+        'student_category',
+        'strand',
+        'classification',
+        'learning_mode',
+        'accomplished_by_name',
 
-        // Personal Information
-        'lrn',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'suffix',
-        'gender',
-        'citizenship',
-        'religion',
-        'date_of_birth',
-        'place_of_birth',
-        'civil_status',
-        'birth_order',
-        'mother_tongue',
-        'ethnicity',
-
-        // Contact Information
-        'phone',
-        'email',
-        'street',
-        'brgy',
-        'city',
-        'state',
-        'zip_code',
-        'father_name',
-        'father_number',
-        'mother_name',
-        'mother_number',
-        'emergency_contact_name',
-        'emergency_contact_number',
-
-        // Other Information
-        'financial_source',
-        'exam_schedule',
+        'examination_date',
+        'student_id_number',
+        'application_type',
+        'remarks',
     ];
 
-    protected $casts = [
-        'application_date' => 'date',
-        'date_of_birth' => 'date',
-        'exam_schedule' => 'date',
+    public static $statuses = [
+        'Pending',
+        'For Exam',
+        'Exam Taken',
+        'Enrolled',
     ];
+    protected $casts = ['application_date' => 'date', 'examination_date' => 'date'];
 
-    // Optional: Add accessors for full name
-    public function getFullNameAttribute(): string
+    public function personalData()
     {
-        return trim("{$this->first_name} {$this->middle_name} {$this->last_name} {$this->suffix}");
+        return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
+    }
+
+    public function educationalBackground()
+    {
+        return $this->hasMany(ApplicantEducationalBackground::class, 'applicant_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasOne(ApplicantDocuments::class, 'applicant_id');
+    }
+
+    public function portalCredential()
+    {
+        return $this->hasOne(PortalCredential::class, 'applicant_id');
+    }
+
+    public function student()
+    {
+        return $this->hasOne(Student::class, 'applicant_id');
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(EnrollmentAuditLog::class, 'applicant_id');
+    }
+
+    public function examAssignment()
+    {
+        return $this->hasOne(ApplicantExamAssignment::class, 'applicant_id');
+    }
+
+    /**
+     * Scopes
+     */
+    public function scopeEnrolled($query)
+    {
+        return $query->where('application_status', 'Enrolled');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('application_status', 'Pending');
+    }
+
+    public function scopeExamTaken($query)
+    {
+        return $query->where('application_status', 'Exam Taken');
     }
 }

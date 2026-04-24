@@ -14,6 +14,7 @@ class StudentAssessment extends Model
         'assessment_number',
         'school_year',
         'semester',
+        'mode_of_payment',
         'total_tuition',
         'total_misc_fees',
         'total_lab_fees',
@@ -21,6 +22,8 @@ class StudentAssessment extends Model
         'gross_amount',
         'total_discounts',
         'net_amount',
+        'payment_plan',
+        'minimum_amount',
         'status',
         'generated_at',
         'finalized_at',
@@ -36,6 +39,7 @@ class StudentAssessment extends Model
         'gross_amount' => 'decimal:2',
         'total_discounts' => 'decimal:2',
         'net_amount' => 'decimal:2',
+        'minimum_amount' => 'decimal:2',
         'generated_at' => 'datetime',
         'finalized_at' => 'datetime',
     ];
@@ -66,6 +70,38 @@ class StudentAssessment extends Model
     public function finalizedBy()
     {
         return $this->belongsTo(User::class, 'finalized_by');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(StudentPayment::class, 'assessment_id');
+    }
+
+    /**
+     * Sum of all recorded payments for this assessment.
+     */
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->payments()->sum('amount_paid');
+    }
+
+    /**
+     * Minimum amount that must be paid for enrollment.
+     * Falls back to net_amount when not explicitly set (i.e. full payment plan).
+     */
+    public function getMinimumRequiredAttribute(): float
+    {
+        return $this->minimum_amount !== null
+            ? (float) $this->minimum_amount
+            : (float) $this->net_amount;
+    }
+
+    /**
+     * Outstanding balance = net_amount minus all payments received.
+     */
+    public function getRemainingBalanceAttribute(): float
+    {
+        return max(0.0, (float) $this->net_amount - $this->total_paid);
     }
 
     public function scopeDraft($query)

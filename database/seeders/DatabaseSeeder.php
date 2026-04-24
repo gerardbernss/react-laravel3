@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Applicant;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,6 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolePermissionSeeder::class,
+            SemesterPeriodSeeder::class,
             FeeTypeSeeder::class,
             FeeRateSeeder::class,
             DiscountTypeSeeder::class,
@@ -22,8 +22,8 @@ class DatabaseSeeder extends Seeder
             BlockSectionSeeder::class,
             ExaminationRoomSeeder::class,
             ExamScheduleSeeder::class,
+            StudentSeeder::class,
         ]);
-        Applicant::factory(10)->create();
-        $this->command->info('✅ 10 Applicants created successfully!');
+
     }
 }

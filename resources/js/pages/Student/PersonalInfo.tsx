@@ -66,10 +66,6 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
-        href: '/student/dashboard',
-    },
-    {
         title: 'Personal Information',
         href: '/student/personal-info',
     },
@@ -78,11 +74,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const InfoRow = ({ label, value, editable, editComponent }: InfoRowProps) => (
     <div className="border-b border-gray-100 py-3 last:border-0">
         <div className="mb-1 text-sm text-gray-500">{label}</div>
-        {editable && editComponent ? (
-            editComponent
-        ) : (
-            <div className="text-base font-medium text-gray-900">{value || 'N/A'}</div>
-        )}
+        {editable && editComponent ? editComponent : <div className="text-base font-medium text-gray-900">{value || 'N/A'}</div>}
     </div>
 );
 
@@ -129,7 +121,6 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                 <h1 className="text-3xl font-bold text-gray-900">
                                     {personalData ? `${personalData.first_name} ${personalData.last_name}` : 'Personal Information'}
                                 </h1>
-                                <p className="mt-1 text-sm text-gray-500">View and manage your personal details</p>
                             </div>
                             <div className="flex gap-2">
                                 {isEditing ? (
@@ -185,7 +176,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                 <InfoRow label="Religion" value={personalData.religion} />
                                                 <InfoRow
                                                     label="Date of Birth"
-                                                    value={personalData.date_of_birth ? new Date(personalData.date_of_birth).toLocaleDateString() : null}
+                                                    value={
+                                                        personalData.date_of_birth ? new Date(personalData.date_of_birth).toLocaleDateString() : null
+                                                    }
                                                 />
                                                 <InfoRow label="Place of Birth" value={personalData.place_of_birth} />
                                             </div>
@@ -231,7 +224,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.mobile_number} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.mobile_number || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.mobile_number || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -255,7 +250,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.present_street} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.present_street || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.present_street || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -270,7 +267,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.present_brgy} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.present_brgy || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.present_brgy || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -285,7 +284,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.present_city} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.present_city || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.present_city || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -300,7 +301,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.present_province} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.present_province || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.present_province || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -339,7 +342,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.permanent_street} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.permanent_street || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.permanent_street || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -354,7 +359,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.permanent_brgy} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.permanent_brgy || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.permanent_brgy || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -369,7 +376,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.permanent_city} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.permanent_city || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.permanent_city || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -384,7 +393,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.permanent_province} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.permanent_province || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.permanent_province || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="border-b border-gray-100 py-3 last:border-0">
@@ -399,7 +410,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                                             <InputError message={errors.permanent_zip} className="mt-1" />
                                                         </div>
                                                     ) : (
-                                                        <div className="text-base font-medium text-gray-900">{personalData.permanent_zip || 'N/A'}</div>
+                                                        <div className="text-base font-medium text-gray-900">
+                                                            {personalData.permanent_zip || 'N/A'}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

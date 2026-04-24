@@ -39,7 +39,7 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
 
     protected $fillable = [
         'applicant_personal_data_id',
-        'applicant_application_info_id',
+        'applicant_id',
         'username',
         'temporary_password',
         'password_changed',
@@ -52,6 +52,7 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
         'login_attempts',
         'remarks',
         'created_by',
+        'remember_token',
     ];
 
     protected $casts = [
@@ -72,7 +73,7 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
 
     public function application()
     {
-        return $this->belongsTo(ApplicantApplicationInfo::class, 'applicant_application_info_id');
+        return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
     public function student()
