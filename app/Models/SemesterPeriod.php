@@ -14,15 +14,27 @@ class SemesterPeriod extends Model
 
     /**
      * Returns the active SemesterPeriod whose month range contains today.
+     * When today falls in a gap (e.g. June–July between semesters), falls back
+     * to the period whose end_month is closest before the current month.
      */
     public static function getCurrent(): ?self
     {
         $month = (int) now()->format('n');
 
-        return static::where('is_active', true)
+        // Exact match first
+        $exact = static::where('is_active', true)
             ->where('start_month', '<=', $month)
             ->where('end_month', '>=', $month)
             ->first();
+
+        if ($exact) return $exact;
+
+        // Fall back to the most recently ended period
+        return static::where('is_active', true)
+            ->where('end_month', '<', $month)
+            ->orderByDesc('end_month')
+            ->first()
+            ?? static::where('is_active', true)->orderByDesc('end_month')->first();
     }
 
     /**
@@ -33,17 +45,4 @@ class SemesterPeriod extends Model
         return static::getCurrent()?->name;
     }
 
-    /**
-     * Returns the school year based on the current date.
-     * Month >= 8 (Aug–Dec): {year}-{year+1}
-     * Month < 8  (Jan–Jul): {year-1}-{year}
-     */
-    public static function getCurrentSchoolYear(): string
-    {
-        $year  = (int) now()->format('Y');
-        $month = (int) now()->format('n');
-        $startYear = $month >= 8 ? $year : $year - 1;
-
-        return "{$startYear}-" . ($startYear + 1);
-    }
 }

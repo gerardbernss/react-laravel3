@@ -1,18 +1,38 @@
 <?php
 
+/**
+ * Student portal routes — accessible via the 'student' auth guard (PortalCredential model).
+ *
+ * This file is completely separate from the admin 'web' guard routes. The student
+ * guard uses portal_credentials table for authentication, not the users table.
+ *
+ * Route groups:
+ *   (no middleware)        — PUBLIC: student login form
+ *   auth:student           — AUTHENTICATED STUDENT: all portal pages
+ *   auth:student (prefix /applicant) — Applicant-only portal: shown to applicants who have
+ *                            received credentials but have NOT yet been formally enrolled
+ *                            (no Student record exists yet). Gives them a read-only view of
+ *                            their application status and allows generating their fee assessment.
+ *   auth:student + student.enrolled — ENROLLED ONLY: schedule, attendance, forms, payment mode.
+ *                            The 'student.enrolled' middleware (EnsureEnrolledStudent) aborts
+ *                            with 403 if the student's enrollment_status is not 'Active'.
+ *
+ * Password change is mandatory on first login: the portal redirects to /student/change-password
+ * whenever password_changed = false on the PortalCredential. This is enforced in
+ * StudentPortalController, not at the middleware level.
+ *
+ * This file is included by routes/web.php via require __DIR__.'/student.php'.
+ */
+
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\Student\StudentPortalController;
 use Illuminate\Support\Facades\Route;
 
-/**
- * STUDENT PORTAL ROUTES
- * Routes for student access using portal credentials
- */
+// ===== PUBLIC: Student login =====
 
-// Redirect old student login URL to main login page
-Route::get('student/login', function () {
-    return redirect()->route('login');
-})->name('student.login');
+// Student portal login
+Route::get('student/login', [StudentLoginController::class, 'create'])->name('student.login');
+Route::post('student/login', [StudentLoginController::class, 'store']);
 
 // Applicant routes (no student prefix)
 Route::middleware('auth:student')->group(function () {
@@ -22,6 +42,10 @@ Route::middleware('auth:student')->group(function () {
         ->name('applicant.personal-info');
     Route::post('applicant/personal-info', [StudentPortalController::class, 'applicantUpdatePersonalInfo'])
         ->name('applicant.personal-info.update');
+    Route::get('applicant/enrollment', [StudentPortalController::class, 'applicantEnrollment'])
+        ->name('applicant.enrollment');
+    Route::post('applicant/enrollment/generate-assessment', [StudentPortalController::class, 'generateApplicantAssessment'])
+        ->name('applicant.enrollment.generate-assessment');
 });
 
 // Authenticated student routes
@@ -46,17 +70,17 @@ Route::middleware('auth:student')->prefix('student')->group(function () {
     Route::post('logout', [StudentLoginController::class, 'destroy'])
         ->name('student.logout');
 
+    // Enrollment page: accessible to Exam Passed applicants and enrolled students
+    Route::get('enrollment', [StudentPortalController::class, 'enrollment'])
+        ->name('student.enrollment');
+    Route::post('enrollment/process', [StudentPortalController::class, 'processEnrollment'])
+        ->name('student.enrollment.process');
+
+    Route::get('my-section', [StudentPortalController::class, 'mySection'])
+        ->name('student.my-section');
+
     // Enrolled students only
     Route::middleware('student.enrolled')->group(function () {
-        Route::get('enrollment', [StudentPortalController::class, 'enrollment'])
-            ->name('student.enrollment');
-
-        Route::post('enrollment/confirm', [StudentPortalController::class, 'confirmEnrollment'])
-            ->name('student.enrollment.confirm');
-
-        Route::post('enrollment/process', [StudentPortalController::class, 'processEnrollment'])
-            ->name('student.enrollment.process');
-
         Route::patch('enrollment/payment-mode', [StudentPortalController::class, 'changePaymentMode'])
             ->name('student.enrollment.payment-mode');
 

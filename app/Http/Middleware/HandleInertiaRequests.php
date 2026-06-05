@@ -77,7 +77,8 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 // True when the portal user is a new applicant (no Student record yet).
                 // Used by the frontend to show the applicant-only portal view.
-                'is_applicant'     => $isApplicant,
+                'is_applicant'        => $isApplicant,
+                'application_status'  => $student->application?->application_status,
             ];
         }
 
@@ -113,12 +114,18 @@ class HandleInertiaRequests extends Middleware
             // Persist sidebar open/closed state across page navigations via a
             // cookie. Defaults to open when the cookie is absent.
             'sidebarOpen'     => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            // Also lazy — queries SemesterPeriod only when the response is built,
-            // avoiding a DB hit on every middleware tick.
-            'currentSemester' => fn () => [
-                'name'        => \App\Models\SemesterPeriod::getCurrentSemester(),
-                'school_year' => \App\Models\SemesterPeriod::getCurrentSchoolYear(),
-            ],
+            // Lazy — resolves only when Inertia serialises the response.
+            // Uses EnrollmentPeriod::current() as the single source of truth.
+            'currentSemester' => function () {
+                $period = \App\Models\EnrollmentPeriod::current();
+                return [
+                    'name'        => $period?->semester,
+                    'school_year' => $period?->school_year,
+                ];
+            },
+            'studentEnrollmentOpen'   => fn () => \App\Models\EnrollmentPeriod::hasOpenStudentPeriod(),
+            'applicantEnrollmentOpen' => fn () => \App\Models\EnrollmentPeriod::hasOpenApplicantPeriod(),
+            'applicationPeriodOpen'   => fn () => \App\Models\EnrollmentPeriod::hasOpenApplicationPeriod(),
         ];
     }
 }

@@ -47,7 +47,7 @@ class PortalCredentialsMail extends Mailable
                 'credential'        => $this->credential,
                 'temporaryPassword' => $this->temporaryPassword,
                 'studentName'       => $this->credential->personalData?->first_name . ' ' . $this->credential->personalData?->last_name,
-                'portalUrl'         => config('app.url') . '/student-portal',
+                'portalUrl'         => config('app.url') . '/student/login',
             ],
         );
     }

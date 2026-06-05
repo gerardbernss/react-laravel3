@@ -8,13 +8,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calendar, CalendarClock, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleDot } from 'lucide-react';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { Calendar, CalendarClock, CircleDot, Pencil, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface EnrollmentPeriod {
     id: number;
     school_year: string;
     semester: string;
+    type: 'student' | 'applicant' | 'application';
     is_open: boolean;
     status: 'open' | 'upcoming' | 'expired' | 'closed';
     start_date: string | null;
@@ -75,11 +78,13 @@ function formatDate(date: string | null) {
 export default function Index({ periods, semesters }: Props) {
     // Start Enrollment dialog (header — creates + opens a new period)
     const [showStartDialog, setShowStartDialog] = useState(false);
-    const startForm = useForm({ school_year: '', semester: '', start_date: '', close_date: '', notes: '' });
+    const _d = new Date();
+    const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
+    const startForm = useForm({ school_year: '', semester: '', type: '' as 'student' | 'applicant' | 'application' | '', start_date: today, close_date: '', notes: '' });
 
     // Re-open dialog (per-row — opens an existing closed/expired period)
     const [openDialog, setOpenDialog] = useState<EnrollmentPeriod | null>(null);
-    const openForm = useForm({ start_date: '', close_date: '', notes: '' });
+    const openForm = useForm({ start_date: today, close_date: '', notes: '' });
 
     // Edit (extend) dialog
     const [editDialog, setEditDialog] = useState<EnrollmentPeriod | null>(null);
@@ -92,6 +97,11 @@ export default function Index({ periods, semesters }: Props) {
     // Delete confirm
     const [deleteDialog, setDeleteDialog] = useState<EnrollmentPeriod | null>(null);
     const { processing: deletingPeriod, delete: destroyPeriod } = useForm();
+
+
+    const isStudentEnrollmentOpen    = periods.some((p) => p.type === 'student' && p.status === 'open');
+    const isApplicantEnrollmentOpen  = periods.some((p) => p.type === 'applicant' && p.status === 'open');
+    const isApplicationPeriodOpen    = periods.some((p) => p.type === 'application' && p.status === 'open');
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -153,6 +163,8 @@ export default function Index({ periods, semesters }: Props) {
         });
     };
 
+
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Enrollment Periods" />
@@ -166,7 +178,10 @@ export default function Index({ periods, semesters }: Props) {
                             <h1 className="text-3xl font-bold text-gray-900">Enrollment Periods</h1>
                         </div>
                     </div>
-                    <Button onClick={() => setShowStartDialog(true)} className="gap-2 bg-green-600 hover:bg-green-700">
+                    <Button
+                        onClick={() => setShowStartDialog(true)}
+                        className="gap-2 bg-green-600 hover:bg-green-700"
+                    >
                         <Calendar className="h-4 w-4" />
                         Start Enrollment
                     </Button>
@@ -179,6 +194,7 @@ export default function Index({ periods, semesters }: Props) {
                             <TableRow className="bg-gray-50">
                                 <TableHead className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">School Year</TableHead>
                                 <TableHead className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">Semester</TableHead>
+                                <TableHead className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">Type</TableHead>
                                 <TableHead className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">Status</TableHead>
                                 <TableHead className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">Start Date</TableHead>
                                 <TableHead className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">End Date</TableHead>
@@ -189,7 +205,7 @@ export default function Index({ periods, semesters }: Props) {
                         <TableBody>
                             {periods.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="py-12 text-center text-gray-500">
+                                    <TableCell colSpan={8} className="py-12 text-center text-gray-500">
                                         <CalendarClock className="mx-auto mb-3 h-10 w-10 text-gray-300" />
                                         <p>No enrollment periods yet.</p>
                                         <p className="text-sm">Click "Start Enrollment" to begin.</p>
@@ -201,6 +217,15 @@ export default function Index({ periods, semesters }: Props) {
                                     <TableCell className="font-medium">{period.school_year}</TableCell>
                                     <TableCell>{period.semester}</TableCell>
                                     <TableCell>
+                                        {period.type === 'student' ? (
+                                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Student</Badge>
+                                        ) : period.type === 'applicant' ? (
+                                            <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Applicant Enrollment</Badge>
+                                        ) : (
+                                            <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-100">Application</Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
                                         <StatusBadge status={period.status} />
                                     </TableCell>
                                     <TableCell>{formatDate(period.start_date)}</TableCell>
@@ -210,52 +235,54 @@ export default function Index({ periods, semesters }: Props) {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex justify-end gap-2">
-                                            {/* Edit (extend close date) — always available */}
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => handleEditOpen(period)}
-                                            >
-                                                Edit
-                                            </Button>
+                                            {/* Edit and Close — hidden when expired */}
+                                            {period.status !== 'expired' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleEditOpen(period)}
+                                                        className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"
+                                                    >
+                                                        <Pencil className="h-3 w-3" /> Edit
+                                                    </button>
 
-                                            {/* Start Enrollment / Close toggle */}
-                                            {period.status !== 'open' && period.status !== 'upcoming' ? (
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-green-600 hover:bg-green-700"
-                                                    onClick={() => {
-                                                        openForm.setData({
-                                                            start_date: '',
-                                                            close_date: '',
-                                                            notes: period.notes ?? '',
-                                                        });
-                                                        setOpenDialog(period);
-                                                    }}
-                                                >
-                                                    Start Enrollment
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                                                    onClick={() => setCloseDialog(period)}
-                                                >
-                                                    Close
-                                                </Button>
+                                                    {period.status !== 'open' ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                const sameTypeOpen = period.type === 'student' ? isStudentEnrollmentOpen : period.type === 'applicant' ? isApplicantEnrollmentOpen : isApplicationPeriodOpen;
+                                                                if (sameTypeOpen) {
+                                                                    toast.error(`There is still an ongoing ${period.type} enrollment period. Please close it before starting a new one.`);
+                                                                    return;
+                                                                }
+                                                                openForm.setData({
+                                                                    start_date: today,
+                                                                    close_date: '',
+                                                                    notes: period.notes ?? '',
+                                                                });
+                                                                setOpenDialog(period);
+                                                            }}
+                                                            className="inline-flex items-center gap-1 rounded-md border border-green-300 px-2 py-1 text-xs text-green-700 hover:bg-green-50"
+                                                        >
+                                                            Re-open
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setCloseDialog(period)}
+                                                            className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"
+                                                        >
+                                                            Close
+                                                        </button>
+                                                    )}
+                                                </>
                                             )}
 
-                                            {/* Delete — only when closed */}
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40"
-                                                disabled={period.is_open}
-                                                onClick={() => !period.is_open && setDeleteDialog(period)}
+                                            {/* Delete — available when closed or expired */}
+                                            <button
+                                                disabled={period.status === 'open' || period.status === 'upcoming'}
+                                                onClick={() => setDeleteDialog(period)}
+                                                className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
                                             >
-                                                Delete
-                                            </Button>
+                                                <Trash2 className="h-3 w-3" /> Delete
+                                            </button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -263,40 +290,13 @@ export default function Index({ periods, semesters }: Props) {
                         </TableBody>
                     </Table>
                     {periods.length > 0 && (
-                        <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-gray-700">Rows per page:</span>
-                                <select
-                                    value={pageSize}
-                                    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                    className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                >
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                </select>
-                                <span className="text-sm text-gray-600">
-                                    {periods.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–
-                                    {Math.min(currentPage * pageSize, periods.length)} of {periods.length}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
-                                    <ChevronsLeft className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <span className="px-3 py-1 text-sm">Page {currentPage} of {totalPages || 1}</span>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0}>
-                                    <ChevronsRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        <TablePagination
+                            total={periods.length}
+                            pageSize={pageSize}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                        />
                     )}
                 </div>
             </div>
@@ -348,6 +348,27 @@ export default function Index({ periods, semesters }: Props) {
                                 </Select>
                                 {startForm.errors.semester && (
                                     <p className="mt-1 text-xs text-red-600">{startForm.errors.semester}</p>
+                                )}
+                            </div>
+                            <div>
+                                <Label htmlFor="start_type" className="mb-1 block">
+                                    Period Type <span className="text-red-500">*</span>
+                                </Label>
+                                <Select
+                                    value={startForm.data.type}
+                                    onValueChange={(v) => startForm.setData('type', v as 'student' | 'applicant' | 'application')}
+                                >
+                                    <SelectTrigger id="start_type">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="application">Application Period (accepting new applicants)</SelectItem>
+                                        <SelectItem value="applicant">Applicant Enrollment (for passed applicants)</SelectItem>
+                                        <SelectItem value="student">Student Enrollment (returning students)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {startForm.errors.type && (
+                                    <p className="mt-1 text-xs text-red-600">{startForm.errors.type}</p>
                                 )}
                             </div>
                             <div>
@@ -422,14 +443,14 @@ export default function Index({ periods, semesters }: Props) {
                     <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
                         <div className="mb-4 flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-green-600" />
-                            <h2 className="text-lg font-semibold">Start Enrollment</h2>
+                            <h2 className="text-lg font-semibold">Re-open Enrollment Period</h2>
                         </div>
                         <p className="mb-4 text-sm text-gray-500">
-                            Set the enrollment window for{' '}
+                            Re-open the enrollment period for{' '}
                             <span className="font-medium text-gray-900">
                                 {openDialog.school_year} — {openDialog.semester}
                             </span>
-                            . Students can enroll between the start and end dates.
+                            . Set new start and end dates to reactivate this period.
                         </p>
                         <form onSubmit={handleOpenEnrollment} className="space-y-4">
                             <div>
@@ -473,6 +494,9 @@ export default function Index({ periods, semesters }: Props) {
                                     onChange={(e) => openForm.setData('notes', e.target.value)}
                                 />
                             </div>
+                            {(openForm.errors as Record<string, string>).error && (
+                                <p className="text-sm text-red-600">{(openForm.errors as Record<string, string>).error}</p>
+                            )}
                             <div className="flex justify-end gap-2 pt-2">
                                 <Button
                                     type="button"
@@ -487,7 +511,7 @@ export default function Index({ periods, semesters }: Props) {
                                     className="bg-green-600 hover:bg-green-700"
                                     disabled={openForm.processing}
                                 >
-                                    {openForm.processing ? 'Starting...' : 'Start Enrollment'}
+                                    {openForm.processing ? 'Re-opening...' : 'Re-open'}
                                 </Button>
                             </div>
                         </form>
@@ -580,6 +604,7 @@ export default function Index({ periods, semesters }: Props) {
                 processing={deletingPeriod}
                 variant="destructive"
             />
+
         </AppLayout>
     );
 }

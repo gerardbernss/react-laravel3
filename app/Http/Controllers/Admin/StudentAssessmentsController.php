@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
+use App\Models\ApplicantAssessment;
+use App\Models\EnrollmentPeriod;
 use App\Models\StudentAssessment;
 use App\Models\StudentPayment;
 use Illuminate\Http\Request;
@@ -14,11 +16,22 @@ class StudentAssessmentsController extends Controller
 {
     public function index()
     {
-        $assessments = StudentAssessment::with(['student.personalData', 'payments'])
+        $currentPeriod = EnrollmentPeriod::where('is_open', true)
+            ->where(function ($q) { $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()); })
+            ->where(function ($q) { $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()); })
+            ->first()
+            ?? EnrollmentPeriod::latest()->first();
+
+        $studentAssessments = StudentAssessment::with(['student.personalData', 'payments'])
+            ->when($currentPeriod, fn($q) => $q
+                ->where('school_year', $currentPeriod->school_year)
+                ->where('semester', $currentPeriod->semester)
+            )
             ->latest()
             ->get()
             ->map(fn ($a) => [
                 'id'                => $a->id,
+                'type'              => 'student',
                 'assessment_number' => $a->assessment_number,
                 'school_year'       => $a->school_year,
                 'semester'          => $a->semester,
@@ -33,16 +46,58 @@ class StudentAssessmentsController extends Controller
                     : '—',
                 'student_id_number' => $a->student?->student_id_number ?? '—',
                 'grade_level'       => $a->student?->current_year_level ?? '—',
+                'applicant_id'      => null,
             ]);
+
+        // Include Exam Passed applicants who have an ApplicantAssessment (pending enrollment)
+        $applicantAssessments = ApplicantAssessment::with(['applicant.personalData'])
+            ->where('status', 'pending')
+            ->when($currentPeriod, fn($q) => $q
+                ->where('school_year', $currentPeriod->school_year)
+                ->where('semester', $currentPeriod->semester)
+            )
+            ->latest()
+            ->get()
+            ->map(fn ($a) => [
+                'id'                => $a->id,
+                'type'              => 'applicant',
+                'assessment_number' => $a->assessment_number,
+                'school_year'       => $a->school_year,
+                'semester'          => $a->semester,
+                'status'            => 'for_enrollment',
+                'gross_amount'      => (float) $a->gross_amount,
+                'total_discounts'   => 0,
+                'net_amount'        => (float) $a->net_amount,
+                'total_paid'        => 0,
+                'balance'           => (float) $a->net_amount,
+                'student_name'      => $a->applicant?->personalData
+                    ? $a->applicant->personalData->last_name . ', ' . $a->applicant->personalData->first_name
+                    : '—',
+                'student_id_number' => '—',
+                'grade_level'       => $a->applicant?->year_level ?? '—',
+                'applicant_id'      => $a->applicant?->id,
+            ]);
+
+        $assessments = $studentAssessments->concat($applicantAssessments)->sortByDesc('id')->values();
 
         $schoolYears = StudentAssessment::select('school_year')
             ->distinct()
             ->orderByDesc('school_year')
             ->pluck('school_year');
 
+        $openStudentPeriod = EnrollmentPeriod::where('type', 'student')
+            ->where('is_open', true)
+            ->where(function ($q) { $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()); })
+            ->first();
+
         return Inertia::render('Admin/Finance/Assessments/Index', [
-            'assessments' => $assessments,
-            'schoolYears' => $schoolYears,
+            'assessments'       => $assessments,
+            'schoolYears'       => $schoolYears,
+            'openStudentPeriod' => $openStudentPeriod ? [
+                'id'          => $openStudentPeriod->id,
+                'school_year' => $openStudentPeriod->school_year,
+                'semester'    => $openStudentPeriod->semester,
+            ] : null,
         ]);
     }
 
@@ -63,6 +118,7 @@ class StudentAssessmentsController extends Controller
                 'total_other_fees'  => (float) $assessment->total_other_fees,
                 'gross_amount'      => (float) $assessment->gross_amount,
                 'total_discounts'   => (float) $assessment->total_discounts,
+                'prior_balance'     => (float) $assessment->prior_balance,
                 'net_amount'        => (float) $assessment->net_amount,
                 'payment_plan'      => $assessment->payment_plan ?? 'full',
                 'minimum_amount'    => $assessment->minimum_required,

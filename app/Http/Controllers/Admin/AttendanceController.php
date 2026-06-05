@@ -277,10 +277,10 @@ class AttendanceController extends Controller
             ->whereHas('studentEnrollment', fn ($q) => $q->where('block_section_id', $blockSection->id));
 
         if ($dateFrom) {
-            $query->whereRaw('date(date) >= ?', [$dateFrom]);
+            $query->where('date', '>=', $dateFrom);
         }
         if ($dateTo) {
-            $query->whereRaw('date(date) <= ?', [$dateTo]);
+            $query->where('date', '<=', $dateTo);
         }
 
         $rows = $query
@@ -364,9 +364,9 @@ class AttendanceController extends Controller
 
         $taken = Attendance::where('subject_id', $subjectId)
             ->whereHas('studentEnrollment', fn ($q) => $q->where('block_section_id', $blockSectionId))
-            ->whereRaw('date(date) >= ?', [$startDate])
-            ->whereRaw('date(date) < ?',  [$today])
-            ->selectRaw('date(date) as d')
+            ->where('date', '>=', $startDate)
+            ->where('date', '<',  $today)
+            ->selectRaw('"date" as d')
             ->distinct()
             ->pluck('d')
             ->flip()

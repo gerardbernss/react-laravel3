@@ -8,16 +8,14 @@ import { usePermissions } from '@/hooks/useAuth';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Role, type User } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     ChevronUp,
-    ChevronsLeft,
-    ChevronsRight,
     Columns,
     Download,
     Megaphone,
+    Pencil,
     Search,
     Shield,
     Trash2,
@@ -412,20 +410,19 @@ export default function Index() {
                                                     <div className="flex justify-center gap-2">
                                                         {hasPermission('update-users') && (
                                                             <Link href={`/users/${user.id}/edit`}>
-                                                                <Button variant="outline" size="sm" disabled={processing}>
-                                                                    Edit
-                                                                </Button>
+                                                                <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                                    <Pencil className="h-3 w-3" /> Edit
+                                                                </button>
                                                             </Link>
                                                         )}
                                                         {hasPermission('delete-users') && (
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
+                                                            <button
                                                                 disabled={processing}
                                                                 onClick={() => handleDelete(user.id, user.name)}
+                                                                className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
                                                             >
-                                                                Delete
-                                                            </Button>
+                                                                <Trash2 className="h-3 w-3" /> Delete
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </td>
@@ -443,67 +440,13 @@ export default function Index() {
                         </table>
                     </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-700">Rows per page:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span className="text-sm text-gray-600">
-                            {sortedUsers.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
-                            {Math.min(currentPage * pageSize, sortedUsers.length)} of {sortedUsers.length}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronsLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="px-3 py-1 text-sm">
-                            Page {currentPage} of {totalPages || 1}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                        >
-                            <ChevronsRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
+                <TablePagination
+                    total={sortedUsers.length}
+                    pageSize={pageSize}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                />
                 </div>
             </div>
             <ConfirmDialog

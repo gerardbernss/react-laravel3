@@ -9,6 +9,7 @@ class EnrollmentPeriod extends Model
     protected $fillable = [
         'school_year',
         'semester',
+        'type',
         'is_open',
         'start_date',
         'close_date',
@@ -48,12 +49,71 @@ class EnrollmentPeriod extends Model
     }
 
     /**
+     * True if any enrollment period is currently active (open + within date range).
+     */
+    public static function hasOpenPeriod(): bool
+    {
+        return static::where('is_open', true)
+            ->where(function ($q) {
+                $q->whereNull('start_date')->orWhereDate('start_date', '<=', today());
+            })
+            ->where(function ($q) {
+                $q->whereNull('close_date')->orWhereDate('close_date', '>=', today());
+            })
+            ->exists();
+    }
+
+    /**
+     * Returns the currently active enrollment period (any type).
+     * Prefers an open period whose date window contains today;
+     * falls back to the most recently created period so callers
+     * always get a school year / semester to work with.
+     */
+    public static function current(): ?self
+    {
+        return static::query()
+            ->where('is_open', true)
+            ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()))
+            ->first()
+            ?? static::query()->latest()->first();
+    }
+
+    public static function hasOpenStudentPeriod(): bool
+    {
+        return static::where('type', 'student')
+            ->where('is_open', true)
+            ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()))
+            ->exists();
+    }
+
+    public static function hasOpenApplicantPeriod(): bool
+    {
+        return static::where('type', 'applicant')
+            ->where('is_open', true)
+            ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()))
+            ->exists();
+    }
+
+    public static function hasOpenApplicationPeriod(): bool
+    {
+        return static::where('type', 'application')
+            ->where('is_open', true)
+            ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()))
+            ->exists();
+    }
+
+    /**
      * Quick static check used by controllers.
      */
-    public static function isOpenFor(string $schoolYear, string $semester): bool
+    public static function isOpenFor(string $schoolYear, string $semester, string $type = 'student'): bool
     {
         $period = static::where('school_year', $schoolYear)
             ->where('semester', $semester)
+            ->where('type', $type)
             ->first();
 
         return $period?->isCurrentlyOpen() ?? false;

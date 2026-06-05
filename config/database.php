@@ -112,6 +112,19 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'oracle' => [
+            'driver'        => 'oracle',
+            'tns'           => env('DB_ORACLE_TNS', '(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orclpdb)))'),
+            'host'          => env('DB_ORACLE_HOST', 'localhost'),
+            'port'          => env('DB_ORACLE_PORT', '1521'),
+            'database'      => env('DB_ORACLE_DATABASE', 'orclpdb'),
+            'username'      => env('DB_ORACLE_USERNAME', ''),
+            'password'      => env('DB_ORACLE_PASSWORD', ''),
+            'charset'       => 'AL32UTF8',
+            'prefix'        => '',
+            'prefix_schema' => env('DB_ORACLE_SCHEMA', ''),
+        ],
+
     ],
 
     /*

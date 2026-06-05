@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Calendar, Key, Lock, Mail, RefreshCw, Shield, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Key, Mail, RefreshCw, Shield, User } from 'lucide-react';
 
 interface PersonalData {
     id: number;
@@ -70,11 +70,7 @@ export default function Show({ credential }: Props) {
         router.post(`/portal-credentials/${credential.id}/reactivate`);
     };
 
-    const handleResetPassword = () => {
-        router.post(`/portal-credentials/${credential.id}/reset-password`);
-    };
-
-    const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string) => {
         switch (status?.toLowerCase()) {
             case 'active':
                 return <Badge className="bg-green-100 text-green-800">Active</Badge>;
@@ -147,32 +143,8 @@ export default function Show({ credential }: Props) {
                                 </AlertDialogContent>
                             </AlertDialog>
 
-                            {/* Reset Password Dialog */}
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline">
-                                        <Lock className="mr-2 h-4 w-4" />
-                                        Reset Password
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Reset Password</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will generate a new password for this user and send it to their email.
-                                            Their current password will no longer work.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleResetPassword}>
-                                            Reset Password
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
 
-                            {/* Suspend/Reactivate */}
+{/* Suspend/Reactivate */}
                             {credential.access_status?.toLowerCase() === 'suspended' ? (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>

@@ -1,4 +1,4 @@
-import StudentLayout from '@/layouts/student-layout';
+﻿import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { CalendarDays, LayoutList } from 'lucide-react';
@@ -24,6 +24,7 @@ interface Enrollment {
 
 interface Props {
     student: { id: number; username: string };
+    isEnrolled: boolean;
     enrollment: Enrollment | null;
     subjects: Subject[];
 }
@@ -142,7 +143,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function Schedule({ enrollment, subjects }: Props) {
+export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
     const [view, setView] = useState<'table' | 'calendar'>('table');
 
     // Pre-parse schedules once so the calendar render is cheap
@@ -205,11 +206,17 @@ export default function Schedule({ enrollment, subjects }: Props) {
                 </div>
 
                 {/* ── Empty states ── */}
-                {!enrollment ? (
+                {!isEnrolled ? (
                     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-center">
                         <CalendarDays className="mb-3 h-10 w-10 text-gray-400" />
                         <p className="text-sm font-medium text-gray-600">No enrollment record found.</p>
                         <p className="mt-1 text-xs text-gray-400">Your class schedule will appear here once you are enrolled.</p>
+                    </div>
+                ) : !enrollment ? (
+                    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-center">
+                        <CalendarDays className="mb-3 h-10 w-10 text-gray-400" />
+                        <p className="text-sm font-medium text-gray-600">No schedule assigned yet.</p>
+                        <p className="mt-1 text-xs text-gray-400">You will be assigned to a section by the admin. Check back soon.</p>
                     </div>
                 ) : subjects.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-center">
@@ -221,9 +228,9 @@ export default function Schedule({ enrollment, subjects }: Props) {
 
                     /* ── Table view ─────────────────────────────────────────── */
                     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
+                                <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-semibold text-gray-600">#</th>
                                         <th className="px-4 py-3 text-left font-semibold text-gray-600">Subject Code</th>

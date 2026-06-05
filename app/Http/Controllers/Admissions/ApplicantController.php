@@ -9,10 +9,20 @@ use App\Http\Requests\Admissions\UpdateApplicantRequest;
 use App\Mail\Admissions\EmailConfirmationMail;
 use App\Mail\Admissions\FinalResultMail;
 use App\Mail\Admissions\PortalPasswordMail;
+use App\Mail\Admissions\ResendPortalPasswordMail;
 use App\Models\Applicant;
+use App\Models\ApplicantAssessment;
+use App\Models\ApplicantExamResult;
 use App\Models\ApplicantPersonalData;
+use App\Models\EnrollmentPeriod;
 use App\Models\PortalCredential;
+use App\Models\Student;
+use App\Models\StudentAssessment;
+use App\Models\StudentPayment;
 use App\Services\Admissions\ApplicantService;
+use App\Services\Student\CopyApplicantDataService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -20,6 +30,24 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
+/**
+ * Admin-side CRUD and lifecycle management for applicant records.
+ *
+ * This controller is auth-protected (requires 'manage-applications' permission)
+ * and is used exclusively by admin/staff — not by the public. Public online
+ * submissions go through ApplicationController instead.
+ *
+ * All write operations are delegated to ApplicantService (injected via constructor)
+ * which wraps each multi-table operation in a DB transaction. This controller
+ * owns the following additional responsibilities that the service does not handle:
+ *   - Email dispatch (sendFinalResult, sendConfirmationEmail, sendPortalPassword)
+ *   - The enrollment transaction: Student + StudentAssessment + StudentPayment
+ *     are created together in enroll(), then CopyApplicantDataService mirrors the
+ *     personal data into the student-side tables.
+ *
+ * The sendEmail() private helper centralises the guard check and JSON response
+ * format so each email action only needs to supply its Mailable.
+ */
 class ApplicantController extends Controller
 {
     // ApplicantService is injected via the constructor so all write operations
@@ -39,7 +67,18 @@ class ApplicantController extends Controller
      */
     public function index()
     {
-        $applications = Applicant::with(['personalData'])->get();
+        $currentPeriod = EnrollmentPeriod::where('is_open', true)
+            ->where(function ($q) { $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()); })
+            ->where(function ($q) { $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()); })
+            ->first()
+            ?? EnrollmentPeriod::latest()->first();
+
+        $applications = Applicant::with(['personalData'])
+            ->when($currentPeriod, fn($q) => $q
+                ->where('school_year', $currentPeriod->school_year)
+                ->where('semester', $currentPeriod->semester)
+            )
+            ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
             return [
@@ -76,10 +115,26 @@ class ApplicantController extends Controller
             'personalData.siblings',
             'educationalBackground',
             'documents',
+            'assessment',
         ])->findOrFail($id);
 
+        $examResult = ApplicantExamResult::where('applicant_personal_data_id', $application->applicant_personal_data_id)->first();
+
         return Inertia::render('Admissions/Show', [
-            'applicant' => $application,
+            'applicant'  => $application,
+            'examResult' => $examResult ? [
+                'applicant_number'   => $examResult->applicant_number,
+                'exam_date'          => $examResult->exam_date?->toDateString(),
+                'exam_time'          => $examResult->exam_time,
+                'exam_venue'         => $examResult->exam_venue,
+                'math_score'         => $examResult->math_score,
+                'english_score'      => $examResult->english_score,
+                'science_score'      => $examResult->science_score,
+                'total_score'        => $examResult->total_score,
+                'percentage_score'   => $examResult->percentage_score,
+                'result'             => $examResult->result,
+                'ranking'            => $examResult->ranking,
+            ] : null,
         ]);
     }
 
@@ -269,6 +324,119 @@ class ApplicantController extends Controller
     }
 
     /**
+     * Render the dedicated enrollment/payment page for an applicant.
+     */
+    public function enrollPage($id)
+    {
+        $applicant  = Applicant::with(['personalData', 'assessment'])->findOrFail($id);
+        $assessment = $applicant->assessment;
+
+        return Inertia::render('Admissions/Enroll', [
+            'applicant' => [
+                'id'                 => $applicant->id,
+                'application_number' => $applicant->application_number,
+                'application_status' => $applicant->application_status,
+                'year_level'         => $applicant->year_level,
+                'school_year'        => $applicant->school_year,
+                'semester'           => $applicant->semester,
+                'name'               => trim(
+                    ($applicant->personalData->last_name ?? '') . ', ' .
+                    ($applicant->personalData->first_name ?? '') . ' ' .
+                    ($applicant->personalData->middle_name ?? '')
+                ),
+            ],
+            'assessment' => $assessment ? [
+                'assessment_number' => $assessment->assessment_number,
+                'school_year'       => $assessment->school_year,
+                'semester'          => $assessment->semester,
+                'total_tuition'     => (float) $assessment->total_tuition,
+                'total_misc_fees'   => (float) $assessment->total_misc_fees,
+                'total_lab_fees'    => (float) $assessment->total_lab_fees,
+                'total_other_fees'  => (float) $assessment->total_other_fees,
+                'gross_amount'      => (float) $assessment->gross_amount,
+                'net_amount'        => (float) $assessment->net_amount,
+                'minimum_amount'    => (float) $assessment->minimum_amount,
+                'status'            => $assessment->status,
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Enroll an Exam Passed applicant and record their initial payment.
+     * Creates Student + StudentAssessment + StudentPayment in one transaction.
+     */
+    public function enroll(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'amount_paid' => ['required', 'numeric', 'min:0'],
+            'notes'       => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $applicant           = Applicant::with(['personalData', 'assessment'])->findOrFail($id);
+        $applicantAssessment = $applicant->assessment;
+
+        abort_if($applicant->application_status !== 'Exam Passed', 422, 'Applicant is not eligible for enrollment.');
+        abort_if(!$applicantAssessment, 422, 'No assessment found. Applicant must complete the enrollment wizard first.');
+
+        DB::transaction(function () use ($applicant, $applicantAssessment, $validated) {
+            $personalData = $applicant->personalData;
+
+            $student = Student::create([
+                'applicant_personal_data_id' => $personalData->id,
+                'applicant_id'               => $applicant->id,
+                'enrollment_status'          => 'Active',
+                'enrollment_date'            => now(),
+                'current_year_level'         => $applicant->year_level,
+                'current_semester'           => $applicant->semester ?? 'First Semester',
+                'current_school_year'        => $applicant->school_year,
+            ]);
+
+            $studentAssessment = StudentAssessment::create([
+                'student_id'        => $student->id,
+                'assessment_number' => StudentAssessment::generateAssessmentNumber($applicant->school_year),
+                'school_year'       => $applicantAssessment->school_year,
+                'semester'          => $applicantAssessment->semester,
+                'total_tuition'     => $applicantAssessment->total_tuition,
+                'total_misc_fees'   => $applicantAssessment->total_misc_fees,
+                'total_lab_fees'    => $applicantAssessment->total_lab_fees,
+                'total_other_fees'  => $applicantAssessment->total_other_fees,
+                'gross_amount'      => $applicantAssessment->gross_amount,
+                'total_discounts'   => $applicantAssessment->total_discounts,
+                'net_amount'        => $applicantAssessment->net_amount,
+                'payment_plan'      => 'installment',
+                'minimum_amount'    => $applicantAssessment->minimum_amount,
+                'mode_of_payment'   => 'cash',
+                'status'            => 'finalized',
+                'generated_at'      => now(),
+                'finalized_at'      => now(),
+                'finalized_by'      => Auth::id(),
+            ]);
+
+            StudentPayment::create([
+                'assessment_id'  => $studentAssessment->id,
+                'amount_paid'    => $validated['amount_paid'],
+                'payment_method' => 'cash',
+                'payment_date'   => now()->toDateString(),
+                'notes'          => $validated['notes'] ?? null,
+                'processed_by'   => Auth::id(),
+            ]);
+
+            $totalPaid = (float) $validated['amount_paid'];
+            $net       = (float) $applicantAssessment->net_amount;
+            $newStatus = $totalPaid >= $net ? 'paid' : ($totalPaid > 0 ? 'partial' : 'finalized');
+            $studentAssessment->update(['status' => $newStatus]);
+
+            $applicantAssessment->update(['status' => 'paid']);
+            $applicant->update(['application_status' => 'Enrolled']);
+
+            app(CopyApplicantDataService::class)->execute($student);
+        });
+
+        return redirect()->route('applicants.show', $id)
+            ->with('success', 'Applicant enrolled and payment recorded successfully.');
+    }
+
+    /**
      * Send the final admission result email to an applicant.
      */
     public function sendFinalResult($id)
@@ -347,7 +515,7 @@ class ApplicantController extends Controller
             // Pass the plain-text password to the Mailable so it can be shown
             // in the email body. The Mailable does NOT persist it anywhere.
             Mail::to($application->personalData->email)
-                ->send(new PortalPasswordMail($credential, $temporaryPassword));
+                ->send(new ResendPortalPasswordMail($credential, $temporaryPassword));
 
             // Record when and how the credentials were delivered.
             $credential->update([

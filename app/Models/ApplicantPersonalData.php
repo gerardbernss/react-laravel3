@@ -4,6 +4,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * The master identity record for a person in the admissions system.
+ *
+ * One physical person = one ApplicantPersonalData row, regardless of how many
+ * times they apply. Each application is a separate Applicant row linked here
+ * via applicant_personal_data_id.
+ *
+ * The same row is also the anchor for:
+ *   - ApplicantFamilyBackground (1-to-1)
+ *   - ApplicantSiblings (1-to-many)
+ *   - PortalCredential (1-to-1) — the student portal login
+ *   - Student (1-to-1) — created when the applicant is enrolled
+ *
+ * health_conditions is stored as JSON and cast to array. The form may submit
+ * null or empty-string items; normalise with formatHealthConditions() before
+ * saving (see ApplicationController).
+ *
+ * When deleting an applicant via ApplicantController::destroy(), this row is
+ * only deleted when no other Applicant rows reference it (i.e. the person has
+ * no other active applications).
+ */
 class ApplicantPersonalData extends Model
 {
     use HasFactory;

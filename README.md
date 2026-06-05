@@ -1,29 +1,7 @@
-# School Admissions & Enrollment Management System
-
-A full-stack web application for managing the complete student admissions and enrollment pipeline — from online/onsite application submission through entrance examination, portal credential generation, and final student enrollment. Built with Laravel 12, React 19, and Inertia.js.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Laravel 12 (PHP 8.2+) |
-| Frontend | React 19 + TypeScript |
-| Bridge | Inertia.js 2.0 (no separate API needed) |
-| Styling | Tailwind CSS 4.0 + shadcn/ui |
-| Build | Vite 7 |
-| Auth (admin) | Laravel session guard + Google OAuth (Socialite) |
-| Auth (student) | Separate `student` guard via `PortalCredential` model |
-| Database | SQLite (development) / MySQL (production) |
-| RBAC | Custom Role/Permission implementation |
-| Email | Laravel Mail (SMTP/log driver) |
-
----
-
 ## Features
 
 ### Admissions Pipeline
+
 - Online and onsite application forms for three school levels: **LES** (Lower Elementary), **JHS** (Junior High School), **SHS** (Senior High School)
 - Full applicant profile: personal data, family background, siblings, educational history, document uploads
 - Application status progression: `Pending → For Exam → Exam Taken → Enrolled`
@@ -32,6 +10,7 @@ A full-stack web application for managing the complete student admissions and en
 - Enrollment audit log tracking every status change with IP address
 
 ### Admin & Staff
+
 - Dashboard with admissions pipeline overview, status/category breakdowns, and block section capacity
 - Applicant CRUD with full detail view and document management
 - Applicant email actions: send confirmation, final result, or portal credentials
@@ -42,17 +21,20 @@ A full-stack web application for managing the complete student admissions and en
 - Announcement broadcasting
 
 ### Faculty Dashboard
+
 - Personal class list (subject + section pairs)
 - Attendance taking per class per day
 - Grade progress tracking per class
 
 ### Student Portal
+
 - Login via portal credentials (username + auto-generated password)
 - Password change on first login; account locks after 5 failed attempts
 - View enrollment, schedule, grades, attendance, and announcements
 - Download forms
 
 ### Authentication
+
 - Admin/staff/faculty: email + password, or Google OAuth (optional domain restriction)
 - Email verification required for new accounts
 - Password reset via email for both admin and student guards
@@ -165,10 +147,10 @@ On navigation, Inertia intercepts the link click and sends an XHR request. The s
 
 The app uses two completely separate authentication contexts:
 
-| Guard | Model | Login route | Used by |
-|---|---|---|---|
-| `web` | `User` | `/login` | Admin, Staff, Faculty |
-| `student` | `PortalCredential` | `/student-login` | Enrolled students |
+| Guard     | Model              | Login route      | Used by               |
+| --------- | ------------------ | ---------------- | --------------------- |
+| `web`     | `User`             | `/login`         | Admin, Staff, Faculty |
+| `student` | `PortalCredential` | `/student/login` | Enrolled students and portal applicants |
 
 Both guards are active simultaneously. `HandleInertiaRequests::share()` resolves both guards on every request and passes the appropriate user data to the frontend.
 
@@ -184,43 +166,87 @@ Roles and permissions are stored in the `roles`, `permissions`, `role_permission
 
 `HandleInertiaRequests::share()` injects these props into every React page automatically:
 
-| Prop | Description |
-|---|---|
-| `auth.user` | Authenticated admin/staff/faculty user with roles & permissions |
-| `auth.student` | Authenticated student (from `student` guard) |
-| `flash.*` | Session flash messages (success, error, info, warning) |
-| `currentSemester` | Active semester name and school year from `SemesterPeriod` |
-| `sidebarOpen` | Sidebar cookie state |
-| `quote` | Random inspirational quote (decorative) |
+| Prop              | Description                                                     |
+| ----------------- | --------------------------------------------------------------- |
+| `auth.user`       | Authenticated admin/staff/faculty user with roles & permissions |
+| `auth.student`    | Authenticated student (from `student` guard)                    |
+| `flash.*`         | Session flash messages (success, error, info, warning)          |
+| `currentSemester` | Active semester name and school year from `SemesterPeriod`      |
+| `sidebarOpen`     | Sidebar cookie state                                            |
+| `quote`           | Random inspirational quote (decorative)                         |
 
 ---
 
 ## Admissions Pipeline
 
+### Application Status Flow
+
 ```
 [1] Application Submitted
-        |  (online form or staff onsite entry)
+        |  (online form or onsite staff entry)
         v
 [2] Pending
-        |  (admin reviews application)
-        v
-[3] For Exam
-        |  (exam date assigned via ExamSchedule + ExaminationRoom)
+        |  (admin reviews; may send to revision)
+        |─────────────────────────────────────────→ For Revision
+        |  (admin approves)                               | (applicant resubmits)
+        v                                                 |
+[3] For Exam ←────────────────────────────────────────────
+        |  (exam date, room, and schedule assigned)
         v
 [4] Exam Taken
-        |  (assessment/score recorded)
+        |  (exam scores uploaded via CSV or manual entry)
         v
-[5] Enrolled
-        |  (triggers Student record creation)
+[5] Exam Passed / Exam Failed
+        |  (failed applicants are notified and stop here)
+        |  (passed applicants proceed below)
         v
-[6] Portal Credentials Generated
-        |  (PortalCredential row created, email sent with temp password)
+[5a] Enrollment Wizard
+        |  Two paths — both require a fee assessment first:
+        |
+        |  Portal path: applicant logs in as portal user, generates their own
+        |    ApplicantAssessment (fee breakdown), then admin opens the enroll
+        |    page and records the initial payment.
+        |
+        |  Onsite path: admin runs the enrollment wizard
+        |    (EnrollmentController::processOnsiteEnrollment), which creates a
+        |    Student (enrollment_status = Pending) and StudentAssessment.
+        |    application_status is set back to 'Pending' at this point.
+        |    The cashier records payment separately; once payment is confirmed
+        |    the student record is manually activated.
         v
-[7] Student Portal Active
-        |  (student logs in, changes password, views enrollment)
+[5b] Payment Recorded — Admin Path (ApplicantController::enroll)
+        |  (admin records the initial payment on the enroll page)
+        |  (Student is always created with enrollment_status = Active immediately)
+        |  (StudentAssessment.status → 'paid' / 'partial' based on amount paid)
+        |  (application_status → 'Enrolled' immediately regardless of amount)
+        v
+[6] Enrolled
+        |  (Student record exists with enrollment_status = Active)
+        |  (ApplicantAssessment mirrored to StudentAssessment + StudentPayment)
+        v
+[7] Portal Credentials Generated (manual admin action)
+        |  (PortalCredential row created at any point by admin — not automatic)
+        |  (temporary password emailed; applicant can log in once activated)
+        v
+[8] Student Portal Active
+        |  (student logs in at /student/login, changes mandatory password,
+        |   views enrollment, schedule, grades, and announcements)
 ```
 
-Every status change is recorded in `enrollment_audit_logs` with the user, timestamp, previous/new status, and IP address.
+### Application Status Reference
+
+| Status         | Meaning                                               |
+| -------------- | ----------------------------------------------------- |
+| `Pending`      | Submitted and awaiting admin review                   |
+| `For Revision` | Admin returned the application for corrections        |
+| `For Exam`     | Approved; exam schedule assigned                      |
+| `Exam Taken`   | Exam administered; scores not yet uploaded            |
+| `Exam Passed`  | Scores uploaded; student met the passing threshold    |
+| `Exam Failed`  | Scores uploaded; student did not meet the threshold   |
+| `Enrolled`     | Admin recorded payment via enroll page; `Student` created with `enrollment_status = Active` |
+| `Rejected`     | Application permanently rejected by admin             |
+
+Every status change is recorded in `enrollment_audit_logs` with the actor, timestamp, previous/new status, and IP address.
 
 ---
 
@@ -241,7 +267,8 @@ react-laravel/
 │   ├── Mail/Admissions/              # EmailConfirmationMail, FinalResultMail, PortalCredentialsMail, PortalPasswordMail
 │   ├── Models/                       # 35+ Eloquent models
 │   ├── Notifications/                # EmailVerificationNotification, StudentResetPasswordNotification
-│   └── Services/Admissions/          # ApplicantService (core write logic)
+│   ├── Services/Admissions/          # ApplicantService (core write logic: 6-step create/update in a single transaction)
+│   └── Services/Student/             # CopyApplicantDataService (mirrors ApplicantPersonalData to Student* tables on enrollment)
 │
 ├── database/
 │   ├── migrations/                   # 66+ migration files
@@ -270,31 +297,68 @@ react-laravel/
 
 ## Key Models & Relationships
 
-| Model | Table | Key Relationships |
-|---|---|---|
-| `User` | `users` | `hasMany roles` via pivot; Google OAuth fields |
-| `Applicant` | `applicants` | `belongsTo ApplicantPersonalData`; `hasOne Assessment`; `hasOne PortalCredential` |
-| `ApplicantPersonalData` | `applicant_personal_data` | `hasMany Applicant`; `hasOne ApplicantFamilyBackground`; `hasMany ApplicantSiblings` |
-| `ApplicantDocuments` | `applicant_documents` | `belongsTo Applicant` |
-| `ApplicantEducationalBackground` | `applicant_educational_background` | `belongsTo Applicant` |
-| `PortalCredential` | `portal_credentials` | Implements `Authenticatable`; `belongsTo Applicant`; linked to `Student` |
-| `Student` | `students` | `belongsTo ApplicantPersonalData`; `hasMany StudentEnrollment` |
-| `StudentEnrollment` | `student_enrollments` | `belongsTo Student`; `belongsTo BlockSection`; `hasMany StudentEnrollmentSubject` |
-| `BlockSection` | `block_sections` | `belongsToMany Subject` via `StudentEnrollmentSubject` |
-| `Subject` | `subjects` | `belongsTo User` (faculty); `belongsToMany BlockSection` |
-| `Attendance` | `attendances` | `belongsTo Subject`; `belongsTo StudentEnrollment` |
-| `SemesterPeriod` | `semester_periods` | Static methods `getCurrentSemester()`, `getCurrentSchoolYear()` |
+| Model                            | Table                              | Key Relationships                                                                    |
+| -------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------ |
+| `User`                           | `users`                            | `hasMany roles` via pivot; Google OAuth fields                                       |
+| `Applicant`                      | `applicants`                       | `belongsTo ApplicantPersonalData`; `hasOne Assessment`; `hasOne PortalCredential`    |
+| `ApplicantPersonalData`          | `applicant_personal_data`          | `hasMany Applicant`; `hasOne ApplicantFamilyBackground`; `hasMany ApplicantSiblings` |
+| `ApplicantDocuments`             | `applicant_documents`              | `belongsTo Applicant`                                                                |
+| `ApplicantEducationalBackground` | `applicant_educational_background` | `belongsTo Applicant`                                                                |
+| `PortalCredential`               | `portal_credentials`               | Implements `Authenticatable`; `belongsTo Applicant`; linked to `Student`             |
+| `Student`                        | `students`                         | `belongsTo ApplicantPersonalData`; `hasMany StudentEnrollment`                       |
+| `StudentEnrollment`              | `student_enrollments`              | `belongsTo Student`; `belongsTo BlockSection`; `hasMany StudentEnrollmentSubject`    |
+| `BlockSection`                   | `block_sections`                   | `belongsToMany Subject` via `StudentEnrollmentSubject`                               |
+| `Subject`                        | `subjects`                         | `belongsTo User` (faculty); `belongsToMany BlockSection`                             |
+| `Attendance`                     | `attendances`                      | `belongsTo Subject`; `belongsTo StudentEnrollment`                                   |
+| `SemesterPeriod`                 | `semester_periods`                 | Static methods `getCurrentSemester()`, `getCurrentSchoolYear()`                      |
 
 ---
 
 ## Route Files Summary
 
-| File | Prefix | Description |
-|---|---|---|
-| `routes/web.php` | `/` | Welcome, dashboard, admin pages (students, subjects, sections, fees, announcements, grades, attendance) |
-| `routes/admissions.php` | `/admissions` | Applicant CRUD, portal credentials, enrollment management, exam assignments |
-| `routes/student.php` | `/student` | Student portal (dashboard, enrollment, schedule, grades, attendance, profile) |
-| `routes/auth.php` | `/` | Login, register, Google OAuth, email verification, password reset (admin + student) |
+| File                    | Prefix        | Description                                                                                             |
+| ----------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `routes/web.php`        | `/`           | Welcome, dashboard, admin pages (students, subjects, sections, fees, announcements, grades, attendance) |
+| `routes/admissions.php` | `/admissions` | Applicant CRUD, portal credentials, enrollment management, exam assignments                             |
+| `routes/student.php`    | `/student`    | Student portal (dashboard, enrollment, schedule, grades, attendance, profile)                           |
+| `routes/auth.php`       | `/`           | Login, register, Google OAuth, email verification, password reset (admin + student)                     |
+
+---
+
+## Permission Matrix
+
+Routes are protected by the `permission` middleware alias (`CheckPermission`). Below is a summary of the key permissions and the routes they guard.
+
+| Permission slug                | Protected routes                                              |
+| ------------------------------ | ------------------------------------------------------------- |
+| `manage-applications`          | Applicant CRUD, evaluate, enroll, email actions               |
+| `manage-student-id-assignment` | Student ID assignment and email                               |
+| `manage-portal-credentials`    | Portal credential generation, send, suspend, reactivate       |
+| `manage-exam-results`          | CSV import, rankings, send results, update applicant statuses |
+| `view-users`                   | User list and edit page                                       |
+| `create-users`                 | Create user form and store                                    |
+| `update-users`                 | User update                                                   |
+| `delete-users`                 | User delete                                                   |
+| `assign-roles`                 | Assign / remove roles from users                              |
+| `view-roles`                   | Role list and detail                                          |
+| `create-roles`                 | Role creation                                                 |
+| `update-roles`                 | Role update                                                   |
+| `delete-roles`                 | Role delete                                                   |
+| `assign-permissions`           | Assign / remove permissions from roles                        |
+| `view-permissions`             | Permission list and detail                                    |
+| `create-permissions`           | Permission creation                                           |
+| `update-permissions`           | Permission update                                             |
+| `delete-permissions`           | Permission delete                                             |
+| `view-grades`                  | Gradebook, my-students, grade validations, report exports     |
+| `manage-grades`                | Grade component CRUD, score save                              |
+| `submit-grades`                | Submit grades for validation                                  |
+| `finalize-grades`              | Finalize or reject submitted grades                           |
+| `manage-conduct`               | Conduct category and criteria CRUD                            |
+| `manage-conduct-grades`        | Save conduct grades                                           |
+| `view-attendance`              | Attendance views                                              |
+| `manage-attendance`            | Record attendance                                             |
+
+Permissions are seeded by `database/seeders/PermissionSeeder.php` and are assignable to roles via the admin UI.
 
 ---
 

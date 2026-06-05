@@ -9,51 +9,61 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // SQLite does not support dropping FK columns via ALTER TABLE.
-        // We rebuild the table without subject_offering_id.
-        DB::statement('PRAGMA foreign_keys = OFF');
+        if (DB::getDriverName() === 'sqlite') {
+            // SQLite does not support dropping FK columns via ALTER TABLE — rebuild the table.
+            DB::statement('PRAGMA foreign_keys = OFF');
 
-        DB::statement('
-            CREATE TABLE student_enrollment_subjects_new (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_enrollment_id INTEGER NOT NULL
-                    REFERENCES student_enrollments(id) ON DELETE CASCADE,
-                subject_id INTEGER NOT NULL
-                    REFERENCES subjects(id) ON DELETE CASCADE,
-                units NUMERIC(3,1) NOT NULL DEFAULT 1.0,
-                grade NUMERIC(4,2) NULL,
-                grade_status VARCHAR(255) NULL,
-                schedule VARCHAR(255) NULL,
-                room VARCHAR(255) NULL,
-                teacher VARCHAR(255) NULL,
-                created_at DATETIME NULL,
-                updated_at DATETIME NULL,
-                UNIQUE (student_enrollment_id, subject_id)
-            )
-        ');
+            DB::statement('
+                CREATE TABLE student_enrollment_subjects_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_enrollment_id INTEGER NOT NULL
+                        REFERENCES student_enrollments(id) ON DELETE CASCADE,
+                    subject_id INTEGER NOT NULL
+                        REFERENCES subjects(id) ON DELETE CASCADE,
+                    units NUMERIC(3,1) NOT NULL DEFAULT 1.0,
+                    grade NUMERIC(4,2) NULL,
+                    grade_status VARCHAR(255) NULL,
+                    schedule VARCHAR(255) NULL,
+                    room VARCHAR(255) NULL,
+                    teacher VARCHAR(255) NULL,
+                    created_at DATETIME NULL,
+                    updated_at DATETIME NULL,
+                    UNIQUE (student_enrollment_id, subject_id)
+                )
+            ');
 
-        DB::statement('
-            INSERT INTO student_enrollment_subjects_new
-                (id, student_enrollment_id, subject_id, units, grade, grade_status,
-                 schedule, room, teacher, created_at, updated_at)
-            SELECT id, student_enrollment_id, subject_id, units, grade, grade_status,
-                   schedule, room, teacher, created_at, updated_at
-            FROM student_enrollment_subjects
-        ');
+            DB::statement('
+                INSERT INTO student_enrollment_subjects_new
+                    (id, student_enrollment_id, subject_id, units, grade, grade_status,
+                     schedule, room, teacher, created_at, updated_at)
+                SELECT id, student_enrollment_id, subject_id, units, grade, grade_status,
+                       schedule, room, teacher, created_at, updated_at
+                FROM student_enrollment_subjects
+            ');
 
-        DB::statement('DROP TABLE student_enrollment_subjects');
-        DB::statement('ALTER TABLE student_enrollment_subjects_new RENAME TO student_enrollment_subjects');
-        DB::statement('CREATE INDEX ses_grade_status ON student_enrollment_subjects(grade_status)');
+            DB::statement('DROP TABLE student_enrollment_subjects');
+            DB::statement('ALTER TABLE student_enrollment_subjects_new RENAME TO student_enrollment_subjects');
+            DB::statement('CREATE INDEX ses_grade_status ON student_enrollment_subjects(grade_status)');
 
-        // Drop the entirely unused subject_offerings table
+            DB::statement('PRAGMA foreign_keys = ON');
+        } else {
+            // Other databases support dropping FK constraints and columns directly.
+            if (Schema::hasColumn('student_enrollment_subjects', 'subject_offering_id')) {
+                Schema::table('student_enrollment_subjects', function (Blueprint $table) {
+                    $table->dropForeign(['subject_offering_id']);
+                    $table->dropColumn('subject_offering_id');
+                });
+            }
+        }
+
         Schema::dropIfExists('subject_offerings');
-
-        DB::statement('PRAGMA foreign_keys = ON');
     }
 
     public function down(): void
     {
-        DB::statement('PRAGMA foreign_keys = OFF');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF');
+        }
 
         Schema::create('subject_offerings', function (Blueprint $table) {
             $table->id();
@@ -74,6 +84,8 @@ return new class extends Migration
             $table->foreignId('subject_offering_id')->nullable()->constrained('subject_offerings')->nullOnDelete();
         });
 
-        DB::statement('PRAGMA foreign_keys = ON');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON');
+        }
     }
 };

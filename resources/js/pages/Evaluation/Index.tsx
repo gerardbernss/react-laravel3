@@ -10,7 +10,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useMemo, useState } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiPlus, HiTrash } from 'react-icons/hi';
@@ -685,63 +686,13 @@ export default function Index({ applications }: Props) {
                     </div>
                 </div>
 
-                {/* Pagination Footer */}
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-700">Rows per page:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="rounded-lg border border-gray-300 px-3 py-1 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span className="text-sm text-gray-700">
-                            {sortedApplicants.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
-                            {Math.min(currentPage * pageSize, sortedApplicants.length)} of {sortedApplicants.length}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronsLeft className="h-5 w-5" />
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronLeft className="h-5 w-5" />
-                        </button>
-                        <span className="px-4 py-2 text-sm font-medium">
-                            Page {currentPage} of {totalPages || 1}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronRight className="h-5 w-5" />
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronsRight className="h-5 w-5" />
-                        </button>
-                    </div>
-                </div>
+                <TablePagination
+                    total={sortedApplicants.length}
+                    pageSize={pageSize}
+                    currentPage={currentPage}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                />
             </div>
 
             {/* Delete Confirmation Dialog */}

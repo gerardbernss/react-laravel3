@@ -109,6 +109,19 @@ Once a discount is verified (or if it does not require verification), it is subt
 | Loyalty Discount | ₱2,000 off | All fees | Yes | Yes |
 | Cash Payment Discount | 3% off | All fees | Yes | No |
 
+### How Discount Stacking Works
+
+**Non-stackable discounts** are mutually exclusive. A student can only receive one non-stackable discount at a time. If a student qualifies for both a *Sibling Discount* and an *Employee Dependent* discount, the admin selects the one that applies — they cannot be combined.
+
+**Stackable discounts** can be combined with other discounts — both stackable and non-stackable. For example, a student with an *Academic Scholar — Half* discount (non-stackable) can still receive the *Early Bird* (stackable) and *PWD Discount* (stackable) on top.
+
+**Application order:**
+1. The non-stackable discount (if any) is applied first to the appropriate fee bucket (tuition or all fees).
+2. Each stackable discount is then applied to the post-non-stackable subtotal.
+3. The final `net_amount` is `gross_amount − total_verified_discounts`.
+
+**Maximum caps:** Some discounts have a maximum peso amount that cannot be exceeded regardless of the calculated percentage. This cap is stored in the `discount_types.max_amount` column and is enforced during assessment generation.
+
 ---
 
 ## Step 4 — The Assessment Record
@@ -145,9 +158,19 @@ The cashier records each payment at: **Admin → Finance → Assessments → [St
 For each payment, the cashier enters:
 
 - The **amount paid**
-- The **payment method** — Cash, Check, Bank Transfer, GCash, or Maya
+- The **payment method** (see table below)
 - A **reference number** if applicable (check number, GCash confirmation code, etc.)
 - The **date of payment**
+
+### Accepted Payment Methods
+
+| Method | Code in system | Reference number |
+|--------|---------------|-----------------|
+| Cash | `cash` | Not required |
+| Check | `check` | Check number |
+| Bank Transfer | `bank_transfer` | Bank reference / transaction number |
+| GCash | `gcash` | GCash confirmation code |
+| Maya | `maya` | Maya reference number |
 
 After each payment is saved, the system automatically:
 

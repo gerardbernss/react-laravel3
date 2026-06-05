@@ -1,6 +1,6 @@
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ChevronDown, GraduationCap, Megaphone, User } from 'lucide-react';
 import { useState } from 'react';
 
@@ -53,6 +53,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard({ student, personalData, application, studentRecord, announcements }: Props) {
+    const { currentSemester } = usePage().props as { currentSemester?: { name: string | null; school_year: string | null } };
     const [openIds, setOpenIds] = useState<Set<number>>(new Set());
 
     const toggleAnnouncement = (id: number) => {
@@ -86,16 +87,10 @@ export default function Dashboard({ student, personalData, application, studentR
                             your enrollment and personal information.
                         </p>
                     </div>
-                    {application?.school_year && (
-                        <div className="shrink-0 px-6 py-4 text-center">
-                            <p
-                                className="text-2xl leading-tight font-bold text-gray-800 italic"
-                                style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-                            >
-                                {application.semester ? application.semester : 'Full Year'}
-                            </p>
-                            <div className="mt-1 h-0.5 bg-linear-to-r from-transparent via-blue-400 to-transparent" />
-                            <p className="mt-1 text-2xl font-extrabold tracking-wider text-blue-600">{application.school_year}</p>
+                    {currentSemester?.name && (
+                        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary shrink-0">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                            {currentSemester.name} · {currentSemester.school_year}
                         </div>
                     )}
                 </div>
@@ -208,11 +203,36 @@ export default function Dashboard({ student, personalData, application, studentR
                                     </div>
                                 )}
 
-                                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                                    <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
-                                    <p className="mt-2 text-lg font-bold text-green-700">Enrolled</p>
-                                    <p className="text-xs text-green-600">You are officially enrolled this semester.</p>
-                                </div>
+                                {studentRecord.enrollment_status === 'Active' ? (
+                                    <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+                                        <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+                                        <p className="mt-2 text-lg font-bold text-green-700">Enrolled</p>
+                                        <p className="text-xs text-green-600">You are officially enrolled this semester.</p>
+                                    </div>
+                                ) : studentRecord.enrollment_status === 'Pending' ? (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
+                                        <AlertCircle className="mx-auto h-10 w-10 text-amber-500" />
+                                        <p className="mt-2 text-lg font-bold text-amber-700">Pending Enrollment</p>
+                                        <p className="text-xs text-amber-600">Please complete payment to confirm enrollment.</p>
+                                    </div>
+                                ) : studentRecord.enrollment_status === 'Not Enrolled' ? (
+                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                                        <AlertCircle className="mx-auto h-10 w-10 text-gray-400" />
+                                        <p className="mt-2 text-lg font-bold text-gray-600">Not Enrolled</p>
+                                        <p className="text-xs text-gray-500">You are not enrolled for this semester.</p>
+                                    </div>
+                                ) : studentRecord.enrollment_status === 'Inactive' ? (
+                                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+                                        <AlertCircle className="mx-auto h-10 w-10 text-red-400" />
+                                        <p className="mt-2 text-lg font-bold text-red-600">Inactive</p>
+                                        <p className="text-xs text-red-500">Your account has been deactivated. Contact the Registrar.</p>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
+                                        <AlertCircle className="mx-auto h-10 w-10 text-gray-400" />
+                                        <p className="mt-2 text-lg font-bold text-gray-600">{studentRecord.enrollment_status ?? 'No Status'}</p>
+                                    </div>
+                                )}
 
                                 {application?.grade_level && (
                                     <div>

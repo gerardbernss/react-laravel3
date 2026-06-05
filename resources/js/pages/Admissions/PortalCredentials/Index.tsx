@@ -1,4 +1,4 @@
-import {
+﻿import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -11,23 +11,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    ChevronUp,
-    ChevronsLeft,
-    ChevronsRight,
-    Eye,
-    Key,
-    KeyRound,
-    Mail,
-    RefreshCw,
-    Search,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Key, KeyRound, Mail, RefreshCw, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface PersonalData {
@@ -73,10 +61,7 @@ export default function Index({ credentials }: Props) {
             const q = searchQuery.toLowerCase();
             const fullName = `${c.personal_data?.first_name ?? ''} ${c.personal_data?.last_name ?? ''}`.toLowerCase();
             const matchesSearch =
-                !q ||
-                fullName.includes(q) ||
-                (c.personal_data?.email ?? '').toLowerCase().includes(q) ||
-                c.username.toLowerCase().includes(q);
+                !q || fullName.includes(q) || (c.personal_data?.email ?? '').toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
             const matchesStatus = !selectedStatus || c.access_status?.toLowerCase() === selectedStatus.toLowerCase();
             return matchesSearch && matchesStatus;
         });
@@ -90,10 +75,19 @@ export default function Index({ credentials }: Props) {
             if (sortConfig.key === 'name') {
                 aVal = `${a.personal_data?.last_name ?? ''} ${a.personal_data?.first_name ?? ''}`;
                 bVal = `${b.personal_data?.last_name ?? ''} ${b.personal_data?.first_name ?? ''}`;
-            } else if (sortConfig.key === 'username') { aVal = a.username; bVal = b.username; }
-            else if (sortConfig.key === 'status') { aVal = a.access_status; bVal = b.access_status; }
-            else if (sortConfig.key === 'last_login_at') { aVal = a.last_login_at ?? ''; bVal = b.last_login_at ?? ''; }
-            else if (sortConfig.key === 'credentials_sent_at') { aVal = a.credentials_sent_at ?? ''; bVal = b.credentials_sent_at ?? ''; }
+            } else if (sortConfig.key === 'username') {
+                aVal = a.username;
+                bVal = b.username;
+            } else if (sortConfig.key === 'status') {
+                aVal = a.access_status;
+                bVal = b.access_status;
+            } else if (sortConfig.key === 'last_login_at') {
+                aVal = a.last_login_at ?? '';
+                bVal = b.last_login_at ?? '';
+            } else if (sortConfig.key === 'credentials_sent_at') {
+                aVal = a.credentials_sent_at ?? '';
+                bVal = b.credentials_sent_at ?? '';
+            }
             return aVal.localeCompare(bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
         });
     }, [filteredItems, sortConfig]);
@@ -105,9 +99,7 @@ export default function Index({ credentials }: Props) {
     );
 
     const toggleSort = (key: SortKey) =>
-        setSortConfig((prev) =>
-            prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' },
-        );
+        setSortConfig((prev) => (prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }));
 
     const SortIcon = ({ col }: { col: SortKey }) =>
         sortConfig.key !== col ? (
@@ -128,26 +120,44 @@ export default function Index({ credentials }: Props) {
 
     const getStatusBadge = (status: string) => {
         switch (status?.toLowerCase()) {
-            case 'active': return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-            case 'suspended': return <Badge variant="destructive">Suspended</Badge>;
-            case 'inactive': return <Badge variant="secondary">Inactive</Badge>;
-            default: return <Badge variant="outline">{status || 'Active'}</Badge>;
+            case 'active':
+                return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+            case 'suspended':
+                return <Badge variant="destructive">Suspended</Badge>;
+            case 'inactive':
+                return <Badge variant="secondary">Inactive</Badge>;
+            default:
+                return <Badge variant="outline">{status || 'Active'}</Badge>;
         }
     };
 
     const handleSendCredentials = () => {
         if (selectedCredential) {
-            router.post(`/portal-credentials/${selectedCredential.id}/send`, {}, {
-                onSuccess: () => { setSendDialogOpen(false); setSelectedCredential(null); },
-            });
+            router.post(
+                `/portal-credentials/${selectedCredential.id}/send`,
+                {},
+                {
+                    onSuccess: () => {
+                        setSendDialogOpen(false);
+                        setSelectedCredential(null);
+                    },
+                },
+            );
         }
     };
 
     const handleResend = () => {
         if (selectedCredential) {
-            router.post(`/portal-credentials/${selectedCredential.id}/resend`, {}, {
-                onSuccess: () => { setResendDialogOpen(false); setSelectedCredential(null); },
-            });
+            router.post(
+                `/portal-credentials/${selectedCredential.id}/resend`,
+                {},
+                {
+                    onSuccess: () => {
+                        setResendDialogOpen(false);
+                        setSelectedCredential(null);
+                    },
+                },
+            );
         }
     };
 
@@ -171,18 +181,31 @@ export default function Index({ credentials }: Props) {
                     <div>
                         <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
                         <div className="mb-3 flex h-10 w-full items-center rounded-lg border border-gray-300 bg-white md:w-[400px]">
-                            <span className="pl-3 pr-2 text-gray-500"><Search className="h-4 w-4" /></span>
+                            <span className="pr-2 pl-3 text-gray-500">
+                                <Search className="h-4 w-4" />
+                            </span>
                             <input
                                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
                                 placeholder="Search by name, email, or username..."
                                 value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                             />
                         </div>
                     </div>
                     <div className="flex flex-wrap items-end gap-3">
-                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <Select
+                            value={selectedStatus || 'all'}
+                            onValueChange={(v) => {
+                                setSelectedStatus(v === 'all' ? '' : v);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="Active">Active</SelectItem>
@@ -190,7 +213,11 @@ export default function Index({ credentials }: Props) {
                                 <SelectItem value="Suspended">Suspended</SelectItem>
                             </SelectContent>
                         </Select>
-                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
+                        {hasFilters && (
+                            <Button variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -198,25 +225,42 @@ export default function Index({ credentials }: Props) {
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
-                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('name')}>
-                                        Applicant <SortIcon col="name" />
+                                    <th
+                                        className="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                        onClick={() => toggleSort('name')}
+                                    >
+                                        Name <SortIcon col="name" />
                                     </th>
-                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('username')}>
+                                    <th
+                                        className="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                        onClick={() => toggleSort('username')}
+                                    >
                                         Username (Email) <SortIcon col="username" />
                                     </th>
-                                    <th className="cursor-pointer px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('status')}>
+                                    <th
+                                        className="cursor-pointer px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                        onClick={() => toggleSort('status')}
+                                    >
                                         Status <SortIcon col="status" />
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Login Attempts</th>
-                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('last_login_at')}>
+                                    <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                        Login Attempts
+                                    </th>
+                                    <th
+                                        className="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                        onClick={() => toggleSort('last_login_at')}
+                                    >
                                         Last Login <SortIcon col="last_login_at" />
                                     </th>
-                                    <th className="cursor-pointer px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500" onClick={() => toggleSort('credentials_sent_at')}>
+                                    <th
+                                        className="cursor-pointer px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                        onClick={() => toggleSort('credentials_sent_at')}
+                                    >
                                         Credentials Sent <SortIcon col="credentials_sent_at" />
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -229,98 +273,84 @@ export default function Index({ credentials }: Props) {
                                             </p>
                                         </td>
                                     </tr>
-                                ) : paginatedItems.map((credential) => (
-                                    <tr key={credential.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
-                                        <td className="px-4 py-3">
-                                            <p className="font-medium text-gray-900">
-                                                {credential.personal_data?.first_name} {credential.personal_data?.last_name}
-                                            </p>
-                                            <p className="text-sm text-gray-500">{credential.personal_data?.email}</p>
-                                        </td>
-                                        <td className="px-4 py-3 font-mono text-gray-600">{credential.username}</td>
-                                        <td className="px-4 py-3 text-center">{getStatusBadge(credential.access_status)}</td>
-                                        <td className="px-4 py-3 text-center text-gray-600">{credential.login_attempts || 0}/5</td>
-                                        <td className="px-4 py-3 text-gray-600">
-                                            {credential.last_login_at ? new Date(credential.last_login_at).toLocaleDateString() : 'Never'}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {credential.credentials_sent_at ? (
-                                                <Badge className="bg-green-100 text-green-800">
-                                                    {new Date(credential.credentials_sent_at).toLocaleDateString()}
-                                                </Badge>
-                                            ) : (
-                                                <Badge variant="secondary">Not Sent</Badge>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex justify-center gap-1">
-                                                <Link href={`/portal-credentials/${credential.id}`}>
-                                                    <Button variant="outline" size="sm" title="View Details">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                {!credential.credentials_sent_at && (
-                                                    <Button
-                                                        variant="outline" size="sm"
-                                                        onClick={() => { setSelectedCredential(credential); setSendDialogOpen(true); }}
-                                                        className="text-green-600 hover:text-green-700"
-                                                        title="Send Credentials"
-                                                    >
-                                                        <Mail className="h-4 w-4" />
-                                                    </Button>
+                                ) : (
+                                    paginatedItems.map((credential) => (
+                                        <tr key={credential.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
+                                            <td className="px-4 py-3">
+                                                <p className="font-medium text-gray-900">
+                                                    {credential.personal_data?.first_name} {credential.personal_data?.last_name}
+                                                </p>
+                                                <p className="text-sm text-gray-500">{credential.personal_data?.email}</p>
+                                            </td>
+                                            <td className="px-4 py-3 font-mono text-gray-600">{credential.username}</td>
+                                            <td className="px-4 py-3 text-center">{getStatusBadge(credential.access_status)}</td>
+                                            <td className="px-4 py-3 text-center text-gray-600">{credential.login_attempts || 0}/5</td>
+                                            <td className="px-4 py-3 text-gray-600">
+                                                {credential.last_login_at ? new Date(credential.last_login_at).toLocaleDateString() : 'Never'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                {credential.credentials_sent_at ? (
+                                                    <Badge className="bg-green-100 text-green-800">
+                                                        {new Date(credential.credentials_sent_at).toLocaleDateString()}
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="secondary">Not Sent</Badge>
                                                 )}
-                                                {credential.credentials_sent_at && (
-                                                    <Button
-                                                        variant="outline" size="sm"
-                                                        onClick={() => { setSelectedCredential(credential); setResendDialogOpen(true); }}
-                                                        className="text-purple-600 hover:text-purple-700"
-                                                        title="Resend Credentials"
-                                                    >
-                                                        <RefreshCw className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex justify-center gap-1">
+                                                    <Link href={`/portal-credentials/${credential.id}`}>
+                                                        <Button variant="outline" size="sm" title="View Details">
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                    {!credential.credentials_sent_at && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedCredential(credential);
+                                                                setSendDialogOpen(true);
+                                                            }}
+                                                            className="text-green-600 hover:text-green-700"
+                                                            title="Send Credentials"
+                                                        >
+                                                            <Mail className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    {credential.credentials_sent_at && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedCredential(credential);
+                                                                setResendDialogOpen(true);
+                                                            }}
+                                                            className="text-purple-600 hover:text-purple-700"
+                                                            title="Resend Credentials"
+                                                        >
+                                                            <RefreshCw className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Pagination Bar */}
-                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-700">Rows per page:</span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none"
-                            >
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={25}>25</option>
-                                <option value={50}>50</option>
-                            </select>
-                            <span className="text-sm text-gray-700">
-                                {sortedItems.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, sortedItems.length)} of {sortedItems.length}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsLeft className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                            <span className="px-4 py-2 text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
-                            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <TablePagination
+                        total={sortedItems.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => {
+                            setPageSize(s);
+                            setCurrentPage(1);
+                        }}
+                    />
                 </div>
             </div>
 
@@ -333,7 +363,8 @@ export default function Index({ credentials }: Props) {
                             {selectedCredential && (
                                 <>
                                     Login credentials will be sent to <strong>{selectedCredential.personal_data?.email}</strong>.
-                                    <br /><br />
+                                    <br />
+                                    <br />
                                     The applicant will use these credentials to access their portal.
                                 </>
                             )}
@@ -355,7 +386,8 @@ export default function Index({ credentials }: Props) {
                             {selectedCredential && (
                                 <>
                                     A new password will be generated and sent to <strong>{selectedCredential.personal_data?.email}</strong>.
-                                    <br /><br />
+                                    <br />
+                                    <br />
                                     The previous password will no longer work.
                                 </>
                             )}

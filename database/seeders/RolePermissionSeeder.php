@@ -50,6 +50,17 @@ class RolePermissionSeeder extends Seeder
             // Attendance permissions
             ['name' => 'View Attendance', 'slug' => 'view-attendance', 'description' => 'Can view attendance records'],
             ['name' => 'Manage Attendance', 'slug' => 'manage-attendance', 'description' => 'Can mark and edit attendance'],
+
+            // Grade validation permissions
+            ['name' => 'Submit Grades', 'slug' => 'submit-grades', 'description' => 'Can submit grades for validation'],
+            ['name' => 'Finalize Grades', 'slug' => 'finalize-grades', 'description' => 'Can finalize/approve submitted grades'],
+
+            // Conduct permissions
+            ['name' => 'Manage Conduct', 'slug' => 'manage-conduct', 'description' => 'Can manage conduct categories and criteria'],
+            ['name' => 'Manage Conduct Grades', 'slug' => 'manage-conduct-grades', 'description' => 'Can enter conduct grades for students'],
+
+            // Admissions permissions
+            ['name' => 'Manage Exam Results', 'slug' => 'manage-exam-results', 'description' => 'Can upload and view applicant exam results'],
         ];
 
         foreach ($permissions as $permission) {
@@ -104,11 +115,24 @@ class RolePermissionSeeder extends Seeder
         $userRole->syncPermissions($userPermissions);
 
         // Assign grade and attendance permissions to faculty role
+        // Note: 'manage-conduct-grades' is intentionally excluded — conduct entry is admin/adviser only
         $facultyPermissions = Permission::whereIn('slug', [
             'view-grades', 'manage-grades',
             'view-attendance', 'manage-attendance',
+            'submit-grades',
         ])->pluck('id')->toArray();
         $facultyRole->syncPermissions($facultyPermissions);
+
+        // Give admin finalize-grades, manage-conduct, manage-conduct-grades, manage-exam-results
+        $adminExtraPermissions = Permission::whereIn('slug', [
+            'view-grades', 'manage-grades',
+            'view-attendance', 'manage-attendance',
+            'finalize-grades',
+            'manage-conduct',
+            'manage-conduct-grades',
+            'manage-exam-results',
+        ])->pluck('id')->toArray();
+        $adminRole->syncPermissions(array_unique(array_merge($adminPermissions, $adminExtraPermissions)));
 
         // Create a super admin user
         $superAdmin = User::firstOrCreate(['email' => 'admin@example.com'], [

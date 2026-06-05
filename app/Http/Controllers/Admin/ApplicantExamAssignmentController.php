@@ -209,6 +209,28 @@ class ApplicantExamAssignmentController extends Controller
     }
 
     /**
+     * Mark exam result as passed or failed.
+     */
+    public function markResult(Request $request, ApplicantExamAssignment $assignment)
+    {
+        $validated = $request->validate([
+            'result' => 'required|in:passed,failed',
+            'notes'  => 'nullable|string',
+        ]);
+
+        $applicationStatus = $validated['result'] === 'passed' ? 'Exam Passed' : 'Exam Failed';
+
+        $assignment->update([
+            'status' => $validated['result'] === 'passed' ? 'passed' : 'failed',
+            'notes'  => $validated['notes'] ?? $assignment->notes,
+        ]);
+
+        $assignment->applicationInfo->update(['application_status' => $applicationStatus]);
+
+        return back()->with('success', 'Exam result recorded successfully.');
+    }
+
+    /**
      * Remove the specified assignment.
      */
     public function destroy(ApplicantExamAssignment $assignment)

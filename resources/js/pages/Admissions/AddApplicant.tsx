@@ -133,7 +133,7 @@ export default function AddApplicant() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingAction, setPendingAction] = useState<'discard' | 'reset' | null>(null);
 
-    const currentSemester = usePage().props.currentSemester as { name: string | null } | null;
+    const currentSemester = usePage().props.currentSemester as { name: string | null; school_year: string | null } | null;
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
@@ -141,7 +141,7 @@ export default function AddApplicant() {
         defaultValues: {
             //application info
             application_date: new Date().toISOString().split('T')[0],
-            school_year: '',
+            school_year: currentSemester?.school_year ?? '',
             application_number: '',
             application_status: 'Pending',
             year_level: '',
@@ -269,7 +269,6 @@ export default function AddApplicant() {
         setPendingAction(null);
     };
 
-    const applicationDate = form.watch('application_date');
     const allValues = form.watch();
 
     const hasChanges = React.useMemo(() => {
@@ -284,22 +283,6 @@ export default function AddApplicant() {
             return value !== null && value !== undefined;
         });
     }, [allValues]);
-
-    useEffect(() => {
-        if (!applicationDate) return;
-
-        const date = new Date(applicationDate);
-        const year = date.getFullYear();
-
-        // Philippine academic year normally starts in August
-        // Adjust depending on your actual school rules
-        const isBeforeAugust = date.getMonth() + 1 < 8;
-
-        const startYear = isBeforeAugust ? year - 1 : year;
-        const endYear = startYear + 1;
-
-        form.setValue('school_year', `${startYear}-${endYear}`);
-    }, [applicationDate]);
 
     // ==================== PSGC ADDRESS STATE ====================
     type PsgcItem = {
@@ -867,14 +850,14 @@ export default function AddApplicant() {
                                                                             Laboratory Junior High School
                                                                         </SelectItem>
 
-                                                                        <SelectItem value="Accountancy, Business, and Management">
-                                                                            ABM - Accountancy, Business, and Management
+                                                                        <SelectItem value="Accountancy, Business and Management">
+                                                                            Accountancy, Business and Management (ABM)
                                                                         </SelectItem>
                                                                         <SelectItem value="Humanities and Social Sciences">
-                                                                            HUMSS - Humanities and Social Sciences
+                                                                            Humanities and Social Sciences (HUMSS)
                                                                         </SelectItem>
-                                                                        <SelectItem value="Science, Technology, Engineering, and Mathematics">
-                                                                            STEM - Science, Technology, Engineering, and Mathematics
+                                                                        <SelectItem value="Science, Technology, Engineering and Mathematics">
+                                                                            Science, Technology, Engineering and Mathematics (STEM)
                                                                         </SelectItem>
                                                                         <SelectItem value="General Academics">
                                                                             GAS - General Academic Strand

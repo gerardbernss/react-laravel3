@@ -179,10 +179,10 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
                                                 <td className="px-4 py-3">
                                                     <div className="flex justify-center">
                                                         <Link href={`/attendance/${row.block_section_id}?subject_id=${row.subject_id}`}>
-                                                            <Button variant="outline" size="sm">
-                                                                <ClipboardCheck className="mr-1 h-4 w-4" />
+                                                            <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                                <ClipboardCheck className="h-3 w-3" />
                                                                 {row.today_taken ? 'View' : 'Take Attendance'}
-                                                            </Button>
+                                                            </button>
                                                         </Link>
                                                     </div>
                                                 </td>
@@ -305,10 +305,9 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <Link href={`/attendance/grade/${encodeURIComponent(group.label)}`}>
-                                                    <Button variant="outline" size="sm">
-                                                        <ClipboardCheck className="mr-1 h-4 w-4" />
-                                                        View Sections
-                                                    </Button>
+                                                    <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                        <ClipboardCheck className="h-3 w-3" /> View Sections
+                                                    </button>
                                                 </Link>
                                             </td>
                                         </tr>

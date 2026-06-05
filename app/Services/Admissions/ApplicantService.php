@@ -4,6 +4,7 @@ namespace App\Services\Admissions;
 use App\Models\Applicant;
 use App\Models\ApplicantPersonalData;
 use App\Models\Student;
+use App\Services\Student\CopyApplicantDataService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -418,6 +419,8 @@ class ApplicantService
             }
             $student->save();
         }
+
+        app(CopyApplicantDataService::class)->execute($student);
     }
 
     // ─── Helper Methods ───────────────────────────────────────────────────────

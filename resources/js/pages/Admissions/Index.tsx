@@ -10,7 +10,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Briefcase, CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp } from 'lucide-react';
+import { Briefcase, CalendarIcon, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useMemo, useState } from 'react';
 import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiOutlinePencilAlt, HiPlus, HiTrash } from 'react-icons/hi';
@@ -590,6 +591,14 @@ export default function Index({ applications }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
+                                {paginatedApplicants.length === 0 && (
+                                    <tr>
+                                        <td colSpan={visibleColumns.length + 2} className="py-16 text-center">
+                                            <Users className="mx-auto h-12 w-12 text-gray-300" />
+                                            <p className="mt-3 text-sm text-gray-400">No applicants found.</p>
+                                        </td>
+                                    </tr>
+                                )}
                                 {paginatedApplicants.map((row) => (
                                     <tr
                                         key={row.id}
@@ -630,35 +639,40 @@ export default function Index({ applications }: Props) {
                                         )}
                                         {visibleColumns.includes('application_status') && (
                                             <td className="px-4 py-3">
-                                                {(() => {
-                                                    const status = row.application_status?.toLowerCase() || '';
-                                                    let variant: 'outline' | 'success' | 'secondary' | 'default' = 'outline';
-                                                    let label = row.application_status || 'Pending';
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {(() => {
+                                                        const status = row.application_status?.toLowerCase() || '';
+                                                        let variant: 'outline' | 'success' | 'secondary' | 'default' = 'outline';
+                                                        let label = row.application_status || 'Pending';
 
-                                                    switch (status) {
-                                                        case 'pending':
-                                                            variant = 'outline';
-                                                            label = 'Pending';
-                                                            break;
-                                                        case 'exam taken':
-                                                        case 'inactive':
-                                                            variant = 'default';
-                                                            label = 'Exam Taken';
-                                                            break;
-                                                        case 'enrolled':
-                                                        case 'active':
-                                                            variant = 'success';
-                                                            label = 'Enrolled';
-                                                            break;
-                                                        default:
-                                                            variant = 'outline';
-                                                            label = 'Pending';
-                                                    }
+                                                        switch (status) {
+                                                            case 'pending':
+                                                                variant = 'outline';
+                                                                label = 'Pending';
+                                                                break;
+                                                            case 'exam taken':
+                                                            case 'inactive':
+                                                                variant = 'default';
+                                                                label = 'Exam Taken';
+                                                                break;
+                                                            case 'enrolled':
+                                                            case 'active':
+                                                                variant = 'success';
+                                                                label = 'Enrolled';
+                                                                break;
+                                                            default:
+                                                                variant = 'outline';
+                                                                label = row.application_status || 'Pending';
+                                                        }
 
-                                                    return (
-                                                        <Badge variant={variant}>{label}</Badge>
-                                                    );
-                                                })()}
+                                                        return <Badge variant={variant}>{label}</Badge>;
+                                                    })()}
+                                                    {row.application_status === 'Exam Passed' && (
+                                                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                                                            Ready to Enroll
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                         )}
                                         <td className="px-4 py-3">
@@ -690,63 +704,13 @@ export default function Index({ applications }: Props) {
                         </table>
                     </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-700">Rows per page:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="rounded-lg border border-gray-300 px-3 py-1 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                        <span className="text-sm text-gray-700">
-                            {sortedApplicants.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} -{' '}
-                            {Math.min(currentPage * pageSize, sortedApplicants.length)} of {sortedApplicants.length}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronsLeft className="h-5 w-5" />
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronLeft className="h-5 w-5" />
-                        </button>
-                        <span className="px-4 py-2 text-sm font-medium">
-                            Page {currentPage} of {totalPages || 1}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronRight className="h-5 w-5" />
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ChevronsRight className="h-5 w-5" />
-                        </button>
-                    </div>
-                </div>
+                    <TablePagination
+                        total={sortedApplicants.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
 

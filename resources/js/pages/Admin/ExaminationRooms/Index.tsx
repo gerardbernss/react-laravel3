@@ -5,16 +5,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
     Building2,
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     ChevronUp,
-    ChevronsLeft,
-    ChevronsRight,
-    Edit,
     Eye,
+    Pencil,
     Plus,
     Search,
     Trash2,
@@ -209,19 +206,22 @@ export default function Index({ rooms }: Props) {
                                         <td className="px-4 py-3">
                                             <div className="flex justify-center gap-1">
                                                 <Link href={`/examination-rooms/${room.id}`}>
-                                                    <Button variant="outline" size="sm"><Eye className="h-4 w-4" /></Button>
+                                                    <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                        <Eye className="h-3 w-3" /> View
+                                                    </button>
                                                 </Link>
                                                 <Link href={`/examination-rooms/${room.id}/edit`}>
-                                                    <Button variant="outline" size="sm"><Edit className="h-4 w-4" /></Button>
+                                                    <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                        <Pencil className="h-3 w-3" /> Edit
+                                                    </button>
                                                 </Link>
-                                                <Button
-                                                    variant="outline" size="sm"
+                                                <button
                                                     onClick={() => setDeleteDialog({ open: true, id: room.id, name: room.name })}
                                                     disabled={processing}
-                                                    className="text-red-600 hover:text-red-700"
+                                                    className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                    <Trash2 className="h-3 w-3" /> Delete
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -230,40 +230,13 @@ export default function Index({ rooms }: Props) {
                         </table>
                     </div>
 
-                    {/* Pagination Bar */}
-                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-700">Rows per page:</span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none"
-                            >
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={25}>25</option>
-                                <option value={50}>50</option>
-                            </select>
-                            <span className="text-sm text-gray-700">
-                                {sortedItems.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, sortedItems.length)} of {sortedItems.length}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsLeft className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                            <span className="px-4 py-2 text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
-                            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <TablePagination
+                        total={sortedItems.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
 

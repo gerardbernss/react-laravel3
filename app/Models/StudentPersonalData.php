@@ -14,6 +14,7 @@ class StudentPersonalData extends Model
     protected $table = 'student_personal_data';
 
     protected $fillable = [
+        'applicant_personal_data_id',
         'last_name',
         'first_name',
         'middle_name',
@@ -51,6 +52,11 @@ class StudentPersonalData extends Model
         'has_sibling'       => 'boolean',
         'has_doctors_note'  => 'boolean',
     ];
+
+    public function applicantPersonalData()
+    {
+        return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
+    }
 
     public function student(): HasOne
     {

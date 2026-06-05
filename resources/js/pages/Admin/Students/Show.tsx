@@ -1,9 +1,8 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Edit, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, Printer } from 'lucide-react';
 
 interface PersonalData {
     id: number;
@@ -128,16 +127,18 @@ export default function ShowStudent({ student, personalData, familyBackground, s
             <Head title={`Student — ${fullName}`} />
 
             <div className="space-y-6 p-4 md:p-6">
+                <Link href="/students" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <ArrowLeft className="mr-1 h-4 w-4" />
+                    Back to Students
+                </Link>
+
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                             {student.student_id_number && <span className="font-mono">{student.student_id_number}</span>}
-                            <Badge variant={student.source === 'applicant' ? 'default' : 'secondary'}>
-                                {student.source === 'applicant' ? 'From Admissions' : 'Direct Entry'}
-                            </Badge>
-                            {student.enrollment_status && (
+{student.enrollment_status && (
                                 <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${student.enrollment_status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                                     {student.enrollment_status}
                                 </span>
@@ -221,9 +222,9 @@ export default function ShowStudent({ student, personalData, familyBackground, s
 
                 {/* Siblings */}
                 <Section title="Siblings">
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full text-sm">
-                            <thead>
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr className="border-b border-gray-100">
                                     <th className="py-2 text-left font-semibold text-gray-500">Name</th>
                                     <th className="py-2 text-left font-semibold text-gray-500">Grade Level</th>
@@ -249,9 +250,9 @@ export default function ShowStudent({ student, personalData, familyBackground, s
 
                 {/* Educational Background */}
                 <Section title="Educational Background">
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full text-sm">
-                            <thead>
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr className="border-b border-gray-100">
                                     <th className="py-2 pr-4 text-left font-semibold text-gray-500">School</th>
                                     <th className="py-2 pr-4 text-left font-semibold text-gray-500">Address</th>
@@ -300,14 +301,15 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                 {/* Enrollment History */}
                 {enrollments.length > 0 && (
                     <Section title="Enrollment History">
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="min-w-full text-sm">
-                                <thead>
+                                <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr className="border-b border-gray-100">
                                         <th className="py-2 text-left font-semibold text-gray-500">School Year</th>
                                         <th className="py-2 text-left font-semibold text-gray-500">Semester</th>
                                         <th className="py-2 text-left font-semibold text-gray-500">Year Level</th>
                                         <th className="py-2 text-left font-semibold text-gray-500">Status</th>
+                                        <th className="py-2 text-left font-semibold text-gray-500">Report Card</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -318,6 +320,14 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                                             <td className="py-1.5 text-gray-700">{e.year_level}</td>
                                             <td className="py-1.5">
                                                 <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{e.status}</span>
+                                            </td>
+                                            <td className="py-1.5">
+                                                <a href={`/reports/report-card/${e.id}`} target="_blank" rel="noreferrer">
+                                                    <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+                                                        <Printer className="h-3 w-3" />
+                                                        Print
+                                                    </Button>
+                                                </a>
                                             </td>
                                         </tr>
                                     ))}

@@ -4,16 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     ChevronUp,
-    ChevronsLeft,
-    ChevronsRight,
     Plus,
     Search,
+    ThumbsDown,
+    ThumbsUp,
     Trash2,
     UserCheck,
 } from 'lucide-react';
@@ -136,13 +135,19 @@ export default function Index({ assignments, schedules }: Props) {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'assigned': return <Badge variant="outline">Assigned</Badge>;
+            case 'assigned':  return <Badge variant="outline">Assigned</Badge>;
             case 'confirmed': return <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>;
-            case 'attended': return <Badge className="bg-green-100 text-green-800">Attended</Badge>;
-            case 'absent': return <Badge variant="destructive">Absent</Badge>;
+            case 'attended':  return <Badge className="bg-yellow-100 text-yellow-800">Attended</Badge>;
+            case 'passed':    return <Badge className="bg-green-100 text-green-800">Passed</Badge>;
+            case 'failed':    return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+            case 'absent':    return <Badge variant="destructive">Absent</Badge>;
             case 'cancelled': return <Badge variant="secondary">Cancelled</Badge>;
-            default: return <Badge variant="outline">{status}</Badge>;
+            default:          return <Badge variant="outline">{status}</Badge>;
         }
+    };
+
+    const markResult = (id: number, result: 'passed' | 'failed') => {
+        router.post(`/exam-assignments/${id}/mark-result`, { result }, { preserveScroll: true });
     };
 
     const confirmDelete = () => {
@@ -203,6 +208,8 @@ export default function Index({ assignments, schedules }: Props) {
                                 <SelectItem value="assigned">Assigned</SelectItem>
                                 <SelectItem value="confirmed">Confirmed</SelectItem>
                                 <SelectItem value="attended">Attended</SelectItem>
+                                <SelectItem value="passed">Passed</SelectItem>
+                                <SelectItem value="failed">Failed</SelectItem>
                                 <SelectItem value="absent">Absent</SelectItem>
                                 <SelectItem value="cancelled">Cancelled</SelectItem>
                             </SelectContent>
@@ -261,6 +268,26 @@ export default function Index({ assignments, schedules }: Props) {
                                         <td className="px-4 py-3 text-center">{getStatusBadge(assignment.status)}</td>
                                         <td className="px-4 py-3">
                                             <div className="flex justify-center gap-1">
+                                                {assignment.status === 'attended' && (
+                                                    <>
+                                                        <Button
+                                                            variant="outline" size="sm"
+                                                            onClick={() => markResult(assignment.id, 'passed')}
+                                                            className="border-green-500 text-green-700 hover:bg-green-50"
+                                                            title="Mark as Passed"
+                                                        >
+                                                            <ThumbsUp className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline" size="sm"
+                                                            onClick={() => markResult(assignment.id, 'failed')}
+                                                            className="border-red-400 text-red-600 hover:bg-red-50"
+                                                            title="Mark as Failed"
+                                                        >
+                                                            <ThumbsDown className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button
                                                     variant="ghost" size="sm"
                                                     onClick={() => setDeleteDialog({ open: true, id: assignment.id })}
@@ -277,40 +304,13 @@ export default function Index({ assignments, schedules }: Props) {
                         </table>
                     </div>
 
-                    {/* Pagination Bar */}
-                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-700">Rows per page:</span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none"
-                            >
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={25}>25</option>
-                                <option value={50}>50</option>
-                            </select>
-                            <span className="text-sm text-gray-700">
-                                {sortedItems.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, sortedItems.length)} of {sortedItems.length}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsLeft className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                            <span className="px-4 py-2 text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
-                            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <TablePagination
+                        total={sortedItems.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
 

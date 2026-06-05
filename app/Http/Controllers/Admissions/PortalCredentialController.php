@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 
 use App\Http\Requests\Admissions\StorePortalCredentialRequest;
 use App\Mail\Admissions\PortalPasswordMail;
+use App\Mail\Admissions\ResendPortalPasswordMail;
 use App\Models\Applicant;
 use App\Models\PortalCredential;
 use Illuminate\Http\Request;
@@ -14,6 +15,27 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
+/**
+ * Manages student portal login credentials (PortalCredential model).
+ *
+ * Used by admin/registrar staff (requires 'manage-portal-credentials' permission).
+ * The main portal credential send flow also exists in ApplicantController::sendPortalPassword()
+ * for the inline "send credentials" action on the applicant detail page; this
+ * controller handles the dedicated portal-credentials management area.
+ *
+ * Credential lifecycle:
+ *   store()      — create new credential, hash the password, email it immediately
+ *   send()       — generate a fresh password and email it (first-time send)
+ *   resend()     — generate a fresh password and email it again (re-send)
+ *   suspend()    — set access_status = 'Suspended', reset login_attempts to 0
+ *   reactivate() — set access_status = 'Active', reset login_attempts to 0
+ *
+ * Passwords are always Str::random(12) — plain text is passed to the Mailable
+ * and discarded; only the bcrypt hash is stored in temporary_password.
+ *
+ * The statistics() method provides aggregate counts used by the admin dashboard
+ * to monitor credential distribution progress.
+ */
 class PortalCredentialController extends Controller
 {
     /**
@@ -129,7 +151,7 @@ class PortalCredentialController extends Controller
 
                 // Send email with new credentials
                 Mail::to($credential->personalData->email)
-                    ->send(new PortalPasswordMail($credential, $temporaryPassword));
+                    ->send(new ResendPortalPasswordMail($credential, $temporaryPassword));
 
                 return back()->with('success', 'Portal password sent to applicant successfully.');
             }
@@ -161,7 +183,7 @@ class PortalCredentialController extends Controller
             // Send email with new credentials
             if ($credential->personalData && $credential->personalData->email) {
                 Mail::to($credential->personalData->email)
-                    ->send(new PortalPasswordMail($credential, $newPassword));
+                    ->send(new ResendPortalPasswordMail($credential, $newPassword));
             }
 
             return back()->with('success', 'New credentials generated and sent to applicant.');
@@ -177,8 +199,8 @@ class PortalCredentialController extends Controller
     public function suspend(PortalCredential $credential)
     {
         $credential->update([
-            'access_suspended_at'   => now(),
-            'failed_login_attempts' => 0,
+            'access_status'  => 'Suspended',
+            'login_attempts' => 0,
         ]);
 
         return back()->with('success', 'Portal access suspended.');
@@ -190,31 +212,14 @@ class PortalCredentialController extends Controller
     public function reactivate(PortalCredential $credential)
     {
         $credential->update([
-            'access_suspended_at'   => null,
-            'failed_login_attempts' => 0,
+            'access_status'  => 'Active',
+            'login_attempts' => 0,
         ]);
 
         return back()->with('success', 'Portal access reactivated.');
     }
 
-    /**
-     * Reset password
-     */
-    public function resetPassword(PortalCredential $credential)
-    {
-        $newPassword = Str::random(12);
-
-        $credential->update([
-            'temporary_password'    => bcrypt($newPassword),
-            'password_changed'      => false,
-            'failed_login_attempts' => 0,
-        ]);
-
-        // In production, send new password email
-        return back()->with('success', 'Password reset. New credentials sent to applicant.');
-    }
-
-    /**
+/**
      * Get credential statistics
      */
     public function statistics()

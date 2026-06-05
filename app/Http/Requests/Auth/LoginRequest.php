@@ -90,7 +90,7 @@ class LoginRequest extends FormRequest
         }
 
         // Neither guard authenticated
-        RateLimiter::hit($this->throttleKey());
+        RateLimiter::hit($this->throttleKey(), 300);
 
         throw ValidationException::withMessages([
             'email' => __('auth.failed'),

@@ -76,6 +76,11 @@ const allNavItems: NavItem[] = [
                 href: '/examination-rooms',
                 icon: Building2,
             },
+            {
+                title: 'Exam Results',
+                href: '/exam-results',
+                icon: ClipboardList,
+            },
         ],
     },
     {
@@ -103,9 +108,9 @@ const allNavItems: NavItem[] = [
         permission: 'view-permissions',
     },
     {
-        title: 'Grades',
-        href: '/grades',
-        icon: ClipboardList,
+        title: 'Gradebook',
+        href: '/gradebook',
+        icon: BookOpen,
         permission: 'view-grades',
     },
     {
@@ -149,6 +154,12 @@ const allNavItems: NavItem[] = [
                 icon: Percent,
             },
         ],
+    },
+    {
+        title: 'Employees',
+        href: '/employees',
+        icon: Building2,
+        permission: 'view-permissions',
     },
     {
         title: 'Announcements',

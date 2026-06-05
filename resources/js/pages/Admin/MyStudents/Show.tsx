@@ -1,9 +1,11 @@
-import { Badge } from '@/components/ui/badge';
+﻿import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { CalendarCheck, ChevronLeft, ClipboardList, GraduationCap, Users } from 'lucide-react';
+import { CalendarCheck, ChevronLeft, ClipboardList, GraduationCap, Printer, Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface Student {
     enrollment_id: number;
@@ -74,6 +76,11 @@ function attendanceColor(rate: number | null): string {
 }
 
 export default function Show({ blockSection, subject, students, isFaculty, statistics }: Props) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    const paginated = useMemo(() => students.slice((currentPage - 1) * pageSize, currentPage * pageSize), [students, currentPage, pageSize]);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Grades', href: '/grades' },
@@ -153,9 +160,9 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
                 {/* Roster Table */}
                 {students.length > 0 ? (
                     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50">
+                                <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Student ID</th>
@@ -169,12 +176,13 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
                                                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">L</th>
                                                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">E</th>
                                                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Rate</th>
+                                                <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Report</th>
                                             </>
                                         )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {students.map((student, index) => {
+                                    {paginated.map((student, index) => {
                                         const fullName = [student.last_name, student.first_name, student.middle_name ? `${student.middle_name[0]}.` : null]
                                             .filter(Boolean)
                                             .join(', ');
@@ -202,6 +210,14 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
                                                         <td className={`px-4 py-3 text-center ${attendanceColor(student.attendance_rate)}`}>
                                                             {student.attendance_rate !== null ? `${student.attendance_rate}%` : '—'}
                                                         </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <a href={`/reports/report-card/${student.enrollment_id}`} target="_blank" rel="noreferrer">
+                                                                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+                                                                    <Printer className="h-3 w-3" />
+                                                                    Print
+                                                                </Button>
+                                                            </a>
+                                                        </td>
                                                     </>
                                                 )}
                                             </tr>
@@ -210,6 +226,14 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
                                 </tbody>
                             </table>
                         </div>
+
+                        <TablePagination
+                            total={students.length}
+                            pageSize={pageSize}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                        />
 
                         {/* Legend + Actions */}
                         <div className="flex flex-col gap-3 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

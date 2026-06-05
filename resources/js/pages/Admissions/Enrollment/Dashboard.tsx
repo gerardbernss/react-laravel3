@@ -1,11 +1,11 @@
-import { Badge } from '@/components/ui/badge';
+﻿import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle, Clock, Eye, Search, Users } from 'lucide-react';
+import { CheckCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock, Eye, Search, Users } from 'lucide-react';
 import { useState } from 'react';
 
 interface PersonalData {
@@ -48,6 +48,11 @@ interface Props {
         enrolled: number;
         total: number;
     };
+    currentPeriod: {
+        school_year: string;
+        semester: string;
+        is_open: boolean;
+    } | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -55,7 +60,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Enrollment Management', href: '/enrollment/dashboard' },
 ];
 
-export default function EnrollmentDashboard({ applicants, filters = {}, statistics }: Props) {
+export default function EnrollmentDashboard({ applicants, filters = {}, statistics, currentPeriod }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
     const [categoryFilter, setCategoryFilter] = useState(filters.category || 'all');
@@ -90,8 +95,18 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
 
             <div className="space-y-6 p-6 md:p-10">
                 {/* Header */}
-                <div>
+                <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold text-gray-900">Enrollment Management</h1>
+                    {currentPeriod && (
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+                            currentPeriod.is_open
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-600'
+                        }`}>
+                            <span className={`h-2 w-2 rounded-full ${currentPeriod.is_open ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            {currentPeriod.semester} {currentPeriod.school_year}
+                        </span>
+                    )}
                 </div>
 
                 {/* Statistics Cards */}
@@ -184,8 +199,9 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
 
                 {/* Table */}
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="sticky top-0 z-10 bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                     Application #
@@ -234,10 +250,9 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm">
                                             <Link href={`/enrollment/${applicant.id}`}>
-                                                <Button variant="outline" size="sm">
-                                                    <Eye className="mr-1 h-4 w-4" />
-                                                    View
-                                                </Button>
+                                                <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                    <Eye className="h-3 w-3" /> View
+                                                </button>
                                             </Link>
                                         </td>
                                     </tr>
@@ -252,28 +267,40 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                             )}
                         </tbody>
                     </table>
-                </div>
+                    </div>
 
                 {/* Pagination */}
-                {applicants.last_page > 1 && (
-                    <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
-                        <p className="text-sm text-gray-600">
-                            Page {applicants.current_page} of {applicants.last_page} ({applicants.total} total)
-                        </p>
-                        <div className="flex gap-1">
-                            {applicants.links.map((link, index) => (
-                                <Button
-                                    key={index}
-                                    variant={link.active ? 'default' : 'outline'}
-                                    size="sm"
-                                    disabled={!link.url}
-                                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
-                        </div>
+                <div className="flex items-center justify-between border-t bg-white px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-700">Rows per page:</span>
+                        <select
+                            value={applicants.per_page}
+                            onChange={(e) => router.get('/enrollment/dashboard', { ...filters, per_page: e.target.value, page: 1 }, { preserveState: true })}
+                            className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {[5, 10, 25, 50].map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <span className="text-sm text-gray-700">
+                            {applicants.total > 0 ? (applicants.current_page - 1) * applicants.per_page + 1 : 0} - {Math.min(applicants.current_page * applicants.per_page, applicants.total)} of {applicants.total}
+                        </span>
                     </div>
-                )}
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: 1 }, { preserveState: true })} disabled={applicants.current_page === 1} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                            <ChevronsLeft className="h-5 w-5" />
+                        </button>
+                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: applicants.current_page - 1 }, { preserveState: true })} disabled={applicants.current_page === 1} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                            <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <span className="px-4 py-2 text-sm font-medium">Page {applicants.current_page} of {applicants.last_page}</span>
+                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: applicants.current_page + 1 }, { preserveState: true })} disabled={applicants.current_page === applicants.last_page} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                            <ChevronRight className="h-5 w-5" />
+                        </button>
+                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: applicants.last_page }, { preserveState: true })} disabled={applicants.current_page === applicants.last_page} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                            <ChevronsRight className="h-5 w-5" />
+                        </button>
+                    </div>
+                </div>
+                </div>
             </div>
         </AppLayout>
     );

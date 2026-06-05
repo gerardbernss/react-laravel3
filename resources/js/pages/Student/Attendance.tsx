@@ -1,4 +1,4 @@
-import StudentLayout from '@/layouts/student-layout';
+﻿import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { ClipboardList, Pencil, Check, X } from 'lucide-react';
@@ -22,6 +22,7 @@ interface Enrollment {
 
 interface Props {
     student: { id: number; username: string };
+    isEnrolled: boolean;
     enrollment: Enrollment | null;
     attendance: AttendanceRecord[];
 }
@@ -41,7 +42,7 @@ function formatDate(dateStr: string) {
     });
 }
 
-export default function Attendance({ enrollment, attendance }: Props) {
+export default function Attendance({ isEnrolled, enrollment, attendance }: Props) {
     // Track which row is being edited and the current draft value
     const [editingId, setEditingId]   = useState<number | null>(null);
     const [editValue, setEditValue]   = useState('');
@@ -87,7 +88,7 @@ export default function Attendance({ enrollment, attendance }: Props) {
                     )}
                 </div>
 
-                {!enrollment ? (
+                {!isEnrolled ? (
                     /* ── No enrollment ── */
                     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-center">
                         <ClipboardList className="mb-3 h-10 w-10 text-gray-400" />
@@ -104,9 +105,9 @@ export default function Attendance({ enrollment, attendance }: Props) {
                 ) : (
                     /* ── Absences / lates table ── */
                     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
+                                <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
                                         <th className="px-5 py-3 text-left font-semibold text-gray-600">#</th>
                                         <th className="px-5 py-3 text-left font-semibold text-gray-600">Subject</th>

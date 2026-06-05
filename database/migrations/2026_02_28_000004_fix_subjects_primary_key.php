@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'sqlite') {
+            // Oracle and other databases maintain PK integrity natively — no rebuild needed.
+            return;
+        }
+
         DB::statement('PRAGMA foreign_keys = OFF');
 
         DB::statement('CREATE TABLE subjects_rebuilt (

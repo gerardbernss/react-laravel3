@@ -55,7 +55,7 @@ class MyStudentsController extends Controller
             if ($subjectId) {
                 $counts = Attendance::where('student_enrollment_id', $enrollment->id)
                     ->where('subject_id', $subjectId)
-                    ->selectRaw('status, count(*) as cnt')
+                    ->selectRaw('status, count(*) as "cnt"')
                     ->groupBy('status')
                     ->pluck('cnt', 'status')
                     ->toArray();

@@ -3,219 +3,139 @@
 namespace Database\Seeders;
 
 use App\Models\BlockSection;
+use App\Models\StudentEnrollment;
 use App\Models\Subject;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class BlockSectionSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Creates 4 block sections (A/B/C/D) for every Grade 11 and Grade 12
+     * strand × semester combination (STEM, ABM, HUMSS × 1st + 2nd Semester).
+     *
+     * Each section is assigned the matching A/B/C/D schedule variants of its
+     * grade-level core subjects plus its strand-specific subjects.
+     *
+     * Existing block_section_subject assignments and student block-section
+     * links are cleared first.
      */
     public function run(): void
     {
+        // 1. Detach all existing subject assignments from every block section
+        DB::table('block_section_subject')->delete();
+
+        // 2. Remove block-section assignments from student enrollments
+        StudentEnrollment::whereNotNull('block_section_id')
+            ->update(['block_section_id' => null]);
+
+        // 3. Delete all existing block sections
+        BlockSection::query()->delete();
+
+        // 4. Create sections and assign subjects
         $schoolYear = '2025-2026';
+        $letters    = ['A', 'B', 'C', 'D'];
 
-        $blockSections = [
-            // Grade 11 - First Semester
-            [
-                'name' => 'STEM 11-A',
-                'code' => 'STEM-11A-1S-2526',
-                'grade_level' => 'Grade 11',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Dr. Maria Santos',
-                'room' => 'Room 301',
-                'capacity' => 40,
-                'schedule' => 'MWF 7:30 AM - 12:00 PM',
-            ],
-            [
-                'name' => 'STEM 11-B',
-                'code' => 'STEM-11B-1S-2526',
-                'grade_level' => 'Grade 11',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Prof. Juan Cruz',
-                'room' => 'Room 302',
-                'capacity' => 40,
-                'schedule' => 'MWF 7:30 AM - 12:00 PM',
-            ],
-            [
-                'name' => 'ABM 11-A',
-                'code' => 'ABM-11A-1S-2526',
-                'grade_level' => 'Grade 11',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Mrs. Ana Reyes',
-                'room' => 'Room 201',
-                'capacity' => 35,
-                'schedule' => 'TTh 7:30 AM - 12:00 PM',
-            ],
-            [
-                'name' => 'HUMSS 11-A',
-                'code' => 'HUMSS-11A-1S-2526',
-                'grade_level' => 'Grade 11',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Mr. Pedro Garcia',
-                'room' => 'Room 202',
-                'capacity' => 35,
-                'schedule' => 'TTh 7:30 AM - 12:00 PM',
-            ],
+        $totalSections = 0;
+        $totalSubjects = 0;
 
-            // Grade 12 - First Semester
-            [
-                'name' => 'STEM 12-A',
-                'code' => 'STEM-12A-1S-2526',
-                'grade_level' => 'Grade 12',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Dr. Roberto Lim',
-                'room' => 'Room 401',
-                'capacity' => 40,
-                'schedule' => 'MWF 7:30 AM - 12:00 PM',
-            ],
-            [
-                'name' => 'STEM 12-B',
-                'code' => 'STEM-12B-1S-2526',
-                'grade_level' => 'Grade 12',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Dr. Elena Tan',
-                'room' => 'Room 402',
-                'capacity' => 40,
-                'schedule' => 'MWF 7:30 AM - 12:00 PM',
-            ],
-            [
-                'name' => 'ABM 12-A',
-                'code' => 'ABM-12A-1S-2526',
-                'grade_level' => 'Grade 12',
-                'school_year' => $schoolYear,
-                'semester' => 'First Semester',
-                'adviser' => 'Mrs. Rosa Dela Cruz',
-                'room' => 'Room 203',
-                'capacity' => 35,
-                'schedule' => 'TTh 7:30 AM - 12:00 PM',
-            ],
-
-            // Grade 7 - Full Year (JHS)
-            [
-                'name' => 'Grade 7 - St. Thomas',
-                'code' => 'G7-THOMAS-2526',
-                'grade_level' => 'Grade 7',
-                'school_year' => $schoolYear,
-                'semester' => 'Full Year',
-                'adviser' => 'Ms. Carla Mendoza',
-                'room' => 'Room 101',
-                'capacity' => 45,
-                'schedule' => 'Mon-Fri 7:30 AM - 4:00 PM',
-            ],
-            [
-                'name' => 'Grade 7 - St. Peter',
-                'code' => 'G7-PETER-2526',
-                'grade_level' => 'Grade 7',
-                'school_year' => $schoolYear,
-                'semester' => 'Full Year',
-                'adviser' => 'Mr. James Santos',
-                'room' => 'Room 102',
-                'capacity' => 45,
-                'schedule' => 'Mon-Fri 7:30 AM - 4:00 PM',
-            ],
-
-            // Grade 1 - Full Year (LES)
-            [
-                'name' => 'Grade 1 - Hope',
-                'code' => 'G1-HOPE-2526',
-                'grade_level' => 'Grade 1',
-                'school_year' => $schoolYear,
-                'semester' => 'Full Year',
-                'adviser' => 'Ms. Teresa Villanueva',
-                'room' => 'Room A1',
-                'capacity' => 30,
-                'schedule' => 'Mon-Fri 7:30 AM - 12:00 PM',
-            ],
-            [
-                'name' => 'Grade 1 - Faith',
-                'code' => 'G1-FAITH-2526',
-                'grade_level' => 'Grade 1',
-                'school_year' => $schoolYear,
-                'semester' => 'Full Year',
-                'adviser' => 'Ms. Mary Joy Cruz',
-                'room' => 'Room A2',
-                'capacity' => 30,
-                'schedule' => 'Mon-Fri 7:30 AM - 12:00 PM',
-            ],
+        // ── Kinder + Elementary (Grade 1-6) + JHS (Grade 7-10) ──────────
+        // No strand, Full Year semester, 4 sections each
+        $lowerGrades = [
+            'Kinder'   => 'KG',
+            'Grade 1'  => 'G1',
+            'Grade 2'  => 'G2',
+            'Grade 3'  => 'G3',
+            'Grade 4'  => 'G4',
+            'Grade 5'  => 'G5',
+            'Grade 6'  => 'G6',
+            'Grade 7'  => 'G7',
+            'Grade 8'  => 'G8',
+            'Grade 9'  => 'G9',
+            'Grade 10' => 'G10',
         ];
 
-        foreach ($blockSections as $section) {
-            BlockSection::firstOrCreate(
-                ['code' => $section['code']],
-                $section
-            );
+        foreach ($lowerGrades as $gradeName => $gradeCode) {
+            foreach ($letters as $letter) {
+                $sectionCode = "{$gradeCode}-{$letter}-2526";
+                $sectionName = "{$gradeName} - Section {$letter}";
+
+                $section = BlockSection::create([
+                    'name'        => $sectionName,
+                    'code'        => $sectionCode,
+                    'grade_level' => $gradeName,
+                    'strand'      => null,
+                    'school_year' => $schoolYear,
+                    'semester'    => 'Full Year',
+                    'adviser'     => null,
+                    'room'        => null,
+                    'capacity'    => 40,
+                    'is_active'   => true,
+                ]);
+
+                $subjectIds = Subject::where('grade_level', $gradeName)
+                    ->where('code', 'LIKE', '%-' . $letter)
+                    ->pluck('id');
+
+                $section->subjects()->attach($subjectIds);
+
+                $totalSections++;
+                $totalSubjects += $subjectIds->count();
+            }
         }
 
-        // Assign subjects to block sections
-        $this->assignSubjectsToBlockSections();
+        // ── SHS (Grade 11-12): strands × 1st + 2nd Semester ─────────────
+        // Keys = full name stored in DB; values = short abbreviation for codes
+        $strands = [
+            'Science, Technology, Engineering and Mathematics' => 'STEM',
+            'Accountancy, Business and Management'             => 'ABM',
+            'Humanities and Social Sciences'                   => 'HUMSS',
+        ];
+        $shsGrades = ['Grade 11' => '11', 'Grade 12' => '12'];
+        $semesters = ['First Semester' => '1S', 'Second Semester' => '2S'];
 
-        $this->command->info('✅ Block Sections seeded successfully!');
-    }
+        foreach ($shsGrades as $gradeName => $gradeNum) {
+            foreach ($strands as $strandName => $strandAbbr) {
+                foreach ($semesters as $semName => $semCode) {
+                    foreach ($letters as $letter) {
+                        $sectionCode = "{$strandAbbr}-{$gradeNum}{$letter}-{$semCode}-2526";
+                        $sectionName = "{$strandAbbr} {$gradeNum}-{$letter}";
 
-    /**
-     * Assign subjects to block sections based on grade level and semester.
-     */
-    private function assignSubjectsToBlockSections(): void
-    {
-        // Get Grade 11 First Semester subjects
-        $grade11FirstSemSubjects = Subject::where('grade_level', 'Grade 11')
-            ->where('semester', 'First Semester')
-            ->pluck('id')
-            ->toArray();
+                        $section = BlockSection::create([
+                            'name'        => $sectionName,
+                            'code'        => $sectionCode,
+                            'grade_level' => $gradeName,
+                            'strand'      => $strandName,
+                            'school_year' => $schoolYear,
+                            'semester'    => $semName,
+                            'adviser'     => null,
+                            'room'        => null,
+                            'capacity'    => 40,
+                            'is_active'   => true,
+                        ]);
 
-        // Get Grade 12 First Semester subjects
-        $grade12FirstSemSubjects = Subject::where('grade_level', 'Grade 12')
-            ->where('semester', 'First Semester')
-            ->pluck('id')
-            ->toArray();
+                        $coreIds = Subject::where('grade_level', $gradeName)
+                            ->where('semester', $semName)
+                            ->whereNull('strand')
+                            ->where('code', 'LIKE', '%-' . $letter)
+                            ->pluck('id');
 
-        // Get Grade 7 subjects
-        $grade7Subjects = Subject::where('grade_level', 'Grade 7')
-            ->pluck('id')
-            ->toArray();
+                        $strandIds = Subject::where('grade_level', $gradeName)
+                            ->where('semester', $semName)
+                            ->where('strand', $strandName)
+                            ->where('code', 'LIKE', '%-' . $letter)
+                            ->pluck('id');
 
-        // Get Grade 1 subjects
-        $grade1Subjects = Subject::where('grade_level', 'Grade 1')
-            ->pluck('id')
-            ->toArray();
+                        $allIds = $coreIds->merge($strandIds)->unique();
+                        $section->subjects()->attach($allIds);
 
-        // Assign to Grade 11 sections
-        $grade11Sections = BlockSection::where('grade_level', 'Grade 11')
-            ->where('semester', 'First Semester')
-            ->get();
-
-        foreach ($grade11Sections as $section) {
-            $section->subjects()->syncWithoutDetaching($grade11FirstSemSubjects);
+                        $totalSections++;
+                        $totalSubjects += $allIds->count();
+                    }
+                }
+            }
         }
 
-        // Assign to Grade 12 sections
-        $grade12Sections = BlockSection::where('grade_level', 'Grade 12')
-            ->where('semester', 'First Semester')
-            ->get();
-
-        foreach ($grade12Sections as $section) {
-            $section->subjects()->syncWithoutDetaching($grade12FirstSemSubjects);
-        }
-
-        // Assign to Grade 7 sections
-        $grade7Sections = BlockSection::where('grade_level', 'Grade 7')->get();
-
-        foreach ($grade7Sections as $section) {
-            $section->subjects()->syncWithoutDetaching($grade7Subjects);
-        }
-
-        // Assign to Grade 1 sections
-        $grade1Sections = BlockSection::where('grade_level', 'Grade 1')->get();
-
-        foreach ($grade1Sections as $section) {
-            $section->subjects()->syncWithoutDetaching($grade1Subjects);
-        }
+        $this->command->info("✅ Block sections seeded: {$totalSections} sections, {$totalSubjects} total subject assignments.");
     }
 }

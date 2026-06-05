@@ -1,17 +1,16 @@
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
     Banknote,
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     ChevronUp,
-    ChevronsLeft,
-    ChevronsRight,
+    ClipboardList,
     Eye,
     Search,
 } from 'lucide-react';
@@ -19,10 +18,11 @@ import { useMemo, useState } from 'react';
 
 interface Assessment {
     id: number;
+    type: 'student' | 'applicant';
     assessment_number: string;
     school_year: string;
     semester: string;
-    status: 'finalized' | 'partial' | 'paid' | 'draft' | 'cancelled';
+    status: 'finalized' | 'partial' | 'paid' | 'draft' | 'cancelled' | 'for_enrollment';
     gross_amount: number;
     total_discounts: number;
     net_amount: number;
@@ -31,11 +31,13 @@ interface Assessment {
     student_name: string;
     student_id_number: string;
     grade_level: string;
+    applicant_id: number | null;
 }
 
 interface Props {
     assessments: Assessment[];
     schoolYears: string[];
+    openStudentPeriod: { id: number; school_year: string; semester: string } | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,11 +47,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-    finalized: { label: 'Pending',   variant: 'outline' },
-    partial:   { label: 'Partial',   variant: 'secondary' },
-    paid:      { label: 'Paid',      variant: 'default' },
-    draft:     { label: 'Draft',     variant: 'outline' },
-    cancelled: { label: 'Cancelled', variant: 'destructive' },
+    finalized:      { label: 'Pending',        variant: 'outline' },
+    partial:        { label: 'Partial',        variant: 'secondary' },
+    paid:           { label: 'Paid',           variant: 'default' },
+    draft:          { label: 'Draft',          variant: 'outline' },
+    cancelled:      { label: 'Cancelled',      variant: 'destructive' },
+    for_enrollment: { label: 'For Enrollment', variant: 'secondary' },
 };
 
 function formatCurrency(amount: number) {
@@ -58,7 +61,7 @@ function formatCurrency(amount: number) {
 
 type SortKey = 'assessment_number' | 'student_name' | 'grade_level' | 'school_year' | 'net_amount' | 'total_paid' | 'balance' | 'status';
 
-export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
+export default function AssessmentsIndex({ assessments, schoolYears, openStudentPeriod }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
     const [selectedSchoolYear, setSelectedSchoolYear] = useState('');
@@ -66,6 +69,15 @@ export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
+
+    const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+    const { processing: generating, post: postGenerate } = useForm();
+    const handleGenerateAssessments = () => {
+        if (!openStudentPeriod) return;
+        postGenerate(`/enrollment-periods/${openStudentPeriod.id}/generate-assessments`, {
+            onSuccess: () => setShowGenerateDialog(false),
+        });
+    };
 
     const filteredItems = useMemo(() => {
         return assessments.filter((a) => {
@@ -135,11 +147,20 @@ export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
 
             <div className="p-6 md:p-10">
                 {/* Header */}
-                <div className="mb-6">
+                <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Banknote className="h-7 w-7 text-primary" />
                         <h1 className="text-3xl font-bold text-gray-900">Student Assessments</h1>
                     </div>
+                    {openStudentPeriod && (
+                        <Button
+                            onClick={() => setShowGenerateDialog(true)}
+                            className="gap-2 bg-blue-600 hover:bg-blue-700"
+                        >
+                            <ClipboardList className="h-4 w-4" />
+                            Generate Assessments
+                        </Button>
+                    )}
                 </div>
 
                 {/* Filters */}
@@ -158,9 +179,10 @@ export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
                     </div>
                     <div className="flex flex-wrap items-end gap-3">
                         <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-40"><SelectValue placeholder="All statuses" /></SelectTrigger>
+                            <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="for_enrollment">For Enrollment</SelectItem>
                                 <SelectItem value="finalized">Pending</SelectItem>
                                 <SelectItem value="partial">Partial</SelectItem>
                                 <SelectItem value="paid">Paid</SelectItem>
@@ -231,11 +253,13 @@ export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
                                 {paginatedItems.map((a) => {
                                     const sc = statusConfig[a.status] ?? { label: a.status, variant: 'outline' as const };
                                     return (
-                                        <tr key={a.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
+                                        <tr key={`${a.type}-${a.id}`} className={`border-b border-gray-200 transition-all hover:bg-slate-50 ${a.type === 'applicant' ? 'bg-green-50/40' : ''}`}>
                                             <td className="px-4 py-3 font-mono text-xs font-medium">{a.assessment_number}</td>
                                             <td className="px-4 py-3">
                                                 <p className="font-medium text-gray-900">{a.student_name}</p>
-                                                <p className="text-xs text-gray-400">{a.student_id_number}</p>
+                                                <p className="text-xs text-gray-400">
+                                                    {a.type === 'applicant' ? 'Applicant' : a.student_id_number}
+                                                </p>
                                             </td>
                                             <td className="px-4 py-3 text-gray-600">{a.grade_level}</td>
                                             <td className="px-4 py-3 text-gray-600">
@@ -252,10 +276,16 @@ export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
                                                 <Badge variant={sc.variant}>{sc.label}</Badge>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Link href={`/admin/finance/assessments/${a.id}`}>
+                                                <Link
+                                                    href={
+                                                        a.type === 'applicant' && a.applicant_id
+                                                            ? `/admissions/applicants/${a.applicant_id}/enroll`
+                                                            : `/admin/finance/assessments/${a.id}`
+                                                    }
+                                                >
                                                     <Button size="sm" variant="outline">
                                                         <Eye className="mr-1 h-3 w-3" />
-                                                        View
+                                                        {a.type === 'applicant' ? 'Enroll' : 'View'}
                                                     </Button>
                                                 </Link>
                                             </td>
@@ -266,42 +296,26 @@ export default function AssessmentsIndex({ assessments, schoolYears }: Props) {
                         </table>
                     </div>
 
-                    {/* Pagination Bar */}
-                    <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-700">Rows per page:</span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none"
-                            >
-                                <option value={5}>5</option>
-                                <option value={10}>10</option>
-                                <option value={25}>25</option>
-                                <option value={50}>50</option>
-                            </select>
-                            <span className="text-sm text-gray-700">
-                                {sortedItems.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, sortedItems.length)} of {sortedItems.length}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsLeft className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                            <span className="px-4 py-2 text-sm font-medium">Page {currentPage} of {totalPages || 1}</span>
-                            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
-                                <ChevronsRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <TablePagination
+                        total={sortedItems.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
+            <ConfirmDialog
+                open={showGenerateDialog}
+                onClose={() => setShowGenerateDialog(false)}
+                onConfirm={handleGenerateAssessments}
+                title="Generate Fee Assessments?"
+                description={`This will create fee assessments for all active students who don't have one yet for ${openStudentPeriod?.school_year} — ${openStudentPeriod?.semester}. Students with existing assessments will be skipped. Safe to run multiple times.`}
+                confirmLabel="Generate Assessments"
+                processingLabel="Generating..."
+                processing={generating}
+                variant="warning"
+            />
         </AppLayout>
     );
 }

@@ -335,7 +335,7 @@ export default function AddApplicant() {
     const [guardianSource, setGuardianSource] = React.useState<'father' | 'mother' | null>(null);
     const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
 
-    const currentSemester = usePage().props.currentSemester as { name: string | null } | null;
+    const currentSemester = usePage().props.currentSemester as { name: string | null; school_year: string | null } | null;
 
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,
@@ -343,7 +343,7 @@ export default function AddApplicant() {
         defaultValues: {
             //application info
             application_date: new Date().toISOString().split('T')[0],
-            school_year: '',
+            school_year: currentSemester?.school_year ?? '',
             application_status: 'Pending',
             year_level: '',
             semester: currentSemester?.name ?? '',
@@ -453,24 +453,6 @@ export default function AddApplicant() {
 
     // --- NEW STATE for agreement checkbox ---
     const [hasAgreed, setHasAgreed] = React.useState(false);
-
-    const applicationDate = form.watch('application_date');
-
-    useEffect(() => {
-        if (!applicationDate) return;
-
-        const date = new Date(applicationDate);
-        const year = date.getFullYear();
-
-        // Philippine academic year normally starts in August
-        // Adjust depending on your actual school rules
-        const isBeforeAugust = date.getMonth() + 1 < 8;
-
-        const startYear = isBeforeAugust ? year - 1 : year;
-        const endYear = startYear + 1;
-
-        form.setValue('school_year', `${startYear}-${endYear}`);
-    }, [applicationDate]);
 
     // Watch all father and mother fields for real-time updates
     const fatherValues = form.watch([
@@ -1300,13 +1282,13 @@ export default function AddApplicant() {
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
-                                                                        <SelectItem value="Accountancy, Business and Management (ABM)">
+                                                                        <SelectItem value="Accountancy, Business and Management">
                                                                             Accountancy, Business and Management (ABM)
                                                                         </SelectItem>
-                                                                        <SelectItem value="Humanities and Social Sciences (HUMSS)">
+                                                                        <SelectItem value="Humanities and Social Sciences">
                                                                             Humanities and Social Sciences (HUMSS)
                                                                         </SelectItem>
-                                                                        <SelectItem value="Science, Technology, Engineering and Mathematics (STEM)">
+                                                                        <SelectItem value="Science, Technology, Engineering and Mathematics">
                                                                             Science, Technology, Engineering and Mathematics (STEM)
                                                                         </SelectItem>
                                                                     </SelectContent>

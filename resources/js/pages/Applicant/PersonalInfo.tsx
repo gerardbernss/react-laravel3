@@ -1,4 +1,4 @@
-import InputError from '@/components/input-error';
+﻿import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -102,7 +102,7 @@ export default function ApplicantPersonalInfo({
     educationalBackground: initSchools,
     documents: initDocs,
 }: Props) {
-    const { errors } = usePage<{ errors: Record<string, string> }>().props;
+    const { errors, applicationPeriodOpen } = usePage<{ errors: Record<string, string>; applicationPeriodOpen: boolean }>().props;
 
     const [isEditing, setIsEditing]   = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -300,6 +300,13 @@ export default function ApplicantPersonalInfo({
                 </div>
 
                 <div className="mx-auto max-w-[1500px] px-10 py-8">
+
+                {!applicationPeriodOpen && (
+                    <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        The application window is currently closed. You can still update your information, but new applications are not being accepted at this time.
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                     {/* ── 1. Personal Information ──────────────────────────────── */}
@@ -672,9 +679,9 @@ export default function ApplicantPersonalInfo({
                                 <p className="text-sm text-gray-500">No siblings recorded.</p>
                             )}
                             {(siblings.length > 0 || isEditing) && (
-                                <div className="overflow-x-auto">
+                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                     <table className="min-w-full text-sm">
-                                        <thead>
+                                        <thead className="sticky top-0 z-10 bg-gray-50">
                                             <tr className="border-b border-gray-200">
                                                 <th className="py-2 pr-4 text-left text-xs font-semibold text-gray-600">Full Name</th>
                                                 <th className="py-2 pr-4 text-left text-xs font-semibold text-gray-600">Grade Level</th>

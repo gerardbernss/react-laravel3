@@ -4,6 +4,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Stores the file paths for documents uploaded during an application.
+ *
+ * One row per Applicant (1-to-1). Each field holds a relative path within the
+ * public storage disk (e.g. "documents/birth_certificates/123_DOE_JOHN.pdf").
+ * Files are served via the /view-document/{base64path} route in web.php and
+ * deleted from disk in ApplicantController::destroy() before the DB row is removed.
+ *
+ * Fields store paths only — never binary content. Use Storage::disk('public')
+ * to read or delete the actual files.
+ */
 class ApplicantDocuments extends Model
 {
     use HasFactory;

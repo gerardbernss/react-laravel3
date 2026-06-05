@@ -1,11 +1,13 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, BookOpen, Edit, LayoutGrid, Plus, Trash2, UserMinus, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit, LayoutGrid, Plus, Search, Trash2, UserMinus, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Subject {
@@ -96,8 +98,8 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
     // --- Tab state ---
     const [activeTab, setActiveTab] = useState<'students' | 'subjects'>('students');
 
-    // --- Add student ---
-    const [showAddPanel, setShowAddPanel] = useState(false);
+    // --- Add student dialog ---
+    const [showAddDialog, setShowAddDialog] = useState(false);
     const [addSearch, setAddSearch] = useState('');
     const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
     const [addProcessing, setAddProcessing] = useState(false);
@@ -106,18 +108,19 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
         if (!addSearch.trim()) return availableStudents;
         const q = addSearch.toLowerCase();
         return availableStudents.filter((s) => {
-            const name = `${s.personal_data?.first_name ?? ''} ${s.personal_data?.last_name ?? ''}`.toLowerCase();
+            const name = `${s.personal_data?.last_name ?? ''} ${s.personal_data?.first_name ?? ''}`.toLowerCase();
             return name.includes(q) || s.student_id_number.toLowerCase().includes(q);
         });
     }, [addSearch, availableStudents]);
 
-    const openAddPanel = () => {
-        setActiveTab('students');
-        setShowAddPanel(true);
+    const openAddDialog = () => {
+        setAddSearch('');
+        setSelectedStudentId(null);
+        setShowAddDialog(true);
     };
 
-    const closeAddPanel = () => {
-        setShowAddPanel(false);
+    const closeAddDialog = () => {
+        setShowAddDialog(false);
         setAddSearch('');
         setSelectedStudentId(null);
     };
@@ -129,11 +132,19 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
             `/block-sections/${blockSection.id}/add-student`,
             { student_id: selectedStudentId },
             {
-                onSuccess: closeAddPanel,
+                onSuccess: closeAddDialog,
                 onFinish: () => setAddProcessing(false),
             },
         );
     };
+
+    // --- Pagination: Students tab ---
+    const [studentsPage, setStudentsPage] = useState(1);
+    const [studentsPageSize, setStudentsPageSize] = useState(10);
+
+    // --- Pagination: Subjects tab ---
+    const [subjectsPage, setSubjectsPage] = useState(1);
+    const [subjectsPageSize, setSubjectsPageSize] = useState(10);
 
     // --- Filter enrolled students ---
     const [studentSearch, setStudentSearch] = useState('');
@@ -145,6 +156,9 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
             return name.includes(q) || e.student.student_id_number.toLowerCase().includes(q);
         });
     }, [studentSearch, enrolledStudents]);
+
+    const paginatedEnrolled = useMemo(() => filteredEnrolled.slice((studentsPage - 1) * studentsPageSize, studentsPage * studentsPageSize), [filteredEnrolled, studentsPage, studentsPageSize]);
+    const paginatedSubjects = useMemo(() => blockSection.subjects.slice((subjectsPage - 1) * subjectsPageSize, subjectsPage * subjectsPageSize), [blockSection.subjects, subjectsPage, subjectsPageSize]);
 
     // --- Remove student ---
     const [enrollmentToRemove, setEnrollmentToRemove] = useState<EnrolledStudent | null>(null);
@@ -298,7 +312,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                     Section is full — no slots available
                                 </div>
                             ) : (
-                                <Button className="w-full" onClick={openAddPanel}>
+                                <Button className="w-full" onClick={openAddDialog}>
                                     <Plus className="mr-2 h-4 w-4" />
                                     Add Student to Section
                                 </Button>
@@ -361,67 +375,18 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                     className="sm:max-w-xs"
                                 />
                                 {!isFull && (
-                                    <Button size="sm" onClick={openAddPanel}>
+                                    <Button size="sm" onClick={openAddDialog}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Add Student
                                     </Button>
                                 )}
                             </div>
 
-                            {/* Add student inline panel */}
-                            {showAddPanel && (
-                                <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                                    <p className="mb-2 text-sm font-medium text-blue-900">Select a student to add to this section</p>
-                                    <Input
-                                        placeholder="Search by name or student ID..."
-                                        value={addSearch}
-                                        onChange={(e) => {
-                                            setAddSearch(e.target.value);
-                                            setSelectedStudentId(null);
-                                        }}
-                                        className="mb-2 bg-white"
-                                        autoFocus
-                                    />
-                                    {availableStudents.length === 0 ? (
-                                        <p className="text-sm text-gray-500">No available students for this school year / semester.</p>
-                                    ) : filteredAvailable.length === 0 ? (
-                                        <p className="text-sm text-gray-500">No students match your search.</p>
-                                    ) : (
-                                        <div className="max-h-48 overflow-y-auto rounded border bg-white">
-                                            {filteredAvailable.map((s) => (
-                                                <button
-                                                    key={s.id}
-                                                    type="button"
-                                                    onClick={() => setSelectedStudentId(s.id)}
-                                                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${
-                                                        selectedStudentId === s.id
-                                                            ? 'bg-blue-50 font-medium text-blue-900'
-                                                            : 'text-gray-700'
-                                                    }`}
-                                                >
-                                                    <span className="font-mono text-xs text-gray-500">{s.student_id_number}</span>
-                                                    <span>
-                                                        {s.personal_data?.last_name}, {s.personal_data?.first_name}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className="mt-3 flex gap-2">
-                                        <Button size="sm" disabled={!selectedStudentId || addProcessing} onClick={handleAddStudent}>
-                                            {addProcessing ? 'Adding...' : 'Confirm'}
-                                        </Button>
-                                        <Button size="sm" variant="outline" onClick={closeAddPanel}>
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
                             {filteredEnrolled.length > 0 ? (
-                                <div className="overflow-x-auto">
+                                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50">
+                                        <thead className="sticky top-0 z-10 bg-gray-50">
                                             <tr>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-900">Student ID</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-900">Full Name</th>
@@ -431,7 +396,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {filteredEnrolled.map((e) => (
+                                            {paginatedEnrolled.map((e) => (
                                                 <tr key={e.id} className="hover:bg-gray-50">
                                                     <td className="px-4 py-3 font-mono text-sm text-gray-600">
                                                         {e.student.student_id_number}
@@ -461,6 +426,14 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                         </tbody>
                                     </table>
                                 </div>
+                                    <TablePagination
+                                        total={filteredEnrolled.length}
+                                        pageSize={studentsPageSize}
+                                        currentPage={studentsPage}
+                                        onPageChange={setStudentsPage}
+                                        onPageSizeChange={(s) => { setStudentsPageSize(s); setStudentsPage(1); }}
+                                    />
+                                </div>
                             ) : enrolledStudents.length === 0 ? (
                                 <div className="rounded-lg border border-dashed py-12 text-center">
                                     <Users className="mx-auto h-10 w-10 text-gray-400" />
@@ -477,9 +450,10 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                     {activeTab === 'subjects' && (
                         <div className="p-6">
                             {blockSection.subjects.length > 0 ? (
-                                <div className="overflow-x-auto">
+                                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50">
+                                        <thead className="sticky top-0 z-10 bg-gray-50">
                                             <tr>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-900">Code</th>
                                                 <th className="px-4 py-3 text-left font-semibold text-gray-900">Subject Name</th>
@@ -491,7 +465,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {blockSection.subjects.map((subject) => (
+                                            {paginatedSubjects.map((subject) => (
                                                 <tr key={subject.id} className="hover:bg-gray-50">
                                                     <td className="px-4 py-3">
                                                         <Link
@@ -523,6 +497,14 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                         </tfoot>
                                     </table>
                                 </div>
+                                    <TablePagination
+                                        total={blockSection.subjects.length}
+                                        pageSize={subjectsPageSize}
+                                        currentPage={subjectsPage}
+                                        onPageChange={setSubjectsPage}
+                                        onPageSizeChange={(s) => { setSubjectsPageSize(s); setSubjectsPage(1); }}
+                                    />
+                                </div>
                             ) : (
                                 <div className="rounded-lg border border-dashed py-12 text-center">
                                     <BookOpen className="mx-auto h-10 w-10 text-gray-400" />
@@ -538,6 +520,73 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                     )}
                 </div>
             </div>
+
+            {/* Add student dialog */}
+            <Dialog open={showAddDialog} onOpenChange={(open) => { if (!open) closeAddDialog(); }}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Add Student to {blockSection.name}</DialogTitle>
+                    </DialogHeader>
+
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Input
+                            placeholder="Search by name or student ID..."
+                            value={addSearch}
+                            onChange={(e) => { setAddSearch(e.target.value); setSelectedStudentId(null); }}
+                            className="pl-9"
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* Student table */}
+                    <div className="max-h-80 overflow-y-auto rounded-lg border">
+                        {availableStudents.length === 0 ? (
+                            <div className="px-4 py-10 text-center text-sm text-gray-500">
+                                No available students for this school year / semester.
+                            </div>
+                        ) : filteredAvailable.length === 0 ? (
+                            <div className="px-4 py-10 text-center text-sm text-gray-500">No students match your search.</div>
+                        ) : (
+                            <table className="w-full text-sm">
+                                <thead className="sticky top-0 bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left">Student ID</th>
+                                        <th className="px-4 py-2 text-left">Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {filteredAvailable.map((s) => (
+                                        <tr
+                                            key={s.id}
+                                            onClick={() => setSelectedStudentId(s.id)}
+                                            className={`cursor-pointer transition-colors hover:bg-gray-50 ${
+                                                selectedStudentId === s.id ? 'bg-primary/10' : ''
+                                            }`}
+                                        >
+                                            <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{s.student_id_number || '—'}</td>
+                                            <td className="px-4 py-2.5 font-medium text-gray-900">
+                                                {s.personal_data?.last_name}, {s.personal_data?.first_name}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+
+                    <p className="text-xs text-gray-500">{filteredAvailable.length} student{filteredAvailable.length !== 1 ? 's' : ''} available</p>
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-2 border-t pt-2">
+                        <Button variant="outline" onClick={closeAddDialog} disabled={addProcessing}>Cancel</Button>
+                        <Button onClick={handleAddStudent} disabled={!selectedStudentId || addProcessing}>
+                            {addProcessing ? 'Adding...' : 'Add Student'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Delete section dialog */}
             <ConfirmDialog

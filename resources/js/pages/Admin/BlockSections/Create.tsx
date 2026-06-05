@@ -16,6 +16,7 @@ interface Subject {
     code: string;
     name: string;
     units: number;
+    semester: string | null;
 }
 
 interface Props {
@@ -84,9 +85,26 @@ export default function Create({ subjects }: Props) {
 
     const getSubjectById = (id: number) => subjects.find((s) => s.id === id);
 
+    // Only show subjects compatible with the selected semester
+    const semesterCompatible = (s: Subject) =>
+        !data.semester || !s.semester || s.semester === 'Full Year' || s.semester === data.semester;
+
     const availableSubjects = subjects.filter(
-        (s) => !assignedSubjects.some((assigned) => assigned.subject_id === s.id)
+        (s) => semesterCompatible(s) && !assignedSubjects.some((assigned) => assigned.subject_id === s.id)
     );
+
+    const handleSemesterChange = (v: string) => {
+        setData('semester', v);
+        // Remove already-assigned subjects that are incompatible with the new semester
+        const compatible = assignedSubjects.filter((a) => {
+            const s = subjects.find((sub) => sub.id === a.subject_id);
+            return !s || !s.semester || s.semester === 'Full Year' || s.semester === v;
+        });
+        if (compatible.length !== assignedSubjects.length) {
+            setAssignedSubjects(compatible);
+            setData('subjects', compatible);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -182,7 +200,7 @@ export default function Create({ subjects }: Props) {
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
                                         <Label htmlFor="semester">Semester</Label>
-                                        <Select value={data.semester} onValueChange={(v) => setData('semester', v)}>
+                                        <Select value={data.semester} onValueChange={handleSemesterChange}>
                                             <SelectTrigger className="mt-1">
                                                 <SelectValue placeholder="Select semester" />
                                             </SelectTrigger>
@@ -284,6 +302,7 @@ export default function Create({ subjects }: Props) {
                                         {availableSubjects.map((subject) => (
                                             <SelectItem key={subject.id} value={subject.id.toString()}>
                                                 {subject.code} - {subject.name}
+                                                {subject.semester ? ` (${subject.semester})` : ''}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -308,6 +327,11 @@ export default function Create({ subjects }: Props) {
                                                     </Badge>
                                                     <span className="font-medium">{subject.name}</span>
                                                     <span className="ml-2 text-xs text-gray-500">({subject.units} units)</span>
+                                                    {subject.semester && (
+                                                        <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                                                            {subject.semester}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <Button
                                                     type="button"

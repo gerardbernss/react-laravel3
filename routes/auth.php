@@ -1,5 +1,28 @@
 <?php
 
+/**
+ * Authentication routes — login, register, password reset, email verification, Google OAuth.
+ *
+ * Middleware groups:
+ *   guest:web + guest:student — GUEST-ONLY: login, register, forgot-password, OAuth.
+ *                               Both guards are checked so an authenticated admin visiting
+ *                               /login is redirected to /dashboard, and an authenticated
+ *                               student visiting /login is not accidentally logged out.
+ *   auth                      — AUTHENTICATED: verify-email, confirm-password, logout.
+ *                               Uses the default 'web' guard (admin/staff/faculty).
+ *
+ * Two parallel password-reset flows exist:
+ *   Admin:   /forgot-password  → /reset-password/{token}   (PasswordResetLinkController / NewPasswordController)
+ *   Student: /student/forgot-password → /student/reset-password/{token} (StudentPasswordResetLinkController / StudentNewPasswordController)
+ *
+ * Google OAuth:
+ *   /auth/google          — redirects to Google consent screen (GoogleController::redirectToGoogle)
+ *   /auth/google/callback — handles the OAuth callback (GoogleController::handleGoogleCallback)
+ *   OPTIONS routes are present to satisfy CORS preflight from the frontend during development.
+ *
+ * This file is included by routes/web.php via require __DIR__.'/auth.php'.
+ */
+
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -30,6 +53,7 @@ Route::middleware(['guest:web', 'guest:student'])->group(function () {
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:3,60')
         ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])

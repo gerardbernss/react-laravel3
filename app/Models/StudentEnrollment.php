@@ -8,6 +8,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * One enrollment record per student per semester.
+ *
+ * Created when a student is assigned to a block section for a given school year
+ * and semester. Tracks the student's subjects (via StudentEnrollmentSubject),
+ * their cumulative GWA for the semester, and the enrollment status.
+ *
+ * Status constants:
+ *   STATUS_ENROLLED   — student is currently enrolled and attending
+ *   STATUS_COMPLETED  — semester finished; GWA and units have been computed
+ *   STATUS_DROPPED    — student withdrew from the semester
+ *   STATUS_INCOMPLETE — one or more subjects were not completed
+ *
+ * calculateGWA(), getTotalUnits(), and getUnitsEarned() each write their result
+ * back to the row immediately (side-effecting queries) so the stored values stay
+ * in sync with the linked subjects.
+ */
 class StudentEnrollment extends Model
 {
     use HasFactory;

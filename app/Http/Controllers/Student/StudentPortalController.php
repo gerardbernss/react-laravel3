@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Services\Student\CopyApplicantDataService;
 use App\Models\Attendance;
+use App\Models\ApplicantAssessment;
+use App\Models\BlockSection;
+use App\Models\StudentEnrollment;
 use App\Models\ApplicantDocuments;
 use App\Models\ApplicantEducationalBackground;
 use App\Models\ApplicantFamilyBackground;
@@ -485,31 +489,119 @@ class StudentPortalController extends Controller
     }
 
     /**
+     * Applicant enrollment page — 3-step wizard (no submit).
+     * Applicants view auto-calculated fees, update info, and choose payment preferences.
+     */
+    public function applicantEnrollment(): Response|\Illuminate\Http\RedirectResponse
+    {
+        $student      = $this->getStudent();
+        $personalData = $student->personalData;
+        $application  = $student->application;
+
+        // Enrolled students should use the student portal
+        if ($personalData?->student) {
+            return redirect()->route('student.enrollment');
+        }
+
+        $fees               = $application
+            ? $this->getApplicableFees($application->year_level, $application->school_year)
+            : [];
+        $availableDiscounts = $this->getAvailableDiscounts();
+
+        return Inertia::render('Applicant/Enrollment', [
+            'personalData'       => $this->formatPersonalDataResponse($personalData),
+            'application'        => $this->formatApplicationResponse($application),
+            'fees'               => $fees,
+            'availableDiscounts' => $availableDiscounts,
+            'enrollmentOpen'     => EnrollmentPeriod::hasOpenApplicantPeriod(),
+            'assessmentNumber'   => $application?->assessment?->assessment_number,
+        ]);
+    }
+
+    /**
+     * Generate an ApplicantAssessment when the applicant completes step 2.
+     * Idempotent — does nothing if assessment already exists.
+     */
+    public function generateApplicantAssessment(): \Illuminate\Http\RedirectResponse
+    {
+        $student     = $this->getStudent();
+        $application = $student->application;
+
+        if (!$application || $application->application_status !== 'Exam Passed') {
+            return back()->withErrors(['error' => 'Not eligible for enrollment.']);
+        }
+
+        if ($application->assessment()->exists()) {
+            return back()->with('success', 'Assessment already generated.');
+        }
+
+        $fees    = $this->getApplicableFees($application->year_level, $application->school_year);
+        $program = $this->resolveProgram($application);
+        $units   = $program?->max_load ?? 0;
+
+        $calc     = fn (string $cat) => collect($fees)
+            ->filter(fn ($f) => $f['category'] === $cat)
+            ->sum(fn ($f) => $f['is_per_unit'] ? $f['amount'] * $units : $f['amount']);
+
+        $tTuition = $calc('tuition');
+        $tMisc    = $calc('miscellaneous');
+        $tLab     = $calc('laboratory');
+        $tOther   = $calc('special');
+        $gross    = $tTuition + $tMisc + $tLab + $tOther;
+        $net      = $gross;
+        $minimum  = round($net * 0.30, 2);
+
+        ApplicantAssessment::create([
+            'applicant_id'      => $application->id,
+            'assessment_number' => ApplicantAssessment::generateAssessmentNumber($application->school_year),
+            'school_year'       => $application->school_year,
+            'semester'          => $application->semester ?? 'First Semester',
+            'total_tuition'     => $tTuition,
+            'total_misc_fees'   => $tMisc,
+            'total_lab_fees'    => $tLab,
+            'total_other_fees'  => $tOther,
+            'gross_amount'      => $gross,
+            'total_discounts'   => 0,
+            'net_amount'        => $net,
+            'minimum_amount'    => $minimum,
+            'mode_of_payment'   => 'cash',
+            'status'            => 'pending',
+            'generated_at'      => now(),
+        ]);
+
+        return back()->with('success', 'Assessment generated.');
+    }
+
+    /**
      * Show the student enrollment page.
-     * Shows enrollment process if not yet enrolled, otherwise shows status.
+     * Students who have an assessment awaiting payment see their assessment status.
+     * Enrolled students see their enrollment confirmation.
      */
     public function enrollment(): Response
     {
-        $student = $this->getStudent();
-        $personalData = $student->personalData;
-        $application = $student->application;
-        $studentRecord = $personalData?->student;
-        $documents = $personalData?->documents;
+        $student          = $this->getStudent();
+        $personalData     = $student->personalData;
+        $application      = $student->application;
+        $studentRecord    = $personalData?->student;
         $familyBackground = $personalData?->familyBackground;
 
-        // Load existing assessment for this enrollment period (if any)
-        $assessment = null;
+        // Use the current open enrollment period as the target so that when a
+        // new semester opens the student sees the correct status/wizard.
+        $currentPeriod = EnrollmentPeriod::current();
+        $targetYear    = $currentPeriod?->school_year ?? $application?->school_year;
+        $targetSem     = $currentPeriod?->semester    ?? $application?->semester ?? 'First Semester';
+
+        $assessment    = null;
         $hasAssessment = false;
-        if ($studentRecord && $application) {
+        if ($studentRecord && $targetYear) {
             $assessment = StudentAssessment::where('student_id', $studentRecord->id)
-                ->where('school_year', $application->school_year)
-                ->where('semester', $application->semester ?? 'First Semester')
+                ->where('school_year', $targetYear)
+                ->where('semester', $targetSem)
                 ->latest()
                 ->first();
             $hasAssessment = $assessment !== null;
         }
 
-        // Enrolled = minimum payment has been met (admin has recorded payment)
         $isEnrolled = $hasAssessment
             && $assessment
             && (
@@ -517,47 +609,35 @@ class StudentPortalController extends Controller
                 || in_array($assessment->status, ['paid', 'partial'])
             );
 
-        // Awaiting payment = assessment submitted but minimum not yet paid
         $awaitingPayment = $hasAssessment && !$isEnrolled;
 
-        // Can enroll = no assessment yet (wizard not done yet)
-        $canEnroll = $application && !$hasAssessment;
-
-        $enrollmentOpen = $application
-            ? EnrollmentPeriod::isOpenFor($application->school_year, $application->semester ?? 'First Semester')
-            : false;
-
-        $program = $application ? $this->resolveProgram($application) : null;
-
-        $fees = $canEnroll && $enrollmentOpen
-            ? $this->getApplicableFees(
-                $application->year_level,
-                $application->school_year
-            )
+        // Load fees for the enrollment wizard when the student hasn't enrolled yet
+        $fees = (!$hasAssessment && $application && $targetYear)
+            ? $this->getApplicableFees($application->year_level, $targetYear)
             : [];
 
-        $availableDiscounts = $canEnroll && $enrollmentOpen
-            ? $this->getAvailableDiscounts()
-            : [];
+        // Prior balance from a previous semester — shown in the wizard before submission
+        $priorBalance = (!$hasAssessment && $studentRecord && $targetYear)
+            ? $this->getStudentPriorBalance($studentRecord->id, $targetYear, $targetSem)
+            : 0.0;
 
         return Inertia::render('Student/Enrollment', [
-            'student'            => $this->formatStudentResponse($student),
-            'personalData'       => $this->formatPersonalDataResponse($personalData),
-            'application'        => $this->formatApplicationResponse($application),
-            'studentRecord'      => $this->formatStudentRecordResponse($studentRecord),
-            'canEnroll'          => $canEnroll,
-            'isEnrolled'         => $isEnrolled,
-            'awaitingPayment'    => $awaitingPayment,
-            'enrollmentOpen'     => $enrollmentOpen,
-            'documents'          => $this->formatDocumentsResponse($documents),
-            'maxLoad'            => $program?->max_load ?? 0,
-            'fees'               => $fees,
-            'availableDiscounts' => $availableDiscounts,
-            'familyBackground'   => $familyBackground ? [
-                'emergency_contact_name'  => $familyBackground->emergency_contact_name,
-                'emergency_mobile_phone'  => $familyBackground->emergency_mobile_phone,
+            'student'          => $this->formatStudentResponse($student),
+            'personalData'     => $this->formatPersonalDataResponse($personalData),
+            'application'      => $this->formatApplicationResponse($application),
+            'studentRecord'    => $this->formatStudentRecordResponse($studentRecord),
+            'isEnrolled'       => $isEnrolled,
+            'awaitingPayment'  => $awaitingPayment,
+            'fees'             => $fees,
+            'priorBalance'     => $priorBalance,
+            'enrollmentOpen'   => $targetYear ? EnrollmentPeriod::isOpenFor($targetYear, $targetSem, 'student') : false,
+            'targetYear'       => $targetYear,
+            'targetSemester'   => $targetSem,
+            'familyBackground' => $familyBackground ? [
+                'emergency_contact_name' => $familyBackground->emergency_contact_name,
+                'emergency_mobile_phone' => $familyBackground->emergency_mobile_phone,
             ] : null,
-            'assessment'         => $assessment ? [
+            'assessment'       => $assessment ? [
                 'assessment_number' => $assessment->assessment_number,
                 'school_year'       => $assessment->school_year,
                 'semester'          => $assessment->semester,
@@ -567,6 +647,7 @@ class StudentPortalController extends Controller
                 'total_other_fees'  => (float) $assessment->total_other_fees,
                 'gross_amount'      => (float) $assessment->gross_amount,
                 'total_discounts'   => (float) $assessment->total_discounts,
+                'prior_balance'     => (float) $assessment->prior_balance,
                 'net_amount'        => (float) $assessment->net_amount,
                 'status'            => $assessment->status,
                 'mode_of_payment'   => $assessment->mode_of_payment,
@@ -578,46 +659,147 @@ class StudentPortalController extends Controller
         ]);
     }
 
-    /**
-     * Get applicable fees for a student category.
-     */
-    private function getApplicableFees(string $gradeLevel, string $schoolYear): array
+    public function mySection(): Response
     {
-        $schoolLevel = $this->getStudentCategory($gradeLevel);
+        $student       = $this->getStudent();
+        $personalData  = $student->personalData;
+        $studentRecord = $personalData?->student;
+        $application   = $student->application;
 
-        return Fee::where('is_active', true)
-            ->where('school_year', $schoolYear)
-            ->where(function ($q) use ($schoolLevel) {
-                $q->where('school_level', 'all')->orWhere('school_level', $schoolLevel);
-            })
-            ->orderByRaw("CASE WHEN school_level = ? THEN 0 ELSE 1 END", [$schoolLevel])
-            ->get()
-            ->map(fn($fee) => [
-                'id'          => $fee->id,
-                'name'        => $fee->name,
-                'code'        => $fee->code,
-                'category'    => $fee->category,
-                'is_per_unit' => $fee->is_per_unit,
-                'amount'      => (float) $fee->amount,
-            ])
-            ->toArray();
+        $currentPeriod = EnrollmentPeriod::current();
+        $targetYear    = $currentPeriod?->school_year ?? $application?->school_year;
+        $targetSem     = $currentPeriod?->semester    ?? $application?->semester ?? 'First Semester';
+
+        $enrollment = $studentRecord
+            ? StudentEnrollment::where('student_id', $studentRecord->id)
+                ->where('school_year', $targetYear)
+                ->where('semester', $targetSem)
+                ->with('blockSection.subjects')
+                ->first()
+            : null;
+
+        $blockSection = $enrollment?->blockSection;
+
+        return Inertia::render('Student/MySection', [
+            'targetYear'     => $targetYear,
+            'targetSemester' => $targetSem,
+            'blockSection'   => $blockSection ? [
+                'name'        => $blockSection->name,
+                'code'        => $blockSection->code,
+                'grade_level' => $blockSection->grade_level,
+                'strand'      => $blockSection->strand,
+                'adviser'     => $blockSection->adviser,
+                'room'        => $blockSection->room,
+            ] : null,
+            'subjects' => $blockSection
+                ? $blockSection->subjects->map(fn ($s) => [
+                    'code'  => $s->code,
+                    'name'  => $s->name,
+                    'units' => $s->units,
+                    'type'  => $s->type,
+                ])->toArray()
+                : [],
+        ]);
     }
 
     /**
-     * Get available discount types.
+     * Get applicable fees for a student category.
+     */
+    private function getApplicableFees(string $gradeLevel, ?string $schoolYear): array
+    {
+        $schoolLevel = $this->getStudentCategory($gradeLevel);
+
+        $baseQuery = fn (string $year) => Fee::where('is_active', true)
+            ->where('school_year', $year)
+            ->where(function ($q) use ($schoolLevel) {
+                $q->where('school_level', 'all')->orWhere('school_level', $schoolLevel);
+            })
+            ->orderByRaw("CASE WHEN school_level = ? THEN 0 ELSE 1 END", [$schoolLevel]);
+
+        // Try the application's school year first; fall back to the most recent available year.
+        $fees = $schoolYear ? $baseQuery($schoolYear)->get() : collect();
+
+        if ($fees->isEmpty()) {
+            $latestYear = Fee::where('is_active', true)->max('school_year');
+            $fees = $latestYear ? $baseQuery($latestYear)->get() : collect();
+        }
+
+        return $fees->map(fn ($fee) => [
+            'id'          => $fee->id,
+            'name'        => $fee->name,
+            'code'        => $fee->code,
+            'category'    => $fee->category,
+            'is_per_unit' => $fee->is_per_unit,
+            'amount'      => (float) $fee->amount,
+        ])->toArray();
+    }
+
+    /**
+     * Get discount types the current applicant is eligible for.
      */
     private function getAvailableDiscounts(): array
     {
         return DiscountType::where('is_active', true)
             ->get()
+            ->filter(function ($discount) {
+                if ($discount->code === 'SIBLING') {
+                    return $this->hasEnrolledSibling();
+                }
+                return true;
+            })
+            ->values()
             ->map(fn ($discount) => [
-                'id' => $discount->id,
-                'name' => $discount->name,
-                'code' => $discount->code,
+                'id'            => $discount->id,
+                'name'          => $discount->name,
+                'code'          => $discount->code,
                 'discount_type' => $discount->discount_type,
-                'value' => (float) $discount->value,
-                'applies_to' => $discount->applies_to,
+                'value'         => (float) $discount->value,
+                'applies_to'    => $discount->applies_to,
             ])->toArray();
+    }
+
+    private function getStudentPriorBalance(int $studentId, string $targetYear, string $targetSem): float
+    {
+        $previous = StudentAssessment::where('student_id', $studentId)
+            ->where(function ($q) use ($targetYear, $targetSem) {
+                $q->where('school_year', '!=', $targetYear)
+                  ->orWhere('semester', '!=', $targetSem);
+            })
+            ->whereIn('status', ['finalized', 'partial'])
+            ->latest()
+            ->first();
+
+        if (!$previous) {
+            return 0.0;
+        }
+
+        return $previous->remaining_balance;
+    }
+
+    private function hasEnrolledSibling(): bool
+    {
+        $student  = $this->getStudent();
+        $siblings = $student->personalData?->siblings ?? collect();
+
+        foreach ($siblings as $sibling) {
+            if (!empty($sibling->sibling_id_number)) {
+                if (Student::where('student_id_number', $sibling->sibling_id_number)
+                    ->where('enrollment_status', 'Active')
+                    ->exists()) {
+                    return true;
+                }
+            }
+
+            if (!empty($sibling->sibling_full_name)) {
+                if (Student::whereHas('personalData', function ($q) use ($sibling) {
+                    $q->whereRaw("first_name || ' ' || last_name = ?", [trim($sibling->sibling_full_name)]);
+                })->where('enrollment_status', 'Active')->exists()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -665,16 +847,19 @@ class StudentPortalController extends Controller
         }
 
         return [
-            'id' => $application->id,
-            'school_year' => $application->school_year,
-            'semester' => $application->semester,
-            'grade_level' => $application->year_level,
-            'student_type' => $application->student_category,
-            'student_category' => $this->getStudentCategory($application->year_level),
-            'application_status' => $application->application_status,
-            'date_applied' => $application->application_date,
-            'exam_status' => $application->exam_status,
-            'exam_date' => $application->examination_date,
+            'id'                      => $application->id,
+            'application_number'      => $application->application_number,
+            'school_year'             => $application->school_year,
+            'semester'                => $application->semester,
+            'grade_level'             => $application->year_level,
+            'student_type'            => $application->student_category,
+            'student_category'        => $this->getStudentCategory($application->year_level),
+            'application_status'      => $application->application_status,
+            'date_applied'            => $application->application_date,
+            'exam_status'             => $application->exam_status,
+            'exam_date'               => $application->examination_date,
+            'preferred_payment_plan'  => $application->preferred_payment_plan,
+            'preferred_payment_mode'  => $application->preferred_payment_mode,
         ];
     }
 
@@ -744,9 +929,16 @@ class StudentPortalController extends Controller
      */
     private function resolveProgram($application): ?Program
     {
-        $strand = $application->strand ?? '';
-        if ($strand && preg_match('/\(([A-Z]+)\)/', $strand, $matches)) {
-            $program = Program::active()->where('code', $matches[1])->first();
+        $strand = $application->strand ?? null;
+
+        if ($strand) {
+            $codeMap = [
+                'Science, Technology, Engineering and Mathematics' => 'STEM',
+                'Accountancy, Business and Management'             => 'ABM',
+                'Humanities and Social Sciences'                   => 'HUMSS',
+            ];
+            $code    = $codeMap[$strand] ?? $strand;
+            $program = Program::active()->where('code', $code)->first();
             if ($program) {
                 return $program;
             }
@@ -768,7 +960,11 @@ class StudentPortalController extends Controller
             return back()->withErrors(['error' => 'No application found.']);
         }
 
-        if (!EnrollmentPeriod::isOpenFor($application->school_year, $application->semester ?? 'First Semester')) {
+        $currentPeriod = EnrollmentPeriod::current();
+        $targetYear    = $currentPeriod?->school_year ?? $application->school_year;
+        $targetSem     = $currentPeriod?->semester    ?? $application->semester ?? 'First Semester';
+
+        if (!EnrollmentPeriod::isOpenFor($targetYear, $targetSem, 'student')) {
             return back()->withErrors(['error' => 'Enrollment is currently closed for this semester.']);
         }
 
@@ -822,15 +1018,19 @@ class StudentPortalController extends Controller
             return back()->withErrors(['error' => 'No application found.']);
         }
 
-        if (!EnrollmentPeriod::isOpenFor($application->school_year, $application->semester ?? 'First Semester')) {
+        $currentPeriod = EnrollmentPeriod::current();
+        $targetYear    = $currentPeriod?->school_year ?? $application->school_year;
+        $targetSem     = $currentPeriod?->semester    ?? $application->semester ?? 'First Semester';
+
+        if (!EnrollmentPeriod::isOpenFor($targetYear, $targetSem, 'student')) {
             return back()->withErrors(['error' => 'Enrollment is currently closed for this semester.']);
         }
 
         // Check if assessment already submitted for this period
         $studentRecord = $personalData?->student;
         $alreadySubmitted = $studentRecord && StudentAssessment::where('student_id', $studentRecord->id)
-            ->where('school_year', $application->school_year)
-            ->where('semester', $application->semester ?? 'First Semester')
+            ->where('school_year', $targetYear)
+            ->where('semester', $targetSem)
             ->exists();
 
         if ($alreadySubmitted) {
@@ -850,36 +1050,33 @@ class StudentPortalController extends Controller
 
         if (!$studentRecord) {
             $studentRecord = Student::create([
-                'applicant_personal_data_id'    => $personalData->id,
-                'applicant_id' => $application->id,
-                'enrollment_status'             => 'Pending',
-                'enrollment_date'               => now(),
-                'current_year_level'            => $application->year_level,
-                'current_semester'              => $application->semester ?? 'First Semester',
-                'current_school_year'           => $application->school_year,
+                'applicant_personal_data_id' => $personalData->id,
+                'applicant_id'               => $application->id,
+                'enrollment_status'          => 'Pending',
+                'enrollment_date'            => now(),
+                'current_year_level'         => $application->year_level,
+                'current_semester'           => $targetSem,
+                'current_school_year'        => $targetYear,
             ]);
         } else {
             $studentRecord->update([
-                'enrollment_status'             => 'Pending',
-                'enrollment_date'               => now(),
-                'applicant_id' => $studentRecord->applicant_id ?? $application->id,
-                'current_year_level'            => $application->year_level,
-                'current_semester'              => $application->semester ?? 'First Semester',
-                'current_school_year'           => $application->school_year,
+                'enrollment_status'  => 'Pending',
+                'enrollment_date'    => now(),
+                'applicant_id'       => $studentRecord->applicant_id ?? $application->id,
+                'current_year_level' => $application->year_level,
+                'current_semester'   => $targetSem,
+                'current_school_year'=> $targetYear,
             ]);
         }
 
         // Create assessment record (idempotent — skip if already exists)
         $existingAssessment = StudentAssessment::where('student_id', $studentRecord->id)
-            ->where('school_year', $application->school_year)
-            ->where('semester', $application->semester ?? 'First Semester')
+            ->where('school_year', $targetYear)
+            ->where('semester', $targetSem)
             ->first();
 
         if (!$existingAssessment) {
-            $assessmentFees    = $this->getApplicableFees(
-                $application->year_level,
-                $application->school_year
-            );
+            $assessmentFees = $this->getApplicableFees($application->year_level, $targetYear);
             $assessmentProgram = $this->resolveProgram($application);
             $assessmentUnits   = $assessmentProgram?->max_load ?? 0;
 
@@ -895,22 +1092,27 @@ class StudentPortalController extends Controller
             $net         = (float) $request->input('total_amount', 0);
             $discount    = max(0, $gross - $net);
             $paymentPlan = $request->input('payment_plan', 'full');
+
+            $priorBalance = $this->getStudentPriorBalance($studentRecord->id, $targetYear, $targetSem);
+            $netWithPrior = $net + $priorBalance;
+
             $minimumAmount = $paymentPlan === 'installment'
-                ? round($net * 0.30, 2)
-                : $net;
+                ? round($net * 0.30 + $priorBalance, 2)
+                : $netWithPrior;
 
             StudentAssessment::create([
                 'student_id'        => $studentRecord->id,
-                'assessment_number' => StudentAssessment::generateAssessmentNumber($application->school_year),
-                'school_year'       => $application->school_year,
-                'semester'          => $application->semester ?? 'First Semester',
+                'assessment_number' => StudentAssessment::generateAssessmentNumber($targetYear),
+                'school_year'       => $targetYear,
+                'semester'          => $targetSem,
                 'total_tuition'     => $tTuition,
                 'total_misc_fees'   => $tMisc,
                 'total_lab_fees'    => $tLab,
                 'total_other_fees'  => $tOther,
                 'gross_amount'      => $gross,
                 'total_discounts'   => $discount,
-                'net_amount'        => $net,
+                'net_amount'        => $netWithPrior,
+                'prior_balance'     => $priorBalance,
                 'payment_plan'      => $paymentPlan,
                 'minimum_amount'    => $minimumAmount,
                 'mode_of_payment'   => $request->input('mode_of_payment'),
@@ -1112,131 +1314,7 @@ class StudentPortalController extends Controller
      */
     private function copyApplicantDataToStudent(Student $studentRecord): void
     {
-        $pd = $studentRecord->personalData;
-        if (!$pd) {
-            return;
-        }
-
-        $spd = StudentPersonalData::updateOrCreate(
-            ['email' => $pd->email],
-            [
-                'last_name'                => $pd->last_name,
-                'first_name'               => $pd->first_name,
-                'middle_name'              => $pd->middle_name,
-                'suffix'                   => $pd->suffix,
-                'learner_reference_number' => $pd->learner_reference_number,
-                'gender'                   => $pd->gender,
-                'citizenship'              => $pd->citizenship,
-                'religion'                 => $pd->religion,
-                'date_of_birth'            => $pd->date_of_birth,
-                'place_of_birth'           => $pd->place_of_birth,
-                'has_sibling'              => $pd->has_sibling ?? false,
-                'alt_email'                => $pd->alt_email,
-                'mobile_number'            => $pd->mobile_number,
-                'present_street'           => $pd->present_street,
-                'present_brgy'             => $pd->present_brgy,
-                'present_city'             => $pd->present_city,
-                'present_province'         => $pd->present_province,
-                'present_zip'              => $pd->present_zip,
-                'permanent_street'         => $pd->permanent_street,
-                'permanent_brgy'           => $pd->permanent_brgy,
-                'permanent_city'           => $pd->permanent_city,
-                'permanent_province'       => $pd->permanent_province,
-                'permanent_zip'            => $pd->permanent_zip,
-                'stopped_studying'         => $pd->stopped_studying,
-                'accelerated'              => $pd->accelerated,
-                'health_conditions'        => $pd->health_conditions,
-                'has_doctors_note'         => $pd->has_doctors_note ?? false,
-                'doctors_note_file'        => $pd->doctors_note_file,
-            ]
-        );
-
-        $studentRecord->update(['student_personal_data_id' => $spd->id]);
-
-        $fb = $pd->familyBackground;
-        if ($fb) {
-            StudentFamilyBackground::updateOrCreate(
-                ['student_personal_data_id' => $spd->id],
-                [
-                    'father_lname'            => $fb->father_lname,
-                    'father_fname'            => $fb->father_fname,
-                    'father_mname'            => $fb->father_mname,
-                    'father_living'           => $fb->father_living,
-                    'father_citizenship'      => $fb->father_citizenship,
-                    'father_religion'         => $fb->father_religion,
-                    'father_highest_educ'     => $fb->father_highest_educ,
-                    'father_occupation'       => $fb->father_occupation,
-                    'father_income'           => $fb->father_income,
-                    'father_business_emp'     => $fb->father_business_emp,
-                    'father_business_address' => $fb->father_business_address,
-                    'father_contact_no'       => $fb->father_contact_no,
-                    'father_email'            => $fb->father_email,
-                    'father_slu_employee'     => $fb->father_slu_employee,
-                    'father_slu_dept'         => $fb->father_slu_dept,
-                    'mother_lname'            => $fb->mother_lname,
-                    'mother_fname'            => $fb->mother_fname,
-                    'mother_mname'            => $fb->mother_mname,
-                    'mother_living'           => $fb->mother_living,
-                    'mother_citizenship'      => $fb->mother_citizenship,
-                    'mother_religion'         => $fb->mother_religion,
-                    'mother_highest_educ'     => $fb->mother_highest_educ,
-                    'mother_occupation'       => $fb->mother_occupation,
-                    'mother_income'           => $fb->mother_income,
-                    'mother_business_emp'     => $fb->mother_business_emp,
-                    'mother_business_address' => $fb->mother_business_address,
-                    'mother_contact_no'       => $fb->mother_contact_no,
-                    'mother_email'            => $fb->mother_email,
-                    'mother_slu_employee'     => $fb->mother_slu_employee,
-                    'mother_slu_dept'         => $fb->mother_slu_dept,
-                    'guardian_lname'          => $fb->guardian_lname,
-                    'guardian_fname'          => $fb->guardian_fname,
-                    'guardian_mname'          => $fb->guardian_mname,
-                    'guardian_relationship'   => $fb->guardian_relationship,
-                    'guardian_citizenship'    => $fb->guardian_citizenship,
-                    'guardian_religion'       => $fb->guardian_religion,
-                    'guardian_highest_educ'   => $fb->guardian_highest_educ,
-                    'guardian_occupation'     => $fb->guardian_occupation,
-                    'guardian_income'         => $fb->guardian_income,
-                    'guardian_business_emp'   => $fb->guardian_business_emp,
-                    'guardian_business_address' => $fb->guardian_business_address,
-                    'guardian_contact_no'     => $fb->guardian_contact_no,
-                    'guardian_email'          => $fb->guardian_email,
-                    'guardian_slu_employee'   => $fb->guardian_slu_employee,
-                    'guardian_slu_dept'       => $fb->guardian_slu_dept,
-                    'emergency_contact_name'  => $fb->emergency_contact_name,
-                    'emergency_relationship'  => $fb->emergency_relationship,
-                    'emergency_email'         => $fb->emergency_email,
-                    'emergency_home_phone'    => $fb->emergency_home_phone,
-                    'emergency_mobile_phone'  => $fb->emergency_mobile_phone,
-                ]
-            );
-        }
-
-        foreach ($pd->siblings as $sibling) {
-            StudentSiblings::firstOrCreate(
-                [
-                    'student_personal_data_id' => $spd->id,
-                    'sibling_full_name'        => $sibling->sibling_full_name,
-                ],
-                [
-                    'sibling_grade_level' => $sibling->sibling_grade_level,
-                    'sibling_id_number'   => $sibling->sibling_id_number,
-                ]
-            );
-        }
-
-        $docs = $studentRecord->application?->documents;
-        if ($docs) {
-            StudentDocuments::updateOrCreate(
-                ['student_personal_data_id' => $spd->id],
-                [
-                    'certificate_of_enrollment'  => $docs->certificate_of_enrollment,
-                    'birth_certificate'          => $docs->birth_certificate,
-                    'latest_report_card_front'   => $docs->latest_report_card_front,
-                    'latest_report_card_back'    => $docs->latest_report_card_back,
-                ]
-            );
-        }
+        app(CopyApplicantDataService::class)->execute($studentRecord);
     }
 
     /**
@@ -1269,6 +1347,7 @@ class StudentPortalController extends Controller
 
         return Inertia::render('Student/Schedule', [
             'student'    => $this->formatStudentResponse($student),
+            'isEnrolled' => $studentRecord !== null,
             'enrollment' => $enrollment ? [
                 'school_year'      => $enrollment->school_year,
                 'semester'         => $enrollment->semester,
@@ -1319,6 +1398,7 @@ class StudentPortalController extends Controller
 
         return Inertia::render('Student/Attendance', [
             'student'    => $this->formatStudentResponse($student),
+            'isEnrolled' => $studentRecord !== null,
             'enrollment' => $enrollment ? [
                 'school_year' => $enrollment->school_year,
                 'semester'    => $enrollment->semester,

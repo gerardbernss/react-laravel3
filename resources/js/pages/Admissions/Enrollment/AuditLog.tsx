@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, History } from 'lucide-react';
+import { ArrowLeft, History } from 'lucide-react';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useMemo, useState } from 'react';
 
 interface AuditLog {
@@ -165,40 +166,13 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
                     </div>
 
                     {auditLogs.length > 0 && (
-                        <div className="flex items-center justify-between border-t bg-white px-4 py-3">
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-gray-700">Rows per page:</span>
-                                <select
-                                    value={pageSize}
-                                    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                    className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                >
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                </select>
-                                <span className="text-sm text-gray-600">
-                                    {auditLogs.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}–
-                                    {Math.min(currentPage * pageSize, auditLogs.length)} of {auditLogs.length}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
-                                    <ChevronsLeft className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <span className="px-3 py-1 text-sm">Page {currentPage} of {totalPages || 1}</span>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages || totalPages === 0}>
-                                    <ChevronsRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                        <TablePagination
+                            total={auditLogs.length}
+                            pageSize={pageSize}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                        />
                     )}
                 </div>
             </div>

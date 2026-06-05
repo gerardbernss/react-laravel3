@@ -4,6 +4,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Parent, guardian, and emergency-contact details for a person in the system.
+ *
+ * One row per ApplicantPersonalData (1-to-1). Stores father, mother, and
+ * guardian information with separate field sets for each (prefixed father_,
+ * mother_, guardian_). The slu_employee / slu_dept fields determine eligibility
+ * for the Employee Dependent discount in the fee assessment subsystem.
+ *
+ * This row is shared across all of the person's applications — it belongs to
+ * ApplicantPersonalData, not directly to Applicant.
+ */
 class ApplicantFamilyBackground extends Model
 {
     use HasFactory;
@@ -66,11 +77,29 @@ class ApplicantFamilyBackground extends Model
         'emergency_home_phone',
         'emergency_mobile_phone',
 
+        'father_employee_id',
+        'mother_employee_id',
+        'guardian_employee_id',
     ];
 
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
+    }
+
+    public function fatherEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'father_employee_id');
+    }
+
+    public function motherEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'mother_employee_id');
+    }
+
+    public function guardianEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'guardian_employee_id');
     }
 
     protected $casts = [];

@@ -1,12 +1,13 @@
-import { Badge } from '@/components/ui/badge';
+﻿import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { CalendarDays, Check, Pencil, X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface SemesterPeriod {
     id: number;
@@ -109,6 +110,10 @@ function EditRow({ period, onCancel }: { period: SemesterPeriod; onCancel: () =>
 export default function Index({ periods }: Props) {
     const { currentSemester } = usePage().props as any;
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    const paginated = useMemo(() => periods.slice((currentPage - 1) * pageSize, currentPage * pageSize), [periods, currentPage, pageSize]);
 
     const currentMonth = new Date().getMonth() + 1;
 
@@ -136,8 +141,9 @@ export default function Index({ periods }: Props) {
 
                 {/* Table */}
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
+                        <thead className="sticky top-0 z-10 bg-gray-50">
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Semester</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Month Range</th>
@@ -146,7 +152,7 @@ export default function Index({ periods }: Props) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {periods.map((period) => {
+                            {paginated.map((period) => {
                                 const isCurrent =
                                     period.is_active &&
                                     period.start_month <= currentMonth &&
@@ -181,20 +187,26 @@ export default function Index({ periods }: Props) {
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
+                                            <button
                                                 onClick={() => setEditingId(period.id)}
+                                                className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"
                                             >
-                                                <Pencil className="mr-1 h-4 w-4" />
-                                                Edit
-                                            </Button>
+                                                <Pencil className="h-3 w-3" /> Edit
+                                            </button>
                                         </td>
                                     </tr>
                                 );
                             })}
                         </tbody>
                     </table>
+                    </div>
+                    <TablePagination
+                        total={periods.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
 
                 <p className="mt-4 text-xs text-gray-500">

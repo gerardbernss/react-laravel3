@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -105,6 +106,9 @@ export default function Show({ schedule, availableApplicants }: Props) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
     // Assign dialog state
     const [assignOpen, setAssignOpen] = useState(false);
     const [modalSearch, setModalSearch] = useState('');
@@ -139,6 +143,8 @@ export default function Show({ schedule, availableApplicants }: Props) {
                    (!statusFilter || a.status === statusFilter);
         });
     }, [schedule.applicant_assignments, search, statusFilter]);
+
+    const paginatedAssignments = useMemo(() => filteredAssignments.slice((currentPage - 1) * pageSize, currentPage * pageSize), [filteredAssignments, currentPage, pageSize]);
 
     // ── Assign dialog ──
     const filteredAvailable = useMemo(() => {
@@ -324,9 +330,9 @@ export default function Show({ schedule, availableApplicants }: Props) {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
                                     <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Application #</th>
@@ -338,7 +344,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {filteredAssignments.length > 0 ? (
-                                    filteredAssignments.map((assignment, idx) => (
+                                    paginatedAssignments.map((assignment, idx) => (
                                         <tr key={assignment.id} className="hover:bg-gray-50">
                                             <td className="px-5 py-3 text-gray-400">{idx + 1}</td>
                                             <td className="px-5 py-3 font-medium text-gray-900">
@@ -396,11 +402,13 @@ export default function Show({ schedule, availableApplicants }: Props) {
                         </table>
                     </div>
 
-                    {filteredAssignments.length > 0 && (
-                        <div className="border-t px-5 py-3 text-sm text-gray-500">
-                            Showing {filteredAssignments.length} of {schedule.applicant_assignments?.length ?? 0} assignment{schedule.applicant_assignments?.length !== 1 ? 's' : ''}
-                        </div>
-                    )}
+                    <TablePagination
+                        total={filteredAssignments.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
 

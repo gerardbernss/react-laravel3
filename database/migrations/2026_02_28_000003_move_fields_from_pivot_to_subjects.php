@@ -17,12 +17,24 @@ return new class extends Migration
         });
 
         // Rebuild block_section_subject without teacher/schedule/room/user_id
-        // SQLite does not support dropping columns, so we rebuild the table
-        DB::statement('PRAGMA foreign_keys = OFF');
-        DB::statement('CREATE TABLE block_section_subject_new AS SELECT id, block_section_id, subject_id, created_at, updated_at FROM block_section_subject');
-        DB::statement('DROP TABLE block_section_subject');
-        DB::statement('ALTER TABLE block_section_subject_new RENAME TO block_section_subject');
-        DB::statement('PRAGMA foreign_keys = ON');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF');
+            DB::statement('CREATE TABLE block_section_subject_new AS SELECT id, block_section_id, subject_id, created_at, updated_at FROM block_section_subject');
+            DB::statement('DROP TABLE block_section_subject');
+            DB::statement('ALTER TABLE block_section_subject_new RENAME TO block_section_subject');
+            DB::statement('PRAGMA foreign_keys = ON');
+        } else {
+            Schema::table('block_section_subject', function (Blueprint $table) {
+                if (Schema::hasColumn('block_section_subject', 'user_id')) {
+                    $table->dropForeign(['user_id']);
+                }
+                $toDrop = array_filter(['teacher', 'schedule', 'room', 'user_id'],
+                    fn($c) => Schema::hasColumn('block_section_subject', $c));
+                if (!empty($toDrop)) {
+                    $table->dropColumn(array_values($toDrop));
+                }
+            });
+        }
     }
 
     public function down(): void

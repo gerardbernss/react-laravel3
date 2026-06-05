@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button';
+﻿import { Button } from '@/components/ui/button';
+import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -42,6 +43,8 @@ const statusColors: Record<string, string> = {
 export default function StudentsIndex({ students }: Props) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const filtered = useMemo(() => {
         return students.filter((s) => {
@@ -55,6 +58,8 @@ export default function StudentsIndex({ students }: Props) {
             return matchSearch && matchStatus;
         });
     }, [students, search, statusFilter]);
+
+    const paginated = useMemo(() => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize), [filtered, currentPage, pageSize]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -98,9 +103,9 @@ export default function StudentsIndex({ students }: Props) {
 
                 {/* Table */}
                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-semibold text-gray-600">Student ID</th>
                                     <th className="px-4 py-3 text-left font-semibold text-gray-600">Name</th>
@@ -118,7 +123,7 @@ export default function StudentsIndex({ students }: Props) {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filtered.map((student) => (
+                                    paginated.map((student) => (
                                         <tr key={student.id} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 font-mono text-gray-700">
                                                 {student.student_id_number ?? <span className="text-gray-400">—</span>}
@@ -137,9 +142,9 @@ export default function StudentsIndex({ students }: Props) {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <Link href={`/students/${student.id}`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
+                                                    <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                        <Eye className="h-3 w-3" /> View
+                                                    </button>
                                                 </Link>
                                             </td>
                                         </tr>
@@ -148,6 +153,13 @@ export default function StudentsIndex({ students }: Props) {
                             </tbody>
                         </table>
                     </div>
+                    <TablePagination
+                        total={filtered.length}
+                        pageSize={pageSize}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
                 </div>
             </div>
         </AppLayout>

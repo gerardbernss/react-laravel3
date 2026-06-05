@@ -36,7 +36,8 @@ class BlockSectionsController extends Controller
      */
     public function create()
     {
-        $subjects = Subject::active()->orderBy('code')->get();
+        $subjects = Subject::active()->orderBy('code')->get()
+            ->map(fn ($s) => ['id' => $s->id, 'code' => $s->code, 'name' => $s->name, 'units' => $s->units, 'semester' => $s->semester]);
 
         return Inertia::render('Admin/BlockSections/Create', [
             'subjects' => $subjects,
@@ -79,6 +80,23 @@ class BlockSectionsController extends Controller
         // Attach subjects if provided
         if (!empty($validated['subjects'])) {
             $subjectIds = array_column($validated['subjects'], 'subject_id');
+
+            // Validate semester compatibility
+            $semester = $validated['semester'] ?? null;
+            if ($semester) {
+                $incompatible = Subject::whereIn('id', $subjectIds)
+                    ->whereNotNull('semester')
+                    ->where('semester', '!=', 'Full Year')
+                    ->where('semester', '!=', $semester)
+                    ->pluck('name');
+
+                if ($incompatible->isNotEmpty()) {
+                    return back()->withErrors([
+                        'subjects' => 'These subjects are not offered in ' . $semester . ': ' . $incompatible->join(', '),
+                    ]);
+                }
+            }
+
             $blockSection->subjects()->attach($subjectIds);
         }
 
@@ -91,7 +109,7 @@ class BlockSectionsController extends Controller
      */
     public function show(BlockSection $blockSection)
     {
-        $blockSection->load('subjects');
+        $blockSection->load(['subjects.schedules']);
 
         // Students currently assigned to this section
         $enrolledStudents = StudentEnrollment::where('block_section_id', $blockSection->id)
@@ -118,7 +136,6 @@ class BlockSectionsController extends Controller
             ->pluck('student_id');
 
         $availableStudents = Student::whereNotIn('id', $enrolledStudentIds)
-            ->whereNotNull('student_id_number')
             ->where('current_year_level', $blockSection->grade_level)
             ->when($blockSection->strand, function ($q) use ($blockSection) {
                 $q->whereHas('application', fn ($q2) =>
@@ -136,9 +153,28 @@ class BlockSectionsController extends Controller
                 ],
             ]);
 
+        // Enrich subjects with schedule/room from subject_schedules
+        // (section-specific first, falling back to the subject's default schedule)
+        $subjects = $blockSection->subjects->map(function ($s) use ($blockSection) {
+            $sched = $s->scheduleFor($blockSection->id) ?? $s->defaultSchedule;
+            return [
+                'id'       => $s->id,
+                'code'     => $s->code,
+                'name'     => $s->name,
+                'units'    => $s->units,
+                'type'     => $s->type,
+                'semester' => $s->semester,
+                'pivot'    => [
+                    'teacher'  => $s->pivot->teacher,
+                    'schedule' => $sched?->display,
+                    'room'     => $sched?->room,
+                ],
+            ];
+        });
+
         return Inertia::render('Admin/BlockSections/Show', [
-            'blockSection'     => $blockSection,
-            'enrolledStudents' => $enrolledStudents,
+            'blockSection'      => array_merge($blockSection->toArray(), ['subjects' => $subjects]),
+            'enrolledStudents'  => $enrolledStudents,
             'availableStudents' => $availableStudents,
         ]);
     }
@@ -220,11 +256,12 @@ class BlockSectionsController extends Controller
     public function edit(BlockSection $blockSection)
     {
         $blockSection->load('subjects');
-        $subjects = Subject::active()->orderBy('code')->get();
+        $subjects = Subject::active()->orderBy('code')->get()
+            ->map(fn ($s) => ['id' => $s->id, 'code' => $s->code, 'name' => $s->name, 'units' => $s->units, 'semester' => $s->semester]);
 
         return Inertia::render('Admin/BlockSections/Edit', [
             'blockSection' => $blockSection,
-            'subjects' => $subjects,
+            'subjects'     => $subjects,
         ]);
     }
 
@@ -261,10 +298,26 @@ class BlockSectionsController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        // Sync subjects
+        // Sync subjects with semester validation
         $subjectIds = !empty($validated['subjects'])
             ? array_column($validated['subjects'], 'subject_id')
             : [];
+
+        $semester = $validated['semester'] ?? null;
+        if ($semester && !empty($subjectIds)) {
+            $incompatible = Subject::whereIn('id', $subjectIds)
+                ->whereNotNull('semester')
+                ->where('semester', '!=', 'Full Year')
+                ->where('semester', '!=', $semester)
+                ->pluck('name');
+
+            if ($incompatible->isNotEmpty()) {
+                return back()->withErrors([
+                    'subjects' => 'These subjects are not offered in ' . $semester . ': ' . $incompatible->join(', '),
+                ]);
+            }
+        }
+
         $blockSection->subjects()->sync($subjectIds);
 
         return redirect()->route('block-sections.index')

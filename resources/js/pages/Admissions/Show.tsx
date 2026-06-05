@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+﻿import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
@@ -32,7 +32,21 @@ interface StatusBadgeProps {
     status: string;
 }
 
-export default function ViewProfile({ applicant }: { applicant: any }) {
+interface ExamResult {
+    applicant_number: string | null;
+    exam_date: string | null;
+    exam_time: string | null;
+    exam_venue: string | null;
+    math_score: string | null;
+    english_score: string | null;
+    science_score: string | null;
+    total_score: string | null;
+    percentage_score: string | null;
+    result: string | null;
+    ranking: string | null;
+}
+
+export default function ViewProfile({ applicant, examResult }: { applicant: any; examResult: ExamResult | null }) {
     const [activeSection, setActiveSection] = useState('application');
     const [open, setOpen] = useState(false);
     const [sendingEmail, setSendingEmail] = useState<string | null>(null);
@@ -40,6 +54,7 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
     const [evaluating, setEvaluating] = useState(false);
     const [evalOutcome, setEvalOutcome] = useState<'approve' | 'revise' | 'reject' | ''>('');
     const [evalRemarks, setEvalRemarks] = useState<string>(applicant.remarks ?? '');
+
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Applicant List', href: '/admissions/applicants' },
@@ -491,9 +506,9 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                             </div>
                             <div className="p-6">
                                 {applicant.personal_data.siblings.length > 0 ? (
-                                    <div className="overflow-x-auto">
+                                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                         <table className="w-full">
-                                            <thead className="border-b bg-gray-50">
+                                            <thead className="sticky top-0 z-10 border-b bg-gray-50">
                                                 <tr>
                                                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Full Name</th>
                                                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Grade Level</th>
@@ -561,9 +576,9 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 <h2 className="text-xl font-bold text-white">Dcouments</h2>
                             </div>
                             <div className="p-6">
-                                <div className="overflow-x-auto">
+                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                     <table className="w-full">
-                                        <thead className="border-b bg-gray-50">
+                                        <thead className="sticky top-0 z-10 border-b bg-gray-50">
                                             <tr>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Document Name</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Upload Date</th>
@@ -643,7 +658,74 @@ export default function ViewProfile({ applicant }: { applicant: any }) {
                                 </div>
                             </div>
                         </div>
+
                     </div>
+
+                    {/* Exam Results Card */}
+                    {examResult && (
+                        <div className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                            <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50 px-6 py-4">
+                                <ClipboardList className="h-5 w-5 text-primary" />
+                                <h2 className="text-base font-semibold text-gray-900">Exam Results</h2>
+                                {examResult.result && (
+                                    <span
+                                        className={`ml-auto inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                                            examResult.result.toLowerCase() === 'passed'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-800'
+                                        }`}
+                                    >
+                                        {examResult.result}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="p-6">
+                                <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                                    {examResult.exam_date && (
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Exam Date</p>
+                                            <p className="mt-1 text-sm text-gray-900">
+                                                {examResult.exam_date}
+                                                {examResult.exam_time && (
+                                                    <span className="ml-1 text-gray-500">{examResult.exam_time}</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {examResult.exam_venue && (
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Venue</p>
+                                            <p className="mt-1 text-sm text-gray-900">{examResult.exam_venue}</p>
+                                        </div>
+                                    )}
+                                    {examResult.ranking && (
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Ranking</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-900">#{examResult.ranking}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                                    {[
+                                        { label: 'Math', value: examResult.math_score },
+                                        { label: 'English', value: examResult.english_score },
+                                        { label: 'Science', value: examResult.science_score },
+                                        { label: 'Total', value: examResult.total_score },
+                                        { label: 'Percentage', value: examResult.percentage_score ? `${parseFloat(examResult.percentage_score).toFixed(2)}%` : null },
+                                    ].map(({ label, value }) => (
+                                        <div key={label} className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-center">
+                                            <p className="text-xs font-medium text-gray-500">{label}</p>
+                                            <p className="mt-1 text-lg font-bold text-gray-900">
+                                                {value != null ? (label === 'Percentage' ? value : parseFloat(value as string).toFixed(2)) : '—'}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
             {/* Evaluation Dialog */}

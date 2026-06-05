@@ -35,6 +35,8 @@ class StudentFamilyBackground extends Model
         // Emergency contact
         'emergency_contact_name', 'emergency_relationship', 'emergency_email',
         'emergency_home_phone', 'emergency_mobile_phone',
+        // Verified employee links
+        'father_employee_id', 'mother_employee_id', 'guardian_employee_id',
     ];
 
     protected $casts = [
@@ -46,5 +48,20 @@ class StudentFamilyBackground extends Model
     public function studentPersonalData(): BelongsTo
     {
         return $this->belongsTo(StudentPersonalData::class, 'student_personal_data_id');
+    }
+
+    public function fatherEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'father_employee_id');
+    }
+
+    public function motherEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'mother_employee_id');
+    }
+
+    public function guardianEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'guardian_employee_id');
     }
 }

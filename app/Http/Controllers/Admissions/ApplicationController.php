@@ -15,6 +15,32 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
+/**
+ * Handles public-facing online application form submissions (LES, JHS, SHS).
+ *
+ * This controller is accessible WITHOUT authentication — it is the entry point
+ * for prospective students submitting their own applications online. Admin staff
+ * who enter applications on behalf of walk-in applicants use ApplicantController
+ * instead (which is auth-protected).
+ *
+ * The three store methods (storeLES, storeJHS, storeSHS) are intentionally kept
+ * separate rather than sharing a single method. Each school level has a slightly
+ * different form structure (SHS includes strand/track fields; LES omits some
+ * senior-school fields). All three follow the same six-step transaction:
+ *   1. Personal Data  — upsert by email (re-applicant support)
+ *   2. Family Background
+ *   3. Siblings
+ *   4. Application Info (Applicant row)
+ *   5. Educational Background
+ *   6. Documents / file uploads
+ *
+ * IMPORTANT: If you fix a bug in one store* method, check whether the same fix
+ * is needed in all three. They contain duplicated logic by design.
+ *
+ * Application number format:
+ *   E#### for Elementary (Grades 1-6)  — prefix determined by getApplicationPrefixLetter()
+ *   H#### for High School (Grades 7-12)
+ */
 class ApplicationController extends Controller
 {
 
@@ -56,18 +82,6 @@ class ApplicationController extends Controller
         ]);
     }
 
-//Display a single applicant with full details.
-    public function show($id)
-    {
-        $application = Applicant::with([
-            'personalData.familyBackground',
-            'personalData.siblings',
-            'educationalBackground',
-            'documents',
-        ])->findOrFail($id);
-
-        return response()->json($application);
-    }
 
 /**
  * Show LES application form
@@ -177,28 +191,13 @@ class ApplicationController extends Controller
         // Check if email exists in Users table
         $userExists = \App\Models\User::where('email', $email)->exists();
 
-        if ($userExists) {
-            return response()->json([
-                'exists'  => true,
-                'message' => 'This email is already registered as a system user.',
-            ]);
-        }
-
-        // Check ApplicantPersonalData
-        $applicantExists = ApplicantPersonalData::where('email', $email)
+        $exists = $userExists || ApplicantPersonalData::where('email', $email)
             ->orWhere('alt_email', $email)
             ->exists();
 
-        if ($applicantExists) {
-            return response()->json([
-                'exists'  => true,
-                'message' => 'This email is already registered.',
-            ]);
-        }
-
         return response()->json([
-            'exists'  => false,
-            'message' => 'Email is available.',
+            'exists'  => $exists,
+            'message' => $exists ? 'This email is already registered.' : 'Email is available.',
         ]);
     }
 

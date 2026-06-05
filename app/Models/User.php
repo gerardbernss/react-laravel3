@@ -8,9 +8,25 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * Admin, staff, and faculty user accounts.
+ *
+ * Uses the default 'web' auth guard (separate from the 'student' guard used by
+ * PortalCredential). Users can log in with email + password or via Google OAuth
+ * (Socialite). Email verification is required for all new accounts.
+ *
+ * RBAC is many-to-many: one User can have many Roles via the role_user pivot,
+ * and each Role has many Permissions via role_permission. Access checks use
+ * hasRole(), hasPermission(), etc. on this model.
+ *
+ * The google_id and avatar fields are populated by GoogleController when a
+ * user authenticates via Google OAuth. A null google_id means the account
+ * uses password-only authentication.
+ */
 class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordContract
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -148,6 +164,11 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
     /**
      * Check if the user has a Google account linked.
      */
+    public function employee(): HasOne
+    {
+        return $this->hasOne(Employee::class);
+    }
+
     public function hasGoogleAccount(): bool
     {
         return ! is_null($this->google_id);

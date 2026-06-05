@@ -399,7 +399,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                 {/* Attendance Table */}
                 {students.length > 0 ? (
                     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                        <div className="overflow-x-auto">
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>

@@ -1,7 +1,8 @@
+import { Badge } from '@/components/ui/badge';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { AlertCircle, CalendarCheck, CheckCircle2, ChevronDown, Clock, MapPin, Megaphone, XCircle } from 'lucide-react';
+import { Head, usePage } from '@inertiajs/react';
+import { AlertCircle, CalendarCheck, CheckCircle2, ChevronDown, CircleDot, Clock, MapPin, Megaphone, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
@@ -60,6 +61,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function ApplicantDashboard({ student, personalData, application, announcements, examSchedule }: Props) {
+    const { applicationPeriodOpen } = usePage<{ applicationPeriodOpen: boolean }>().props;
     const [openIds, setOpenIds] = useState<Set<number>>(new Set());
 
     const toggleAnnouncement = (id: number) => {
@@ -71,12 +73,18 @@ export default function ApplicantDashboard({ student, personalData, application,
     };
 
     const isForExam = application?.application_status === 'For Exam';
+    const isExamTaken = application?.application_status === 'Exam Taken';
+    const isExamPassed = application?.application_status === 'Exam Passed';
+    const isExamFailed = application?.application_status === 'Exam Failed';
     const isForRevision = application?.application_status === 'For Revision';
     const isRejected = application?.application_status === 'Rejected';
-    const hasEvaluation = isForExam || isForRevision || isRejected;
+    const hasEvaluation = isForExam || isExamTaken || isExamPassed || isExamFailed || isForRevision || isRejected;
 
     const statusLabel = () => {
         if (isForExam) return examSchedule ? 'Approved — your exam schedule has been set.' : 'Approved — awaiting exam schedule.';
+        if (isExamTaken) return 'Exam completed — awaiting results.';
+        if (isExamPassed) return 'Congratulations! You passed the exam. You may now proceed with enrollment.';
+        if (isExamFailed) return 'Unfortunately, you did not pass the exam this cycle.';
         if (isForRevision) return 'Please review the feedback above.';
         if (isRejected) return 'Application not accepted this cycle.';
         return 'Your application is under review.';
@@ -117,6 +125,19 @@ export default function ApplicantDashboard({ student, personalData, application,
                     )}
                 </div>
 
+                {/* Application Period Status */}
+                <div className="mb-4">
+                    {applicationPeriodOpen ? (
+                        <Badge className="gap-1.5 bg-green-100 px-3 py-1 text-sm text-green-800 hover:bg-green-100">
+                            <CircleDot className="h-3.5 w-3.5" /> Applications are Open
+                        </Badge>
+                    ) : (
+                        <Badge className="gap-1.5 bg-gray-100 px-3 py-1 text-sm text-gray-500 hover:bg-gray-100">
+                            <CircleDot className="h-3.5 w-3.5" /> Applications are Closed
+                        </Badge>
+                    )}
+                </div>
+
                 {/* Password Change Warning */}
                 {!student.password_changed && (
                     <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
@@ -139,27 +160,42 @@ export default function ApplicantDashboard({ student, personalData, application,
                 {hasEvaluation && application && (
                     <div
                         className={`mb-6 rounded-lg border p-5 ${
-                            isForExam && examSchedule
-                                ? 'border-green-200 bg-green-50'
-                                : isForExam
-                                  ? 'border-blue-200 bg-blue-50'
-                                  : isForRevision
-                                    ? 'border-yellow-200 bg-yellow-50'
-                                    : 'border-red-200 bg-red-50'
+                            isExamPassed
+                                ? 'border-emerald-200 bg-emerald-50'
+                                : isExamFailed
+                                  ? 'border-red-200 bg-red-50'
+                                  : isExamTaken
+                                    ? 'border-purple-200 bg-purple-50'
+                                    : isForExam && examSchedule
+                                      ? 'border-green-200 bg-green-50'
+                                      : isForExam
+                                        ? 'border-blue-200 bg-blue-50'
+                                        : isForRevision
+                                          ? 'border-yellow-200 bg-yellow-50'
+                                          : 'border-red-200 bg-red-50'
                         }`}
                     >
                         <div className="flex items-start gap-4">
                             <div
                                 className={`mt-0.5 rounded-full p-2 ${
-                                    isForExam && examSchedule
-                                        ? 'bg-green-100'
-                                        : isForExam
-                                          ? 'bg-blue-100'
-                                          : isForRevision
-                                            ? 'bg-yellow-100'
-                                            : 'bg-red-100'
+                                    isExamPassed
+                                        ? 'bg-emerald-100'
+                                        : isExamFailed
+                                          ? 'bg-red-100'
+                                          : isExamTaken
+                                            ? 'bg-purple-100'
+                                            : isForExam && examSchedule
+                                              ? 'bg-green-100'
+                                              : isForExam
+                                                ? 'bg-blue-100'
+                                                : isForRevision
+                                                  ? 'bg-yellow-100'
+                                                  : 'bg-red-100'
                                 }`}
                             >
+                                {isExamPassed && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                                {isExamFailed && <XCircle className="h-5 w-5 text-red-600" />}
+                                {isExamTaken && <CalendarCheck className="h-5 w-5 text-purple-600" />}
                                 {isForExam && examSchedule && <CalendarCheck className="h-5 w-5 text-green-600" />}
                                 {isForExam && !examSchedule && <CheckCircle2 className="h-5 w-5 text-blue-600" />}
                                 {isForRevision && <AlertCircle className="h-5 w-5 text-yellow-600" />}
@@ -168,15 +204,24 @@ export default function ApplicantDashboard({ student, personalData, application,
                             <div className="flex-1">
                                 <h3
                                     className={`font-semibold ${
-                                        isForExam && examSchedule
-                                            ? 'text-green-800'
-                                            : isForExam
-                                              ? 'text-blue-800'
-                                              : isForRevision
-                                                ? 'text-yellow-800'
-                                                : 'text-red-800'
+                                        isExamPassed
+                                            ? 'text-emerald-800'
+                                            : isExamFailed
+                                              ? 'text-red-800'
+                                              : isExamTaken
+                                                ? 'text-purple-800'
+                                                : isForExam && examSchedule
+                                                  ? 'text-green-800'
+                                                  : isForExam
+                                                    ? 'text-blue-800'
+                                                    : isForRevision
+                                                      ? 'text-yellow-800'
+                                                      : 'text-red-800'
                                     }`}
                                 >
+                                    {isExamPassed && 'Exam Passed — Proceed to Enrollment'}
+                                    {isExamFailed && 'Exam Not Passed'}
+                                    {isExamTaken && 'Exam Completed — Awaiting Results'}
                                     {isForExam && examSchedule && 'Application Approved — Exam Schedule Assigned'}
                                     {isForExam && !examSchedule && 'Application Approved'}
                                     {isForRevision && 'Revision Required'}
@@ -184,15 +229,24 @@ export default function ApplicantDashboard({ student, personalData, application,
                                 </h3>
                                 <p
                                     className={`mt-0.5 text-sm ${
-                                        isForExam && examSchedule
-                                            ? 'text-green-700'
-                                            : isForExam
-                                              ? 'text-blue-700'
-                                              : isForRevision
-                                                ? 'text-yellow-700'
-                                                : 'text-red-700'
+                                        isExamPassed
+                                            ? 'text-emerald-700'
+                                            : isExamFailed
+                                              ? 'text-red-700'
+                                              : isExamTaken
+                                                ? 'text-purple-700'
+                                                : isForExam && examSchedule
+                                                  ? 'text-green-700'
+                                                  : isForExam
+                                                    ? 'text-blue-700'
+                                                    : isForRevision
+                                                      ? 'text-yellow-700'
+                                                      : 'text-red-700'
                                     }`}
                                 >
+                                    {isExamPassed && 'You passed the entrance exam. Please log in to the enrollment portal or visit the registrar to complete your enrollment.'}
+                                    {isExamFailed && 'You may reapply next school year. For concerns, please contact the admissions office.'}
+                                    {isExamTaken && 'Your exam has been recorded. Please wait while the results are being processed.'}
                                     {isForExam && examSchedule && examSchedule.name}
                                     {isForExam && !examSchedule && 'Your application has been reviewed and approved. Please wait for your examination schedule.'}
                                     {isForRevision && 'Your application needs changes before it can proceed.'}

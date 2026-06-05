@@ -4,6 +4,34 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Represents an enrolled student.
+ *
+ * A Student record is created during the enrollment step — either via
+ * ApplicantController::enroll() or EnrollmentController::processOnsiteEnrollment().
+ * It links back to the applicant's personal data (the shared identity) via
+ * applicant_personal_data_id, and to the specific application via applicant_id.
+ *
+ * Personal data is initially shared from ApplicantPersonalData, then mirrored
+ * into StudentPersonalData by CopyApplicantDataService::execute() so the student
+ * record can evolve independently after enrollment.
+ *
+ * enrollment_status lifecycle:
+ *   Pending → Active   (minimum payment received, triggered by StudentAssessment payment)
+ *   Active  → Inactive (admin manually deactivates)
+ *
+ * The student portal credential is shared via applicant_personal_data_id —
+ * see PortalCredential::$applicant_personal_data_id.
+ *
+ * @property int    $id
+ * @property int    $applicant_personal_data_id
+ * @property int    $applicant_id
+ * @property int    $student_personal_data_id
+ * @property string $enrollment_status  Active | Pending | Inactive
+ * @property string $current_year_level
+ * @property string $current_semester
+ * @property string $current_school_year
+ */
 class Student extends Model
 {
     use HasFactory;
@@ -66,7 +94,7 @@ class Student extends Model
         return $this->enrollments()
             ->with(['enrollmentSubjects.subject', 'blockSection'])
             ->orderBy('school_year', 'desc')
-            ->orderByRaw("FIELD(semester, 'Summer', 'Second', 'First')")
+            ->orderByRaw("CASE WHEN semester = 'Summer' THEN 1 WHEN semester = 'Second' THEN 2 WHEN semester = 'First' THEN 3 ELSE 4 END")
             ->get();
     }
 

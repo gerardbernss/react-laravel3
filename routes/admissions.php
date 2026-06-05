@@ -1,6 +1,22 @@
 <?php
 
+/**
+ * Admissions routes — portal credentials, exam results, and enrollment workflow.
+ *
+ * All routes in this file require 'auth' + 'verified' middleware (admin/staff).
+ * Individual route groups add a 'permission:X' middleware for finer-grained RBAC.
+ *
+ * Route groups:
+ *   permission:manage-portal-credentials — generate, send, suspend, reactivate student portal logins
+ *   permission:manage-exam-results       — upload CSV scores, rank results, send result emails,
+ *                                          bulk-update applicant statuses (Exam Passed / Exam Failed)
+ *   (no extra permission)                — enrollment dashboard, onsite enrollment wizard, audit log
+ *
+ * This file is included by routes/web.php via require __DIR__.'/admissions.php'.
+ */
+
 use App\Http\Controllers\Admissions\EnrollmentController;
+use App\Http\Controllers\Admissions\ExamResultsController;
 use App\Http\Controllers\Admissions\PortalCredentialController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,8 +32,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{credential}/resend', [PortalCredentialController::class, 'resend'])->name('resend');
         Route::post('/{credential}/suspend', [PortalCredentialController::class, 'suspend'])->name('suspend');
         Route::post('/{credential}/reactivate', [PortalCredentialController::class, 'reactivate'])->name('reactivate');
-        Route::post('/{credential}/reset-password', [PortalCredentialController::class, 'resetPassword'])->name('reset-password');
         Route::get('/statistics', [PortalCredentialController::class, 'statistics'])->name('statistics');
+    });
+
+    // ===== EXAM RESULTS ROUTES =====
+    Route::middleware(['permission:manage-exam-results'])->prefix('exam-results')->name('exam-results.')->group(function () {
+        Route::get('/', [ExamResultsController::class, 'index'])->name('index');
+        Route::get('/upload', [ExamResultsController::class, 'create'])->name('create');
+        Route::post('/upload', [ExamResultsController::class, 'store'])->name('store');
+        Route::post('/upload/confirm', [ExamResultsController::class, 'confirmStore'])->name('confirm');
+        Route::post('/update-rankings', [ExamResultsController::class, 'updateRankings'])->name('update-rankings');
+        Route::post('/settings', [ExamResultsController::class, 'updateSettings'])->name('settings');
+        Route::post('/send-all', [ExamResultsController::class, 'sendAllResults'])->name('send-all');
+        Route::post('/update-statuses', [ExamResultsController::class, 'updateApplicantStatuses'])->name('update-statuses');
+        Route::post('/{result}/send', [ExamResultsController::class, 'sendResult'])->name('send');
+        Route::post('/{result}/update-status', [ExamResultsController::class, 'updateApplicantStatus'])->name('update-status');
     });
 
     // ===== ENROLLMENT ROUTES =====

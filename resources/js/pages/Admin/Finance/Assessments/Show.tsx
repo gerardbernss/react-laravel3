@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+﻿import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,6 +30,7 @@ interface Assessment {
     total_other_fees: number;
     gross_amount: number;
     total_discounts: number;
+    prior_balance: number;
     net_amount: number;
     payment_plan: 'full' | 'installment';
     minimum_amount: number;
@@ -245,6 +246,12 @@ export default function AssessmentShow({ assessment }: Props) {
                                         <span>− {formatCurrency(assessment.total_discounts)}</span>
                                     </div>
                                 )}
+                                {assessment.prior_balance > 0 && (
+                                    <div className="flex justify-between text-red-600">
+                                        <span>Prior Balance (Previous Semester)</span>
+                                        <span>+ {formatCurrency(assessment.prior_balance)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between border-t pt-2 text-base font-bold text-gray-900">
                                     <span>Net Amount Due</span>
                                     <span>{formatCurrency(assessment.net_amount)}</span>
@@ -344,8 +351,9 @@ export default function AssessmentShow({ assessment }: Props) {
                                     No payments recorded yet.
                                 </div>
                             ) : (
+                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                                    <thead className="sticky top-0 z-10 bg-gray-50 text-xs font-semibold uppercase text-gray-500">
                                         <tr>
                                             <th className="px-4 py-2 text-left">Date</th>
                                             <th className="px-4 py-2 text-left">Method</th>
@@ -479,6 +487,7 @@ export default function AssessmentShow({ assessment }: Props) {
                                         ))}
                                     </tbody>
                                 </table>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -643,10 +652,10 @@ export default function AssessmentShow({ assessment }: Props) {
                                         );
                                     })()}
 
-                                    {errors.error && (
+                                    {(errors as Record<string, string>).error && (
                                         <div className="flex items-center gap-2 rounded-md bg-red-50 p-2 text-xs text-red-700">
                                             <AlertCircle className="h-3.5 w-3.5" />
-                                            {errors.error}
+                                            {(errors as Record<string, string>).error}
                                         </div>
                                     )}
 

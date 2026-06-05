@@ -19,26 +19,29 @@ class StudentsController extends Controller
      */
     public function index()
     {
-        $students = Student::with('studentPersonalData')
+        $students = Student::with(['studentPersonalData', 'personalData'])
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn ($s) => [
-                'id'                  => $s->id,
-                'student_id_number'   => $s->student_id_number,
-                'enrollment_status'   => $s->enrollment_status,
-                'current_year_level'  => $s->current_year_level,
-                'current_school_year' => $s->current_school_year,
-                'current_semester'    => $s->current_semester,
-                'source'              => $s->applicant_personal_data_id ? 'applicant' : 'direct',
-                'personal_data'       => $s->studentPersonalData ? [
-                    'first_name'  => $s->studentPersonalData->first_name,
-                    'last_name'   => $s->studentPersonalData->last_name,
-                    'middle_name' => $s->studentPersonalData->middle_name,
-                    'suffix'      => $s->studentPersonalData->suffix,
-                    'email'       => $s->studentPersonalData->email,
-                    'gender'      => $s->studentPersonalData->gender,
-                ] : null,
-            ]);
+            ->map(function ($s) {
+                $spd = $s->studentPersonalData ?? $s->personalData;
+                return [
+                    'id'                  => $s->id,
+                    'student_id_number'   => $s->student_id_number,
+                    'enrollment_status'   => $s->enrollment_status,
+                    'current_year_level'  => $s->current_year_level,
+                    'current_school_year' => $s->current_school_year,
+                    'current_semester'    => $s->current_semester,
+                    'source'              => $s->applicant_personal_data_id ? 'applicant' : 'direct',
+                    'personal_data'       => $spd ? [
+                        'first_name'  => $spd->first_name,
+                        'last_name'   => $spd->last_name,
+                        'middle_name' => $spd->middle_name,
+                        'suffix'      => $spd->suffix ?? null,
+                        'email'       => $spd->email,
+                        'gender'      => $spd->gender,
+                    ] : null,
+                ];
+            });
 
         return Inertia::render('Admin/Students/Index', [
             'students' => $students,

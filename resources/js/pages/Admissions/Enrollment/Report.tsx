@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+﻿import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
@@ -188,8 +188,9 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <h2 className="font-semibold">Applicants by Category</h2>
                         </div>
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Category</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium uppercase text-gray-500">Count</th>
@@ -219,6 +220,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                                 )}
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
                     {/* By Year Level */}
@@ -226,8 +228,9 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <h2 className="font-semibold">Applicants by Year Level</h2>
                         </div>
+                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                            <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Year Level</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium uppercase text-gray-500">Count</th>
@@ -259,6 +262,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                                 )}
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>

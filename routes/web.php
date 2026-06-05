@@ -1,5 +1,27 @@
 <?php
 
+/**
+ * Web routes — admin, staff, faculty, and public-facing pages.
+ *
+ * Middleware groups used in this file:
+ *   (none)          — PUBLIC: accessible without authentication
+ *   auth + verified — AUTHENTICATED: requires login and email verification
+ *   permission:X    — RBAC: requires the named permission slug on the user's role(s)
+ *
+ * Route file layout:
+ *   1. Public pages        — welcome, login-demo, online application forms
+ *   2. Authenticated pages — dashboard, applicant management, user/role/permission CRUD,
+ *                            academic structure (subjects, sections, programs),
+ *                            exam scheduling, grading, attendance, fees, finance
+ *
+ * Admissions-specific routes (portal credentials, exam results, enrollment dashboard)
+ * are in routes/admissions.php, student portal routes in routes/student.php,
+ * and auth routes (login, register, password reset) in routes/auth.php.
+ *
+ * All admin routes require the 'web' guard (User model). Student portal uses the
+ * separate 'student' guard (PortalCredential model) defined in routes/student.php.
+ */
+
 use App\Http\Controllers\Admissions\ApplicationController;
 use App\Http\Controllers\Admissions\ApplicantController;
 use App\Http\Controllers\Admin\ApplicantExamAssignmentController;
@@ -9,6 +31,11 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EnrollmentPeriodController;
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\GradesController;
+use App\Http\Controllers\Admin\GradebookController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\GradeValidationController;
+use App\Http\Controllers\Admin\ConductCategoryController;
+use App\Http\Controllers\Admin\ConductGradeController;
 use App\Http\Controllers\Admin\MyStudentsController;
 use App\Http\Controllers\Admin\DiscountTypeController;
 use App\Http\Controllers\Admin\ExaminationRoomsController;
@@ -22,6 +49,7 @@ use App\Http\Controllers\Student\StudentIDController;
 use App\Http\Controllers\Admin\AnnouncementsController;
 use App\Http\Controllers\Admin\SemesterPeriodController;
 use App\Http\Controllers\Admin\StudentAssessmentsController;
+use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\UsersController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -54,7 +82,7 @@ Route::prefix('applications')->name('applications.')->group(function () {
     Route::post('/apply-jhs', [ApplicationController::class, 'storeJHS'])->name('applications.jhs.store');
     Route::post('/apply-les', [ApplicationController::class, 'storeLES'])->name('applications.les.store');
 
-    Route::post('/check-email', [ApplicationController::class, 'checkEmail'])->name('check-email');
+    Route::post('/check-email', [ApplicationController::class, 'checkEmail'])->middleware('throttle:10,1')->name('check-email');
     Route::get('/success', [ApplicationController::class, 'success'])->name('success');
 });
 
@@ -79,19 +107,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admissions/applicants/{id}/send-confirmation-email', [ApplicantController::class, 'sendConfirmationEmail'])->name('applicants.send-confirmation-email');
         Route::post('/admissions/applicants/{id}/send-portal-password', [ApplicantController::class, 'sendPortalPassword'])->name('applicants.send-portal-password');
         Route::post('/admissions/applicants/{id}/evaluate', [ApplicantController::class, 'evaluate'])->name('applicants.evaluate');
+        Route::get('/admissions/applicants/{id}/enroll', [ApplicantController::class, 'enrollPage'])->name('applicants.enroll.page');
+        Route::post('/admissions/applicants/{id}/enroll', [ApplicantController::class, 'enroll'])->name('applicants.enroll');
 
         Route::get('/view-document/{path}', function ($path) {
-            $decodedPath = base64_decode($path);
-            $filename    = basename($decodedPath);
-            $fullPath    = storage_path('app/public/documents/' . $filename);
+            $filename = basename(base64_decode($path));
 
-            if (! file_exists($fullPath)) {
-                abort(404, 'Document not found');
-            }
+            abort_unless(
+                \App\Models\ApplicantDocuments::where('file_path', 'like', "%{$filename}")->exists(),
+                404
+            );
+
+            $fullPath = storage_path('app/public/documents/' . $filename);
+            abort_unless(file_exists($fullPath), 404);
 
             return response()->file($fullPath);
         })->name('view.document');
 
+    });
+
+    // Employee management
+    Route::middleware(['permission:manage-employees'])->group(function () {
+        Route::resource('employees', EmployeeController::class);
     });
 
     // student ID management --ADMIN
@@ -198,6 +235,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/enrollment-periods/{period}', [EnrollmentPeriodController::class, 'update'])->name('enrollment-periods.update');
     Route::post('/enrollment-periods/{period}/open', [EnrollmentPeriodController::class, 'open'])->name('enrollment-periods.open');
     Route::post('/enrollment-periods/{period}/close', [EnrollmentPeriodController::class, 'close'])->name('enrollment-periods.close');
+    Route::post('/enrollment-periods/{period}/generate-assessments', [EnrollmentPeriodController::class, 'generateAssessments'])->name('enrollment-periods.generate-assessments');
     Route::delete('/enrollment-periods/{period}', [EnrollmentPeriodController::class, 'destroy'])->name('enrollment-periods.destroy');
 
     // Program Management Routes
@@ -218,18 +256,63 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/exam-assignments', [ApplicantExamAssignmentController::class, 'store'])->name('exam-assignments.store');
     Route::post('/exam-assignments/bulk', [ApplicantExamAssignmentController::class, 'bulkStore'])->name('exam-assignments.bulk-store');
     Route::patch('/exam-assignments/{assignment}/status', [ApplicantExamAssignmentController::class, 'updateStatus'])->name('exam-assignments.update-status');
+    Route::post('/exam-assignments/{assignment}/mark-result', [ApplicantExamAssignmentController::class, 'markResult'])->name('exam-assignments.mark-result');
     Route::delete('/exam-assignments/{assignment}', [ApplicantExamAssignmentController::class, 'destroy'])->name('exam-assignments.destroy');
 
-    // Grades Management Routes
+    // Legacy grades redirect
+    Route::get('/grades', fn() => redirect('/gradebook'))->name('grades.index');
+    Route::get('/grades/{any}', fn() => redirect('/gradebook'))->where('any', '.*');
+
     Route::middleware(['permission:view-grades'])->group(function () {
-        Route::get('/grades', [GradesController::class, 'index'])->name('grades.index');
-        Route::get('/grades/{blockSection}', [GradesController::class, 'show'])->name('grades.show');
-        Route::get('/grades/{blockSection}/student/{studentEnrollment}', [GradesController::class, 'showStudent'])->name('grades.student');
         Route::get('/my-students/{blockSection}', [MyStudentsController::class, 'show'])->name('my-students.show');
     });
 
+    // Gradebook Routes — static paths must come before {blockSection} catch-all
+    Route::middleware(['permission:view-grades'])->group(function () {
+        Route::get('/gradebook', [GradebookController::class, 'index'])->name('gradebook.index');
+        Route::get('/gradebook/validations', [GradeValidationController::class, 'index'])->name('grade-validations.index');
+        Route::get('/gradebook/validations/{blockSection}', [GradeValidationController::class, 'show'])->name('grade-validations.show');
+        Route::get('/gradebook/{blockSection}', [GradebookController::class, 'show'])->name('gradebook.show');
+        Route::get('/gradebook/{blockSection}/{subject}/{quarter}/components', [GradebookController::class, 'components'])->name('gradebook.components');
+        Route::get('/gradebook/{blockSection}/{subject}/{quarter}/entry', [GradebookController::class, 'entry'])->name('gradebook.entry');
+    });
+
     Route::middleware(['permission:manage-grades'])->group(function () {
-        Route::put('/grades/{blockSection}', [GradesController::class, 'update'])->name('grades.update');
+        Route::post('/gradebook/components', [GradebookController::class, 'storeComponent'])->name('gradebook.components.store');
+        Route::delete('/gradebook/components/{component}', [GradebookController::class, 'deleteComponent'])->name('gradebook.components.destroy');
+        Route::put('/gradebook/{blockSection}/{subject}/{quarter}/scores', [GradebookController::class, 'saveScores'])->name('gradebook.scores.save');
+    });
+
+    Route::middleware(['permission:submit-grades'])->group(function () {
+        Route::post('/gradebook/{blockSection}/{subject}/{quarter}/submit', [GradeValidationController::class, 'submit'])->name('grade-validations.submit');
+    });
+
+    Route::middleware(['permission:finalize-grades'])->group(function () {
+        Route::post('/grade-validations/{gradeValidation}/finalize', [GradeValidationController::class, 'finalize'])->name('grade-validations.finalize');
+        Route::post('/grade-validations/{gradeValidation}/reject', [GradeValidationController::class, 'reject'])->name('grade-validations.reject');
+    });
+
+    // Report Export Routes (CSV downloads)
+    Route::middleware(['permission:view-grades'])->group(function () {
+        Route::get('/reports/class-record/{blockSection}/{subject}/{quarter}', [ReportController::class, 'classRecord'])->name('reports.class-record');
+        Route::get('/reports/grading-sheet/{blockSection}', [ReportController::class, 'gradingSheet'])->name('reports.grading-sheet');
+        Route::get('/reports/report-card/{studentEnrollment}', [ReportController::class, 'reportCard'])->name('reports.report-card');
+        Route::get('/reports/attendance/{blockSection}/{subject}', [ReportController::class, 'attendanceSummary'])->name('reports.attendance');
+    });
+
+    // Conduct Grades Routes
+    Route::middleware(['permission:manage-conduct'])->group(function () {
+        Route::get('/conduct-categories', [ConductCategoryController::class, 'index'])->name('conduct-categories.index');
+        Route::post('/conduct-categories', [ConductCategoryController::class, 'store'])->name('conduct-categories.store');
+        Route::put('/conduct-categories/{conductCategory}', [ConductCategoryController::class, 'update'])->name('conduct-categories.update');
+        Route::delete('/conduct-categories/{conductCategory}', [ConductCategoryController::class, 'destroy'])->name('conduct-categories.destroy');
+        Route::post('/conduct-categories/{conductCategory}/criteria', [ConductCategoryController::class, 'storeCriteria'])->name('conduct-categories.criteria.store');
+        Route::delete('/conduct-criteria/{conductCriteria}', [ConductCategoryController::class, 'destroyCriteria'])->name('conduct-criteria.destroy');
+    });
+
+    Route::middleware(['permission:manage-conduct-grades'])->group(function () {
+        Route::get('/gradebook/{blockSection}/conduct/{quarter}', [ConductGradeController::class, 'index'])->name('conduct-grades.index');
+        Route::put('/gradebook/{blockSection}/conduct/{quarter}', [ConductGradeController::class, 'save'])->name('conduct-grades.save');
     });
 
     // Attendance Management Routes

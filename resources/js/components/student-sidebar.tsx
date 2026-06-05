@@ -2,7 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { BookOpen, CalendarDays, ClipboardList, Download, GraduationCap, Home, Key, User } from 'lucide-react';
+import { BookOpen, CalendarDays, ClipboardList, Download, GraduationCap, Home, Key, LayoutGrid, User } from 'lucide-react';
 import AppLogo from './app-logo';
 import { NavMain } from './nav-main';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -39,6 +39,29 @@ const applicantNavItems: NavItem[] = [
     },
 ];
 
+const examPassedNavItems: NavItem[] = [
+    {
+        title: 'Home',
+        href: '/applicant/dashboard',
+        icon: Home,
+    },
+    {
+        title: 'Enrollment',
+        href: '/applicant/enrollment',
+        icon: GraduationCap,
+    },
+    {
+        title: 'Application Information',
+        href: '/applicant/personal-info',
+        icon: User,
+    },
+    {
+        title: 'Change Password',
+        href: '/student/change-password',
+        icon: Key,
+    },
+];
+
 const enrolledNavItems: NavItem[] = [
     {
         title: 'Home',
@@ -49,6 +72,11 @@ const enrolledNavItems: NavItem[] = [
         title: 'Enrollment',
         href: '/student/enrollment',
         icon: GraduationCap,
+    },
+    {
+        title: 'My Section',
+        href: '/student/my-section',
+        icon: LayoutGrid,
     },
     {
         title: 'Schedule',
@@ -141,16 +169,28 @@ function StudentNavUser() {
 }
 
 export function StudentSidebar() {
-    const { auth } = usePage<{
-        auth: { student: { is_applicant: boolean } | null };
+    const { auth, studentEnrollmentOpen, applicantEnrollmentOpen } = usePage<{
+        auth: { student: { is_applicant: boolean; application_status: string | null } | null };
+        studentEnrollmentOpen: boolean;
+        applicantEnrollmentOpen: boolean;
     }>().props;
 
     const isApplicant = auth.student?.is_applicant ?? true;
-    const navItems = isApplicant ? applicantNavItems : enrolledNavItems;
+    const applicationStatus = auth.student?.application_status ?? null;
+    const baseItems = !isApplicant
+        ? enrolledNavItems
+        : applicationStatus === 'Exam Passed'
+          ? examPassedNavItems
+          : applicantNavItems;
+    const navItems = baseItems.filter((item) => {
+        if (item.href === '/student/enrollment') return studentEnrollmentOpen;
+        if (item.href === '/applicant/enrollment') return applicantEnrollmentOpen;
+        return true;
+    });
     const homeHref = isApplicant ? '/applicant/dashboard' : '/student/dashboard';
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

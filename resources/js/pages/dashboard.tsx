@@ -1,8 +1,9 @@
-import AppLayout from '@/layouts/app-layout';
+﻿import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { BookOpen, CalendarCheck, ClipboardList, Clock, GraduationCap, LayoutGrid, Megaphone, Users } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Stats {
     total_applicants: number;
@@ -123,7 +124,7 @@ export default function Dashboard({
     categoryBreakdown = [],
     blockSections: _blockSections = [],
     enrollmentByGrade = [],
-    currentSchoolYear = '2025-2026',
+    currentSchoolYear = '',
     announcements = [],
 }: Props) {
     // Faculty dashboard
@@ -221,8 +222,9 @@ export default function Dashboard({
                             </div>
                             {myClasses.length > 0 ? (
                                 <div className="overflow-hidden rounded-lg border">
+                                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-muted/50">
+                                        <thead className="sticky top-0 z-10 bg-muted/50">
                                             <tr>
                                                 <th className="px-3 py-2 text-left text-xs font-medium tracking-wider text-muted-foreground uppercase">
                                                     Subject
@@ -267,6 +269,7 @@ export default function Dashboard({
                                             ))}
                                         </tbody>
                                     </table>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">No classes assigned</div>
@@ -332,6 +335,17 @@ export default function Dashboard({
     // accessing .name and .school_year is type-safe rather than `unknown`.
     const { currentSemester } = usePage<SharedData>().props;
 
+    const leftColRef = useRef<HTMLDivElement>(null);
+    const [leftColHeight, setLeftColHeight] = useState<number | undefined>();
+
+    useEffect(() => {
+        const el = leftColRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(() => setLeftColHeight(el.offsetHeight));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
     const totalCategory = categoryBreakdown.reduce((sum, item) => sum + item.count, 0);
 
     return (
@@ -354,15 +368,15 @@ export default function Dashboard({
 
                 {/* Two-column layout: left = stat cards + category chart, right = announcements */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Left column */}
-                    <div className="flex flex-col gap-4">
+                    {/* Left column — self-start prevents grid from stretching it, so offsetHeight
+                        reflects the true content height that the announcements card should match */}
+                    <div ref={leftColRef} className="flex flex-col gap-4 self-start">
                         {/* Stat cards — 2×2 grid */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="flex items-center justify-between rounded-xl border border-l-4 border-l-blue-500 bg-card p-3 shadow-sm">
                                 <div>
                                     <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Applicants</p>
                                     <p className="text-xl font-bold text-foreground">{stats.total_applicants}</p>
-                                    <p className="text-[10px] text-muted-foreground">this school year</p>
                                 </div>
                                 <div className="rounded-lg bg-blue-100 p-1.5 dark:bg-blue-900/30">
                                     <Users className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
@@ -379,7 +393,6 @@ export default function Dashboard({
                                     >
                                         {stats.pending}
                                     </p>
-                                    <p className="text-[10px] text-muted-foreground">{stats.pending > 0 ? 'requires attention' : 'all clear'}</p>
                                 </div>
                                 <div className={`rounded-lg p-1.5 ${stats.pending > 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-muted'}`}>
                                     <Clock
@@ -392,10 +405,6 @@ export default function Dashboard({
                                 <div>
                                     <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Enrolled</p>
                                     <p className="text-xl font-bold text-foreground">{stats.enrolled}</p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        <span className="font-semibold text-indigo-600 dark:text-indigo-400">{stats.portal_credentials}</span> with
-                                        portal access
-                                    </p>
                                 </div>
                                 <div className="rounded-lg bg-green-100 p-1.5 dark:bg-green-900/30">
                                     <GraduationCap className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
@@ -406,7 +415,6 @@ export default function Dashboard({
                                 <div>
                                     <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Students</p>
                                     <p className="text-xl font-bold text-foreground">{stats.students}</p>
-                                    <p className="text-[10px] text-muted-foreground">in the system</p>
                                 </div>
                                 <div className="rounded-lg bg-purple-100 p-1.5 dark:bg-purple-900/30">
                                     <BookOpen className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
@@ -446,9 +454,12 @@ export default function Dashboard({
                         </div>
                     </div>
 
-                    {/* Right column — Announcements */}
-                    <div className="rounded-xl border bg-card p-6 shadow-sm">
-                        <div className="mb-4 flex items-center justify-between">
+                    {/* Right column — height locked to the measured left column height */}
+                    <div
+                        className="flex flex-col rounded-xl border bg-card p-6 shadow-sm overflow-hidden"
+                        style={leftColHeight ? { height: leftColHeight } : undefined}
+                    >
+                        <div className="mb-4 flex shrink-0 items-center justify-between">
                             <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
                                 <Megaphone className="h-4 w-4 text-primary" />
                                 Announcements
@@ -458,9 +469,9 @@ export default function Dashboard({
                             </Link>
                         </div>
                         {announcements.length > 0 ? (
-                            <div className="space-y-3">
+                            <div className="flex-1 divide-y overflow-y-auto">
                                 {announcements.map((a) => (
-                                    <div key={a.id} className="rounded-lg border bg-background p-3">
+                                    <div key={a.id} className="py-3">
                                         <p className="text-sm font-medium text-foreground">{a.title}</p>
                                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.content}</p>
                                         {a.publish_start && <p className="mt-1.5 text-[11px] text-muted-foreground">{a.publish_start}</p>}
@@ -468,14 +479,13 @@ export default function Dashboard({
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">No active announcements</div>
+                            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">No active announcements</div>
                         )}
                     </div>
                 </div>
 
                 {/* Enrollment by Grade Level & Program */}
-                {enrollmentByGrade.length > 0 && (
-                    <div className="rounded-xl border bg-card p-6 shadow-sm">
+                <div className="rounded-xl border bg-card p-6 shadow-sm">
                         <h3 className="mb-5 text-base font-semibold text-foreground">Enrollment by Grade Level &amp; Program</h3>
                         <div className="space-y-3">
                             {enrollmentByGrade.map((row) => (
@@ -523,8 +533,7 @@ export default function Dashboard({
                                 <span className="inline-block h-2 w-2 rounded-full bg-red-500" /> 90%+
                             </span>
                         </div>
-                    </div>
-                )}
+                </div>
             </div>
         </AppLayout>
     );

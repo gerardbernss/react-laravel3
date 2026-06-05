@@ -8,6 +8,33 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * The login credential for a student's portal access.
+ *
+ * This model implements Laravel's Authenticatable contract under the 'student'
+ * guard (configured in config/auth.php). It is completely separate from the
+ * User model (admin guard). A PortalCredential is created when an admin sends
+ * portal credentials to an enrolled applicant.
+ *
+ * Authentication flow:
+ *   1. Student visits /student/login → StudentLoginController
+ *   2. Laravel checks portal_credentials table via the 'student' guard
+ *   3. getAuthPassword() returns temporary_password (bcrypt hash)
+ *   4. On first login, password_changed is false → redirect to change-password
+ *   5. After changing password, password_changed is set to true
+ *   6. login_attempts increments on failure; suspends automatically at >= 5
+ *   7. Admin can reactivate via PortalCredentialController::reactivate()
+ *
+ * The username is always set to the applicant's email address.
+ * Plain-text passwords are never stored — only the bcrypt hash.
+ *
+ * access_status field values:
+ *   'Active'    — credential is usable
+ *   'Suspended' — auto-suspended (≥5 failed attempts) or manually suspended by admin
+ *
+ * The student() relationship traverses through ApplicantPersonalData because
+ * Student and PortalCredential both point to applicant_personal_data_id.
+ */
 class PortalCredential extends Authenticatable implements CanResetPasswordContract
 {
     use HasFactory, Notifiable, CanResetPassword;

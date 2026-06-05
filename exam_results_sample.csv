@@ -1,0 +1,3 @@
+applicant_number,applicant_personal_data_id,exam_date,exam_time,exam_venue,math_score,english_score,science_score,total_score,percentage_score
+H0004,13,2026-05-20,09:00 AM,Room 101,78.00,82.00,80.00,240.00,80.00
+H0005,14,2026-05-20,09:00 AM,Room 101,85.00,90.00,88.00,263.00,87.67

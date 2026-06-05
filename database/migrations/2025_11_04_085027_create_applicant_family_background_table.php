@@ -37,7 +37,7 @@ return new class extends Migration
             $table->string('mother_lname');
             $table->string('mother_fname');
             $table->string('mother_mname');
-            $table->boolean('mother_living')->nullable();
+            $table->string('mother_living')->nullable();
             $table->string('mother_citizenship')->nullable();
             $table->string('mother_religion')->nullable();
             $table->string('mother_highest_educ')->nullable();
