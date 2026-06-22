@@ -36,10 +36,4 @@ class ApplicantDocuments extends Model
     }
 
     protected $casts = [];
-
-    // Optional: Add accessors for full name
-    // public function getFullNameAttribute(): string
-    // {
-    //    return trim("{$this->first_name} {$this->middle_name} {$this->last_name} {$this->suffix}");
-    // }
 }

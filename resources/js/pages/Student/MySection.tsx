@@ -31,8 +31,8 @@ export default function MySection({ targetYear, targetSemester, blockSection, su
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="My Section" />
 
-            <div className="mx-auto max-w-4xl px-4 py-8">
-                <div className="mb-6">
+            <div className="space-y-6 p-4 md:p-6">
+                <div>
                     <h1 className="text-2xl font-bold text-gray-900">My Section</h1>
                     <p className="mt-1 text-sm text-gray-500">
                         {targetSemester && targetYear ? `${targetSemester} · ${targetYear}` : 'Current semester'}
@@ -124,10 +124,10 @@ export default function MySection({ targetYear, targetSemester, blockSection, su
                         </div>
                     </div>
                 ) : (
-                    <div className="rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
-                        <LayoutGrid className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-                        <h3 className="text-base font-semibold text-gray-700">Section Not Yet Assigned</h3>
-                        <p className="mt-2 text-sm text-gray-500">
+                    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-center">
+                        <LayoutGrid className="mb-3 h-10 w-10 text-gray-400" />
+                        <p className="text-sm font-medium text-gray-600">Section Not Yet Assigned</p>
+                        <p className="mt-1 text-xs text-gray-400">
                             Your section has not been assigned yet. Please check back once the enrollment period closes and the registrar has finalized section assignments.
                         </p>
                     </div>

@@ -79,6 +79,9 @@ Route::middleware('auth:student')->prefix('student')->group(function () {
     Route::get('my-section', [StudentPortalController::class, 'mySection'])
         ->name('student.my-section');
 
+    Route::get('statement-of-account', [StudentPortalController::class, 'statementOfAccount'])
+        ->name('student.statement-of-account');
+
     // Enrolled students only
     Route::middleware('student.enrolled')->group(function () {
         Route::patch('enrollment/payment-mode', [StudentPortalController::class, 'changePaymentMode'])

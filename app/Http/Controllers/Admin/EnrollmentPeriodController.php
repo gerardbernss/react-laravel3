@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Applicant;
 use App\Models\EnrollmentPeriod;
 use App\Models\Fee;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\StudentAssessment;
+use App\Services\Student\AutoPromoteStudentsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -57,14 +59,16 @@ class EnrollmentPeriodController extends Controller
             'notes'       => 'nullable|string|max:500',
         ]);
 
-        // Prevent duplicate per type
+        // Prevent duplicate only if an active (open and within date range) period exists
         $exists = EnrollmentPeriod::where('school_year', $validated['school_year'])
             ->where('semester', $validated['semester'])
             ->where('type', $validated['type'])
+            ->where('is_open', true)
+            ->where(function ($q) { $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()); })
             ->exists();
 
         if ($exists) {
-            return back()->withErrors(['error' => 'An enrollment period of this type for this school year and semester already exists.']);
+            return back()->withErrors(['error' => 'An active enrollment period of this type for this school year and semester already exists.']);
         }
 
         // Block if another period of the same type is already open
@@ -78,7 +82,7 @@ class EnrollmentPeriodController extends Controller
             return back()->withErrors(['error' => "Another {$typeLabel} enrollment period is currently open. Close it before starting a new one."]);
         }
 
-        EnrollmentPeriod::create([
+        $period = EnrollmentPeriod::create([
             'school_year' => $validated['school_year'],
             'semester'    => $validated['semester'],
             'type'        => $validated['type'],
@@ -89,6 +93,8 @@ class EnrollmentPeriodController extends Controller
             'notes'       => $validated['notes'] ?? null,
         ]);
 
+        $successMessage = 'Enrollment period started.';
+
         if ($validated['type'] === 'student') {
             // Students who never paid before the previous period closed → "Not Enrolled"
             Student::where('enrollment_status', 'Pending')
@@ -97,9 +103,28 @@ class EnrollmentPeriodController extends Controller
             // Active students → Pending (ready to re-enroll for new semester)
             Student::where('enrollment_status', 'Active')
                 ->update(['enrollment_status' => 'Pending']);
+
+            $result = app(AutoPromoteStudentsService::class)->promote($period);
+
+            if ($result['promoted'] > 0 || $result['skipped'] > 0) {
+                $successMessage .= " {$result['promoted']} student(s) auto-promoted.";
+                if ($result['skipped'] > 0) {
+                    $successMessage .= " {$result['skipped']} require manual section assignment.";
+                }
+            }
         }
 
-        return back()->with('success', 'Enrollment period started.');
+        if ($validated['type'] === 'applicant') {
+            $promoted = Applicant::where('application_status', 'Exam Passed')->count();
+            Applicant::where('application_status', 'Exam Passed')
+                ->update(['application_status' => 'Pending Enrollment']);
+
+            if ($promoted > 0) {
+                $successMessage .= " {$promoted} exam-passed applicant(s) moved to enrollment processing.";
+            }
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     /**
@@ -145,7 +170,19 @@ class EnrollmentPeriodController extends Controller
                 ->update(['enrollment_status' => 'Pending']);
         }
 
-        return back()->with('success', 'Enrollment is now open.');
+        $successMessage = 'Enrollment is now open.';
+
+        if ($period->type === 'applicant') {
+            $promoted = Applicant::where('application_status', 'Exam Passed')->count();
+            Applicant::where('application_status', 'Exam Passed')
+                ->update(['application_status' => 'Pending']);
+
+            if ($promoted > 0) {
+                $successMessage .= " {$promoted} exam-passed applicant(s) moved to enrollment processing.";
+            }
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     /**

@@ -23,10 +23,7 @@ class StudentAssessmentsController extends Controller
             ?? EnrollmentPeriod::latest()->first();
 
         $studentAssessments = StudentAssessment::with(['student.personalData', 'payments'])
-            ->when($currentPeriod, fn($q) => $q
-                ->where('school_year', $currentPeriod->school_year)
-                ->where('semester', $currentPeriod->semester)
-            )
+            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
             ->latest()
             ->get()
             ->map(fn ($a) => [
@@ -52,10 +49,7 @@ class StudentAssessmentsController extends Controller
         // Include Exam Passed applicants who have an ApplicantAssessment (pending enrollment)
         $applicantAssessments = ApplicantAssessment::with(['applicant.personalData'])
             ->where('status', 'pending')
-            ->when($currentPeriod, fn($q) => $q
-                ->where('school_year', $currentPeriod->school_year)
-                ->where('semester', $currentPeriod->semester)
-            )
+            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
             ->latest()
             ->get()
             ->map(fn ($a) => [

@@ -58,6 +58,7 @@ class MyStudentsController extends Controller
                     ->selectRaw('status, count(*) as "cnt"')
                     ->groupBy('status')
                     ->pluck('cnt', 'status')
+                    ->map(fn($v) => (int) $v)
                     ->toArray();
                 $attendanceCounts = array_merge($attendanceCounts, $counts);
             }

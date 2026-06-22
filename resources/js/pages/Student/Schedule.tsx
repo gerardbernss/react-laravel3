@@ -44,6 +44,17 @@ const DAY_MAP: Record<string, number> = {
     Sa: 5, S: 5,
 };
 
+// Whole-string day codes offered by the Subject schedule form's dropdown
+// (Admin/Subjects/Edit.tsx) — matched verbatim before falling back to the
+// char-by-char tokenizer below, since "Daily" has no per-character mapping
+// and "MTWTHF" trips up the tokenizer's case-sensitive "Th" lookup.
+const DAY_CODE_MAP: Record<string, number[]> = {
+    MWF: [0, 2, 4],
+    TTh: [1, 3],
+    Daily: [0, 1, 2, 3, 4],
+    MTWTHF: [0, 1, 2, 3, 4],
+};
+
 // Calendar grid: 7 AM → 9 PM, 1 hour = 64 px
 const GRID_START_MIN = 7 * 60;   // 420
 const GRID_END_MIN   = 21 * 60;  // 1260
@@ -81,20 +92,26 @@ function parseSchedule(raw: string | null): ParsedSchedule | null {
     const dayStr  = raw.slice(0, spaceIdx).trim();
     const timeStr = raw.slice(spaceIdx + 1).trim();
 
-    // Tokenise day string: try two-char token first, then one-char
+    // Known whole-string day codes first (covers "Daily" and "MTWTHF",
+    // which the char-by-char tokenizer below can't handle correctly).
     const days: number[] = [];
-    let i = 0;
-    while (i < dayStr.length) {
-        const two = dayStr.slice(i, i + 2);
-        const one = dayStr.slice(i, i + 1);
-        if (two in DAY_MAP) {
-            days.push(DAY_MAP[two]);
-            i += 2;
-        } else if (one in DAY_MAP) {
-            days.push(DAY_MAP[one]);
-            i += 1;
-        } else {
-            i += 1; // skip unknown char
+    if (dayStr in DAY_CODE_MAP) {
+        days.push(...DAY_CODE_MAP[dayStr]);
+    } else {
+        // Tokenise day string: try two-char token first, then one-char
+        let i = 0;
+        while (i < dayStr.length) {
+            const two = dayStr.slice(i, i + 2);
+            const one = dayStr.slice(i, i + 1);
+            if (two in DAY_MAP) {
+                days.push(DAY_MAP[two]);
+                i += 2;
+            } else if (one in DAY_MAP) {
+                days.push(DAY_MAP[one]);
+                i += 1;
+            } else {
+                i += 1; // skip unknown char
+            }
         }
     }
 

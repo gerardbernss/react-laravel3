@@ -42,6 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/upload', [ExamResultsController::class, 'store'])->name('store');
         Route::post('/upload/confirm', [ExamResultsController::class, 'confirmStore'])->name('confirm');
         Route::post('/update-rankings', [ExamResultsController::class, 'updateRankings'])->name('update-rankings');
+        Route::post('/update-all', [ExamResultsController::class, 'updateAll'])->name('update-all');
         Route::post('/settings', [ExamResultsController::class, 'updateSettings'])->name('settings');
         Route::post('/send-all', [ExamResultsController::class, 'sendAllResults'])->name('send-all');
         Route::post('/update-statuses', [ExamResultsController::class, 'updateApplicantStatuses'])->name('update-statuses');
@@ -56,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{applicant}', [EnrollmentController::class, 'show'])->name('show');
         Route::post('/{applicant}/enroll', [EnrollmentController::class, 'enroll'])->name('enroll');
         Route::post('/{applicant}/revert-to-pending', [EnrollmentController::class, 'revertToPending'])->name('revert-to-pending');
+        Route::post('/{applicant}/withdraw', [EnrollmentController::class, 'withdraw'])->name('withdraw');
         Route::get('/{applicant}/audit-log', [EnrollmentController::class, 'auditLog'])->name('audit-log');
     });
 });

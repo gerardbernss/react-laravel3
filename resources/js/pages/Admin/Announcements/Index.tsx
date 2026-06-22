@@ -14,6 +14,7 @@ interface Announcement {
     announcement_id: number;
     title: string;
     content: string;
+    target_audience: string;
     attachment: string | null;
     publish_start: string | null;
     publish_end: string | null;
@@ -54,6 +55,7 @@ export default function Index({ announcements }: Props) {
 
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [audienceFilter, setAudienceFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
@@ -61,9 +63,10 @@ export default function Index({ announcements }: Props) {
         return announcements.filter((a) => {
             const matchesSearch = !search || a.title.toLowerCase().includes(search.toLowerCase());
             const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-            return matchesSearch && matchesStatus;
+            const matchesAudience = audienceFilter === 'all' || a.target_audience === audienceFilter;
+            return matchesSearch && matchesStatus && matchesAudience;
         });
-    }, [announcements, search, statusFilter]);
+    }, [announcements, search, statusFilter, audienceFilter]);
 
     const totalPages = Math.ceil(filtered.length / pageSize);
 
@@ -72,11 +75,12 @@ export default function Index({ announcements }: Props) {
         return filtered.slice(start, start + pageSize);
     }, [filtered, currentPage, pageSize]);
 
-    const hasFilters = search || statusFilter !== 'all';
+    const hasFilters = search || statusFilter !== 'all' || audienceFilter !== 'all';
 
     const clearFilters = () => {
         setSearch('');
         setStatusFilter('all');
+        setAudienceFilter('all');
         setCurrentPage(1);
     };
 
@@ -109,7 +113,7 @@ export default function Index({ announcements }: Props) {
 
                 {/* Filters */}
                 <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-4">
                         <div className="relative md:col-span-2">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
@@ -129,6 +133,16 @@ export default function Index({ announcements }: Props) {
                                 <SelectItem value="scheduled">Scheduled</SelectItem>
                                 <SelectItem value="expired">Expired</SelectItem>
                                 <SelectItem value="draft">Draft</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select value={audienceFilter} onValueChange={(v) => { setAudienceFilter(v); setCurrentPage(1); }}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Audience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Audiences</SelectItem>
+                                <SelectItem value="students">Students</SelectItem>
+                                <SelectItem value="applicants">Applicants</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -152,6 +166,7 @@ export default function Index({ announcements }: Props) {
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Title</th>
                                         <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Audience</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Publish Start</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Publish End</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created By</th>
@@ -177,6 +192,17 @@ export default function Index({ announcements }: Props) {
                                             <td className="px-4 py-3 text-center">
                                                 <Badge className={statusColors[a.status]}>
                                                     {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge className={
+                                                    a.target_audience === 'students'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : a.target_audience === 'applicants'
+                                                            ? 'bg-orange-100 text-orange-800'
+                                                            : 'bg-gray-100 text-gray-700'
+                                                }>
+                                                    {a.target_audience === 'all' ? 'Everyone' : a.target_audience.charAt(0).toUpperCase() + a.target_audience.slice(1)}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-gray-600">{formatDate(a.publish_start)}</td>

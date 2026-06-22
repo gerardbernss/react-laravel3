@@ -2,6 +2,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -74,7 +75,7 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
     const [copyModal, setCopyModal] = useState(false);
     const [copySource, setCopySource] = useState('');
-    const [copyTarget, setCopyTarget] = useState('');
+    const [copyTarget, setCopyTarget] = useState(getSchoolYearOptions()[0]);
     const [copyPct, setCopyPct] = useState('0');
     const [copying, setCopying] = useState(false);
 
@@ -323,11 +324,13 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm font-medium">Target School Year</label>
-                                <Input
-                                    placeholder="e.g. 2025-2026"
+                                <select
                                     value={copyTarget}
                                     onChange={(e) => setCopyTarget(e.target.value)}
-                                />
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                >
+                                    {getSchoolYearOptions().map((y) => <option key={y} value={y}>{y}</option>)}
+                                </select>
                             </div>
                             <div>
                                 <label className="mb-1 block text-sm font-medium">Adjustment (%)</label>

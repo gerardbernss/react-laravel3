@@ -65,7 +65,10 @@ export default function GradebookIndex({ isFaculty, mySubjects, blockSections }:
             <div className="p-6 md:p-10">
                 <div className="mb-6 flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Gradebook</h1>
+                        <div className="flex items-center gap-3">
+                            <BookOpen className="h-7 w-7 text-primary" />
+                            <h1 className="text-3xl font-bold text-gray-900">Gradebook</h1>
+                        </div>
                         <p className="mt-1 text-gray-600">
                             {isFaculty
                                 ? 'Manage grading components and enter student scores for your subjects.'

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
@@ -50,7 +51,7 @@ export default function CreateStudent() {
         present_street: '', present_brgy: '', present_city: '', present_province: '', present_zip: '',
         permanent_street: '', permanent_brgy: '', permanent_city: '', permanent_province: '', permanent_zip: '',
         stopped_studying: '', accelerated: '',
-        student_id_number: '', current_year_level: '', current_school_year: '',
+        student_id_number: '', current_year_level: '', current_school_year: getSchoolYearOptions()[0],
         current_semester: '', enrollment_status: 'Active',
         father_lname: '', father_fname: '', father_mname: '', father_living: '',
         father_contact_no: '', father_email: '', father_occupation: '',
@@ -136,7 +137,7 @@ export default function CreateStudent() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {field('Student ID Number', 'student_id_number')}
                         {selectField('Year Level', 'current_year_level', gradeLevels, true)}
-                        {field('School Year (e.g. 2025-2026)', 'current_school_year', true)}
+                        {selectField('School Year', 'current_school_year', getSchoolYearOptions(), true)}
                         {selectField('Semester', 'current_semester', ['First Semester', 'Second Semester', 'Summer', 'Full Year'])}
                         {selectField('Enrollment Status', 'enrollment_status', ['Active', 'Pending', 'Inactive'], true)}
                     </div>

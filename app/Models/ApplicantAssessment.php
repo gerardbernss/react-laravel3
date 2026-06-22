@@ -41,6 +41,11 @@ class ApplicantAssessment extends Model
         return $this->belongsTo(Applicant::class);
     }
 
+    public function subjects()
+    {
+        return $this->hasMany(ApplicantAssessmentSubject::class);
+    }
+
     public static function generateAssessmentNumber(string $schoolYear): string
     {
         $year = str_replace('-', '', $schoolYear);

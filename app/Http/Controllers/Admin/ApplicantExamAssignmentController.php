@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Applicant;
 use App\Models\ApplicantExamAssignment;
+use App\Models\EnrollmentPeriod;
 use App\Models\ExamSchedule;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,10 +17,18 @@ class ApplicantExamAssignmentController extends Controller
      */
     public function index()
     {
+        $currentPeriod = EnrollmentPeriod::current();
+
         $assignments = ApplicantExamAssignment::with([
             'applicationInfo.personalData',
             'examSchedule.examinationRoom',
-        ])->orderBy('created_at', 'desc')->get();
+        ])
+        ->whereHas('applicationInfo', function ($q) use ($currentPeriod) {
+            $q->where('application_status', '!=', 'Enrolled')
+              ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q));
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
 
         $schedules = ExamSchedule::with('examinationRoom')
             ->active()

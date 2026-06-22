@@ -30,11 +30,12 @@ class AnnouncementsController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title'         => ['required', 'string', 'max:255'],
-            'content'       => ['required', 'string'],
-            'attachment'    => ['nullable', 'file', 'max:10240'],
-            'publish_start' => ['nullable', 'date'],
-            'publish_end'   => ['nullable', 'date', 'after_or_equal:publish_start'],
+            'title'           => ['required', 'string', 'max:255'],
+            'content'         => ['required', 'string'],
+            'target_audience' => ['required', 'in:all,students,applicants'],
+            'attachment'      => ['nullable', 'file', 'max:10240'],
+            'publish_start'   => ['nullable', 'date'],
+            'publish_end'     => ['nullable', 'date', 'after_or_equal:publish_start'],
         ]);
 
         if ($request->hasFile('attachment')) {
@@ -64,11 +65,12 @@ class AnnouncementsController extends Controller
     public function update(Request $request, Announcement $announcement)
     {
         $validated = $request->validate([
-            'title'         => ['required', 'string', 'max:255'],
-            'content'       => ['required', 'string'],
-            'attachment'    => ['nullable', 'file', 'max:10240'],
-            'publish_start' => ['nullable', 'date'],
-            'publish_end'   => ['nullable', 'date', 'after_or_equal:publish_start'],
+            'title'           => ['required', 'string', 'max:255'],
+            'content'         => ['required', 'string'],
+            'target_audience' => ['required', 'in:all,students,applicants'],
+            'attachment'      => ['nullable', 'file', 'max:10240'],
+            'publish_start'   => ['nullable', 'date'],
+            'publish_end'     => ['nullable', 'date', 'after_or_equal:publish_start'],
         ]);
 
         if ($request->hasFile('attachment')) {

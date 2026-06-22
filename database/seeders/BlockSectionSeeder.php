@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\BlockSection;
+use App\Models\Schedule;
 use App\Models\StudentEnrollment;
 use App\Models\Subject;
 use Illuminate\Database\Seeder;
@@ -11,14 +12,11 @@ use Illuminate\Support\Facades\DB;
 class BlockSectionSeeder extends Seeder
 {
     /**
-     * Creates 4 block sections (A/B/C/D) for every Grade 11 and Grade 12
-     * strand × semester combination (STEM, ABM, HUMSS × 1st + 2nd Semester).
-     *
-     * Each section is assigned the matching A/B/C/D schedule variants of its
-     * grade-level core subjects plus its strand-specific subjects.
-     *
-     * Existing block_section_subject assignments and student block-section
-     * links are cleared first.
+     * Creates 4 block sections (A/B/C/D) for every grade level and SHS
+     * strand × semester combination. Each section is assigned the base subjects
+     * for its grade level, and a per-section schedule row is created in
+     * subject_schedules with the variant code (A/B/C/D) and time-shifted
+     * schedule (offsets: A=+0, B=+120, C=+300, D=+420 minutes).
      */
     public function run(): void
     {
@@ -32,15 +30,23 @@ class BlockSectionSeeder extends Seeder
         // 3. Delete all existing block sections
         BlockSection::query()->delete();
 
-        // 4. Create sections and assign subjects
-        $schoolYear = '2025-2026';
-        $letters    = ['A', 'B', 'C', 'D'];
+        // 4. Build a schedule lookup map keyed by subject code
+        $scheduleMap = [];
+        foreach (SubjectSeeder::elementaryJhsData() as $d) {
+            $scheduleMap[$d['code']] = ['schedule' => $d['schedule'], 'room' => $d['room'] ?? null];
+        }
+        foreach (SubjectSeeder::shsData() as $d) {
+            $scheduleMap[$d['code']] = ['schedule' => $d['schedule'], 'room' => $d['room'] ?? null];
+        }
 
+        $offsets = ['A' => 0, 'B' => 120, 'C' => 300, 'D' => 420];
+
+        $schoolYear    = '2025-2026';
+        $letters       = ['A', 'B', 'C', 'D'];
         $totalSections = 0;
         $totalSubjects = 0;
 
         // ── Kinder + Elementary (Grade 1-6) + JHS (Grade 7-10) ──────────
-        // No strand, Full Year semester, 4 sections each
         $lowerGrades = [
             'Kinder'   => 'KG',
             'Grade 1'  => 'G1',
@@ -56,13 +62,12 @@ class BlockSectionSeeder extends Seeder
         ];
 
         foreach ($lowerGrades as $gradeName => $gradeCode) {
-            foreach ($letters as $letter) {
-                $sectionCode = "{$gradeCode}-{$letter}-2526";
-                $sectionName = "{$gradeName} - Section {$letter}";
+            $gradeSubjects = Subject::where('grade_level', $gradeName)->get();
 
+            foreach ($letters as $letter) {
                 $section = BlockSection::create([
-                    'name'        => $sectionName,
-                    'code'        => $sectionCode,
+                    'name'        => "{$gradeName} - Section {$letter}",
+                    'code'        => "{$gradeCode}-{$letter}-2526",
                     'grade_level' => $gradeName,
                     'strand'      => null,
                     'school_year' => $schoolYear,
@@ -73,19 +78,27 @@ class BlockSectionSeeder extends Seeder
                     'is_active'   => true,
                 ]);
 
-                $subjectIds = Subject::where('grade_level', $gradeName)
-                    ->where('code', 'LIKE', '%-' . $letter)
-                    ->pluck('id');
+                $section->subjects()->attach($gradeSubjects->pluck('id'));
 
-                $section->subjects()->attach($subjectIds);
+                foreach ($gradeSubjects as $subject) {
+                    $base = $scheduleMap[$subject->code] ?? null;
+                    if (! $base || ! $base['schedule']) continue;
+
+                    $shifted = SubjectSeeder::shiftSchedule($base['schedule'], $offsets[$letter]);
+                    $parsed  = SubjectSeeder::parseSchedule($shifted);
+
+                    Schedule::updateOrCreate(
+                        ['subject_id' => $subject->id, 'block_section_id' => $section->id],
+                        ['days' => $parsed['days'], 'time' => $parsed['time'], 'room' => $base['room'], 'code' => $letter]
+                    );
+                }
 
                 $totalSections++;
-                $totalSubjects += $subjectIds->count();
+                $totalSubjects += $gradeSubjects->count();
             }
         }
 
         // ── SHS (Grade 11-12): strands × 1st + 2nd Semester ─────────────
-        // Keys = full name stored in DB; values = short abbreviation for codes
         $strands = [
             'Science, Technology, Engineering and Mathematics' => 'STEM',
             'Accountancy, Business and Management'             => 'ABM',
@@ -97,13 +110,22 @@ class BlockSectionSeeder extends Seeder
         foreach ($shsGrades as $gradeName => $gradeNum) {
             foreach ($strands as $strandName => $strandAbbr) {
                 foreach ($semesters as $semName => $semCode) {
-                    foreach ($letters as $letter) {
-                        $sectionCode = "{$strandAbbr}-{$gradeNum}{$letter}-{$semCode}-2526";
-                        $sectionName = "{$strandAbbr} {$gradeNum}-{$letter}";
+                    $coreSubjects   = Subject::where('grade_level', $gradeName)
+                        ->where('semester', $semName)
+                        ->whereNull('strand')
+                        ->get();
 
+                    $strandSubjects = Subject::where('grade_level', $gradeName)
+                        ->where('semester', $semName)
+                        ->where('strand', $strandName)
+                        ->get();
+
+                    $allSubjects = $coreSubjects->merge($strandSubjects)->unique('id');
+
+                    foreach ($letters as $letter) {
                         $section = BlockSection::create([
-                            'name'        => $sectionName,
-                            'code'        => $sectionCode,
+                            'name'        => "{$strandAbbr} {$gradeNum}-{$letter}",
+                            'code'        => "{$strandAbbr}-{$gradeNum}{$letter}-{$semCode}-2526",
                             'grade_level' => $gradeName,
                             'strand'      => $strandName,
                             'school_year' => $schoolYear,
@@ -114,28 +136,28 @@ class BlockSectionSeeder extends Seeder
                             'is_active'   => true,
                         ]);
 
-                        $coreIds = Subject::where('grade_level', $gradeName)
-                            ->where('semester', $semName)
-                            ->whereNull('strand')
-                            ->where('code', 'LIKE', '%-' . $letter)
-                            ->pluck('id');
+                        $section->subjects()->attach($allSubjects->pluck('id'));
 
-                        $strandIds = Subject::where('grade_level', $gradeName)
-                            ->where('semester', $semName)
-                            ->where('strand', $strandName)
-                            ->where('code', 'LIKE', '%-' . $letter)
-                            ->pluck('id');
+                        foreach ($allSubjects as $subject) {
+                            $base = $scheduleMap[$subject->code] ?? null;
+                            if (! $base || ! $base['schedule']) continue;
 
-                        $allIds = $coreIds->merge($strandIds)->unique();
-                        $section->subjects()->attach($allIds);
+                            $shifted = SubjectSeeder::shiftSchedule($base['schedule'], $offsets[$letter]);
+                            $parsed  = SubjectSeeder::parseSchedule($shifted);
+
+                            Schedule::updateOrCreate(
+                                ['subject_id' => $subject->id, 'block_section_id' => $section->id],
+                                ['days' => $parsed['days'], 'time' => $parsed['time'], 'room' => $base['room'], 'code' => $letter]
+                            );
+                        }
 
                         $totalSections++;
-                        $totalSubjects += $allIds->count();
+                        $totalSubjects += $allSubjects->count();
                     }
                 }
             }
         }
 
-        $this->command->info("✅ Block sections seeded: {$totalSections} sections, {$totalSubjects} total subject assignments.");
+        $this->command->info("Block sections seeded: {$totalSections} sections, {$totalSubjects} total subject assignments.");
     }
 }

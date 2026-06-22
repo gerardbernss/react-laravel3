@@ -2,7 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { BookOpen, CalendarDays, ClipboardList, Download, GraduationCap, Home, Key, LayoutGrid, User } from 'lucide-react';
+import { BookOpen, CalendarDays, ClipboardList, Download, GraduationCap, Home, Key, LayoutGrid, User, Wallet } from 'lucide-react';
 import AppLogo from './app-logo';
 import { NavMain } from './nav-main';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -87,6 +87,11 @@ const enrolledNavItems: NavItem[] = [
         title: 'Attendance',
         href: '/student/attendance',
         icon: ClipboardList,
+    },
+    {
+        title: 'Statement of Account',
+        href: '/student/statement-of-account',
+        icon: Wallet,
     },
     {
         title: 'Personal Information',
@@ -179,7 +184,7 @@ export function StudentSidebar() {
     const applicationStatus = auth.student?.application_status ?? null;
     const baseItems = !isApplicant
         ? enrolledNavItems
-        : applicationStatus === 'Exam Passed'
+        : applicationStatus === 'Exam Passed' || applicationStatus === 'Pending Enrollment'
           ? examPassedNavItems
           : applicantNavItems;
     const navItems = baseItems.filter((item) => {

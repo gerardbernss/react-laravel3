@@ -78,11 +78,11 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
 
     // Faculty-specific subject-centric view
     if (isFaculty) {
-        const totalStudents = mySubjectSections.reduce((sum, r) => sum + r.enrolled_count, 0);
+        const totalStudents = mySubjectSections.reduce((sum, r) => sum + Number(r.enrolled_count), 0);
         const takenToday = mySubjectSections.filter((r) => r.today_taken).length;
-        const presentToday = mySubjectSections.reduce((sum, r) => sum + r.today_present_count, 0);
+        const presentToday = mySubjectSections.reduce((sum, r) => sum + Number(r.today_present_count), 0);
         const attendanceRate = totalStudents > 0 && takenToday > 0
-            ? Math.round((presentToday / mySubjectSections.filter((r) => r.today_taken).reduce((s, r) => s + r.enrolled_count, 0)) * 100)
+            ? Math.round((presentToday / mySubjectSections.filter((r) => r.today_taken).reduce((s, r) => s + Number(r.enrolled_count), 0)) * 100)
             : null;
 
         return (
@@ -288,7 +288,7 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {groupedSections.map((group) => {
-                                    const totalEnrolled = group.sections.reduce((sum, s) => sum + s.enrolled_count, 0);
+                                    const totalEnrolled = group.sections.reduce((sum, s) => sum + Number(s.enrolled_count), 0);
                                     return (
                                         <tr key={group.label} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 font-semibold text-gray-900">{group.label}</td>
@@ -304,7 +304,7 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <Link href={`/attendance/grade/${encodeURIComponent(group.label)}`}>
+                                                <Link href={`/attendance/grade/${encodeURIComponent(group.label)}?${new URLSearchParams(Object.fromEntries(Object.entries({ school_year: filters.school_year, semester: filters.semester }).filter(([, v]) => v))).toString()}`}>
                                                     <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
                                                         <ClipboardCheck className="h-3 w-3" /> View Sections
                                                     </button>

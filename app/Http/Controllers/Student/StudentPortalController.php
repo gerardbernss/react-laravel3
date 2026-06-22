@@ -18,6 +18,8 @@ use App\Models\Fee;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\StudentAssessment;
+use App\Models\StudentPayment;
+use App\Models\Subject;
 use App\Models\StudentFamilyBackground;
 use App\Models\StudentPersonalData;
 use App\Models\StudentDocuments;
@@ -54,7 +56,7 @@ class StudentPortalController extends Controller
         }
 
         $application = $student->application;
-        $announcements = $this->getAnnouncements();
+        $announcements = $this->getAnnouncements('applicants');
 
         $examAssignment = $application?->examAssignment()->with('examSchedule.examinationRoom')->first();
         $examSchedule   = $examAssignment?->examSchedule;
@@ -116,7 +118,7 @@ class StudentPortalController extends Controller
         }
 
         $application = $student->application;
-        $announcements = $this->getAnnouncements();
+        $announcements = $this->getAnnouncements('students');
 
         return Inertia::render('Student/Dashboard', [
             'announcements' => $announcements,
@@ -154,7 +156,7 @@ class StudentPortalController extends Controller
         ]);
     }
 
-    private function getAnnouncements()
+    private function getAnnouncements(string $audience)
     {
         $now = now();
         return \App\Models\Announcement::where(function ($q) use ($now) {
@@ -163,6 +165,7 @@ class StudentPortalController extends Controller
             ->where(function ($q) use ($now) {
                 $q->whereNull('publish_end')->orWhere('publish_end', '>=', $now);
             })
+            ->whereIn('target_audience', ['all', $audience])
             ->orderByDesc('publish_start')
             ->get(['announcement_id', 'title', 'content', 'attachment', 'publish_start']);
     }
@@ -508,6 +511,17 @@ class StudentPortalController extends Controller
             : [];
         $availableDiscounts = $this->getAvailableDiscounts();
 
+        $assessmentSubjects = $application?->assessment
+            ? $application->assessment->subjects()->with('subject')->get()
+                ->map(fn ($s) => [
+                    'code'  => $s->subject->code,
+                    'name'  => $s->subject->name,
+                    'type'  => $s->subject->type,
+                    'units' => $s->units,
+                ])
+                ->values()
+            : [];
+
         return Inertia::render('Applicant/Enrollment', [
             'personalData'       => $this->formatPersonalDataResponse($personalData),
             'application'        => $this->formatApplicationResponse($application),
@@ -515,6 +529,7 @@ class StudentPortalController extends Controller
             'availableDiscounts' => $availableDiscounts,
             'enrollmentOpen'     => EnrollmentPeriod::hasOpenApplicantPeriod(),
             'assessmentNumber'   => $application?->assessment?->assessment_number,
+            'assessmentSubjects' => $assessmentSubjects,
         ]);
     }
 
@@ -527,7 +542,7 @@ class StudentPortalController extends Controller
         $student     = $this->getStudent();
         $application = $student->application;
 
-        if (!$application || $application->application_status !== 'Exam Passed') {
+        if (!$application || !in_array($application->application_status, ['Exam Passed', 'Pending Enrollment'])) {
             return back()->withErrors(['error' => 'Not eligible for enrollment.']);
         }
 
@@ -535,13 +550,14 @@ class StudentPortalController extends Controller
             return back()->with('success', 'Assessment already generated.');
         }
 
-        $fees    = $this->getApplicableFees($application->year_level, $application->school_year);
-        $program = $this->resolveProgram($application);
-        $units   = $program?->max_load ?? 0;
+        // getApplicableFees() already multiplies per-unit fees by the program's
+        // credit units, so the amounts here must be summed as-is — multiplying
+        // again would double-apply the unit count.
+        $fees = $this->getApplicableFees($application->year_level, $application->school_year);
 
-        $calc     = fn (string $cat) => collect($fees)
+        $calc = fn (string $cat) => collect($fees)
             ->filter(fn ($f) => $f['category'] === $cat)
-            ->sum(fn ($f) => $f['is_per_unit'] ? $f['amount'] * $units : $f['amount']);
+            ->sum(fn ($f) => $f['amount']);
 
         $tTuition = $calc('tuition');
         $tMisc    = $calc('miscellaneous');
@@ -551,11 +567,13 @@ class StudentPortalController extends Controller
         $net      = $gross;
         $minimum  = round($net * 0.30, 2);
 
-        ApplicantAssessment::create([
+        $semester = $application->semester ?? 'First Semester';
+
+        $assessment = ApplicantAssessment::create([
             'applicant_id'      => $application->id,
             'assessment_number' => ApplicantAssessment::generateAssessmentNumber($application->school_year),
             'school_year'       => $application->school_year,
-            'semester'          => $application->semester ?? 'First Semester',
+            'semester'          => $semester,
             'total_tuition'     => $tTuition,
             'total_misc_fees'   => $tMisc,
             'total_lab_fees'    => $tLab,
@@ -568,6 +586,19 @@ class StudentPortalController extends Controller
             'status'            => 'pending',
             'generated_at'      => now(),
         ]);
+
+        $subjects = Subject::active()
+            ->byGradeLevel($application->year_level)
+            ->byStrand($application->strand)
+            ->where(function ($q) use ($semester) {
+                $q->where('semester', $semester)
+                  ->orWhere('semester', 'Full Year');
+            })
+            ->get();
+
+        $assessment->subjects()->createMany(
+            $subjects->map(fn ($s) => ['subject_id' => $s->id, 'units' => $s->units])->all()
+        );
 
         return back()->with('success', 'Assessment generated.');
     }
@@ -587,7 +618,7 @@ class StudentPortalController extends Controller
 
         // Use the current open enrollment period as the target so that when a
         // new semester opens the student sees the correct status/wizard.
-        $currentPeriod = EnrollmentPeriod::current();
+        $currentPeriod = EnrollmentPeriod::currentOfType('student');
         $targetYear    = $currentPeriod?->school_year ?? $application?->school_year;
         $targetSem     = $currentPeriod?->semester    ?? $application?->semester ?? 'First Semester';
 
@@ -613,7 +644,7 @@ class StudentPortalController extends Controller
 
         // Load fees for the enrollment wizard when the student hasn't enrolled yet
         $fees = (!$hasAssessment && $application && $targetYear)
-            ? $this->getApplicableFees($application->year_level, $targetYear)
+            ? $this->getApplicableFees($application->year_level, $targetYear, $application->strand ?? '')
             : [];
 
         // Prior balance from a previous semester — shown in the wizard before submission
@@ -666,19 +697,24 @@ class StudentPortalController extends Controller
         $studentRecord = $personalData?->student;
         $application   = $student->application;
 
-        $currentPeriod = EnrollmentPeriod::current();
-        $targetYear    = $currentPeriod?->school_year ?? $application?->school_year;
-        $targetSem     = $currentPeriod?->semester    ?? $application?->semester ?? 'First Semester';
-
+        // A student only ever has one current section, so take the latest
+        // enrollment rather than matching an exact school_year/semester —
+        // those are derived from independent sources (enrollment period type
+        // 'student', vs. the applicant's own record) that can legitimately
+        // diverge from whichever block section the student was actually
+        // placed into.
         $enrollment = $studentRecord
             ? StudentEnrollment::where('student_id', $studentRecord->id)
-                ->where('school_year', $targetYear)
-                ->where('semester', $targetSem)
                 ->with('blockSection.subjects')
+                ->latest()
                 ->first()
             : null;
 
         $blockSection = $enrollment?->blockSection;
+
+        $currentPeriod = EnrollmentPeriod::currentOfType('student');
+        $targetYear    = $enrollment?->school_year ?? $currentPeriod?->school_year ?? $application?->school_year;
+        $targetSem     = $enrollment?->semester    ?? $currentPeriod?->semester    ?? $application?->semester ?? 'First Semester';
 
         return Inertia::render('Student/MySection', [
             'targetYear'     => $targetYear,
@@ -703,9 +739,70 @@ class StudentPortalController extends Controller
     }
 
     /**
+     * Show the student's statement of account — every fee assessment they've
+     * been billed for, the payments recorded against each, and the running
+     * outstanding balance.
+     */
+    public function statementOfAccount(): Response
+    {
+        $student       = $this->getStudent();
+        $personalData  = $student->personalData;
+        $studentRecord = $personalData?->student;
+
+        $assessments = $studentRecord
+            ? StudentAssessment::where('student_id', $studentRecord->id)
+                ->with('payments')
+                ->orderBy('school_year')
+                ->orderBy('generated_at')
+                ->get()
+            : collect();
+
+        $statement = $assessments->map(fn (StudentAssessment $a) => [
+            'id'                => $a->id,
+            'assessment_number' => $a->assessment_number,
+            'school_year'       => $a->school_year,
+            'semester'          => $a->semester,
+            'status'            => $a->status,
+            'total_tuition'     => (float) $a->total_tuition,
+            'total_misc_fees'   => (float) $a->total_misc_fees,
+            'total_lab_fees'    => (float) $a->total_lab_fees,
+            'total_other_fees'  => (float) $a->total_other_fees,
+            'gross_amount'      => (float) $a->gross_amount,
+            'total_discounts'   => (float) $a->total_discounts,
+            'prior_balance'     => (float) $a->prior_balance,
+            'net_amount'        => (float) $a->net_amount,
+            'total_paid'        => $a->total_paid,
+            'balance'           => $a->remaining_balance,
+            'finalized_at'      => $a->finalized_at?->format('F d, Y'),
+            'payments'          => $a->payments
+                ->sortBy('payment_date')
+                ->map(fn (StudentPayment $p) => [
+                    'id'               => $p->id,
+                    'amount_paid'      => (float) $p->amount_paid,
+                    'payment_method'   => $p->payment_method,
+                    'reference_number' => $p->reference_number,
+                    'payment_date'     => $p->payment_date->format('M d, Y'),
+                    'notes'            => $p->notes,
+                ])
+                ->values(),
+        ])->values();
+
+        $totalBilled  = $statement->sum('net_amount');
+        $totalPaid    = $statement->sum('total_paid');
+        $currentBalance = $statement->isNotEmpty() ? (float) $statement->last()['balance'] : 0.0;
+
+        return Inertia::render('Student/StatementOfAccount', [
+            'statement'      => $statement,
+            'totalBilled'    => $totalBilled,
+            'totalPaid'      => $totalPaid,
+            'currentBalance' => $currentBalance,
+        ]);
+    }
+
+    /**
      * Get applicable fees for a student category.
      */
-    private function getApplicableFees(string $gradeLevel, ?string $schoolYear): array
+    private function getApplicableFees(string $gradeLevel, ?string $schoolYear, string $strand = ''): array
     {
         $schoolLevel = $this->getStudentCategory($gradeLevel);
 
@@ -724,13 +821,22 @@ class StudentPortalController extends Controller
             $fees = $latestYear ? $baseQuery($latestYear)->get() : collect();
         }
 
+        // Resolve credit units for per-unit fees (same logic as EnrollmentPeriodController)
+        $units = 0;
+        if ($strand && preg_match('/\(([A-Z]+)\)/', $strand, $m)) {
+            $units = (int) (Program::where('is_active', true)->where('code', $m[1])->value('max_load') ?? 0);
+        }
+        if (!$units) {
+            $units = (int) (Program::where('is_active', true)->where('code', $schoolLevel)->value('max_load') ?? 0);
+        }
+
         return $fees->map(fn ($fee) => [
             'id'          => $fee->id,
             'name'        => $fee->name,
             'code'        => $fee->code,
             'category'    => $fee->category,
             'is_per_unit' => $fee->is_per_unit,
-            'amount'      => (float) $fee->amount,
+            'amount'      => $fee->is_per_unit ? (float) $fee->amount * $units : (float) $fee->amount,
         ])->toArray();
     }
 
@@ -960,7 +1066,7 @@ class StudentPortalController extends Controller
             return back()->withErrors(['error' => 'No application found.']);
         }
 
-        $currentPeriod = EnrollmentPeriod::current();
+        $currentPeriod = EnrollmentPeriod::currentOfType('student');
         $targetYear    = $currentPeriod?->school_year ?? $application->school_year;
         $targetSem     = $currentPeriod?->semester    ?? $application->semester ?? 'First Semester';
 
@@ -1018,7 +1124,7 @@ class StudentPortalController extends Controller
             return back()->withErrors(['error' => 'No application found.']);
         }
 
-        $currentPeriod = EnrollmentPeriod::current();
+        $currentPeriod = EnrollmentPeriod::currentOfType('student');
         $targetYear    = $currentPeriod?->school_year ?? $application->school_year;
         $targetSem     = $currentPeriod?->semester    ?? $application->semester ?? 'First Semester';
 

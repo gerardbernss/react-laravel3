@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TablePagination } from '@/components/ui/table-pagination';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ClipboardList, Mail, Pencil, RefreshCw, Send, Upload, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -36,11 +36,6 @@ interface Props {
     passingPercentage: number;
 }
 
-interface Flash {
-    success?: string;
-    error?: string;
-}
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Exam Results', href: '/exam-results' },
@@ -55,8 +50,6 @@ function ResultBadge({ result }: { result: string | null }) {
 }
 
 export default function Index({ results, passingPercentage }: Props) {
-    const { flash } = usePage<{ flash: Flash }>().props;
-
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
@@ -91,13 +84,8 @@ export default function Index({ results, passingPercentage }: Props) {
 
     const handleUpdate = () => {
         setUpdating(true);
-        router.post('/exam-results/update-rankings', {}, {
-            onSuccess: () => {
-                router.post('/exam-results/update-statuses', {}, {
-                    onFinish: () => setUpdating(false),
-                });
-            },
-            onError: () => setUpdating(false),
+        router.post('/exam-results/update-all', {}, {
+            onFinish: () => setUpdating(false),
         });
     };
 
@@ -184,18 +172,6 @@ export default function Index({ results, passingPercentage }: Props) {
                         <Pencil className="h-3 w-3" />
                     </button>
                 </div>
-
-                {/* Flash */}
-                {flash?.success && (
-                    <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                        {flash.error}
-                    </div>
-                )}
 
                 {/* Search */}
                 <div className="mb-4">

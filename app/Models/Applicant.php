@@ -56,8 +56,8 @@ class Applicant extends Model
     /**
      * All valid values for application_status.
      * Used by admin UI dropdowns and validation rules.
-     * Note: 'For Revision', 'Approved', and 'Rejected' are set programmatically
-     * but not listed here because they are not selectable from the status dropdown.
+     * Note: 'For Revision', 'Approved', 'Rejected', and 'Pending Enrollment' are set
+     * programmatically but not listed here because they are not selectable from the status dropdown.
      */
     public static $statuses = [
         'Pending',

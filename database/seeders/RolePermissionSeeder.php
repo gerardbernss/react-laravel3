@@ -61,6 +61,7 @@ class RolePermissionSeeder extends Seeder
 
             // Admissions permissions
             ['name' => 'Manage Exam Results', 'slug' => 'manage-exam-results', 'description' => 'Can upload and view applicant exam results'],
+            ['name' => 'Manage Applications', 'slug' => 'manage-applications', 'description' => 'Can manage applicant admissions records'],
         ];
 
         foreach ($permissions as $permission) {
@@ -131,6 +132,7 @@ class RolePermissionSeeder extends Seeder
             'manage-conduct',
             'manage-conduct-grades',
             'manage-exam-results',
+            'manage-applications',
         ])->pluck('id')->toArray();
         $adminRole->syncPermissions(array_unique(array_merge($adminPermissions, $adminExtraPermissions)));
 

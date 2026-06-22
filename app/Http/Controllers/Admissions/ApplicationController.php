@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\Admissions\PortalPasswordMail;
 use App\Models\Applicant;
 use App\Models\ApplicantPersonalData;
+use App\Models\EnrollmentPeriod;
 use App\Models\PortalCredential;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -88,6 +89,9 @@ class ApplicationController extends Controller
  */
     public function createLES()
     {
+        if (!EnrollmentPeriod::hasOpenApplicationPeriod()) {
+            return redirect('/applications/start');
+        }
         return Inertia::render('Applications/AddLES');
     }
 
@@ -96,6 +100,9 @@ class ApplicationController extends Controller
      */
     public function createJHS()
     {
+        if (!EnrollmentPeriod::hasOpenApplicationPeriod()) {
+            return redirect('/applications/start');
+        }
         return Inertia::render('Applications/AddJHS');
     }
 
@@ -104,6 +111,9 @@ class ApplicationController extends Controller
      */
     public function createSHS()
     {
+        if (!EnrollmentPeriod::hasOpenApplicationPeriod()) {
+            return redirect('/applications/start');
+        }
         return Inertia::render('Applications/AddSHS');
     }
 
@@ -227,6 +237,10 @@ class ApplicationController extends Controller
 
     public function storeLES(Request $request)
     {
+        if (!EnrollmentPeriod::hasOpenApplicationPeriod()) {
+            return back()->withErrors(['error' => 'Applications are currently closed.']);
+        }
+
         if ($this->isDuplicateApplication($request)) {
             return back()->withErrors(['duplicate_application' => 'You have already submitted an application.'])->withInput();
         }
@@ -503,6 +517,10 @@ class ApplicationController extends Controller
 
     public function storeJHS(Request $request)
     {
+        if (!EnrollmentPeriod::hasOpenApplicationPeriod()) {
+            return back()->withErrors(['error' => 'Applications are currently closed.']);
+        }
+
         DB::beginTransaction();
 
         try {
@@ -776,10 +794,9 @@ class ApplicationController extends Controller
 
     public function storeSHS(Request $request)
     {
-        // DEBUG: Log all incoming request data for siblings and schools
-        Log::info('=== SHS Application Submission Debug ===');
-        Log::info('Raw siblings:', ['value' => $request->siblings, 'type' => gettype($request->siblings)]);
-        Log::info('Raw schools:', ['value' => $request->schools, 'type' => gettype($request->schools)]);
+        if (!EnrollmentPeriod::hasOpenApplicationPeriod()) {
+            return back()->withErrors(['error' => 'Applications are currently closed.']);
+        }
 
         DB::beginTransaction();
 

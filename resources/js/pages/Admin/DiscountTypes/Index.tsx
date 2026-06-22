@@ -27,7 +27,6 @@ interface DiscountType {
     applies_to: string;
     requires_verification: boolean;
     is_stackable: boolean;
-    max_discount_cap: string | null;
     description: string | null;
     is_active: boolean;
     created_at: string;

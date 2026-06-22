@@ -7,7 +7,7 @@ import { useRegions } from '@/hooks/use-regions';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { AlertCircle, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, CreditCard, Loader2, Printer, User } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, CreditCard, Loader2, Printer, User, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
@@ -252,6 +252,16 @@ export default function Enrollment({ personalData, familyBackground, application
             <Head title="Enrollment" />
 
             <div className="mx-auto max-w-4xl px-4 py-8 print:hidden">
+                {/* Withdrawn notice */}
+                {studentRecord?.enrollment_status === 'Withdrawn' && (
+                    <div className="rounded-lg border-2 border-red-200 bg-red-50 p-10 text-center shadow-sm">
+                        <XCircle className="mx-auto mb-4 h-14 w-14 text-red-500" />
+                        <h3 className="text-xl font-bold text-red-800">Enrollment Withdrawn</h3>
+                        <p className="mt-2 text-sm text-red-600">Your enrollment has been withdrawn. Please contact the Registrar's Office for assistance.</p>
+                    </div>
+                )}
+
+                {studentRecord?.enrollment_status !== 'Withdrawn' && <>
                 {/* Page header */}
                 <div className="mb-6">
                     <div className="flex items-start justify-between">
@@ -972,6 +982,7 @@ export default function Enrollment({ personalData, familyBackground, application
                         <p className="mt-2 text-sm text-gray-500">No application record found. Please contact the Registrar&apos;s Office.</p>
                     </div>
                 )}
+                </>}
             </div>
 
             {/* ── Printable assessment (awaiting-payment state) ── */}

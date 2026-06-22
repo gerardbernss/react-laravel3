@@ -74,10 +74,7 @@ class ApplicantController extends Controller
             ?? EnrollmentPeriod::latest()->first();
 
         $applications = Applicant::with(['personalData'])
-            ->when($currentPeriod, fn($q) => $q
-                ->where('school_year', $currentPeriod->school_year)
-                ->where('semester', $currentPeriod->semester)
-            )
+            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
             ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
@@ -375,7 +372,7 @@ class ApplicantController extends Controller
         $applicant           = Applicant::with(['personalData', 'assessment'])->findOrFail($id);
         $applicantAssessment = $applicant->assessment;
 
-        abort_if($applicant->application_status !== 'Exam Passed', 422, 'Applicant is not eligible for enrollment.');
+        abort_if(!in_array($applicant->application_status, ['Exam Passed', 'Pending Enrollment']), 422, 'Applicant is not eligible for enrollment.');
         abort_if(!$applicantAssessment, 422, 'No assessment found. Applicant must complete the enrollment wizard first.');
 
         DB::transaction(function () use ($applicant, $applicantAssessment, $validated) {

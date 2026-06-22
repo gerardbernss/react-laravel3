@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Head } from '@inertiajs/react';
-import { CheckCircle, FileText, Home, Mail } from 'lucide-react';
+import { CheckCircle, FileText, LogIn, Mail } from 'lucide-react';
 
 export default function ApplicationSuccess() {
     return (
@@ -59,11 +59,11 @@ export default function ApplicationSuccess() {
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                     <Button
-                        onClick={() => (window.location.href = '/dashboard')}
+                        onClick={() => (window.location.href = '/student/login')}
                         className="flex flex-1 items-center justify-center gap-2"
                     >
-                        <Home className="h-4 w-4" />
-                        Home
+                        <LogIn className="h-4 w-4" />
+                        Go to Applicant Portal
                     </Button>
 
                     <Button

@@ -6,14 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
 interface StudentLoginProps {
     status?: string;
 }
 
 export default function StudentLogin({ status }: StudentLoginProps) {
+    const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         username: '',
         password: '',
@@ -66,18 +67,29 @@ export default function StudentLogin({ status }: StudentLoginProps) {
                                 Forgot password?
                             </TextLink>
                         </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            name="password"
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
-                            required
-                            tabIndex={2}
-                            autoComplete="current-password"
-                            placeholder="Password"
-                            className="rounded-lg border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-900 placeholder:text-gray-400 focus:border-[#073066] focus:bg-white focus:ring-2 focus:ring-[#073066]/20"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                required
+                                tabIndex={2}
+                                autoComplete="current-password"
+                                placeholder="Password"
+                                className="rounded-lg border-gray-200 bg-gray-50 px-4 py-2.5 pr-10 text-gray-900 placeholder:text-gray-400 focus:border-[#073066] focus:bg-white focus:ring-2 focus:ring-[#073066]/20"
+                            />
+                            <button
+                                type="button"
+                                tabIndex={-1}
+                                onClick={() => setShowPassword((v) => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         <InputError message={errors.password} />
                     </div>
 

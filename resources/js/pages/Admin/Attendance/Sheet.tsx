@@ -232,9 +232,12 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                 {/* Header */}
                 <div className="mb-6">
                     <div className="mb-4 flex items-center gap-4">
-                        <Link href="/attendance" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                        <Link
+                            href={blockSection.grade_level ? `/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/attendance'}
+                            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                        >
                             <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back to Attendance
+                            Back
                         </Link>
                         <Link
                             href={`/attendance/${blockSection.id}/history?subject_id=${selectedSubjectId}`}
@@ -244,7 +247,12 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                             View History
                         </Link>
                         {missedDates.length > 0 && (
-                            <Button variant="outline" size="sm" onClick={() => setMissedOpen(true)} className="border-amber-300 text-amber-700 hover:bg-amber-50">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setMissedOpen(true)}
+                                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                            >
                                 <AlertTriangle className="mr-1.5 h-3.5 w-3.5 text-amber-500" />
                                 {missedDates.length} Missed Day{missedDates.length !== 1 ? 's' : ''}
                             </Button>
@@ -291,10 +299,12 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Day</th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Action</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">#</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Date</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Day</th>
+                                            <th className="px-4 py-2 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                                Action
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -306,9 +316,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                                                     <td className="px-4 py-2 font-medium text-gray-900">
                                                         {dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                                                     </td>
-                                                    <td className="px-4 py-2 text-gray-500">
-                                                        {dt.toLocaleDateString('en-US', { weekday: 'long' })}
-                                                    </td>
+                                                    <td className="px-4 py-2 text-gray-500">{dt.toLocaleDateString('en-US', { weekday: 'long' })}</td>
                                                     <td className="px-4 py-2 text-center">
                                                         <Link
                                                             href={`/attendance/${blockSection.id}?date=${d}&subject_id=${selectedSubjectId}`}

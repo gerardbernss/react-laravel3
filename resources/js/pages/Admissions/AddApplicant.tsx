@@ -1,5 +1,6 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
 import { FileUpload } from '@/components/file-upload';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -687,9 +688,21 @@ export default function AddApplicant() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <LabelWithTooltip label="School Year *" />
-                                                            <FormControl>
-                                                                <Input {...field} />
-                                                            </FormControl>
+                                                            <Select value={field.value} onValueChange={field.onChange}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select school year" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {(() => {
+                                                                        const opts = getSchoolYearOptions();
+                                                                        return (opts.includes(field.value) ? opts : [field.value, ...opts].filter(Boolean)).map((y) => (
+                                                                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                                                                        ));
+                                                                    })()}
+                                                                </SelectContent>
+                                                            </Select>
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}

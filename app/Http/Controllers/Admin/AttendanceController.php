@@ -26,7 +26,7 @@ class AttendanceController extends Controller
         if ($user && $user->hasRole('faculty')) {
             $today = now()->toDateString();
             $subjects = Subject::where('user_id', $user->id)
-                ->with(['blockSections', 'defaultSchedule'])
+                ->with(['blockSections', 'schedules'])
                 ->get();
 
             $mySubjectSections = $subjects->flatMap(function ($subject) use ($today) {
@@ -49,7 +49,7 @@ class AttendanceController extends Controller
                         'subject_id'          => $subject->id,
                         'subject_code'        => $subject->code,
                         'subject_name'        => $subject->name,
-                        'subject_schedule'    => $subject->defaultSchedule?->display,
+                        'subject_schedule'    => $subject->schedules->firstWhere('block_section_id', $section->id)?->display,
                         'block_section_id'    => $section->id,
                         'section_code'        => $section->code,
                         'section_name'        => $section->name,
@@ -129,14 +129,24 @@ class AttendanceController extends Controller
     /**
      * Display sections for a specific grade level.
      */
-    public function showGrade(string $gradeLevel)
+    public function showGrade(Request $request, string $gradeLevel)
     {
+        $latest = BlockSection::where('grade_level', $gradeLevel)
+            ->orderByDesc('school_year')
+            ->orderByDesc('semester')
+            ->first(['school_year', 'semester']);
+
+        $schoolYear = $request->input('school_year', $latest?->school_year);
+        $semester   = $request->input('semester',    $latest?->semester);
+
         $sections = BlockSection::query()
             ->withCount(['subjects'])
             ->addSelect(['enrolled_count' => StudentEnrollment::selectRaw('count(*)')
                 ->whereColumn('block_section_id', 'block_sections.id')
             ])
             ->where('grade_level', $gradeLevel)
+            ->when($schoolYear, fn($q) => $q->where('school_year', $schoolYear))
+            ->when($semester,   fn($q) => $q->where('semester', $semester))
             ->orderBy('strand')
             ->orderBy('code')
             ->get();
@@ -366,9 +376,9 @@ class AttendanceController extends Controller
             ->whereHas('studentEnrollment', fn ($q) => $q->where('block_section_id', $blockSectionId))
             ->where('date', '>=', $startDate)
             ->where('date', '<',  $today)
-            ->selectRaw('"date" as d')
             ->distinct()
-            ->pluck('d')
+            ->pluck('date')
+            ->map(fn ($date) => $date->toDateString())
             ->flip()
             ->all();
 

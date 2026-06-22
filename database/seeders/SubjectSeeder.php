@@ -2,28 +2,16 @@
 
 namespace Database\Seeders;
 
-use App\Models\Schedule;
 use App\Models\Subject;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class SubjectSeeder extends Seeder
 {
-    /**
-     * Schedule design rules:
-     *   MWF   = Mon / Wed / Fri
-     *   TTh   = Tue / Thu
-     *   Daily = Mon–Fri (elementary)
-     *
-     * SHS A/B/C/D variants use time offsets from the base schedule:
-     *   A = +0 min   (original, 7:30 AM start)
-     *   B = +120 min (9:30 AM start)
-     *   C = +300 min (12:30 PM start)
-     *   D = +420 min (2:30 PM start)
-     */
     public function run(): void
     {
-        // Oracle: sync SCHEDULES_ID_SEQ above current max ID.
+        // Oracle: sync SCHEDULES_ID_SEQ above current max ID (BlockSectionSeeder
+        // creates schedule rows after this runs).
         $maxId      = (int) (DB::table('subject_schedules')->max('id') ?? 0);
         $currentSeq = (int) DB::selectOne("SELECT SCHEDULES_ID_SEQ.NEXTVAL AS nv FROM DUAL")->nv;
         $diff       = ($maxId + 1) - $currentSeq;
@@ -33,10 +21,50 @@ class SubjectSeeder extends Seeder
             DB::statement("ALTER SEQUENCE SCHEDULES_ID_SEQ INCREMENT BY 1");
         }
 
-        // ══════════════════════════════════════════════════════════════════
-        // ELEMENTARY + JHS  (unchanged — Full Year, no variants)
-        // ══════════════════════════════════════════════════════════════════
-        $elementaryJhs = [
+        foreach (self::elementaryJhsData() as $data) {
+            Subject::updateOrCreate(
+                ['code' => $data['code']],
+                [
+                    'name'        => $data['name'],
+                    'description' => null,
+                    'units'       => $data['units'],
+                    'type'        => $data['type'],
+                    'grade_level' => $data['grade_level'],
+                    'semester'    => $data['semester'],
+                    'strand'      => $data['strand'] ?? null,
+                    'is_active'   => true,
+                    'user_id'     => null,
+                ]
+            );
+        }
+
+        foreach (self::shsData() as $data) {
+            Subject::updateOrCreate(
+                ['code' => $data['code']],
+                [
+                    'name'        => $data['name'],
+                    'description' => null,
+                    'units'       => $data['units'],
+                    'type'        => $data['type'],
+                    'grade_level' => $data['grade_level'],
+                    'semester'    => $data['semester'],
+                    'strand'      => $data['strand'] ?? null,
+                    'is_active'   => true,
+                    'user_id'     => null,
+                ]
+            );
+        }
+
+        $ejCount  = count(self::elementaryJhsData());
+        $shsCount = count(self::shsData());
+        $this->command->info("Subjects seeded: {$ejCount} E+JHS + {$shsCount} SHS (base only, no variants).");
+    }
+
+    // ── Data ───────────────────────────────────────────────────────────────
+
+    public static function elementaryJhsData(): array
+    {
+        return [
             // KINDER
             ['code'=>'KG-MT',    'name'=>'Mother Tongue',                                  'units'=>3,'grade_level'=>'Kinder',   'semester'=>'Full Year','type'=>'Core','schedule'=>'Daily 07:30-08:10','room'=>'Kinder Room'],
             ['code'=>'KG-FIL',   'name'=>'Filipino',                                        'units'=>3,'grade_level'=>'Kinder',   'semester'=>'Full Year','type'=>'Core','schedule'=>'Daily 08:10-08:50','room'=>'Kinder Room'],
@@ -135,28 +163,11 @@ class SubjectSeeder extends Seeder
             ['code'=>'AP-10',    'name'=>'Araling Panlipunan 10',                           'units'=>3,'grade_level'=>'Grade 10', 'semester'=>'Full Year','type'=>'Core','schedule'=>'TTh 09:45-11:15','room'=>'Room 104'],
             ['code'=>'MAPEH-10', 'name'=>'MAPEH 10',                                        'units'=>2,'grade_level'=>'Grade 10', 'semester'=>'Full Year','type'=>'Core','schedule'=>'TTh 11:30-12:30','room'=>'Gymnasium'],
         ];
+    }
 
-        foreach ($elementaryJhs as $data) {
-            $this->seedSubject($data);
-        }
-
-        // Create A/B/C/D variants for all Elementary + JHS subjects
-        foreach ($elementaryJhs as $data) {
-            foreach (['A' => 0, 'B' => 120, 'C' => 300, 'D' => 420] as $suffix => $offset) {
-                $this->seedSubject(array_merge($data, [
-                    'code'     => $data['code'] . '-' . $suffix,
-                    'schedule' => $this->shiftSchedule($data['schedule'], $offset),
-                ]));
-            }
-        }
-
-        // ══════════════════════════════════════════════════════════════════
-        // SHS BASE SUBJECTS  (original + newly added missing ones)
-        // These base records are kept for reference. Section assignments use
-        // the A/B/C/D variants below.
-        // ══════════════════════════════════════════════════════════════════
-        $shs = [
-
+    public static function shsData(): array
+    {
+        return [
             // ── GRADE 11 · FIRST SEMESTER · Core ────────────────────────
             ['code'=>'ORAL-COMM',    'name'=>'Oral Communication in Context',                                          'units'=>3,'grade_level'=>'Grade 11','semester'=>'First Semester', 'type'=>'Core',        'schedule'=>'MWF 07:30-08:30','room'=>'Room 301'],
             ['code'=>'KOMYUN-11',    'name'=>'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino',             'units'=>3,'grade_level'=>'Grade 11','semester'=>'First Semester', 'type'=>'Core',        'schedule'=>'TTh 07:30-09:00','room'=>'Room 302'],
@@ -239,89 +250,27 @@ class SubjectSeeder extends Seeder
             ['code'=>'MEDIA-ADV',    'name'=>'Media Advocacy',                                                         'units'=>3,'grade_level'=>'Grade 12','semester'=>'Second Semester','type'=>'Specialized','strand'=>'Humanities and Social Sciences','schedule'=>'TTh 09:45-11:15','room'=>'Room 405'],
             ['code'=>'WORK-IMM-HUMSS','name'=>'Work Immersion (HUMSS)',                                                'units'=>3,'grade_level'=>'Grade 12','semester'=>'Second Semester','type'=>'Specialized','strand'=>'Humanities and Social Sciences','schedule'=>'MWF 13:00-14:00','room'=>'Room 405'],
         ];
-
-        // Seed base SHS subjects
-        foreach ($shs as $data) {
-            $this->seedSubject($data);
-        }
-
-        // Create A / B / C / D schedule variants for every SHS subject.
-        // Offsets: A=+0 min, B=+120 min, C=+300 min, D=+420 min
-        foreach ($shs as $data) {
-            foreach (['A' => 0, 'B' => 120, 'C' => 300, 'D' => 420] as $suffix => $offset) {
-                $this->seedSubject(array_merge($data, [
-                    'code'     => $data['code'] . '-' . $suffix,
-                    'schedule' => $this->shiftSchedule($data['schedule'], $offset),
-                ]));
-            }
-        }
-
-        $ejCount  = count($elementaryJhs);
-        $shsCount = count($shs);
-        $this->command->info("✅ Subjects seeded: {$ejCount} E+JHS base · " . ($ejCount * 4) . " E+JHS variants · {$shsCount} SHS base · " . ($shsCount * 4) . ' SHS variants (A/B/C/D).');
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+    // ── Helpers (public static so BlockSectionSeeder can use them) ─────────
 
-    private function seedSubject(array $data): void
-    {
-        $subject = Subject::updateOrCreate(
-            ['code' => $data['code']],
-            [
-                'name'        => $data['name'],
-                'description' => null,
-                'units'       => $data['units'],
-                'type'        => $data['type'],
-                'grade_level' => $data['grade_level'],
-                'semester'    => $data['semester'],
-                'strand'      => $data['strand'] ?? null,
-                'is_active'   => true,
-                'user_id'     => null,
-            ]
-        );
-
-        $scheduleString = $data['schedule'] ?? null;
-        $room           = $data['room'] ?? null;
-
-        if ($scheduleString) {
-            $parsed = $this->parseSchedule($scheduleString);
-            if ($parsed['days'] && $parsed['time']) {
-                $existing = Schedule::where('subject_id', $subject->id)
-                    ->whereNull('block_section_id')
-                    ->first();
-
-                if ($existing) {
-                    $existing->update(['days' => $parsed['days'], 'time' => $parsed['time'], 'room' => $room]);
-                } else {
-                    Schedule::create([
-                        'subject_id'       => $subject->id,
-                        'block_section_id' => null,
-                        'days'             => $parsed['days'],
-                        'time'             => $parsed['time'],
-                        'room'             => $room,
-                    ]);
-                }
-            }
-        }
-    }
-
-    private function shiftSchedule(string $schedule, int $minuteOffset): string
+    public static function shiftSchedule(string $schedule, int $minuteOffset): string
     {
         preg_match('/^(\S+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', trim($schedule), $m);
         if (! $m) {
             return $schedule;
         }
-        return $m[1] . ' ' . $this->addMinutes($m[2], $minuteOffset) . '-' . $this->addMinutes($m[3], $minuteOffset);
+        return $m[1] . ' ' . self::addMinutes($m[2], $minuteOffset) . '-' . self::addMinutes($m[3], $minuteOffset);
     }
 
-    private function addMinutes(string $time, int $minutes): string
+    public static function addMinutes(string $time, int $minutes): string
     {
         [$h, $min] = explode(':', $time);
         $total = (int) $h * 60 + (int) $min + $minutes;
         return sprintf('%02d:%02d', intdiv($total, 60) % 24, $total % 60);
     }
 
-    private function parseSchedule(string $s): array
+    public static function parseSchedule(string $s): array
     {
         preg_match('/^([A-Za-z]+)\s+(.+)$/', trim($s), $m);
         return ['days' => $m[1] ?? null, 'time' => $m[2] ?? null];

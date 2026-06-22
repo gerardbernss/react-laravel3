@@ -13,6 +13,7 @@ interface Announcement {
     announcement_id: number;
     title: string;
     content: string;
+    target_audience: string;
     attachment: string | null;
     publish_start: string | null;
     publish_end: string | null;
@@ -50,6 +51,7 @@ export default function Edit({ announcement }: Props) {
         _method: string;
         title: string;
         content: string;
+        target_audience: string;
         attachment: File | null;
         publish_start: string;
         publish_end: string;
@@ -57,6 +59,7 @@ export default function Edit({ announcement }: Props) {
         _method: 'PUT',
         title: announcement.title,
         content: announcement.content,
+        target_audience: announcement.target_audience ?? 'all',
         attachment: null,
         publish_start: toDatetimeLocal(announcement.publish_start),
         publish_end: toDatetimeLocal(announcement.publish_end),
@@ -134,6 +137,34 @@ export default function Edit({ announcement }: Props) {
                                 <InputError message={errors.content} className="mt-1" />
                             </div>
 
+                            {/* Visible To */}
+                            <div>
+                                <Label>Visible To</Label>
+                                <div className="mt-2 grid grid-cols-3 gap-2">
+                                    {(['all', 'students', 'applicants'] as const).map((v) => (
+                                        <label
+                                            key={v}
+                                            className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 transition-colors ${
+                                                data.target_audience === v
+                                                    ? 'border-primary bg-primary/5'
+                                                    : 'border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="target_audience"
+                                                value={v}
+                                                checked={data.target_audience === v}
+                                                onChange={() => setData('target_audience', v)}
+                                                className="accent-primary"
+                                            />
+                                            <span className="text-sm font-medium capitalize text-gray-900">{v === 'all' ? 'Everyone' : v}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {errors.target_audience && <p className="mt-1 text-xs text-red-600">{errors.target_audience}</p>}
+                            </div>
+
                             {/* Publish Settings */}
                             <div>
                                 <Label>Publish Settings</Label>
@@ -163,21 +194,22 @@ export default function Edit({ announcement }: Props) {
                                     ))}
                                 </div>
 
-                                {/* Schedule date fields — only shown when Schedule is selected */}
-                                {publishMode === 'schedule' && (
+                                {publishMode !== 'draft' && (
                                     <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="publish_start">Publish Start *</Label>
-                                            <Input
-                                                id="publish_start"
-                                                type="datetime-local"
-                                                value={data.publish_start}
-                                                onChange={(e) => setData('publish_start', e.target.value)}
-                                                className="mt-1"
-                                            />
-                                            <InputError message={errors.publish_start} className="mt-1" />
-                                        </div>
-                                        <div>
+                                        {publishMode === 'schedule' && (
+                                            <div>
+                                                <Label htmlFor="publish_start">Publish Start *</Label>
+                                                <Input
+                                                    id="publish_start"
+                                                    type="datetime-local"
+                                                    value={data.publish_start}
+                                                    onChange={(e) => setData('publish_start', e.target.value)}
+                                                    className="mt-1"
+                                                />
+                                                <InputError message={errors.publish_start} className="mt-1" />
+                                            </div>
+                                        )}
+                                        <div className={publishMode === 'now' ? 'md:col-span-2' : ''}>
                                             <Label htmlFor="publish_end">Publish End</Label>
                                             <Input
                                                 id="publish_end"

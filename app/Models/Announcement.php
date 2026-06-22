@@ -14,6 +14,7 @@ class Announcement extends Model
     protected $fillable = [
         'title',
         'content',
+        'target_audience',
         'attachment',
         'publish_start',
         'publish_end',

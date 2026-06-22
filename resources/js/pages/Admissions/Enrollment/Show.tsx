@@ -1,13 +1,14 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, ClipboardList, History, RotateCcw, Tag, User } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ClipboardList, History, RotateCcw, Tag, User, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface FamilyBackground {
@@ -52,7 +53,6 @@ interface DiscountType {
     value: string;
     applies_to: 'tuition_only' | 'miscellaneous_only' | 'all_fees';
     is_stackable: boolean;
-    max_discount_cap: string | null;
     description: string | null;
     auto_applied: boolean;
 }
@@ -102,18 +102,24 @@ function calcDiscountAmount(dt: DiscountType, tuitionTotal: number, miscTotal: n
     const base = dt.applies_to === 'tuition_only' ? tuitionTotal
                : dt.applies_to === 'miscellaneous_only' ? miscTotal
                : grossAmount;
-    let amount = dt.discount_type === 'percentage'
+    const amount = dt.discount_type === 'percentage'
         ? base * (parseFloat(dt.value) / 100)
         : parseFloat(dt.value);
-    if (dt.max_discount_cap && amount > parseFloat(dt.max_discount_cap)) {
-        amount = parseFloat(dt.max_discount_cap);
-    }
     return Math.round(amount * 100) / 100;
 }
 
 export default function ShowEnrollment({ applicant, fees, units, discountTypes, existingAssessment }: Props) {
     const [showEnrollForm, setShowEnrollForm] = useState(false);
     const [showRevertDialog, setShowRevertDialog] = useState(false);
+    const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+
+    const withdrawForm = useForm({ withdrawal_type: 'during_enrollment', refund_amount: '0', reason: '' });
+    const handleWithdraw = (e: React.FormEvent) => {
+        e.preventDefault();
+        withdrawForm.post(`/enrollment/${applicant.id}/withdraw`, {
+            onSuccess: () => { setShowWithdrawDialog(false); withdrawForm.reset(); },
+        });
+    };
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -229,14 +235,12 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
 
             <div className="space-y-6 p-6 md:p-10">
                 {/* Header */}
-                <div className="flex items-start justify-between">
-                    <h1 className="text-3xl font-bold text-gray-900">Applicant Enrollment Details</h1>
-                    <Link href="/enrollment/dashboard">
-                        <Button variant="outline">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Dashboard
-                        </Button>
+                <div>
+                    <Link href="/enrollment/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Dashboard
                     </Link>
+                    <h1 className="text-3xl font-bold text-gray-900">Applicant Enrollment Details</h1>
                 </div>
 
                 {/* Application Info */}
@@ -486,7 +490,6 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                                                                 {dt.discount_type === 'percentage'
                                                                     ? `${dt.value}% off ${dt.applies_to === 'tuition_only' ? 'tuition' : dt.applies_to === 'miscellaneous_only' ? 'miscellaneous fees' : 'all fees'}`
                                                                     : `₱${parseFloat(dt.value).toLocaleString()} off ${dt.applies_to === 'tuition_only' ? 'tuition' : dt.applies_to === 'miscellaneous_only' ? 'miscellaneous fees' : 'all fees'}`}
-                                                                {dt.max_discount_cap && ` (max ₱${parseFloat(dt.max_discount_cap).toLocaleString()})`}
                                                             </p>
                                                             {isChecked && (
                                                                 <p className="mt-1 text-xs font-semibold text-green-700">
@@ -626,7 +629,26 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                             </div>
                         )}
 
-                        {!['Pending', 'Enrolled', 'Exam Passed'].includes(applicant.application_status) && (
+                        {applicant.application_status === 'Withdrawn' ? (
+                            <div className="rounded border border-red-200 bg-red-50 p-4">
+                                <div className="flex items-center gap-2">
+                                    <XCircle className="h-5 w-5 text-red-500" />
+                                    <p className="text-sm font-medium text-red-800">Application Withdrawn</p>
+                                </div>
+                                <p className="mt-1 text-sm text-red-600">This application has been permanently withdrawn.</p>
+                            </div>
+                        ) : (
+                            <div className="rounded border border-red-100 bg-red-50 p-4">
+                                <p className="mb-2 text-sm font-medium text-red-900">Withdraw Application</p>
+                                <p className="mb-3 text-sm text-red-700">Permanently withdraw this application. This cannot be undone.</p>
+                                <Button onClick={() => setShowWithdrawDialog(true)} variant="outline" className="border-red-600 text-red-600 hover:bg-red-100">
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Withdraw Application
+                                </Button>
+                            </div>
+                        )}
+
+                        {!['Pending', 'Enrolled', 'Exam Passed', 'Withdrawn'].includes(applicant.application_status) && (
                             <p className="text-sm text-gray-500">No enrollment actions available for the current status.</p>
                         )}
                     </div>
@@ -676,13 +698,7 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                 )}
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between pt-4">
-                    <Link href="/enrollment/dashboard">
-                        <Button variant="outline">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Dashboard
-                        </Button>
-                    </Link>
+                <div className="flex items-center justify-end pt-4">
                     <Link href={`/enrollment/${applicant.id}/audit-log`}>
                         <Button variant="outline">
                             <History className="mr-2 h-4 w-4" />
@@ -702,6 +718,61 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                 processingLabel="Reverting..."
                 variant="warning"
             />
+
+            <Dialog open={showWithdrawDialog} onOpenChange={(open) => { if (!withdrawForm.processing) setShowWithdrawDialog(open); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-700">Withdraw Application</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleWithdraw} className="space-y-4">
+                        <p className="text-sm text-gray-600">This action is permanent and cannot be undone.</p>
+                        <div>
+                            <Label htmlFor="withdrawal_type">Withdrawal Type</Label>
+                            <Select value={withdrawForm.data.withdrawal_type} onValueChange={(v) => withdrawForm.setData('withdrawal_type', v)}>
+                                <SelectTrigger id="withdrawal_type" className="mt-1">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="during_enrollment">During Enrollment Period</SelectItem>
+                                    <SelectItem value="after_classes">After Classes Have Started</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="refund_amount">Refund Amount (₱)</Label>
+                            <Input
+                                id="refund_amount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={withdrawForm.data.refund_amount}
+                                onChange={(e) => withdrawForm.setData('refund_amount', e.target.value)}
+                                className="mt-1"
+                            />
+                            {withdrawForm.errors.refund_amount && <p className="mt-1 text-sm text-red-600">{withdrawForm.errors.refund_amount}</p>}
+                        </div>
+                        <div>
+                            <Label htmlFor="reason">Reason (optional)</Label>
+                            <textarea
+                                id="reason"
+                                rows={3}
+                                value={withdrawForm.data.reason}
+                                onChange={(e) => withdrawForm.setData('reason', e.target.value)}
+                                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                placeholder="Optional reason for withdrawal"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setShowWithdrawDialog(false)} disabled={withdrawForm.processing}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={withdrawForm.processing}>
+                                {withdrawForm.processing ? 'Withdrawing...' : 'Confirm Withdrawal'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

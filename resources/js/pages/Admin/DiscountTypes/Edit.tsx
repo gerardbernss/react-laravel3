@@ -18,7 +18,6 @@ interface DiscountType {
     applies_to: string;
     requires_verification: boolean;
     is_stackable: boolean;
-    max_discount_cap: string | null;
     description: string | null;
     is_active: boolean;
 }
@@ -45,7 +44,6 @@ export default function Edit({ discountType, discountTypeOptions, appliesToOptio
         applies_to: discountType.applies_to,
         requires_verification: discountType.requires_verification,
         is_stackable: discountType.is_stackable,
-        max_discount_cap: discountType.max_discount_cap || '',
         description: discountType.description || '',
         is_active: discountType.is_active,
     });
@@ -135,38 +133,22 @@ export default function Edit({ discountType, discountTypeOptions, appliesToOptio
                                 </div>
                             </div>
 
-                            {/* Applies To and Max Cap */}
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <Label htmlFor="applies_to">Applies To *</Label>
-                                    <Select value={data.applies_to} onValueChange={(v) => setData('applies_to', v)}>
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(appliesToOptions).map(([key, label]) => (
-                                                <SelectItem key={key} value={key}>
-                                                    {label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.applies_to} className="mt-1" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="max_discount_cap">Maximum Discount Cap (₱)</Label>
-                                    <Input
-                                        id="max_discount_cap"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={data.max_discount_cap}
-                                        onChange={(e) => setData('max_discount_cap', e.target.value)}
-                                        placeholder="Optional"
-                                        className="mt-1"
-                                    />
-                                    <InputError message={errors.max_discount_cap} className="mt-1" />
-                                </div>
+                            {/* Applies To */}
+                            <div>
+                                <Label htmlFor="applies_to">Applies To *</Label>
+                                <Select value={data.applies_to} onValueChange={(v) => setData('applies_to', v)}>
+                                    <SelectTrigger className="mt-1">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(appliesToOptions).map(([key, label]) => (
+                                            <SelectItem key={key} value={key}>
+                                                {label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.applies_to} className="mt-1" />
                             </div>
 
                             {/* Description */}

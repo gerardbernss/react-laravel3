@@ -5,7 +5,9 @@ use App\Http\Controllers\Controller;
 
 use App\Mail\Admissions\StudentAdmissionsMail;
 use App\Models\Applicant;
+use App\Models\EnrollmentPeriod;
 use App\Models\Student;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -16,9 +18,13 @@ class StudentIDController extends Controller
     // Display all applications with full relationships.
     public function index()
     {
+        $currentPeriod = EnrollmentPeriod::current();
+
         $applications = Applicant::with([
             'personalData.student',
         ])
+            ->where('application_status', 'Enrolled')
+            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
             ->get();
 
         $flattenedApplications = $applications->map(function ($application) {
@@ -115,6 +121,55 @@ class StudentIDController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Failed to assign Student ID: ' . $e->getMessage()]);
         }
+    }
+
+    public function bulkGenerate(): RedirectResponse
+    {
+        $currentPeriod = EnrollmentPeriod::current();
+
+        $applicants = Applicant::with('personalData.student')
+            ->where('application_status', 'Enrolled')
+            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
+            ->whereNotNull('year_level')
+            ->get()
+            ->filter(fn($a) => !$a->personalData?->student?->student_id_number);
+
+        $generated = 0;
+        foreach ($applicants as $applicant) {
+            $prefix = $this->getStudentIdPrefix($applicant->year_level);
+            if (!$prefix) continue;
+
+            $year = substr((string) $applicant->school_year, 2, 2);
+
+            $existing = Student::where('student_id_number', 'like', "{$prefix}{$year}%")
+                ->max('student_id_number');
+            $next = $existing ? ((int) substr($existing, 3) + 1) : 1;
+            $studentId = sprintf('%s%s%04d', $prefix, $year, $next);
+
+            $student = $applicant->personalData?->student;
+            if ($student) {
+                $student->update(['student_id_number' => $studentId]);
+            } else {
+                Student::create([
+                    'applicant_personal_data_id' => $applicant->applicant_personal_data_id,
+                    'applicant_id'               => $applicant->id,
+                    'student_id_number'          => $studentId,
+                ]);
+            }
+            $generated++;
+        }
+
+        return redirect()->back()->with('success', "Generated {$generated} student ID(s).");
+    }
+
+    private function getStudentIdPrefix(string $yearLevel): ?string
+    {
+        if (str_contains(strtolower($yearLevel), 'kinder')) return 'L';
+        $num = (int) filter_var($yearLevel, FILTER_SANITIZE_NUMBER_INT);
+        if ($num >= 1 && $num <= 6)  return 'L';
+        if ($num >= 7 && $num <= 10) return 'J';
+        if ($num >= 11)              return 'S';
+        return null;
     }
 
     // Controller

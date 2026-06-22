@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BlockSection;
+use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentEnrollmentSubject;
 use App\Models\Subject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class BlockSectionsController extends Controller
@@ -29,6 +32,102 @@ class BlockSectionsController extends Controller
             'blockSections' => $blockSections,
             'schoolYears' => $schoolYears,
         ]);
+    }
+
+    /**
+     * Clone every block section from one school year into a new school year,
+     * carrying over grade level/strand/capacity/subjects/schedules so the
+     * registrar doesn't have to rebuild ~90 sections by hand every year.
+     * Source sections (and the enrollment history tied to them) are left
+     * untouched — this only ever creates new rows.
+     */
+    public function copyToNewYear(Request $request)
+    {
+        $validated = $request->validate([
+            'from_school_year' => 'required|string',
+            'to_school_year'   => 'required|string|different:from_school_year',
+        ]);
+
+        $fromYear = $validated['from_school_year'];
+        $toYear   = $validated['to_school_year'];
+
+        $sourceSections = BlockSection::where('school_year', $fromYear)
+            ->with(['subjects', 'schedules'])
+            ->get();
+
+        if ($sourceSections->isEmpty()) {
+            return back()->withErrors(['error' => "No block sections found for {$fromYear}."]);
+        }
+
+        $oldSuffix = $this->yearCodeSuffix($fromYear);
+        $newSuffix = $this->yearCodeSuffix($toYear);
+
+        $copied  = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($sourceSections, $toYear, $oldSuffix, $newSuffix, &$copied, &$skipped) {
+            foreach ($sourceSections as $section) {
+                $newCode = Str::endsWith($section->code, $oldSuffix)
+                    ? Str::replaceLast($oldSuffix, $newSuffix, $section->code)
+                    : "{$section->code}-{$newSuffix}";
+
+                if (BlockSection::where('code', $newCode)->exists()) {
+                    $skipped++;
+                    continue;
+                }
+
+                $newSection = BlockSection::create([
+                    'name'               => $section->name,
+                    'code'               => $newCode,
+                    'grade_level'        => $section->grade_level,
+                    'strand'             => $section->strand,
+                    'school_year'        => $toYear,
+                    'semester'           => $section->semester,
+                    'adviser'            => $section->adviser,
+                    'room'               => $section->room,
+                    'capacity'           => $section->capacity,
+                    'current_enrollment' => 0,
+                    'schedule'           => $section->schedule,
+                    'is_active'          => $section->is_active,
+                ]);
+
+                $newSection->subjects()->attach($section->subjects->pluck('id'));
+
+                foreach ($section->schedules as $sched) {
+                    Schedule::create([
+                        'subject_id'       => $sched->subject_id,
+                        'block_section_id' => $newSection->id,
+                        'days'             => $sched->days,
+                        'time'             => $sched->time,
+                        'room'             => $sched->room,
+                        'code'             => $sched->code,
+                    ]);
+                }
+
+                $copied++;
+            }
+        });
+
+        $message = "Copied {$copied} section(s) to {$toYear}.";
+        if ($skipped > 0) {
+            $message .= " Skipped {$skipped} (a section with that code already exists).";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * "2025-2026" → "2526" — matches the existing section code convention
+     * (e.g. "G1-A-2526"), so copied codes read the same way.
+     */
+    private function yearCodeSuffix(string $schoolYear): string
+    {
+        $parts = explode('-', $schoolYear);
+        if (count($parts) !== 2) {
+            return preg_replace('/\D/', '', $schoolYear);
+        }
+
+        return substr($parts[0], -2) . substr($parts[1], -2);
     }
 
     /**
@@ -240,7 +339,7 @@ class BlockSectionsController extends Controller
      */
     public function removeStudent(BlockSection $blockSection, StudentEnrollment $studentEnrollment)
     {
-        if ($studentEnrollment->block_section_id !== $blockSection->id) {
+        if ((int) $studentEnrollment->block_section_id !== (int) $blockSection->id) {
             abort(403, 'This enrollment does not belong to the specified section.');
         }
 

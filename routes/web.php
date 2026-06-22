@@ -30,7 +30,6 @@ use App\Http\Controllers\Admin\StudentsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EnrollmentPeriodController;
 use App\Http\Controllers\Admin\AttendanceController;
-use App\Http\Controllers\Admin\GradesController;
 use App\Http\Controllers\Admin\GradebookController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\GradeValidationController;
@@ -94,7 +93,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // applicant management
     Route::middleware(['permission:manage-applications'])->group(function () {
-        // Route::put('/applications/applicants/generate-pdf', [YourController::class, 'generatePdf'])->name('applications.applicants.generatePdf');
 
         Route::get('/admissions/applicants/create', [ApplicantController::class, 'create'])->name('applicants.create');
         Route::post('/admissions/applicants', [ApplicantController::class, 'store'])->name('applicants.store');
@@ -135,6 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:manage-student-id-assignment'])->group(function (): void {
         Route::get('/studentidassignment', [StudentIDController::class, 'index'])->name('studentidassignment.index');
         Route::post('/studentidassignment', [StudentIDController::class, 'assignStudentId'])->name('studentidassignment.assignStudentId');
+        Route::post('/studentidassignment/bulk-generate', [StudentIDController::class, 'bulkGenerate'])->name('studentidassignment.bulkGenerate');
         Route::post('/studentidassignment/{id}/email-admission', [StudentIDController::class, 'emailStudentID'])->name('studentidassignment.emailStudentID');
 
     });
@@ -222,9 +221,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'update'  => 'admin.students.update',
         'destroy' => 'admin.students.destroy',
     ]);
+    Route::post('students/{student}/withdraw', [StudentsController::class, 'withdraw'])->name('admin.students.withdraw');
 
     // Block Section Management Routes
     Route::resource('block-sections', BlockSectionsController::class);
+    Route::post('/block-sections/copy-year', [BlockSectionsController::class, 'copyToNewYear'])->name('block-sections.copy-year');
     Route::post('/block-sections/{blockSection}/toggle-status', [BlockSectionsController::class, 'toggleStatus'])->name('block-sections.toggle-status');
     Route::post('/block-sections/{blockSection}/add-student', [BlockSectionsController::class, 'addStudent'])->name('block-sections.add-student');
     Route::delete('/block-sections/{blockSection}/students/{studentEnrollment}', [BlockSectionsController::class, 'removeStudent'])->name('block-sections.remove-student');

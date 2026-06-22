@@ -1,6 +1,7 @@
 import { FileUpload } from '@/components/file-upload';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import { useBarangays } from '@/hooks/use-barangays';
 import { useCities } from '@/hooks/use-cities';
 import { useProvinces } from '@/hooks/use-provinces';
@@ -369,7 +370,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                 {section('Enrollment Information', (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {selectField('Year Level', 'current_year_level', GRADE_LEVELS, true)}
-                        {field('School Year (e.g. 2025-2026)', 'current_school_year', true)}
+                        {selectField('School Year', 'current_school_year', (() => { const opts = getSchoolYearOptions(); const v = data.current_school_year; return opts.includes(v) ? opts : [v, ...opts]; })(), true)}
                         {selectField('Semester', 'current_semester', ['First Semester', 'Second Semester', 'Summer', 'Full Year'])}
                         {selectField('Enrollment Status', 'enrollment_status', ['Active', 'Pending', 'Inactive'], true)}
                     </div>

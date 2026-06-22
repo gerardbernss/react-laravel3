@@ -17,14 +17,12 @@ class DiscountType extends Model
         'applies_to',
         'requires_verification',
         'is_stackable',
-        'max_discount_cap',
         'description',
         'is_active',
     ];
 
     protected $casts = [
         'value' => 'decimal:2',
-        'max_discount_cap' => 'decimal:2',
         'requires_verification' => 'boolean',
         'is_stackable' => 'boolean',
         'is_active' => 'boolean',
@@ -65,11 +63,6 @@ class DiscountType extends Model
             $discount = $baseAmount * ($this->value / 100);
         } else {
             $discount = $this->value;
-        }
-
-        // Apply cap if set
-        if ($this->max_discount_cap && $discount > $this->max_discount_cap) {
-            $discount = $this->max_discount_cap;
         }
 
         return round($discount, 2);

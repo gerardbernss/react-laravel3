@@ -1,14 +1,20 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ChevronDown,
     ChevronUp,
+    Copy,
     Eye,
     LayoutGrid,
     Pencil,
@@ -61,6 +67,27 @@ type SortKey = 'name' | 'grade_level' | 'school_year' | 'status';
 export default function Index({ blockSections, schoolYears }: Props) {
     const { delete: destroy, processing } = useForm();
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
+
+    // --- Copy sections to a new school year ---
+    const [showCopyDialog, setShowCopyDialog] = useState(false);
+    const copyForm = useForm({
+        from_school_year: schoolYears[schoolYears.length - 1] ?? '',
+        to_school_year: '',
+    });
+
+    const openCopyDialog = () => {
+        copyForm.reset();
+        copyForm.setData('from_school_year', schoolYears[schoolYears.length - 1] ?? '');
+        setShowCopyDialog(true);
+    };
+
+    const handleCopySubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        copyForm.post('/block-sections/copy-year', {
+            onSuccess: () => setShowCopyDialog(false),
+        });
+    };
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
     const [selectedSchoolYear, setSelectedSchoolYear] = useState('');
@@ -143,12 +170,23 @@ export default function Index({ blockSections, schoolYears }: Props) {
                         </div>
                         <p className="mt-1 text-gray-600">Manage block sections with assigned subjects</p>
                     </div>
-                    <Link href="/block-sections/create">
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Block Section
-                        </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" onClick={openCopyDialog}>
+                                    <Copy className="mr-2 h-4 w-4" />
+                                    Copy Block Sections
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy block sections to recent school year</TooltipContent>
+                        </Tooltip>
+                        <Link href="/block-sections/create">
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Block Section
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Filters */}
@@ -301,6 +339,63 @@ export default function Index({ blockSections, schoolYears }: Props) {
                 processingLabel="Deleting..."
                 processing={processing}
             />
+
+            {/* Copy sections to a new school year */}
+            <Dialog open={showCopyDialog} onOpenChange={(open) => { if (!open) setShowCopyDialog(false); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Copy Sections to New Year</DialogTitle>
+                    </DialogHeader>
+
+                    <p className="text-sm text-gray-500">
+                        Clones every section (with its subjects, schedules, and capacity) from one school year into a new one,
+                        with enrollment reset to 0. Sections and students already enrolled in the source year are left untouched.
+                    </p>
+
+                    <form onSubmit={handleCopySubmit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="from_school_year">From School Year *</Label>
+                            <Select
+                                value={copyForm.data.from_school_year}
+                                onValueChange={(v) => copyForm.setData('from_school_year', v)}
+                            >
+                                <SelectTrigger className="mt-1">
+                                    <SelectValue placeholder="Select school year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {schoolYears.map((year) => (
+                                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={copyForm.errors.from_school_year} className="mt-1" />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="to_school_year">To School Year *</Label>
+                            <Input
+                                id="to_school_year"
+                                value={copyForm.data.to_school_year}
+                                onChange={(e) => copyForm.setData('to_school_year', e.target.value)}
+                                placeholder="e.g., 2026-2027"
+                                className="mt-1"
+                            />
+                            <InputError message={copyForm.errors.to_school_year} className="mt-1" />
+                        </div>
+
+                        <InputError message={copyForm.errors.error} className="mt-1" />
+
+                        <div className="flex justify-end gap-2 border-t pt-4">
+                            <Button type="button" variant="outline" onClick={() => setShowCopyDialog(false)} disabled={copyForm.processing}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={copyForm.processing || !copyForm.data.from_school_year || !copyForm.data.to_school_year}>
+                                {copyForm.processing ? 'Copying...' : 'Copy Sections'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

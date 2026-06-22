@@ -227,14 +227,6 @@ export default function Index({ applications }: Props) {
         return applications.find((app) => app.id === selectedRowId);
     }, [applications, selectedRowId]);
 
-    // 3. Add handler for Email ID action
-    const handleEmailId = (applicantId: number, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent row selection
-        // Your email logic here - you can use the EmailAssignIdButton component logic
-        // or create a new email sending function
-        console.log('Email ID for applicant:', applicantId);
-    };
-
     type ColumnKey = keyof Applicant | 'actions';
 
     const columns: { key: ColumnKey; label: string }[] = [
@@ -256,9 +248,19 @@ export default function Index({ applications }: Props) {
 
             <div className="space-y-6 p-6 md:p-10">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <IdCard className="h-7 w-7 text-primary" />
-                        <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <IdCard className="h-7 w-7 text-primary" />
+                            <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
+                        </div>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => router.post('/studentidassignment/bulk-generate')}
+                        >
+                            <IdCard className="h-4 w-4" />
+                            Generate All IDs
+                        </Button>
                     </div>
                 </div>
 
@@ -493,6 +495,14 @@ export default function Index({ applications }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
+                                {paginatedApplicants.length === 0 && (
+                                    <tr>
+                                        <td colSpan={visibleColumns.length + 1} className="py-16 text-center">
+                                            <IdCard className="mx-auto h-10 w-10 text-gray-300" />
+                                            <p className="mt-3 text-sm text-gray-400">No records yet.</p>
+                                        </td>
+                                    </tr>
+                                )}
                                 {paginatedApplicants.map((row) => (
                                     <tr
                                         key={row.id}

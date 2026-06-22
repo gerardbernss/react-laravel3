@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class CopyToOracle extends Command
 {
-    protected $signature = 'db:copy-to-oracle';
+    protected $signature = 'db:copy-to-oracle {--tables= : Comma-separated list of tables to copy (default: all)}';
     protected $description = 'Copy all data from the SQLite database into Oracle';
 
     public function handle(): int
@@ -45,6 +45,12 @@ class CopyToOracle extends Command
         // Skip the migrations table — Oracle already has its own
         $tableNames = $tableNames->reject(fn($t) => $t === 'migrations');
 
+        // Optionally scope to a specific set of tables
+        if ($only = $this->option('tables')) {
+            $only = collect(explode(',', $only))->map(fn($t) => trim($t))->filter();
+            $tableNames = $tableNames->intersect($only)->values();
+        }
+
         $this->info("Copying " . $tableNames->count() . " tables...");
 
         $bar = $this->output->createProgressBar($tableNames->count());
@@ -68,11 +74,23 @@ class CopyToOracle extends Command
                 // Clear Oracle table first (in case of partial previous run)
                 DB::connection('oracle')->table($table)->delete();
 
+                // Only insert columns that actually exist on the Oracle side —
+                // schema can drift between SQLite and Oracle (e.g. a column
+                // dropped on one connection but not the other).
+                $oracleColumnTypes = collect(DB::connection('oracle')->select(
+                    "SELECT LOWER(column_name) AS column_name, data_type FROM user_tab_columns WHERE table_name = UPPER(?)",
+                    [$table]
+                ))->pluck('data_type', 'column_name');
+
                 DB::connection('sqlite')->table($table)->orderBy(
                     DB::connection('sqlite')->raw('rowid')
-                )->chunk(500, function ($rows) use ($table) {
-                    $data = $rows->map(function ($row) {
-                        return array_map([$this, 'transformValue'], (array) $row);
+                )->chunk(500, function ($rows) use ($table, $oracleColumnTypes) {
+                    $data = $rows->map(function ($row) use ($oracleColumnTypes) {
+                        $row = array_intersect_key((array) $row, $oracleColumnTypes->all());
+                        foreach ($row as $column => $value) {
+                            $row[$column] = $this->transformValue($value, $oracleColumnTypes[$column]);
+                        }
+                        return $row;
                     })->toArray();
 
                     DB::connection('oracle')->table($table)->insert($data);
@@ -122,15 +140,17 @@ class CopyToOracle extends Command
         return self::SUCCESS;
     }
 
-    private function transformValue(mixed $value): mixed
+    private function transformValue(mixed $value, string $oracleDataType): mixed
     {
         if (!is_string($value)) {
             return $value;
         }
 
-        // Time-only strings (HH:MM or HH:MM:SS) can't be stored in Oracle DATE columns
-        // without a date part. Prefix with a dummy date so Oracle accepts them.
-        if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $value)) {
+        // Time-only strings (HH:MM or HH:MM:SS) can't be stored in Oracle DATE/TIMESTAMP
+        // columns without a date part. Prefix with a dummy date so Oracle accepts them.
+        // Columns that are plain VARCHAR2 (e.g. "08:00:00" stored as text) are left as-is.
+        $isDateColumn = str_starts_with($oracleDataType, 'DATE') || str_starts_with($oracleDataType, 'TIMESTAMP');
+        if ($isDateColumn && preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $value)) {
             $padded = strlen($value) === 5 ? $value . ':00' : $value;
             return '1970-01-01 ' . $padded;
         }

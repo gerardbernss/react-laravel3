@@ -1,8 +1,7 @@
-import { Badge } from '@/components/ui/badge';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import { AlertCircle, CalendarCheck, CheckCircle2, ChevronDown, CircleDot, Clock, MapPin, Megaphone, XCircle } from 'lucide-react';
+import { AlertCircle, CalendarCheck, CheckCircle2, ChevronDown, Clock, MapPin, Megaphone, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
@@ -61,7 +60,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function ApplicantDashboard({ student, personalData, application, announcements, examSchedule }: Props) {
-    const { applicationPeriodOpen } = usePage<{ applicationPeriodOpen: boolean }>().props;
+    const { currentSemester } = usePage<{
+        currentSemester?: { name: string | null; school_year: string | null };
+    }>().props;
     const [openIds, setOpenIds] = useState<Set<number>>(new Set());
 
     const toggleAnnouncement = (id: number) => {
@@ -78,15 +79,20 @@ export default function ApplicantDashboard({ student, personalData, application,
     const isExamFailed = application?.application_status === 'Exam Failed';
     const isForRevision = application?.application_status === 'For Revision';
     const isRejected = application?.application_status === 'Rejected';
-    const hasEvaluation = isForExam || isExamTaken || isExamPassed || isExamFailed || isForRevision || isRejected;
+    const isEnrolled = application?.application_status === 'Enrolled';
+    const isPendingEnrollment = application?.application_status === 'Pending Enrollment';
+    const hasEvaluation =
+        isForExam || isExamTaken || isExamPassed || isExamFailed || isForRevision || isRejected || isEnrolled || isPendingEnrollment;
 
     const statusLabel = () => {
         if (isForExam) return examSchedule ? 'Approved — your exam schedule has been set.' : 'Approved — awaiting exam schedule.';
         if (isExamTaken) return 'Exam completed — awaiting results.';
-        if (isExamPassed) return 'Congratulations! You passed the exam. You may now proceed with enrollment.';
+        if (isExamPassed) return 'Congratulations on passing the exam. Please wait for the enrollment schedule.';
+        if (isPendingEnrollment) return 'Enrollment is open — please proceed with your enrollment.';
         if (isExamFailed) return 'Unfortunately, you did not pass the exam this cycle.';
         if (isForRevision) return 'Please review the feedback above.';
         if (isRejected) return 'Application not accepted this cycle.';
+        if (isEnrolled) return 'You are officially enrolled!';
         return 'Your application is under review.';
     };
 
@@ -111,33 +117,15 @@ export default function ApplicantDashboard({ student, personalData, application,
                             Track your application status here. You'll be notified of any updates to your application.
                         </p>
                     </div>
-                    {application?.school_year && (
-                        <div className="shrink-0 px-6 py-4 text-center">
-                            <p
-                                className="text-2xl leading-tight font-bold text-gray-800 italic"
-                                style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-                            >
-                                {application.semester ? application.semester : 'Full Year'}
-                            </p>
-                            <div className="mt-1 h-0.5 bg-linear-to-r from-transparent via-blue-400 to-transparent" />
-                            <p className="mt-1 text-2xl font-extrabold tracking-wider text-blue-600">{application.school_year}</p>
+                    {currentSemester?.name && (
+                        <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                            {currentSemester.name} · {currentSemester.school_year}
                         </div>
                     )}
                 </div>
 
                 {/* Application Period Status */}
-                <div className="mb-4">
-                    {applicationPeriodOpen ? (
-                        <Badge className="gap-1.5 bg-green-100 px-3 py-1 text-sm text-green-800 hover:bg-green-100">
-                            <CircleDot className="h-3.5 w-3.5" /> Applications are Open
-                        </Badge>
-                    ) : (
-                        <Badge className="gap-1.5 bg-gray-100 px-3 py-1 text-sm text-gray-500 hover:bg-gray-100">
-                            <CircleDot className="h-3.5 w-3.5" /> Applications are Closed
-                        </Badge>
-                    )}
-                </div>
-
                 {/* Password Change Warning */}
                 {!student.password_changed && (
                     <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
@@ -160,40 +148,50 @@ export default function ApplicantDashboard({ student, personalData, application,
                 {hasEvaluation && application && (
                     <div
                         className={`mb-6 rounded-lg border p-5 ${
-                            isExamPassed
-                                ? 'border-emerald-200 bg-emerald-50'
-                                : isExamFailed
-                                  ? 'border-red-200 bg-red-50'
-                                  : isExamTaken
-                                    ? 'border-purple-200 bg-purple-50'
-                                    : isForExam && examSchedule
-                                      ? 'border-green-200 bg-green-50'
-                                      : isForExam
-                                        ? 'border-blue-200 bg-blue-50'
-                                        : isForRevision
-                                          ? 'border-yellow-200 bg-yellow-50'
-                                          : 'border-red-200 bg-red-50'
+                            isEnrolled
+                                ? 'border-blue-200 bg-blue-50'
+                                : isExamPassed
+                                  ? 'border-emerald-200 bg-emerald-50'
+                                  : isPendingEnrollment
+                                    ? 'border-teal-200 bg-teal-50'
+                                    : isExamFailed
+                                      ? 'border-red-200 bg-red-50'
+                                      : isExamTaken
+                                        ? 'border-purple-200 bg-purple-50'
+                                        : isForExam && examSchedule
+                                          ? 'border-green-200 bg-green-50'
+                                          : isForExam
+                                            ? 'border-blue-200 bg-blue-50'
+                                            : isForRevision
+                                              ? 'border-yellow-200 bg-yellow-50'
+                                              : 'border-red-200 bg-red-50'
                         }`}
                     >
                         <div className="flex items-start gap-4">
                             <div
                                 className={`mt-0.5 rounded-full p-2 ${
-                                    isExamPassed
-                                        ? 'bg-emerald-100'
-                                        : isExamFailed
-                                          ? 'bg-red-100'
-                                          : isExamTaken
-                                            ? 'bg-purple-100'
-                                            : isForExam && examSchedule
-                                              ? 'bg-green-100'
-                                              : isForExam
-                                                ? 'bg-blue-100'
-                                                : isForRevision
-                                                  ? 'bg-yellow-100'
-                                                  : 'bg-red-100'
+                                    isEnrolled
+                                        ? 'bg-blue-100'
+                                        : isExamPassed
+                                          ? 'bg-emerald-100'
+                                          : isPendingEnrollment
+                                            ? 'bg-teal-100'
+                                            : isExamFailed
+                                              ? 'bg-red-100'
+                                              : isExamTaken
+                                                ? 'bg-purple-100'
+                                                : isForExam && examSchedule
+                                                  ? 'bg-green-100'
+                                                  : isForExam
+                                                    ? 'bg-blue-100'
+                                                    : isForRevision
+                                                      ? 'bg-yellow-100'
+                                                      : 'bg-red-100'
                                 }`}
                             >
+                                {isEnrolled && <CheckCircle2 className="h-5 w-5 text-blue-600" />}
                                 {isExamPassed && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                                {isPendingEnrollment && <CalendarCheck className="h-5 w-5 text-teal-600" />}
                                 {isExamFailed && <XCircle className="h-5 w-5 text-red-600" />}
                                 {isExamTaken && <CalendarCheck className="h-5 w-5 text-purple-600" />}
                                 {isForExam && examSchedule && <CalendarCheck className="h-5 w-5 text-green-600" />}
@@ -204,22 +202,28 @@ export default function ApplicantDashboard({ student, personalData, application,
                             <div className="flex-1">
                                 <h3
                                     className={`font-semibold ${
-                                        isExamPassed
-                                            ? 'text-emerald-800'
-                                            : isExamFailed
-                                              ? 'text-red-800'
-                                              : isExamTaken
-                                                ? 'text-purple-800'
-                                                : isForExam && examSchedule
-                                                  ? 'text-green-800'
-                                                  : isForExam
-                                                    ? 'text-blue-800'
-                                                    : isForRevision
-                                                      ? 'text-yellow-800'
-                                                      : 'text-red-800'
+                                        isEnrolled
+                                            ? 'text-blue-800'
+                                            : isExamPassed
+                                              ? 'text-emerald-800'
+                                              : isPendingEnrollment
+                                                ? 'text-teal-800'
+                                                : isExamFailed
+                                                  ? 'text-red-800'
+                                                  : isExamTaken
+                                                    ? 'text-purple-800'
+                                                    : isForExam && examSchedule
+                                                      ? 'text-green-800'
+                                                      : isForExam
+                                                        ? 'text-blue-800'
+                                                        : isForRevision
+                                                          ? 'text-yellow-800'
+                                                          : 'text-red-800'
                                     }`}
                                 >
-                                    {isExamPassed && 'Exam Passed — Proceed to Enrollment'}
+                                    {isEnrolled && 'Enrolled'}
+                                    {isExamPassed && 'Exam Passed — Await Enrollment Schedule'}
+                                    {isPendingEnrollment && 'Enrollment Open — Action Required'}
                                     {isExamFailed && 'Exam Not Passed'}
                                     {isExamTaken && 'Exam Completed — Awaiting Results'}
                                     {isForExam && examSchedule && 'Application Approved — Exam Schedule Assigned'}
@@ -229,26 +233,36 @@ export default function ApplicantDashboard({ student, personalData, application,
                                 </h3>
                                 <p
                                     className={`mt-0.5 text-sm ${
-                                        isExamPassed
-                                            ? 'text-emerald-700'
-                                            : isExamFailed
-                                              ? 'text-red-700'
-                                              : isExamTaken
-                                                ? 'text-purple-700'
-                                                : isForExam && examSchedule
-                                                  ? 'text-green-700'
-                                                  : isForExam
-                                                    ? 'text-blue-700'
-                                                    : isForRevision
-                                                      ? 'text-yellow-700'
-                                                      : 'text-red-700'
+                                        isEnrolled
+                                            ? 'text-blue-700'
+                                            : isExamPassed
+                                              ? 'text-emerald-700'
+                                              : isPendingEnrollment
+                                                ? 'text-teal-700'
+                                                : isExamFailed
+                                                  ? 'text-red-700'
+                                                  : isExamTaken
+                                                    ? 'text-purple-700'
+                                                    : isForExam && examSchedule
+                                                      ? 'text-green-700'
+                                                      : isForExam
+                                                        ? 'text-blue-700'
+                                                        : isForRevision
+                                                          ? 'text-yellow-700'
+                                                          : 'text-red-700'
                                     }`}
                                 >
-                                    {isExamPassed && 'You passed the entrance exam. Please log in to the enrollment portal or visit the registrar to complete your enrollment.'}
+                                    {isEnrolled && 'Your enrollment has been confirmed. Welcome to the school!'}
+                                    {isExamPassed &&
+                                        'Congratulations on passing the entrance examination! Please wait for further announcements regarding the enrollment schedule. You will be notified once the enrollment period opens.'}
+                                    {isPendingEnrollment &&
+                                        'Enrollment is now open! Please proceed to complete your enrollment and fees to secure your slot.'}
                                     {isExamFailed && 'You may reapply next school year. For concerns, please contact the admissions office.'}
                                     {isExamTaken && 'Your exam has been recorded. Please wait while the results are being processed.'}
                                     {isForExam && examSchedule && examSchedule.name}
-                                    {isForExam && !examSchedule && 'Your application has been reviewed and approved. Please wait for your examination schedule.'}
+                                    {isForExam &&
+                                        !examSchedule &&
+                                        'Your application has been reviewed and approved. Please wait for your examination schedule.'}
                                     {isForRevision && 'Your application needs changes before it can proceed.'}
                                     {isRejected && 'Your application was not accepted for this cycle.'}
                                 </p>
@@ -263,7 +277,9 @@ export default function ApplicantDashboard({ student, personalData, application,
                                                     <p className="text-xs text-gray-500">Date</p>
                                                     <p className="text-sm font-medium text-gray-900">
                                                         {new Date(examSchedule.exam_date).toLocaleDateString('en-PH', {
-                                                            year: 'numeric', month: 'long', day: 'numeric',
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric',
                                                         })}
                                                     </p>
                                                 </div>
@@ -307,8 +323,8 @@ export default function ApplicantDashboard({ student, personalData, application,
                                 )}
                                 {isForExam && examSchedule?.instructions && (
                                     <div className="mt-3 rounded-md border border-green-200 bg-white p-3">
-                                        <p className="mb-1 text-xs font-medium uppercase text-gray-500">Instructions</p>
-                                        <p className="whitespace-pre-line text-sm text-gray-700">{examSchedule.instructions}</p>
+                                        <p className="mb-1 text-xs font-medium text-gray-500 uppercase">Instructions</p>
+                                        <p className="text-sm whitespace-pre-line text-gray-700">{examSchedule.instructions}</p>
                                     </div>
                                 )}
 
@@ -431,30 +447,72 @@ export default function ApplicantDashboard({ student, personalData, application,
                             <div className="space-y-5">
                                 <div
                                     className={`rounded-lg p-4 text-center ${
-                                        isForExam
+                                        isEnrolled
                                             ? 'border border-blue-200 bg-blue-50'
-                                            : isRejected
-                                              ? 'border border-red-200 bg-red-50'
-                                              : 'border border-yellow-200 bg-yellow-50'
+                                            : isExamPassed
+                                              ? 'border border-emerald-200 bg-emerald-50'
+                                              : isPendingEnrollment
+                                                ? 'border border-teal-200 bg-teal-50'
+                                                : isExamFailed || isRejected
+                                                  ? 'border border-red-200 bg-red-50'
+                                                  : isExamTaken
+                                                    ? 'border border-purple-200 bg-purple-50'
+                                                    : isForExam
+                                                      ? 'border border-blue-200 bg-blue-50'
+                                                      : isForRevision
+                                                        ? 'border border-yellow-200 bg-yellow-50'
+                                                        : 'border border-yellow-200 bg-yellow-50'
                                     }`}
                                 >
-                                    {isForExam ? (
-                                        <CheckCircle2 className="mx-auto h-10 w-10 text-blue-600" />
-                                    ) : isRejected ? (
-                                        <XCircle className="mx-auto h-10 w-10 text-red-500" />
-                                    ) : (
-                                        <Clock className="mx-auto h-10 w-10 text-yellow-500" />
-                                    )}
+                                    {isEnrolled && <CheckCircle2 className="mx-auto h-10 w-10 text-blue-600" />}
+                                    {isExamPassed && <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />}
+                                    {isPendingEnrollment && <CalendarCheck className="mx-auto h-10 w-10 text-teal-600" />}
+                                    {(isExamFailed || isRejected) && <XCircle className="mx-auto h-10 w-10 text-red-500" />}
+                                    {isExamTaken && <CalendarCheck className="mx-auto h-10 w-10 text-purple-600" />}
+                                    {isForExam && <CheckCircle2 className="mx-auto h-10 w-10 text-blue-600" />}
+                                    {isForRevision && <AlertCircle className="mx-auto h-10 w-10 text-yellow-500" />}
+                                    {!isEnrolled &&
+                                        !isExamPassed &&
+                                        !isPendingEnrollment &&
+                                        !isExamFailed &&
+                                        !isRejected &&
+                                        !isExamTaken &&
+                                        !isForExam &&
+                                        !isForRevision && <Clock className="mx-auto h-10 w-10 text-yellow-500" />}
                                     <p
                                         className={`mt-2 text-lg font-bold ${
-                                            isForExam ? 'text-blue-700' : isRejected ? 'text-red-700' : 'text-yellow-700'
+                                            isEnrolled
+                                                ? 'text-blue-700'
+                                                : isExamPassed
+                                                  ? 'text-emerald-700'
+                                                  : isPendingEnrollment
+                                                    ? 'text-teal-700'
+                                                    : isExamFailed || isRejected
+                                                      ? 'text-red-700'
+                                                      : isExamTaken
+                                                        ? 'text-purple-700'
+                                                        : isForExam
+                                                          ? 'text-blue-700'
+                                                          : 'text-yellow-700'
                                         }`}
                                     >
-                                        {application?.application_status ?? 'Pending'}
+                                        {isPendingEnrollment ? 'Enrollment Open' : application?.application_status ?? 'Pending'}
                                     </p>
                                     <p
                                         className={`text-xs ${
-                                            isForExam ? 'text-blue-600' : isRejected ? 'text-red-600' : 'text-yellow-600'
+                                            isEnrolled
+                                                ? 'text-blue-600'
+                                                : isExamPassed
+                                                  ? 'text-emerald-600'
+                                                  : isPendingEnrollment
+                                                    ? 'text-teal-600'
+                                                    : isExamFailed || isRejected
+                                                      ? 'text-red-600'
+                                                      : isExamTaken
+                                                        ? 'text-purple-600'
+                                                        : isForExam
+                                                          ? 'text-blue-600'
+                                                          : 'text-yellow-600'
                                         }`}
                                     >
                                         {statusLabel()}

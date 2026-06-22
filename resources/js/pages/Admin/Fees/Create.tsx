@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -28,7 +29,7 @@ export default function CreateFee({ categories, schoolLevels, semesters }: Props
         is_per_unit: false,
         is_required: true,
         school_level: 'all',
-        school_year: '',
+        school_year: getSchoolYearOptions()[0],
         semester: 'Yearly',
         amount: '',
         description: '',
@@ -98,7 +99,12 @@ export default function CreateFee({ categories, schoolLevels, semesters }: Props
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="school_year">School Year <span className="text-red-500">*</span></Label>
-                            <Input id="school_year" value={data.school_year} onChange={(e) => setData('school_year', e.target.value)} className="mt-1" placeholder="e.g. 2024-2025" />
+                            <Select value={data.school_year} onValueChange={(v) => setData('school_year', v)}>
+                                <SelectTrigger id="school_year" className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {getSchoolYearOptions().map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                             {errors.school_year && <p className="mt-1 text-sm text-red-600">{errors.school_year}</p>}
                         </div>
                         <div>

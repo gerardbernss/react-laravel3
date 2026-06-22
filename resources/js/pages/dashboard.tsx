@@ -48,7 +48,6 @@ interface EnrollmentByGrade {
     program: string | null;
     enrolled: number;
     capacity: number;
-    sections: number;
     percentage: number;
 }
 
@@ -129,7 +128,7 @@ export default function Dashboard({
 }: Props) {
     // Faculty dashboard
     if (isFaculty) {
-        const totalStudents = myClasses.reduce((sum, c) => sum + c.enrolled_count, 0);
+        const totalStudents = myClasses.reduce((sum, c) => sum + Number(c.enrolled_count), 0);
         const fullyGraded = myClasses.filter((c) => c.enrolled_count > 0 && c.graded_count === c.enrolled_count).length;
         const takenToday = myClasses.filter((c) => c.today_taken).length;
 
@@ -346,7 +345,7 @@ export default function Dashboard({
         return () => ro.disconnect();
     }, []);
 
-    const totalCategory = categoryBreakdown.reduce((sum, item) => sum + item.count, 0);
+    const totalCategory = categoryBreakdown.reduce((sum, item) => sum + Number(item.count), 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -387,7 +386,7 @@ export default function Dashboard({
                                 className={`flex items-center justify-between rounded-xl border border-l-4 bg-card p-3 shadow-sm ${stats.pending > 0 ? 'border-l-yellow-500' : 'border-l-border'}`}
                             >
                                 <div>
-                                    <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Pending Review</p>
+                                    <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Pending</p>
                                     <p
                                         className={`text-xl font-bold ${stats.pending > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'}`}
                                     >
@@ -492,9 +491,6 @@ export default function Dashboard({
                                 <div key={row.label} className="flex items-center gap-3">
                                     <div className="w-44 shrink-0">
                                         <p className="truncate text-sm font-medium text-foreground">{row.label}</p>
-                                        <p className="text-[10px] text-muted-foreground">
-                                            {row.sections} section{row.sections !== 1 ? 's' : ''}
-                                        </p>
                                     </div>
                                     <div className="h-5 flex-1 overflow-hidden rounded-full bg-muted">
                                         <div

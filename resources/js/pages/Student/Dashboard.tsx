@@ -227,6 +227,12 @@ export default function Dashboard({ student, personalData, application, studentR
                                         <p className="mt-2 text-lg font-bold text-red-600">Inactive</p>
                                         <p className="text-xs text-red-500">Your account has been deactivated. Contact the Registrar.</p>
                                     </div>
+                                ) : studentRecord.enrollment_status === 'Withdrawn' ? (
+                                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+                                        <AlertCircle className="mx-auto h-10 w-10 text-red-500" />
+                                        <p className="mt-2 text-lg font-bold text-red-700">Withdrawn</p>
+                                        <p className="text-xs text-red-600">Your enrollment has been withdrawn. Please contact the Registrar's Office.</p>
+                                    </div>
                                 ) : (
                                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
                                         <AlertCircle className="mx-auto h-10 w-10 text-gray-400" />

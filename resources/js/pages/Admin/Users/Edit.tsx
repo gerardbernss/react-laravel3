@@ -13,14 +13,6 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CircleAlert, User } from 'lucide-react';
 import { useState } from 'react';
 
-// const breadcrumbs: BreadcrumbItem[] = [
-//     {
-//         title: 'Edit User',
-//         href: '',
-//         // href: users.edit.url(),
-//     },
-// ];
-
 interface Role {
     id: number;
     name: string;

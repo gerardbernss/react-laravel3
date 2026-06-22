@@ -34,11 +34,8 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
     }, []);
 
     useEffect(() => {
-        console.log('AppLayout - Flash messages:', pageProps.flash);
-
         // Handle generic 'message' as success
         if (pageProps.flash?.message) {
-            console.log('Showing message toast:', pageProps.flash.message);
             toast.success(pageProps.flash.message, {
                 duration: 4000,
                 position: 'top-right',
@@ -46,7 +43,6 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
         }
 
         if (pageProps.flash?.success) {
-            console.log('Showing success toast:', pageProps.flash.success);
             toast.success(pageProps.flash.success, {
                 duration: 4000,
                 position: 'top-right',
@@ -54,7 +50,6 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
         }
 
         if (pageProps.flash?.error) {
-            console.log('Showing error toast:', pageProps.flash.error);
             toast.error(pageProps.flash.error, {
                 duration: 4000,
                 position: 'top-right',

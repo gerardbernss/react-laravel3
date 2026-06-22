@@ -1,5 +1,6 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
 import { FileUpload } from '@/components/file-upload';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import { SearchableSelect } from '@/components/searchable-select';
 import {
     AlertDialog,
@@ -569,6 +570,7 @@ export default function AddApplicant() {
                     if (Array.isArray(value) && value.length > 0) {
                         formData.append(key, JSON.stringify(value));
                     }
+                    return;
                 }
                 if (key === 'doctors_note_file' && value instanceof File) {
                     formData.append('doctors_note_file', value);
@@ -602,8 +604,6 @@ export default function AddApplicant() {
                     formData.append(key, value.toString());
                 }
             });
-
-            console.log('Submitting form data:', Array.from(formData.entries()));
 
             // Submit form using Inertia
             router.post('/applications/apply-les', formData, {
@@ -931,9 +931,6 @@ export default function AddApplicant() {
 
             if (response.ok && data.success) {
                 setCodeSent(true);
-                // Show success toast/notification
-                console.log('✅ Verification code sent to your email!');
-                // toast.success('Verification code sent to your email!');
             } else {
                 form.setError('email', {
                     message: data.message || 'Failed to send verification code',
@@ -976,9 +973,6 @@ export default function AddApplicant() {
 
             if (response.ok && data.success) {
                 setEmailVerified(true);
-                // Show success message
-                console.log('✅ Email verified successfully!');
-                // toast.success('Email verified successfully!');
 
                 // Clear any errors
                 form.clearErrors('verificationCode');
@@ -1028,9 +1022,6 @@ export default function AddApplicant() {
 
             if (response.ok && data.success) {
                 setAltCodeSent(true);
-                // Show success toast/notification
-                console.log('✅ Verification code sent to your email!');
-                // toast.success('Verification code sent to your email!');
             } else {
                 form.setError('alt_email', {
                     message: data.message || 'Failed to send verification code',
@@ -1073,9 +1064,6 @@ export default function AddApplicant() {
 
             if (response.ok && data.success) {
                 setAltEmailVerified(true);
-                // Show success message
-                console.log('✅ Email verified successfully!');
-                // toast.success('Email verified successfully!');
 
                 // Clear any errors
                 form.clearErrors('altVerificationCode');
@@ -1148,7 +1136,7 @@ export default function AddApplicant() {
                         <Form {...form}>
                             <TooltipProvider>
                                 <form
-                                    onSubmit={form.handleSubmit(onSubmit, (errors) => console.log('Validation Errors:', errors))}
+                                    onSubmit={form.handleSubmit(onSubmit)}
                                     className="space-y-6"
                                 >
                                     {/* Application Information */}
@@ -1181,9 +1169,21 @@ export default function AddApplicant() {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <LabelWithTooltip label="School Year *" />
-                                                            <FormControl>
-                                                                <Input {...field} />
-                                                            </FormControl>
+                                                            <Select value={field.value} onValueChange={field.onChange}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select school year" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {(() => {
+                                                                        const opts = getSchoolYearOptions();
+                                                                        return (opts.includes(field.value) ? opts : [field.value, ...opts].filter(Boolean)).map((y) => (
+                                                                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                                                                        ));
+                                                                    })()}
+                                                                </SelectContent>
+                                                            </Select>
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}

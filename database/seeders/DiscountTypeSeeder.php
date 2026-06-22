@@ -21,7 +21,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'tuition_only',
                 'requires_verification' => true,
                 'is_stackable' => false,
-                'max_discount_cap' => null,
                 'description' => '20% discount on tuition for students with siblings who are old/recurring students',
             ],
             [
@@ -32,7 +31,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'tuition_only',
                 'requires_verification' => true,
                 'is_stackable' => false,
-                'max_discount_cap' => null,
                 'description' => 'Full tuition scholarship for academic excellence',
             ],
             [
@@ -43,7 +41,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'tuition_only',
                 'requires_verification' => true,
                 'is_stackable' => false,
-                'max_discount_cap' => null,
                 'description' => '50% tuition scholarship for academic excellence',
             ],
             [
@@ -54,7 +51,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'tuition_only',
                 'requires_verification' => true,
                 'is_stackable' => false,
-                'max_discount_cap' => null,
                 'description' => '25% tuition scholarship for academic excellence',
             ],
             [
@@ -65,8 +61,7 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'all_fees',
                 'requires_verification' => false,
                 'is_stackable' => true,
-                'max_discount_cap' => 5000.00,
-                'description' => '5% discount for early enrollment (capped at ₱5,000)',
+                'description' => '5% discount for early enrollment',
             ],
             [
                 'name' => 'Employee Dependent Discount',
@@ -76,7 +71,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'tuition_only',
                 'requires_verification' => true,
                 'is_stackable' => false,
-                'max_discount_cap' => null,
                 'description' => '50% tuition discount for children of school employees',
             ],
             [
@@ -87,7 +81,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'all_fees',
                 'requires_verification' => true,
                 'is_stackable' => true,
-                'max_discount_cap' => null,
                 'description' => '20% discount for Persons with Disabilities',
             ],
             [
@@ -98,8 +91,7 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'tuition_only',
                 'requires_verification' => true,
                 'is_stackable' => true,
-                'max_discount_cap' => 3000.00,
-                'description' => '15% discount for dependents of senior citizens (capped at ₱3,000)',
+                'description' => '15% discount for dependents of senior citizens',
             ],
             [
                 'name' => 'Loyalty Discount',
@@ -109,7 +101,6 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'all_fees',
                 'requires_verification' => true,
                 'is_stackable' => true,
-                'max_discount_cap' => null,
                 'description' => '₱2,000 discount for students enrolled for 3+ consecutive years',
             ],
             [
@@ -120,8 +111,7 @@ class DiscountTypeSeeder extends Seeder
                 'applies_to' => 'all_fees',
                 'requires_verification' => false,
                 'is_stackable' => true,
-                'max_discount_cap' => 2000.00,
-                'description' => '3% discount for full cash payment (capped at ₱2,000)',
+                'description' => '3% discount for full cash payment',
             ],
         ];
 

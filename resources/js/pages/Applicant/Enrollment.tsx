@@ -18,6 +18,13 @@ interface Fee {
     amount: number;
 }
 
+interface AssessmentSubject {
+    code: string;
+    name: string;
+    type: string;
+    units: number;
+}
+
 interface Discount {
     id: number;
     name: string;
@@ -55,6 +62,7 @@ interface Props {
     availableDiscounts: Discount[];
     applicantEnrollmentOpen: boolean;
     assessmentNumber: string | null;
+    assessmentSubjects: AssessmentSubject[];
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -77,7 +85,7 @@ const s = (v: string | null | undefined) => v ?? '';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function Enrollment({ personalData, application, fees, availableDiscounts, applicantEnrollmentOpen, assessmentNumber }: Props) {
+export default function Enrollment({ personalData, application, fees, availableDiscounts, applicantEnrollmentOpen, assessmentNumber, assessmentSubjects }: Props) {
     const { errors } = usePage().props as { errors: Record<string, string> };
 
     const initialStep = assessmentNumber ? 3 : 1;
@@ -301,6 +309,36 @@ export default function Enrollment({ personalData, application, fees, availableD
                             </div>
                         )}
 
+                        {assessmentSubjects.length > 0 && (
+                            <div className="mb-6 rounded-lg border">
+                                <div className="border-b bg-gray-50 px-4 py-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Pre-enrolled Subjects ({assessmentSubjects.length} subjects · {assessmentSubjects.reduce((sum, s) => sum + s.units, 0)} units)
+                                    </p>
+                                </div>
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-gray-50 text-xs text-gray-500">
+                                            <th className="px-4 py-2 text-left font-medium">Code</th>
+                                            <th className="px-4 py-2 text-left font-medium">Subject Name</th>
+                                            <th className="px-4 py-2 text-left font-medium">Type</th>
+                                            <th className="px-4 py-2 text-right font-medium">Units</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {assessmentSubjects.map((s) => (
+                                            <tr key={s.code} className="border-b last:border-0">
+                                                <td className="px-4 py-2 font-mono text-xs text-gray-700">{s.code}</td>
+                                                <td className="px-4 py-2 text-gray-900">{s.name}</td>
+                                                <td className="px-4 py-2 text-gray-500">{s.type}</td>
+                                                <td className="px-4 py-2 text-right text-gray-700">{s.units}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
                         <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                             <p className="font-medium">Payment Options</p>
                             <div className="mt-2 grid grid-cols-2 gap-3">
@@ -386,6 +424,35 @@ export default function Enrollment({ personalData, application, fees, availableD
                             </div>
                         )}
 
+                        {/* Subjects */}
+                        {assessmentSubjects.length > 0 && (
+                            <div className="mb-4 rounded-lg border p-4">
+                                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Pre-enrolled Subjects ({assessmentSubjects.length} · {assessmentSubjects.reduce((sum, s) => sum + s.units, 0)} units)
+                                </p>
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-xs text-gray-500">
+                                            <th className="pb-1 text-left font-medium">Code</th>
+                                            <th className="pb-1 text-left font-medium">Subject Name</th>
+                                            <th className="pb-1 text-left font-medium">Type</th>
+                                            <th className="pb-1 text-right font-medium">Units</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {assessmentSubjects.map((s) => (
+                                            <tr key={s.code} className="border-b last:border-0">
+                                                <td className="py-1 font-mono text-xs text-gray-700">{s.code}</td>
+                                                <td className="py-1 text-gray-900">{s.name}</td>
+                                                <td className="py-1 text-gray-500">{s.type}</td>
+                                                <td className="py-1 text-right text-gray-700">{s.units}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
                         {/* Payment options */}
                         <div className="mb-6 grid grid-cols-2 gap-3">
                             <div className="rounded-lg border p-4 text-center">
@@ -455,6 +522,34 @@ export default function Enrollment({ personalData, application, fees, availableD
                                     <td className="pt-1">NET AMOUNT DUE</td>
                                     <td className="pt-1 text-right">{formatCurrency(netTotal)}</td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {assessmentSubjects.length > 0 && (
+                    <div className="mb-4 border border-black p-3">
+                        <p className="mb-2 font-bold uppercase">
+                            Pre-enrolled Subjects ({assessmentSubjects.length} subjects · {assessmentSubjects.reduce((sum, s) => sum + s.units, 0)} total units)
+                        </p>
+                        <table className="w-full text-xs">
+                            <thead>
+                                <tr className="border-b border-black">
+                                    <th className="py-0.5 text-left font-semibold">Code</th>
+                                    <th className="py-0.5 text-left font-semibold">Subject Name</th>
+                                    <th className="py-0.5 text-left font-semibold">Type</th>
+                                    <th className="py-0.5 text-right font-semibold">Units</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assessmentSubjects.map((s) => (
+                                    <tr key={s.code} className="border-b border-gray-300 last:border-0">
+                                        <td className="py-0.5 font-mono">{s.code}</td>
+                                        <td className="py-0.5">{s.name}</td>
+                                        <td className="py-0.5">{s.type}</td>
+                                        <td className="py-0.5 text-right">{s.units}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

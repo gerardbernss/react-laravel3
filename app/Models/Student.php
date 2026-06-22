@@ -86,6 +86,11 @@ class Student extends Model
         return $this->hasMany(StudentEnrollment::class);
     }
 
+    public function withdrawal()
+    {
+        return $this->hasOne(StudentWithdrawal::class);
+    }
+
     /**
      * Get complete enrollment history with subjects
      */

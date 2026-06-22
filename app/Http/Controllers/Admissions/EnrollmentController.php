@@ -13,6 +13,7 @@ use App\Models\Fee;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\StudentAssessment;
+use App\Models\StudentWithdrawal;
 use App\Services\Student\CopyApplicantDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -53,10 +54,7 @@ class EnrollmentController extends Controller
 
         $query = Applicant::with(['personalData', 'documents', 'portalCredential'])
             ->whereIn('application_status', ['Exam Passed', 'Pending', 'Enrolled'])
-            ->when($currentPeriod, fn($q) => $q
-                ->where('school_year', $currentPeriod->school_year)
-                ->where('semester', $currentPeriod->semester)
-            )
+            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
@@ -78,23 +76,15 @@ class EnrollmentController extends Controller
 
         $applicants = $query->paginate(15);
 
-        /** @var string|null $sy */
-        $sy  = $currentPeriod ? (string) $currentPeriod->getAttribute('school_year') : null;
-        /** @var string|null $sem */
-        $sem = $currentPeriod ? (string) $currentPeriod->getAttribute('semester') : null;
-
         $statistics = [
             'pending'  => Applicant::query()->where('application_status', 'Pending')
-                ->when($sy,  fn ($q) => $q->where('school_year', $sy))
-                ->when($sem, fn ($q) => $q->where('semester', $sem))
+                ->when($currentPeriod, fn ($q) => $currentPeriod->applyTo($q))
                 ->count(),
             'enrolled' => Applicant::query()->where('application_status', 'Enrolled')
-                ->when($sy,  fn ($q) => $q->where('school_year', $sy))
-                ->when($sem, fn ($q) => $q->where('semester', $sem))
+                ->when($currentPeriod, fn ($q) => $currentPeriod->applyTo($q))
                 ->count(),
             'total'    => Applicant::query()->whereIn('application_status', ['Pending', 'Enrolled'], 'and', false)
-                ->when($sy,  fn ($q) => $q->where('school_year', $sy))
-                ->when($sem, fn ($q) => $q->where('semester', $sem))
+                ->when($currentPeriod, fn ($q) => $currentPeriod->applyTo($q))
                 ->count(),
         ];
 
@@ -501,6 +491,67 @@ class EnrollmentController extends Controller
         ]);
 
         return back()->with('success', 'Applicant status reverted to Pending.');
+    }
+
+    /**
+     * Withdraw an applicant (and their linked student record if any).
+     */
+    public function withdraw(Request $request, Applicant $applicant)
+    {
+        if ($applicant->application_status === 'Withdrawn') {
+            return back()->withErrors(['error' => 'This applicant has already been withdrawn.']);
+        }
+
+        $validated = $request->validate([
+            'withdrawal_type' => 'required|in:during_enrollment,after_classes',
+            'refund_amount'   => 'required|numeric|min:0',
+            'reason'          => 'nullable|string|max:1000',
+        ]);
+
+        $previousStatus = $applicant->application_status;
+        $student        = $applicant->student;
+
+        // Find most recent assessment linked to the student
+        $assessment = $student
+            ? StudentAssessment::where('student_id', $student->id)->latest()->first()
+            : null;
+
+        $applicant->update(['application_status' => 'Withdrawn']);
+
+        if ($student) {
+            $student->update(['enrollment_status' => 'Withdrawn']);
+        }
+
+        StudentWithdrawal::create([
+            'applicant_id'    => $applicant->id,
+            'student_id'      => $student?->id,
+            'assessment_id'   => $assessment?->id,
+            'withdrawal_type' => $validated['withdrawal_type'],
+            'refund_amount'   => $validated['refund_amount'],
+            'reason'          => $validated['reason'] ?? null,
+            'processed_by'    => Auth::id(),
+        ]);
+
+        if ($assessment) {
+            $assessment->update(['status' => 'cancelled']);
+        }
+
+        EnrollmentAuditLog::create([
+            'applicant_id'    => $applicant->id,
+            'action'          => 'Application Withdrawn',
+            'new_status'      => 'Withdrawn',
+            'previous_status' => $previousStatus,
+            'details'         => json_encode([
+                'withdrawn_by'    => Auth::user()->name,
+                'withdrawal_type' => $validated['withdrawal_type'],
+                'refund_amount'   => $validated['refund_amount'],
+                'reason'          => $validated['reason'] ?? null,
+            ]),
+            'performed_by' => Auth::user()->name,
+            'ip_address'   => $request->ip(),
+        ]);
+
+        return back()->with('success', 'Application has been withdrawn.');
     }
 
     /**

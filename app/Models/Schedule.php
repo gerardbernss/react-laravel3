@@ -15,6 +15,7 @@ class Schedule extends Model
         'days',
         'time',
         'room',
+        'code',
     ];
 
     protected $appends = ['display'];

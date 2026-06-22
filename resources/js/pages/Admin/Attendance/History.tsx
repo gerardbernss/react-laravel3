@@ -61,16 +61,9 @@ function rateColor(rate: number | null) {
     return 'text-red-600';
 }
 
-export default function History({
-    blockSection,
-    subjects,
-    selectedSubjectId,
-    dateFrom,
-    dateTo,
-    records,
-}: Props) {
-    const [fromVal, setFromVal]   = useState(dateFrom ?? '');
-    const [toVal, setToVal]       = useState(dateTo ?? '');
+export default function History({ blockSection, subjects, selectedSubjectId, dateFrom, dateTo, records }: Props) {
+    const [fromVal, setFromVal] = useState(dateFrom ?? '');
+    const [toVal, setToVal] = useState(dateTo ?? '');
     const [subjectVal, setSubjectVal] = useState(String(selectedSubjectId));
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -93,7 +86,7 @@ export default function History({
             {
                 subject_id: subjectVal,
                 date_from: fromVal || undefined,
-                date_to:   toVal   || undefined,
+                date_to: toVal || undefined,
             },
             { preserveState: true, replace: true },
         );
@@ -102,11 +95,7 @@ export default function History({
     const clearFilters = () => {
         setFromVal('');
         setToVal('');
-        router.get(
-            `/attendance/${blockSection.id}/history`,
-            { subject_id: subjectVal },
-            { preserveState: false, replace: true },
-        );
+        router.get(`/attendance/${blockSection.id}/history`, { subject_id: subjectVal }, { preserveState: false, replace: true });
     };
 
     const hasDateFilter = fromVal || toVal;
@@ -116,40 +105,43 @@ export default function History({
             <Head title={`History — ${blockSection.code}`} />
 
             <div className="p-6 md:p-10">
-
                 {/* ── Header ── */}
-                <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">
-                            {blockSection.code}
-                            <span className="ml-2 text-xl font-normal text-gray-500">{blockSection.name}</span>
-                        </h1>
-                        <p className="mt-1 text-sm text-gray-500">
-                            {[blockSection.grade_level, blockSection.strand, blockSection.school_year, blockSection.semester]
-                                .filter(Boolean)
-                                .join(' · ')}
-                        </p>
+                <div className="mb-6">
+                    <div className="mb-4 flex items-center gap-4">
+                        <Link
+                            href={blockSection.grade_level ? `/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/attendance'}
+                            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                        >
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Back
+                        </Link>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href={`/attendance/${blockSection.id}?subject_id=${subjectVal}`}>
-                            <Button variant="outline">
-                                <ClipboardCheck className="mr-2 h-4 w-4" />
-                                Take / View Today
-                            </Button>
-                        </Link>
-                        <Link href={blockSection.grade_level ? `/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/attendance'}>
-                            <Button variant="outline">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back
-                            </Button>
-                        </Link>
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">
+                                {blockSection.code}
+                                <span className="ml-2 text-xl font-normal text-gray-500">{blockSection.name}</span>
+                            </h1>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {[blockSection.grade_level, blockSection.strand, blockSection.school_year, blockSection.semester]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Link href={`/attendance/${blockSection.id}?subject_id=${subjectVal}`}>
+                                <Button variant="outline">
+                                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                                    Take / View Today
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
                 {/* ── Filters ── */}
                 <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
                     <div className="flex flex-wrap items-end gap-4">
-
                         {/* Subject selector */}
                         {subjects.length > 1 && (
                             <div className="flex flex-col gap-1">
@@ -157,7 +149,7 @@ export default function History({
                                 <select
                                     value={subjectVal}
                                     onChange={(e) => setSubjectVal(e.target.value)}
-                                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none"
                                 >
                                     {subjects.map((s) => (
                                         <option key={s.id} value={String(s.id)}>
@@ -175,7 +167,7 @@ export default function History({
                                 type="date"
                                 value={fromVal}
                                 onChange={(e) => setFromVal(e.target.value)}
-                                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none"
                             />
                         </div>
 
@@ -186,11 +178,13 @@ export default function History({
                                 type="date"
                                 value={toVal}
                                 onChange={(e) => setToVal(e.target.value)}
-                                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none"
                             />
                         </div>
 
-                        <Button onClick={applyFilters} size="sm">Apply</Button>
+                        <Button onClick={applyFilters} size="sm">
+                            Apply
+                        </Button>
 
                         {hasDateFilter && (
                             <Button onClick={clearFilters} variant="ghost" size="sm" className="text-gray-500">
@@ -205,9 +199,7 @@ export default function History({
                     <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
                         <CalendarDays className="mx-auto mb-3 h-10 w-10 text-gray-300" />
                         <p className="text-sm font-medium text-gray-500">No attendance records found.</p>
-                        {hasDateFilter && (
-                            <p className="mt-1 text-xs text-gray-400">Try widening the date range or clearing the filters.</p>
-                        )}
+                        {hasDateFilter && <p className="mt-1 text-xs text-gray-400">Try widening the date range or clearing the filters.</p>}
                     </div>
                 ) : (
                     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -215,20 +207,25 @@ export default function History({
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Marked</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-green-600">Present</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-red-600">Absent</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-yellow-600">Late</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-blue-600">Excused</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Rate</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase">Date</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase">Marked</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-green-600 uppercase">
+                                            Present
+                                        </th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-red-600 uppercase">Absent</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-yellow-600 uppercase">Late</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-blue-600 uppercase">
+                                            Excused
+                                        </th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase">Rate</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                                            Actions
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {paginated.map((record) => (
                                         <tr key={record.date} className="transition-colors hover:bg-gray-50">
-
                                             {/* Date */}
                                             <td className="px-4 py-3">
                                                 <p className="font-medium text-gray-900">{formatDate(record.date)}</p>
@@ -242,30 +239,38 @@ export default function History({
 
                                             {/* Present */}
                                             <td className="px-4 py-3 text-center">
-                                                {record.present > 0
-                                                    ? <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{record.present}</Badge>
-                                                    : <span className="text-gray-300">—</span>}
+                                                {record.present > 0 ? (
+                                                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{record.present}</Badge>
+                                                ) : (
+                                                    <span className="text-gray-300">—</span>
+                                                )}
                                             </td>
 
                                             {/* Absent */}
                                             <td className="px-4 py-3 text-center">
-                                                {record.absent > 0
-                                                    ? <Badge className="bg-red-100 text-red-700 hover:bg-red-100">{record.absent}</Badge>
-                                                    : <span className="text-gray-300">—</span>}
+                                                {record.absent > 0 ? (
+                                                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100">{record.absent}</Badge>
+                                                ) : (
+                                                    <span className="text-gray-300">—</span>
+                                                )}
                                             </td>
 
                                             {/* Late */}
                                             <td className="px-4 py-3 text-center">
-                                                {record.late > 0
-                                                    ? <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">{record.late}</Badge>
-                                                    : <span className="text-gray-300">—</span>}
+                                                {record.late > 0 ? (
+                                                    <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">{record.late}</Badge>
+                                                ) : (
+                                                    <span className="text-gray-300">—</span>
+                                                )}
                                             </td>
 
                                             {/* Excused */}
                                             <td className="px-4 py-3 text-center">
-                                                {record.excused > 0
-                                                    ? <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">{record.excused}</Badge>
-                                                    : <span className="text-gray-300">—</span>}
+                                                {record.excused > 0 ? (
+                                                    <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">{record.excused}</Badge>
+                                                ) : (
+                                                    <span className="text-gray-300">—</span>
+                                                )}
                                             </td>
 
                                             {/* Rate */}
@@ -275,9 +280,7 @@ export default function History({
 
                                             {/* Actions */}
                                             <td className="px-4 py-3 text-center">
-                                                <Link
-                                                    href={`/attendance/${blockSection.id}?date=${record.date}&subject_id=${subjectVal}`}
-                                                >
+                                                <Link href={`/attendance/${blockSection.id}?date=${record.date}&subject_id=${subjectVal}`}>
                                                     <Button variant="outline" size="sm">
                                                         <ClipboardCheck className="mr-1 h-3.5 w-3.5" />
                                                         View / Edit
@@ -295,7 +298,10 @@ export default function History({
                             pageSize={pageSize}
                             currentPage={currentPage}
                             onPageChange={setCurrentPage}
-                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                            onPageSizeChange={(s) => {
+                                setPageSize(s);
+                                setCurrentPage(1);
+                            }}
                         />
                     </div>
                 )}

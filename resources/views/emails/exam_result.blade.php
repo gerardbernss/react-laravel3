@@ -100,6 +100,13 @@
         @endif
     </p>
 
+    @if($examResult->result && strtolower($examResult->result) === 'passed')
+    <p>
+        Congratulations on passing the entrance examination! Please wait for further announcements
+        regarding the enrollment schedule.
+    </p>
+    @endif
+
     <p>Please contact the admissions office if you have any questions about your results.</p>
 
     <p>Regards,<br>Admissions Office</p>

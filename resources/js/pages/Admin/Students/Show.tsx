@@ -1,8 +1,13 @@
 ﻿import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Edit, FileText, Printer } from 'lucide-react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Edit, FileText, Printer, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface PersonalData {
     id: number;
@@ -63,6 +68,14 @@ interface StudentRecord {
     current_semester: string | null; enrollment_date: string | null; source: string;
 }
 
+interface Withdrawal {
+    withdrawal_type: string;
+    refund_amount: number;
+    reason: string | null;
+    processed_by: string | null;
+    created_at: string;
+}
+
 interface Props {
     student: StudentRecord;
     personalData: PersonalData | null;
@@ -71,6 +84,7 @@ interface Props {
     educationalBackground: EducationalBackground[];
     documents: Documents | null;
     enrollments: Enrollment[];
+    withdrawal: Withdrawal | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -117,7 +131,20 @@ function FileLink({ path, label }: { path: string | null; label: string }) {
     );
 }
 
-export default function ShowStudent({ student, personalData, familyBackground, siblings, educationalBackground, documents, enrollments }: Props) {
+export default function ShowStudent({ student, personalData, familyBackground, siblings, educationalBackground, documents, enrollments, withdrawal }: Props) {
+    const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+    const withdrawForm = useForm({ withdrawal_type: 'during_enrollment', refund_amount: '0', reason: '' });
+
+    const handleWithdraw = (e: React.FormEvent) => {
+        e.preventDefault();
+        withdrawForm.post(`/students/${student.id}/withdraw`, {
+            onSuccess: () => { setShowWithdrawDialog(false); withdrawForm.reset(); },
+        });
+    };
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+
     const fullName = personalData
         ? `${personalData.last_name}, ${personalData.first_name}${personalData.middle_name ? ` ${personalData.middle_name}` : ''}${personalData.suffix ? `, ${personalData.suffix}` : ''}`
         : 'Unknown';
@@ -138,19 +165,45 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                         <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                             {student.student_id_number && <span className="font-mono">{student.student_id_number}</span>}
-{student.enrollment_status && (
-                                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${student.enrollment_status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                            {student.enrollment_status && (
+                                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    student.enrollment_status === 'Active' ? 'bg-green-100 text-green-700' :
+                                    student.enrollment_status === 'Withdrawn' ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-600'
+                                }`}>
                                     {student.enrollment_status}
                                 </span>
                             )}
                         </div>
                     </div>
-                    <Link href={`/students/${student.id}/edit`}>
-                        <Button variant="outline">
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                        </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                        {student.enrollment_status !== 'Withdrawn' && (
+                            <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => setShowWithdrawDialog(true)}>
+                                <XCircle className="mr-2 h-4 w-4" /> Withdraw
+                            </Button>
+                        )}
+                        <Link href={`/students/${student.id}/edit`}>
+                            <Button variant="outline">
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
+
+                {withdrawal && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                            <XCircle className="h-5 w-5 text-red-500" />
+                            <p className="text-sm font-semibold text-red-800">Student Withdrawn</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm text-red-700">
+                            <span>Type: <strong>{withdrawal.withdrawal_type === 'during_enrollment' ? 'During Enrollment' : 'After Classes Started'}</strong></span>
+                            <span>Refund: <strong>{formatCurrency(withdrawal.refund_amount)}</strong></span>
+                            {withdrawal.reason && <span className="col-span-2">Reason: {withdrawal.reason}</span>}
+                            <span className="col-span-2 text-xs text-red-500">Processed by {withdrawal.processed_by ?? '—'} on {withdrawal.created_at}</span>
+                        </div>
+                    </div>
+                )}
 
                 {/* Enrollment Info */}
                 <Section title="Enrollment Information">
@@ -337,6 +390,61 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     </Section>
                 )}
             </div>
+
+            <Dialog open={showWithdrawDialog} onOpenChange={(open) => { if (!withdrawForm.processing) setShowWithdrawDialog(open); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-700">Withdraw Student</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleWithdraw} className="space-y-4">
+                        <p className="text-sm text-gray-600">This action is permanent and cannot be undone.</p>
+                        <div>
+                            <Label htmlFor="s_withdrawal_type">Withdrawal Type</Label>
+                            <Select value={withdrawForm.data.withdrawal_type} onValueChange={(v) => withdrawForm.setData('withdrawal_type', v)}>
+                                <SelectTrigger id="s_withdrawal_type" className="mt-1">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="during_enrollment">During Enrollment Period</SelectItem>
+                                    <SelectItem value="after_classes">After Classes Have Started</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="s_refund_amount">Refund Amount (₱)</Label>
+                            <Input
+                                id="s_refund_amount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={withdrawForm.data.refund_amount}
+                                onChange={(e) => withdrawForm.setData('refund_amount', e.target.value)}
+                                className="mt-1"
+                            />
+                            {withdrawForm.errors.refund_amount && <p className="mt-1 text-sm text-red-600">{withdrawForm.errors.refund_amount}</p>}
+                        </div>
+                        <div>
+                            <Label htmlFor="s_reason">Reason (optional)</Label>
+                            <textarea
+                                id="s_reason"
+                                rows={3}
+                                value={withdrawForm.data.reason}
+                                onChange={(e) => withdrawForm.setData('reason', e.target.value)}
+                                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                                placeholder="Optional reason for withdrawal"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setShowWithdrawDialog(false)} disabled={withdrawForm.processing}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={withdrawForm.processing}>
+                                {withdrawForm.processing ? 'Withdrawing...' : 'Confirm Withdrawal'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

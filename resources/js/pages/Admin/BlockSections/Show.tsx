@@ -216,65 +216,65 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                 </div>
 
                 {/* Info grid — 2 columns */}
-                <div className="mb-6 grid gap-6 lg:grid-cols-2">
+                <div className="mb-6 grid gap-4 lg:grid-cols-2">
                     {/* Section Details */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-                            <LayoutGrid className="h-5 w-5" />
+                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <LayoutGrid className="h-4 w-4" />
                             Section Details
                         </h2>
-                        <dl className="space-y-3">
+                        <dl className="space-y-2">
                             <div className="flex justify-between">
-                                <dt className="text-sm text-gray-500">Section Code</dt>
-                                <dd className="text-sm font-medium text-gray-900">{blockSection.code}</dd>
+                                <dt className="text-xs text-gray-500">Section Code</dt>
+                                <dd className="text-xs font-medium text-gray-900">{blockSection.code}</dd>
                             </div>
                             <div className="flex justify-between">
-                                <dt className="text-sm text-gray-500">Grade Level</dt>
-                                <dd className="text-sm font-medium text-gray-900">{blockSection.grade_level}</dd>
+                                <dt className="text-xs text-gray-500">Grade Level</dt>
+                                <dd className="text-xs font-medium text-gray-900">{blockSection.grade_level}</dd>
                             </div>
                             <div className="flex justify-between">
-                                <dt className="text-sm text-gray-500">School Year</dt>
-                                <dd className="text-sm font-medium text-gray-900">{blockSection.school_year}</dd>
+                                <dt className="text-xs text-gray-500">School Year</dt>
+                                <dd className="text-xs font-medium text-gray-900">{blockSection.school_year}</dd>
                             </div>
                             {blockSection.semester && (
                                 <div className="flex justify-between">
-                                    <dt className="text-sm text-gray-500">Semester</dt>
-                                    <dd className="text-sm font-medium text-gray-900">{blockSection.semester}</dd>
+                                    <dt className="text-xs text-gray-500">Semester</dt>
+                                    <dd className="text-xs font-medium text-gray-900">{blockSection.semester}</dd>
                                 </div>
                             )}
                             <div className="flex justify-between">
-                                <dt className="text-sm text-gray-500">Adviser</dt>
-                                <dd className="text-sm font-medium text-gray-900">{blockSection.adviser || '—'}</dd>
+                                <dt className="text-xs text-gray-500">Adviser</dt>
+                                <dd className="text-xs font-medium text-gray-900">{blockSection.adviser || '—'}</dd>
                             </div>
                             <div className="flex justify-between">
-                                <dt className="text-sm text-gray-500">Room</dt>
-                                <dd className="text-sm font-medium text-gray-900">{blockSection.room || '—'}</dd>
+                                <dt className="text-xs text-gray-500">Room</dt>
+                                <dd className="text-xs font-medium text-gray-900">{blockSection.room || '—'}</dd>
                             </div>
                             {blockSection.schedule && (
-                                <div className="border-t pt-3">
-                                    <dt className="mb-1 text-sm text-gray-500">Schedule</dt>
-                                    <dd className="text-sm text-gray-700">{blockSection.schedule}</dd>
+                                <div className="border-t pt-2">
+                                    <dt className="mb-1 text-xs text-gray-500">Schedule</dt>
+                                    <dd className="text-xs text-gray-700">{blockSection.schedule}</dd>
                                 </div>
                             )}
                         </dl>
                     </div>
 
                     {/* Enrollment Stats + Add Student CTA */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-                            <Users className="h-5 w-5" />
+                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <Users className="h-4 w-4" />
                             Enrollment
                         </h2>
 
                         <div className="text-center">
-                            <div className="text-4xl font-bold text-primary">
+                            <div className="text-2xl font-bold text-primary">
                                 {blockSection.current_enrollment}
-                                <span className="text-xl text-gray-400">/{blockSection.capacity}</span>
+                                <span className="text-base text-gray-400">/{blockSection.capacity}</span>
                             </div>
-                            <p className="mt-1 text-sm text-gray-500">Students Enrolled</p>
+                            <p className="mt-0.5 text-xs text-gray-500">Students Enrolled</p>
 
-                            <div className="mt-4">
-                                <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+                            <div className="mt-3">
+                                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                                     <div
                                         className={`h-full rounded-full transition-all ${
                                             isFull
@@ -288,31 +288,31 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                         }}
                                     />
                                 </div>
-                                <p className="mt-2 text-sm text-gray-500">
+                                <p className="mt-1.5 text-xs text-gray-500">
                                     {blockSection.capacity - blockSection.current_enrollment} slots available
                                 </p>
                             </div>
                         </div>
 
-                        <div className="mt-6 border-t pt-4">
-                            <div className="flex justify-between text-sm">
+                        <div className="mt-3 border-t pt-3">
+                            <div className="flex justify-between text-xs">
                                 <span className="text-gray-500">Total Subjects</span>
                                 <span className="font-medium">{blockSection.subjects.length}</span>
                             </div>
-                            <div className="mt-2 flex justify-between text-sm">
+                            <div className="mt-1.5 flex justify-between text-xs">
                                 <span className="text-gray-500">Total Units</span>
                                 <span className="font-medium">{totalUnits}</span>
                             </div>
                         </div>
 
                         {/* Primary Add Student CTA — visible without scrolling */}
-                        <div className="mt-6 border-t pt-4">
+                        <div className="mt-3 border-t pt-3">
                             {isFull ? (
-                                <div className="rounded-md bg-red-50 px-3 py-2 text-center text-sm font-medium text-red-600">
+                                <div className="rounded-md bg-red-50 px-3 py-1.5 text-center text-xs font-medium text-red-600">
                                     Section is full — no slots available
                                 </div>
                             ) : (
-                                <Button className="w-full" onClick={openAddDialog}>
+                                <Button size="sm" className="w-full" onClick={openAddDialog}>
                                     <Plus className="mr-2 h-4 w-4" />
                                     Add Student to Section
                                 </Button>
@@ -367,19 +367,13 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                     {activeTab === 'students' && (
                         <div className="p-6">
                             {/* Tab toolbar */}
-                            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="mb-4">
                                 <Input
                                     placeholder="Search by name or student ID..."
                                     value={studentSearch}
                                     onChange={(e) => setStudentSearch(e.target.value)}
                                     className="sm:max-w-xs"
                                 />
-                                {!isFull && (
-                                    <Button size="sm" onClick={openAddDialog}>
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Add Student
-                                    </Button>
-                                )}
                             </div>
 
                             {filteredEnrolled.length > 0 ? (

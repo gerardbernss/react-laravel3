@@ -104,19 +104,15 @@ class DashboardController extends Controller
         $currentPeriod = EnrollmentPeriod::current();
 
         $currentSchoolYear = $currentPeriod?->school_year ?? '—';
-        $currentSemester   = $currentPeriod?->semester ?? null;
 
-        $periodScope = fn(Builder $q) => $q->when($currentPeriod, fn(Builder $q) => $q
-                ->where('school_year', '=', $currentSchoolYear)
-                ->where('semester', '=', $currentSemester)
-        );
+        $periodScope = fn(Builder $q) => $q->when($currentPeriod, fn(Builder $q) => $currentPeriod->applyTo($q));
 
         $stats               = $this->buildStats($periodScope);
         $statusBreakdown     = $this->buildStatusBreakdown($periodScope);
         $categoryBreakdown   = $this->buildCategoryBreakdown($periodScope);
         $monthlyApplications = $this->buildMonthlyApplications($periodScope);
         $monthlyEnrollments  = $this->buildMonthlyEnrollments($periodScope);
-        $enrollmentByGrade   = $this->buildEnrollmentByGrade();
+        $enrollmentByGrade   = $this->buildEnrollmentByGrade($currentSchoolYear);
         $announcements       = $this->buildAnnouncements();
 
         return Inertia::render('dashboard', [
@@ -139,7 +135,7 @@ class DashboardController extends Controller
     {
         return [
             'total_applicants'   => Applicant::query()->tap($periodScope)->count('*'),
-            'pending'            => Applicant::query()->where('application_status', '=', 'Pending')->tap($periodScope)->count('*'),
+            'pending'            => Applicant::query()->where('application_status', '!=', 'Enrolled')->tap($periodScope)->count('*'),
             'for_exam'           => Applicant::query()->where('application_status', '=', 'For Exam')->tap($periodScope)->count('*'),
             'exam_taken'         => Applicant::query()->where('application_status', '=', 'Exam Taken')->tap($periodScope)->count('*'),
             'enrolled'           => Applicant::query()->where('application_status', '=', 'Enrolled')->tap($periodScope)->count('*'),
@@ -157,7 +153,7 @@ class DashboardController extends Controller
             ->get()
             ->map(fn($item) => [
                 'status' => $item->application_status ?? 'Unknown',
-                'count'  => $item->count,
+                'count'  => (int) $item->count,
             ])
             ->toArray();
     }
@@ -171,7 +167,7 @@ class DashboardController extends Controller
             ->get()
             ->map(fn($item) => [
                 'category' => $item->student_category ?? 'Unknown',
-                'count'    => $item->count,
+                'count'    => (int) $item->count,
             ])
             ->toArray();
     }
@@ -210,49 +206,64 @@ class DashboardController extends Controller
         return $rows;
     }
 
-    private function buildEnrollmentByGrade(): array
+    private function buildEnrollmentByGrade(?string $schoolYear = null): array
     {
+        $noStrandLabels = [
+            'Laboratory Elementary School',
+            'Laboratory Junior High School',
+        ];
+
+        $normalizeStrand = fn (?string $strand) => \in_array($strand, $noStrandLabels) ? null : $strand;
+
+        // Enrolled headcount comes straight from active students, grouped by their
+        // current grade level and their application's strand.
+        $enrolledCounts = Student::query()
+            ->join('applicants', 'students.applicant_id', '=', 'applicants.id')
+            ->select(['students.current_year_level as grade_level', 'applicants.strand as strand'])
+            ->where('students.enrollment_status', '=', 'Active')
+            ->when($schoolYear && $schoolYear !== '—', fn ($q) => $q->where('students.current_school_year', $schoolYear))
+            ->get()
+            ->groupBy(fn ($a) => $a->grade_level . '|' . ($normalizeStrand($a->strand) ?? ''))
+            ->map(fn ($group) => $group->count());
+
+        $enrolledFor = fn (string $grade, ?string $strand) => (int) ($enrolledCounts->get($grade . '|' . ($strand ?? '')) ?? 0);
+
         $sectionRows = BlockSection::query()
             ->select([
                 'grade_level',
                 'strand',
-                DB::raw('SUM(current_enrollment) as "total_enrolled"'),
                 DB::raw('SUM(capacity) as "total_capacity"'),
-                DB::raw('COUNT(*) as "section_count"'),
             ])
+            ->when($schoolYear && $schoolYear !== '—', fn ($q) => $q->where('school_year', $schoolYear))
             ->groupBy('grade_level', 'strand')
             ->get()
-            ->map(function ($b) {
-                $noStrandLabel = \in_array($b->strand, [
-                    'Laboratory Elementary School',
-                    'Laboratory Junior High School',
-                ]);
+            ->map(function ($b) use ($enrolledFor, $noStrandLabels) {
+                $noStrandLabel = \in_array($b->strand, $noStrandLabels);
+                $enrolled      = $enrolledFor($b->grade_level, $noStrandLabel ? null : $b->strand);
                 return [
                     'label' => $noStrandLabel ? $b->grade_level : ($b->strand ? "{$b->grade_level} · {$b->strand}" : $b->grade_level),
                     'grade'      => $b->grade_level,
                     'program'    => $b->strand,
-                    'enrolled'   => (int) $b->total_enrolled,
+                    'enrolled'   => $enrolled,
                     'capacity'   => (int) $b->total_capacity,
-                    'sections'   => (int) $b->section_count,
                     'percentage' => $b->total_capacity > 0
-                        ? round(($b->total_enrolled / $b->total_capacity) * 100)
+                        ? round(($enrolled / $b->total_capacity) * 100)
                         : 0,
                 ];
             });
 
         $shsStrands = [
-            'Accountancy, Business, and Management (ABM)',
-            'General Academics (GAS)',
-            'Humanities and Social Sciences (HUMSS)',
-            'Science, Technology, Engineering and Mathematics (STEM)',
+            'Accountancy, Business and Management',
+            'Humanities and Social Sciences',
+            'Science, Technology, Engineering and Mathematics',
         ];
 
         $expected = collect();
         foreach (range(1, 6) as $n) {
-            $expected->push(['grade' => "Grade {$n}", 'strand' => 'Laboratory Elementary School', 'label' => "Grade {$n}"]);
+            $expected->push(['grade' => "Grade {$n}", 'strand' => null, 'label' => "Grade {$n}"]);
         }
         foreach (range(7, 10) as $n) {
-            $expected->push(['grade' => "Grade {$n}", 'strand' => 'Laboratory Junior High School', 'label' => "Grade {$n}"]);
+            $expected->push(['grade' => "Grade {$n}", 'strand' => null, 'label' => "Grade {$n}"]);
         }
         foreach ([11, 12] as $n) {
             foreach ($shsStrands as $strand) {
@@ -260,17 +271,16 @@ class DashboardController extends Controller
             }
         }
 
-        $existing = $sectionRows->keyBy(fn($r) => "{$r['grade']}|{$r['program']}");
+        $existing = $sectionRows->keyBy(fn($r) => $r['label']);
 
         foreach ($expected as $combo) {
-            if (! $existing->has("{$combo['grade']}|{$combo['strand']}")) {
+            if (! $existing->has($combo['label'])) {
                 $sectionRows->push([
                     'label'      => $combo['label'],
                     'grade'      => $combo['grade'],
                     'program'    => $combo['strand'],
-                    'enrolled'   => 0,
+                    'enrolled'   => $enrolledFor($combo['grade'], $combo['strand']),
                     'capacity'   => 0,
-                    'sections'   => 0,
                     'percentage' => 0,
                 ]);
             }

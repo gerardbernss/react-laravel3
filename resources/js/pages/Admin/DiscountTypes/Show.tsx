@@ -16,7 +16,6 @@ interface DiscountType {
     applies_to: string;
     requires_verification: boolean;
     is_stackable: boolean;
-    max_discount_cap: string | null;
     description: string | null;
     is_active: boolean;
     created_at: string;
@@ -103,14 +102,6 @@ export default function Show({ discountType, discountTypeOptions, appliesToOptio
                             <dt className="text-sm text-gray-500">Applies To</dt>
                             <dd className="mt-1 font-medium">{appliesToOptions[discountType.applies_to]}</dd>
                         </div>
-                        {discountType.max_discount_cap && (
-                            <div>
-                                <dt className="text-sm text-gray-500">Maximum Discount Cap</dt>
-                                <dd className="mt-1 font-medium">
-                                    ₱{parseFloat(discountType.max_discount_cap).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                </dd>
-                            </div>
-                        )}
                         <div>
                             <dt className="text-sm text-gray-500">Requires Verification</dt>
                             <dd className="mt-1">

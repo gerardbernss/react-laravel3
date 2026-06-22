@@ -1,8 +1,9 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { BookOpen, Facebook, GraduationCap, Mail, MapPin, Phone, Users } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Start() {
+    const { applicationPeriodOpen } = usePage<{ applicationPeriodOpen: boolean }>().props;
     const [selectedType, setSelectedType] = useState('');
 
     const applicationTypes = [
@@ -74,6 +75,18 @@ export default function Start() {
 
                 {/* Selection Cards */}
                 <div className="mb-16">
+                    {!applicationPeriodOpen ? (
+                        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center shadow-sm">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                                <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-700">Applications are Currently Closed</h3>
+                            <p className="mt-2 text-gray-500">The application period is not yet open. Please check back later or contact the admissions office for more information.</p>
+                        </div>
+                    ) : (
+                    <>
                     <h3 className="mb-6 text-center text-xl font-semibold text-primary md:text-2xl">Apply as:</h3>
 
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -130,9 +143,12 @@ export default function Start() {
                             </button>
                         ))}
                     </div>
+                    </>
+                    )}
                 </div>
 
                 {/* Proceed Button */}
+                {applicationPeriodOpen && (
                 <div className="mb-10 flex justify-center">
                     <button
                         onClick={handleProceed}
@@ -144,6 +160,7 @@ export default function Start() {
                         {selectedType ? 'Proceed to Application Form' : 'Please Select Application Type'}
                     </button>
                 </div>
+                )}
             </div>
 
             {/* Footer */}

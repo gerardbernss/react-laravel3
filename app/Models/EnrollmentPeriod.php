@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class EnrollmentPeriod extends Model
 {
@@ -79,6 +81,23 @@ class EnrollmentPeriod extends Model
             ?? static::query()->latest()->first();
     }
 
+    /**
+     * Like current(), but scoped to a single period type — so a "student"
+     * lookup never resolves to an "applicant"/"application" period that
+     * happens to be open at the same time (they often have a different
+     * semester, e.g. "Full Year" vs "First Semester").
+     */
+    public static function currentOfType(string $type): ?self
+    {
+        return static::query()
+            ->where('type', $type)
+            ->where('is_open', true)
+            ->where(fn ($q) => $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()))
+            ->first()
+            ?? static::query()->where('type', $type)->latest()->first();
+    }
+
     public static function hasOpenStudentPeriod(): bool
     {
         return static::where('type', 'student')
@@ -117,6 +136,20 @@ class EnrollmentPeriod extends Model
             ->first();
 
         return $period?->isCurrentlyOpen() ?? false;
+    }
+
+    /**
+     * Scope a query to this period's school year and semester.
+     *
+     * A "Full Year" period covers every semester, so applicant/student
+     * records (which only ever carry an actual semester like "First
+     * Semester") are matched on school year alone in that case.
+     */
+    public function applyTo(Builder|QueryBuilder $query, string $schoolYearColumn = 'school_year', string $semesterColumn = 'semester'): Builder|QueryBuilder
+    {
+        return $query
+            ->where($schoolYearColumn, $this->school_year)
+            ->when($this->semester !== 'Full Year', fn (Builder|QueryBuilder $q) => $q->where($semesterColumn, $this->semester));
     }
 
     /**

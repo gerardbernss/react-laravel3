@@ -8,6 +8,7 @@ use App\Models\ApplicantExamResult;
 use App\Models\ApplicantPersonalData;
 use App\Mail\Admissions\ExamResultMail;
 use App\Models\AppSetting;
+use App\Models\EnrollmentPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,7 +57,10 @@ class ExamResultsController extends Controller
 
     public function index()
     {
+        $currentPeriod = EnrollmentPeriod::current();
+
         $results = ApplicantExamResult::with(['personalData', 'applicant'])
+            ->when($currentPeriod, fn($q) => $q->whereHas('applicant', fn($q) => $currentPeriod->applyTo($q)))
             ->orderByRaw("CAST(ranking AS INTEGER) ASC NULLS LAST")
             ->orderBy('created_at', 'desc')
             ->get()
@@ -288,7 +292,10 @@ class ExamResultsController extends Controller
 
     public function updateRankings(): RedirectResponse
     {
-        $results = ApplicantExamResult::orderByDesc('total_score')
+        $currentPeriod = EnrollmentPeriod::current();
+
+        $results = ApplicantExamResult::when($currentPeriod, fn($q) => $q->whereHas('applicant', fn($q) => $currentPeriod->applyTo($q)))
+            ->orderByDesc('total_score')
             ->orderByDesc('percentage_score')
             ->get();
 
@@ -329,7 +336,10 @@ class ExamResultsController extends Controller
     {
         $request->validate(['scope' => 'required|in:all,new']);
 
-        $query = ApplicantExamResult::with('personalData');
+        $currentPeriod = EnrollmentPeriod::current();
+
+        $query = ApplicantExamResult::with('personalData')
+            ->when($currentPeriod, fn($q) => $q->whereHas('applicant', fn($q) => $currentPeriod->applyTo($q)));
         if ($request->input('scope') === 'new') {
             $query->whereNull('result_sent_at');
         }
@@ -358,11 +368,44 @@ class ExamResultsController extends Controller
         return redirect()->route('exam-results.index')->with('success', $message);
     }
 
+    public function updateAll(): RedirectResponse
+    {
+        $currentPeriod = EnrollmentPeriod::current();
+
+        $results = ApplicantExamResult::with('applicant')
+            ->when($currentPeriod, fn($q) => $q->whereHas('applicant', fn($q) => $currentPeriod->applyTo($q)))
+            ->orderByDesc('total_score')
+            ->orderByDesc('percentage_score')
+            ->get();
+
+        foreach ($results as $index => $result) {
+            /** @var ApplicantExamResult $result */
+            $result->update(['ranking' => $index + 1]);
+        }
+
+        $updated = 0;
+        foreach ($results as $result) {
+            /** @var ApplicantExamResult $result */
+            if (! $result->result || ! $result->applicant_id) continue;
+            $applicant = $result->applicant;
+            if (! $applicant) continue;
+            $newStatus = $result->result === 'Passed' ? 'Exam Passed' : 'Exam Failed';
+            $applicant->update(['application_status' => $newStatus]);
+            $updated++;
+        }
+
+        return redirect()->route('exam-results.index')
+            ->with('success', "Rankings updated for {$results->count()} record(s) and {$updated} applicant status(es) updated.");
+    }
+
     public function updateApplicantStatuses(): RedirectResponse
     {
+        $currentPeriod = EnrollmentPeriod::current();
+
         $results = ApplicantExamResult::with('applicant')
             ->whereNotNull('result')
             ->whereNotNull('applicant_id')
+            ->when($currentPeriod, fn($q) => $q->whereHas('applicant', fn($q) => $currentPeriod->applyTo($q)))
             ->get();
 
         $updated = 0;

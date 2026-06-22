@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
+use App\Models\StudentAssessment;
 use App\Models\StudentDocuments;
 use App\Models\StudentFamilyBackground;
 use App\Models\StudentPersonalData;
 use App\Models\StudentSiblings;
+use App\Models\StudentWithdrawal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -215,6 +218,7 @@ class StudentsController extends Controller
             'personalData.siblings',
             'application.educationalBackground',
             'enrollments',
+            'withdrawal.processedBy',
         ]);
 
         $spd = $student->studentPersonalData ?? $student->personalData;
@@ -242,6 +246,13 @@ class StudentsController extends Controller
                 'year_level'  => $e->year_level,
                 'status'      => $e->status,
             ]),
+            'withdrawal' => $student->withdrawal ? [
+                'withdrawal_type' => $student->withdrawal->withdrawal_type,
+                'refund_amount'   => (float) $student->withdrawal->refund_amount,
+                'reason'          => $student->withdrawal->reason,
+                'processed_by'    => $student->withdrawal->processedBy?->name,
+                'created_at'      => $student->withdrawal->created_at?->toDateTimeString(),
+            ] : null,
         ]);
     }
 
@@ -391,5 +402,40 @@ class StudentsController extends Controller
 
         return redirect()->route('admin.students.show', $student->id)
             ->with('success', 'Student record updated successfully.');
+    }
+
+    /**
+     * Withdraw a student from enrollment.
+     */
+    public function withdraw(Request $request, Student $student)
+    {
+        if ($student->enrollment_status === 'Withdrawn') {
+            return back()->withErrors(['error' => 'This student has already been withdrawn.']);
+        }
+
+        $validated = $request->validate([
+            'withdrawal_type' => 'required|in:during_enrollment,after_classes',
+            'refund_amount'   => 'required|numeric|min:0',
+            'reason'          => 'nullable|string|max:1000',
+        ]);
+
+        $assessment = StudentAssessment::where('student_id', $student->id)->latest()->first();
+
+        $student->update(['enrollment_status' => 'Withdrawn']);
+
+        StudentWithdrawal::create([
+            'student_id'      => $student->id,
+            'assessment_id'   => $assessment?->id,
+            'withdrawal_type' => $validated['withdrawal_type'],
+            'refund_amount'   => $validated['refund_amount'],
+            'reason'          => $validated['reason'] ?? null,
+            'processed_by'    => Auth::id(),
+        ]);
+
+        if ($assessment) {
+            $assessment->update(['status' => 'cancelled']);
+        }
+
+        return back()->with('success', 'Student has been withdrawn.');
     }
 }

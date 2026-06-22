@@ -47,7 +47,6 @@ class DiscountTypeController extends Controller
             'applies_to' => 'required|in:tuition_only,all_fees,miscellaneous_only',
             'requires_verification' => 'boolean',
             'is_stackable' => 'boolean',
-            'max_discount_cap' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -100,7 +99,6 @@ class DiscountTypeController extends Controller
             'applies_to' => 'required|in:tuition_only,all_fees,miscellaneous_only',
             'requires_verification' => 'boolean',
             'is_stackable' => 'boolean',
-            'max_discount_cap' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);

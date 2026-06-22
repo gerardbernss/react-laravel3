@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getSchoolYearOptions } from '@/lib/school-year';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -80,7 +81,7 @@ export default function Index({ periods, semesters }: Props) {
     const [showStartDialog, setShowStartDialog] = useState(false);
     const _d = new Date();
     const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, '0')}-${String(_d.getDate()).padStart(2, '0')}`;
-    const startForm = useForm({ school_year: '', semester: '', type: '' as 'student' | 'applicant' | 'application' | '', start_date: today, close_date: '', notes: '' });
+    const startForm = useForm({ school_year: getSchoolYearOptions()[0], semester: '', type: '' as 'student' | 'applicant' | 'application' | '', start_date: today, close_date: '', notes: '' });
 
     // Re-open dialog (per-row — opens an existing closed/expired period)
     const [openDialog, setOpenDialog] = useState<EnrollmentPeriod | null>(null);
@@ -317,12 +318,19 @@ export default function Index({ periods, semesters }: Props) {
                                 <Label htmlFor="start_school_year" className="mb-1 block">
                                     School Year <span className="text-red-500">*</span>
                                 </Label>
-                                <Input
-                                    id="start_school_year"
-                                    placeholder="e.g. 2025-2026"
+                                <Select
                                     value={startForm.data.school_year}
-                                    onChange={(e) => startForm.setData('school_year', e.target.value)}
-                                />
+                                    onValueChange={(v) => startForm.setData('school_year', v)}
+                                >
+                                    <SelectTrigger id="start_school_year">
+                                        <SelectValue placeholder="Select school year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {getSchoolYearOptions().map((y) => (
+                                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 {startForm.errors.school_year && (
                                     <p className="mt-1 text-xs text-red-600">{startForm.errors.school_year}</p>
                                 )}

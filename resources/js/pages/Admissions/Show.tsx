@@ -12,7 +12,6 @@ import {
     FileCheck,
     FileText,
     GraduationCap,
-    Key,
     Loader,
     Mail,
     MapPin,
@@ -49,7 +48,6 @@ interface ExamResult {
 export default function ViewProfile({ applicant, examResult }: { applicant: any; examResult: ExamResult | null }) {
     const [activeSection, setActiveSection] = useState('application');
     const [open, setOpen] = useState(false);
-    const [sendingEmail, setSendingEmail] = useState<string | null>(null);
     const [evaluateOpen, setEvaluateOpen] = useState(false);
     const [evaluating, setEvaluating] = useState(false);
     const [evalOutcome, setEvalOutcome] = useState<'approve' | 'revise' | 'reject' | ''>('');
@@ -63,38 +61,6 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
             href: `/admissions/applicants/${applicant.id}/show`,
         },
     ];
-
-    const sendEmail = async (type: 'final-result' | 'confirmation-email' | 'portal-password') => {
-        setSendingEmail(type);
-
-        try {
-            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-            const response = await fetch(`/admissions/applicants/${applicant.id}/send-${type}`, {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken || '',
-                },
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success(data.message || 'Email sent successfully!');
-            } else {
-                toast.error(data.message || 'Failed to send email');
-            }
-        } catch (error) {
-            toast.error('An error occurred while sending the email. Please try again.');
-        } finally {
-            setSendingEmail(null);
-        }
-    };
-
-    const handleFinalResult = () => sendEmail('final-result');
-    const handleConfirmationEmail = () => sendEmail('confirmation-email');
-    const handlePortalPassword = () => sendEmail('portal-password');
 
     const handleEvaluate = async () => {
         if (!evalOutcome) {
@@ -277,38 +243,6 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                 >
                                     <ClipboardCheck className="h-4 w-4" />
                                     Evaluate
-                                </button>
-                                <button
-                                    onClick={handleFinalResult}
-                                    disabled={sendingEmail !== null}
-                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {sendingEmail === 'final-result' ? (
-                                        <Loader className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <FileCheck className="h-4 w-4" />
-                                    )}
-                                    {sendingEmail === 'final-result' ? 'Sending...' : 'Final Result'}
-                                </button>
-                                <button
-                                    onClick={handleConfirmationEmail}
-                                    disabled={sendingEmail !== null}
-                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {sendingEmail === 'confirmation-email' ? (
-                                        <Loader className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Mail className="h-4 w-4" />
-                                    )}
-                                    {sendingEmail === 'confirmation-email' ? 'Sending...' : 'Confirmation Email'}
-                                </button>
-                                <button
-                                    onClick={handlePortalPassword}
-                                    disabled={sendingEmail !== null}
-                                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {sendingEmail === 'portal-password' ? <Loader className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
-                                    {sendingEmail === 'portal-password' ? 'Sending...' : 'Send Portal Password'}
                                 </button>
                                 <button className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
                                     <Download className="h-4 w-4" />

@@ -110,34 +110,34 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="rounded-lg border bg-white p-3 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600">Pending</p>
-                                <p className="text-3xl font-bold text-yellow-600">{statistics?.pending || 0}</p>
+                                <p className="text-xs text-gray-600">Pending</p>
+                                <p className="text-xl font-bold text-yellow-600">{statistics?.pending || 0}</p>
                             </div>
-                            <Clock className="h-8 w-8 text-yellow-600" />
+                            <Clock className="h-5 w-5 text-yellow-600" />
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className="rounded-lg border bg-white p-3 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600">Enrolled</p>
-                                <p className="text-3xl font-bold text-green-600">{statistics?.enrolled || 0}</p>
+                                <p className="text-xs text-gray-600">Enrolled</p>
+                                <p className="text-xl font-bold text-green-600">{statistics?.enrolled || 0}</p>
                             </div>
-                            <CheckCircle className="h-8 w-8 text-green-600" />
+                            <CheckCircle className="h-5 w-5 text-green-600" />
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className="rounded-lg border bg-white p-3 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600">Total</p>
-                                <p className="text-3xl font-bold text-gray-900">{statistics?.total || 0}</p>
+                                <p className="text-xs text-gray-600">Total</p>
+                                <p className="text-xl font-bold text-gray-900">{statistics?.total || 0}</p>
                             </div>
-                            <Users className="h-8 w-8 text-blue-600" />
+                            <Users className="h-5 w-5 text-blue-600" />
                         </div>
                     </div>
                 </div>

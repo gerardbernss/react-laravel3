@@ -10,7 +10,6 @@ interface BlockSection {
     code: string;
     name: string;
     grade_level: string | null;
-    strand: string | null;
     school_year: string | null;
     semester: string | null;
     adviser: string | null;
@@ -30,7 +29,7 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
         { title: gradeLevel, href: `/attendance/grade/${encodeURIComponent(gradeLevel)}` },
     ];
 
-    const totalEnrolled = sections.reduce((sum, s) => sum + s.enrolled_count, 0);
+    const totalEnrolled = sections.reduce((sum, s) => sum + Number(s.enrolled_count), 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -38,19 +37,15 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
 
             <div className="p-6 md:p-10">
                 {/* Header */}
-                <div className="mb-6 flex items-start justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">{gradeLevel}</h1>
-                        <p className="mt-1 text-gray-600">
-                            {sections.length} {sections.length === 1 ? 'section' : 'sections'} &middot; {totalEnrolled} enrolled
-                        </p>
-                    </div>
-                    <Link href="/attendance">
-                        <Button variant="outline">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Attendance
-                        </Button>
+                <div className="mb-6">
+                    <Link href="/attendance" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Attendance
                     </Link>
+                    <h1 className="mt-2 text-3xl font-bold text-gray-900">{gradeLevel}</h1>
+                    <p className="mt-1 text-gray-600">
+                        {sections.length} {sections.length === 1 ? 'section' : 'sections'} &middot; {totalEnrolled} enrolled
+                    </p>
                 </div>
 
                 {/* Sections Table */}
@@ -62,7 +57,6 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Code</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Section Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Strand</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Adviser</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">School Year</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Semester</th>
@@ -75,14 +69,13 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
                                         <tr key={section.id} className="transition-colors hover:bg-gray-50">
                                             <td className="px-4 py-3 font-medium text-gray-900">{section.code}</td>
                                             <td className="px-4 py-3 text-gray-900">{section.name}</td>
-                                            <td className="px-4 py-3 text-gray-600">{section.strand || '—'}</td>
                                             <td className="px-4 py-3 text-gray-600">{section.adviser || '—'}</td>
                                             <td className="px-4 py-3 text-gray-600">{section.school_year || '—'}</td>
                                             <td className="px-4 py-3 text-gray-600">{section.semester || '—'}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <Badge variant="outline" className="gap-1">
                                                     <Users className="h-3 w-3" />
-                                                    {section.enrolled_count}
+                                                    {Number(section.enrolled_count)}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3">
