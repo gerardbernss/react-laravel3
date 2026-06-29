@@ -92,18 +92,6 @@ class Student extends Model
     }
 
     /**
-     * Get complete enrollment history with subjects
-     */
-    public function getEnrollmentHistory()
-    {
-        return $this->enrollments()
-            ->with(['enrollmentSubjects.subject', 'blockSection'])
-            ->orderBy('school_year', 'desc')
-            ->orderByRaw("CASE WHEN semester = 'Summer' THEN 1 WHEN semester = 'Second' THEN 2 WHEN semester = 'First' THEN 3 ELSE 4 END")
-            ->get();
-    }
-
-    /**
      * Get enrollment for a specific semester
      */
     public function getEnrollmentFor(string $schoolYear, string $semester)

@@ -201,9 +201,11 @@ class ApplicantRepository
             'documents',
             'portalCredential',
             'auditLogs' => function ($q) {
-                $q->orderBy('created_at', 'desc')->limit(20);
+                $q->orderBy('created_at', 'desc');
             },
         ]);
+
+        $applicant->setRelation('auditLogs', $applicant->auditLogs->take(20));
     }
 
     public function forReport(array $filters): Collection

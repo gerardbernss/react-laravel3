@@ -656,16 +656,19 @@ class StudentPortalService
     {
         $siblings = $student->personalData?->siblings ?? collect();
 
-        foreach ($siblings as $sibling) {
-            if (! empty($sibling->sibling_id_number)
-                && $this->studentRepository->existsActiveSiblingById($sibling->sibling_id_number)) {
-                return true;
-            }
+        if ($siblings->isEmpty()) {
+            return false;
+        }
 
-            if (! empty($sibling->sibling_full_name)
-                && $this->studentRepository->existsActiveSiblingByFullName(trim($sibling->sibling_full_name))) {
-                return true;
-            }
+        $ids = $siblings->pluck('sibling_id_number')->filter()->values()->all();
+        $names = $siblings->pluck('sibling_full_name')->filter()->map(fn ($n) => trim($n))->values()->all();
+
+        if (! empty($ids) && $this->studentRepository->hasAnyActiveSiblingByIds($ids)) {
+            return true;
+        }
+
+        if (! empty($names) && $this->studentRepository->hasAnyActiveSiblingByFullNames($names)) {
+            return true;
         }
 
         return false;
@@ -804,27 +807,29 @@ class StudentPortalService
             return ['ok' => false, 'errors' => ['error' => 'You are already enrolled.']];
         }
 
-        $studentRecord = $personalData->student;
+        DB::transaction(function () use ($personalData, $application) {
+            $studentRecord = $personalData->student;
 
-        if (! $studentRecord) {
-            $studentRecord = $this->studentRepository->createStudent([
-                'applicant_personal_data_id' => $personalData->id,
-                'applicant_id' => $application->id,
-                'enrollment_status' => 'Active',
-                'enrollment_date' => now(),
-                'current_year_level' => $application->year_level,
-                'current_school_year' => $application->school_year,
-            ]);
-        } else {
-            $this->studentRepository->updateStudent($studentRecord, [
-                'enrollment_status' => 'Active',
-                'enrollment_date' => now(),
-            ]);
-        }
+            if (! $studentRecord) {
+                $studentRecord = $this->studentRepository->createStudent([
+                    'applicant_personal_data_id' => $personalData->id,
+                    'applicant_id' => $application->id,
+                    'enrollment_status' => 'Active',
+                    'enrollment_date' => now(),
+                    'current_year_level' => $application->year_level,
+                    'current_school_year' => $application->school_year,
+                ]);
+            } else {
+                $this->studentRepository->updateStudent($studentRecord, [
+                    'enrollment_status' => 'Active',
+                    'enrollment_date' => now(),
+                ]);
+            }
 
-        $this->applicantRepository->update($application, ['application_status' => 'Enrolled']);
+            $this->applicantRepository->update($application, ['application_status' => 'Enrolled']);
 
-        app(CopyApplicantDataService::class)->execute($studentRecord);
+            app(CopyApplicantDataService::class)->execute($studentRecord);
+        });
 
         return ['ok' => true, 'message' => 'Congratulations! Your enrollment has been confirmed successfully.'];
     }
@@ -854,79 +859,81 @@ class StudentPortalService
             return ['ok' => false, 'errors' => ['error' => 'Your fee assessment has already been submitted.']];
         }
 
-        if (! $studentRecord) {
-            $studentRecord = $this->studentRepository->createStudent([
-                'applicant_personal_data_id' => $personalData->id,
-                'applicant_id' => $application->id,
-                'enrollment_status' => 'Pending',
-                'enrollment_date' => now(),
-                'current_year_level' => $application->year_level,
-                'current_semester' => $targetSem,
-                'current_school_year' => $targetYear,
-            ]);
-        } else {
-            $this->studentRepository->updateStudent($studentRecord, [
-                'enrollment_status' => 'Pending',
-                'enrollment_date' => now(),
-                'applicant_id' => $studentRecord->applicant_id ?? $application->id,
-                'current_year_level' => $application->year_level,
-                'current_semester' => $targetSem,
-                'current_school_year' => $targetYear,
-            ]);
-        }
+        DB::transaction(function () use ($personalData, $application, $studentRecord, $targetYear, $targetSem, $data) {
+            if (! $studentRecord) {
+                $studentRecord = $this->studentRepository->createStudent([
+                    'applicant_personal_data_id' => $personalData->id,
+                    'applicant_id' => $application->id,
+                    'enrollment_status' => 'Pending',
+                    'enrollment_date' => now(),
+                    'current_year_level' => $application->year_level,
+                    'current_semester' => $targetSem,
+                    'current_school_year' => $targetYear,
+                ]);
+            } else {
+                $this->studentRepository->updateStudent($studentRecord, [
+                    'enrollment_status' => 'Pending',
+                    'enrollment_date' => now(),
+                    'applicant_id' => $studentRecord->applicant_id ?? $application->id,
+                    'current_year_level' => $application->year_level,
+                    'current_semester' => $targetSem,
+                    'current_school_year' => $targetYear,
+                ]);
+            }
 
-        $existingAssessment = $this->studentAssessmentRepository->findForStudentPeriod($studentRecord->id, $targetYear, $targetSem);
+            $existingAssessment = $this->studentAssessmentRepository->findForStudentPeriod($studentRecord->id, $targetYear, $targetSem);
 
-        if (! $existingAssessment) {
-            $assessmentFees = $this->getApplicableFees($application->year_level, $targetYear);
-            $assessmentProgram = $this->resolveProgram($application);
-            $assessmentUnits = $assessmentProgram?->max_load ?? 0;
+            if (! $existingAssessment) {
+                $assessmentFees = $this->getApplicableFees($application->year_level, $targetYear);
+                $assessmentProgram = $this->resolveProgram($application);
+                $assessmentUnits = $assessmentProgram?->max_load ?? 0;
 
-            $calcTotal = fn (string $cat) => collect($assessmentFees)
-                ->filter(fn ($f) => $f['category'] === $cat)
-                ->sum(fn ($f) => $f['is_per_unit'] ? $f['amount'] * $assessmentUnits : $f['amount']);
+                $calcTotal = fn (string $cat) => collect($assessmentFees)
+                    ->filter(fn ($f) => $f['category'] === $cat)
+                    ->sum(fn ($f) => $f['is_per_unit'] ? $f['amount'] * $assessmentUnits : $f['amount']);
 
-            $tTuition = $calcTotal('tuition');
-            $tMisc = $calcTotal('miscellaneous');
-            $tLab = $calcTotal('laboratory');
-            $tOther = $calcTotal('special');
-            $gross = $tTuition + $tMisc + $tLab + $tOther;
-            $net = (float) ($data['total_amount'] ?? 0);
-            $discount = max(0, $gross - $net);
-            $paymentPlan = $data['payment_plan'] ?? 'full';
+                $tTuition = $calcTotal('tuition');
+                $tMisc = $calcTotal('miscellaneous');
+                $tLab = $calcTotal('laboratory');
+                $tOther = $calcTotal('special');
+                $gross = $tTuition + $tMisc + $tLab + $tOther;
+                $net = (float) ($data['total_amount'] ?? 0);
+                $discount = max(0, $gross - $net);
+                $paymentPlan = $data['payment_plan'] ?? 'full';
 
-            $priorBalance = $this->getStudentPriorBalance($studentRecord->id, $targetYear, $targetSem);
-            $netWithPrior = $net + $priorBalance;
+                $priorBalance = $this->getStudentPriorBalance($studentRecord->id, $targetYear, $targetSem);
+                $netWithPrior = $net + $priorBalance;
 
-            $minimumAmount = $paymentPlan === 'installment'
-                ? round($net * 0.30 + $priorBalance, 2)
-                : $netWithPrior;
+                $minimumAmount = $paymentPlan === 'installment'
+                    ? round($net * 0.30 + $priorBalance, 2)
+                    : $netWithPrior;
 
-            $this->studentAssessmentRepository->create([
-                'student_id' => $studentRecord->id,
-                'assessment_number' => $this->studentAssessmentRepository->generateAssessmentNumber($targetYear),
-                'school_year' => $targetYear,
-                'semester' => $targetSem,
-                'total_tuition' => $tTuition,
-                'total_misc_fees' => $tMisc,
-                'total_lab_fees' => $tLab,
-                'total_other_fees' => $tOther,
-                'gross_amount' => $gross,
-                'total_discounts' => $discount,
-                'net_amount' => $netWithPrior,
-                'prior_balance' => $priorBalance,
-                'payment_plan' => $paymentPlan,
-                'minimum_amount' => $minimumAmount,
-                'mode_of_payment' => $data['mode_of_payment'] ?? null,
-                'status' => 'finalized',
-                'generated_at' => now(),
-                'finalized_at' => now(),
-            ]);
-        }
+                $this->studentAssessmentRepository->create([
+                    'student_id' => $studentRecord->id,
+                    'assessment_number' => $this->studentAssessmentRepository->generateAssessmentNumber($targetYear),
+                    'school_year' => $targetYear,
+                    'semester' => $targetSem,
+                    'total_tuition' => $tTuition,
+                    'total_misc_fees' => $tMisc,
+                    'total_lab_fees' => $tLab,
+                    'total_other_fees' => $tOther,
+                    'gross_amount' => $gross,
+                    'total_discounts' => $discount,
+                    'net_amount' => $netWithPrior,
+                    'prior_balance' => $priorBalance,
+                    'payment_plan' => $paymentPlan,
+                    'minimum_amount' => $minimumAmount,
+                    'mode_of_payment' => $data['mode_of_payment'] ?? null,
+                    'status' => 'finalized',
+                    'generated_at' => now(),
+                    'finalized_at' => now(),
+                ]);
+            }
 
-        $this->applicantRepository->update($application, ['application_status' => 'Pending']);
+            $this->applicantRepository->update($application, ['application_status' => 'Pending']);
 
-        app(CopyApplicantDataService::class)->execute($studentRecord);
+            app(CopyApplicantDataService::class)->execute($studentRecord);
+        });
 
         return ['ok' => true, 'message' => 'Enrollment confirmed! Please proceed to the Finance Office to complete your payment.'];
     }

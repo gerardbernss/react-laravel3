@@ -136,6 +136,20 @@ class StudentRepository
         })->where('enrollment_status', 'Active')->exists();
     }
 
+    public function hasAnyActiveSiblingByIds(array $ids): bool
+    {
+        return Student::whereIn('student_id_number', $ids)
+            ->where('enrollment_status', 'Active')
+            ->exists();
+    }
+
+    public function hasAnyActiveSiblingByFullNames(array $fullNames): bool
+    {
+        return Student::whereHas('personalData', function ($q) use ($fullNames) {
+            $q->whereRaw("first_name || ' ' || last_name IN (".implode(',', array_fill(0, count($fullNames), '?')).')', $fullNames);
+        })->where('enrollment_status', 'Active')->exists();
+    }
+
     public function findWithApplication(int $studentId): Student
     {
         return Student::with('application')->findOrFail($studentId);

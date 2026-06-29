@@ -14,9 +14,13 @@ class ExaminationRoomRepository
 
     public function loadRecentExamSchedules(ExaminationRoom $room): ExaminationRoom
     {
-        return $room->load(['examSchedules' => function ($query) {
-            $query->orderBy('exam_date', 'desc')->limit(10);
+        $room->load(['examSchedules' => function ($query) {
+            $query->orderBy('exam_date', 'desc');
         }]);
+
+        $room->setRelation('examSchedules', $room->examSchedules->take(10));
+
+        return $room;
     }
 
     public function activeForDropdown(): Collection
