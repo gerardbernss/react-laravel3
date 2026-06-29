@@ -5,11 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type DiscountType, type Fee, calcDiscountAmount, useEnrollmentShow } from '@/hooks/useEnrollmentShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, ClipboardList, History, RotateCcw, Tag, User, XCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
 
 interface FamilyBackground {
     father_name: string | null;
@@ -35,26 +35,6 @@ interface AuditLog {
     performed_by: string | null;
     details: string | null;
     created_at: string;
-}
-
-interface Fee {
-    id: number;
-    name: string;
-    category: string;
-    is_per_unit: boolean;
-    amount: number;
-}
-
-interface DiscountType {
-    id: number;
-    name: string;
-    code: string;
-    discount_type: 'percentage' | 'fixed_amount';
-    value: string;
-    applies_to: 'tuition_only' | 'miscellaneous_only' | 'all_fees';
-    is_stackable: boolean;
-    description: string | null;
-    auto_applied: boolean;
 }
 
 interface ExistingAssessment {
@@ -98,123 +78,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ['tuition', 'miscellaneous', 'laboratory', 'special', 'other'];
 
-function calcDiscountAmount(dt: DiscountType, tuitionTotal: number, miscTotal: number, grossAmount: number): number {
-    const base = dt.applies_to === 'tuition_only' ? tuitionTotal
-               : dt.applies_to === 'miscellaneous_only' ? miscTotal
-               : grossAmount;
-    const amount = dt.discount_type === 'percentage'
-        ? base * (parseFloat(dt.value) / 100)
-        : parseFloat(dt.value);
-    return Math.round(amount * 100) / 100;
-}
-
 export default function ShowEnrollment({ applicant, fees, units, discountTypes, existingAssessment }: Props) {
-    const [showEnrollForm, setShowEnrollForm] = useState(false);
-    const [showRevertDialog, setShowRevertDialog] = useState(false);
-    const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+    const {
+        breadcrumbs,
+        showEnrollForm, setShowEnrollForm,
+        showRevertDialog, setShowRevertDialog,
+        showWithdrawDialog, setShowWithdrawDialog,
+        withdrawForm, handleWithdraw,
+        enrollForm, handleEnroll,
+        feesByCategory, feeAmount, categoryTotal,
+        grossAmount, tuitionTotal, miscTotal,
+        onsiteForm, selectedDiscountIds, toggleDiscount, hasNonStackableSelected,
+        appliedDiscounts, totalDiscount, netAmount,
+        handleOnsiteEnroll, confirmRevert,
+    } = useEnrollmentShow({ applicant, fees, units, discountTypes });
 
-    const withdrawForm = useForm({ withdrawal_type: 'during_enrollment', refund_amount: '0', reason: '' });
-    const handleWithdraw = (e: React.FormEvent) => {
-        e.preventDefault();
-        withdrawForm.post(`/enrollment/${applicant.id}/withdraw`, {
-            onSuccess: () => { setShowWithdrawDialog(false); withdrawForm.reset(); },
-        });
-    };
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Enrollment Management', href: '/enrollment/dashboard' },
-        {
-            title: `${applicant.personal_data?.last_name}, ${applicant.personal_data?.first_name}`,
-            href: `/enrollment/${applicant.id}`,
-        },
-    ];
-
-    // ── Simple enroll form (Pending → Enrolled) ───────────────────────────────
-    const enrollForm = useForm({ student_id_number: '' });
-
-    const handleEnroll = (e: React.FormEvent) => {
-        e.preventDefault();
-        enrollForm.post(`/enrollment/${applicant.id}/enroll`, {
-            onSuccess: () => setShowEnrollForm(false),
-        });
-    };
-
-    // ── Fee helpers ───────────────────────────────────────────────────────────
-    const feesByCategory = useMemo(() => {
-        const map: Record<string, Fee[]> = {};
-        for (const fee of fees) {
-            const cat = fee.category ?? 'other';
-            if (!map[cat]) map[cat] = [];
-            map[cat].push(fee);
-        }
-        return map;
-    }, [fees]);
-
-    const feeAmount = (fee: Fee) => (fee.is_per_unit ? fee.amount * units : fee.amount);
-    const categoryTotal = (cat: string) => (feesByCategory[cat] ?? []).reduce((s, f) => s + feeAmount(f), 0);
-
-    const grossAmount  = useMemo(() => fees.reduce((sum, f) => sum + feeAmount(f), 0), [fees, units]);
-    const tuitionTotal = useMemo(() => (feesByCategory['tuition'] ?? []).reduce((s, f) => s + feeAmount(f), 0), [feesByCategory, units]);
-    const miscTotal    = useMemo(() => (feesByCategory['miscellaneous'] ?? []).reduce((s, f) => s + feeAmount(f), 0), [feesByCategory, units]);
-
-    // ── Onsite enrollment form ────────────────────────────────────────────────
-    const onsiteForm = useForm({
-        student_id_number: applicant.student_id_number ?? '',
-        payment_plan: 'full',
-        mode_of_payment: 'cash',
-        discount_ids: discountTypes.filter((dt) => dt.auto_applied).map((dt) => dt.id) as number[],
-    });
-
-    const selectedDiscountIds = onsiteForm.data.discount_ids;
-
-    const toggleDiscount = (dt: DiscountType) => {
-        if (dt.auto_applied) return;
-        const current = onsiteForm.data.discount_ids;
-        if (current.includes(dt.id)) {
-            onsiteForm.setData('discount_ids', current.filter((x) => x !== dt.id));
-        } else if (!dt.is_stackable) {
-            // Replace other non-stackable non-auto discounts
-            const nonStackableAutoIds = discountTypes.filter((d) => !d.is_stackable && d.auto_applied).map((d) => d.id);
-            const kept = current.filter((x) => {
-                const xdt = discountTypes.find((d) => d.id === x);
-                return xdt?.is_stackable || nonStackableAutoIds.includes(x);
-            });
-            onsiteForm.setData('discount_ids', [...kept, dt.id]);
-        } else {
-            onsiteForm.setData('discount_ids', [...current, dt.id]);
-        }
-    };
-
-    // Is another non-stackable already selected?
-    const hasNonStackableSelected = discountTypes.some(
-        (dt) => selectedDiscountIds.includes(dt.id) && !dt.is_stackable && !dt.auto_applied,
-    );
-
-    const appliedDiscounts = useMemo(
-        () =>
-            discountTypes
-                .filter((dt) => selectedDiscountIds.includes(dt.id))
-                .map((dt) => ({ ...dt, discountAmount: calcDiscountAmount(dt, tuitionTotal, miscTotal, grossAmount) })),
-        [selectedDiscountIds, discountTypes, tuitionTotal, miscTotal, grossAmount],
-    );
-
-    const totalDiscount = useMemo(() => appliedDiscounts.reduce((s, d) => s + d.discountAmount, 0), [appliedDiscounts]);
-    const netAmount     = useMemo(() => Math.max(0, grossAmount - totalDiscount), [grossAmount, totalDiscount]);
-
-    const handleOnsiteEnroll = (e: React.FormEvent) => {
-        e.preventDefault();
-        onsiteForm.post(`/enrollment/${applicant.id}/process-onsite`);
-    };
-
-    // ── Revert ────────────────────────────────────────────────────────────────
-    const confirmRevert = () => {
-        router.post(`/enrollment/${applicant.id}/revert-to-pending`, {}, {
-            onSuccess: () => setShowRevertDialog(false),
-        });
-    };
-
-    // ── Status badge ──────────────────────────────────────────────────────────
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'Enrolled':    return <Badge className="bg-green-100 text-green-800">Enrolled</Badge>;
@@ -233,19 +111,19 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Applicant Enrollment Details" />
 
-            <div className="space-y-6 p-6 md:p-10">
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div>
                     <Link href="/enrollment/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Dashboard
                     </Link>
-                    <h1 className="text-3xl font-bold text-gray-900">Applicant Enrollment Details</h1>
+                    <h1 className={PAGE_TITLE}>Applicant Enrollment Details</h1>
                 </div>
 
                 {/* Application Info */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-lg font-semibold">Application Information</h2>
+                <div className={`${CARD} p-6`}>
+                    <h2 className={`mb-4 ${SECTION_HEADING}`}>Application Information</h2>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                         <div>
                             <p className="text-sm text-gray-600">Application Number</p>
@@ -269,10 +147,10 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                 </div>
 
                 {/* Personal Information */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className={`${CARD} p-6`}>
                     <div className="mb-4 flex items-center gap-2">
                         <User className="h-5 w-5 text-gray-600" />
-                        <h2 className="text-lg font-semibold">Personal Information</h2>
+                        <h2 className={SECTION_HEADING}>Personal Information</h2>
                     </div>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                         <div>
@@ -310,8 +188,8 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                 </div>
 
                 {/* Academic Information */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-lg font-semibold">Academic Information</h2>
+                <div className={`${CARD} p-6`}>
+                    <h2 className={`mb-4 ${SECTION_HEADING}`}>Academic Information</h2>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                         <div>
                             <p className="text-sm text-gray-600">Category</p>
@@ -346,10 +224,10 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
 
                 {/* ── Onsite Enrollment (Exam Passed only) ── */}
                 {applicant.application_status === 'Exam Passed' && (
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className={`${CARD} p-6`}>
                         <div className="mb-4 flex items-center gap-2">
                             <ClipboardList className="h-5 w-5 text-gray-600" />
-                            <h2 className="text-lg font-semibold">Process Onsite Enrollment</h2>
+                            <h2 className={SECTION_HEADING}>Process Onsite Enrollment</h2>
                         </div>
 
                         {existingAssessment ? (
@@ -580,8 +458,8 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                 )}
 
                 {/* Enrollment Actions */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-lg font-semibold">Enrollment Actions</h2>
+                <div className={`${CARD} p-6`}>
+                    <h2 className={`mb-4 ${SECTION_HEADING}`}>Enrollment Actions</h2>
                     <div className="space-y-4">
                         {applicant.application_status === 'Pending' && (
                             <div className="rounded border border-green-200 bg-green-50 p-4">
@@ -656,10 +534,10 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
 
                 {/* Audit Log */}
                 {applicant.audit_logs && applicant.audit_logs.length > 0 && (
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className={`${CARD} p-6`}>
                         <div className="mb-4 flex items-center gap-2">
                             <History className="h-5 w-5 text-gray-600" />
-                            <h2 className="text-lg font-semibold">Recent Activity</h2>
+                            <h2 className={SECTION_HEADING}>Recent Activity</h2>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">

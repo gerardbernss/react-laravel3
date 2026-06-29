@@ -3,34 +3,31 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePermissionRequest;
+use App\Http\Requests\Admin\UpdatePermissionRequest;
 use App\Models\Permission;
-use Illuminate\Http\Request;
+use App\Repositories\PermissionRepository;
+use App\Services\Admin\PermissionService;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class PermissionController extends Controller
 {
-    public function __construct()
-    {
-        // Authorization is handled in individual methods
+    public function __construct(
+        private PermissionRepository $permissionRepository,
+        private PermissionService $permissionService,
+    ) {
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         Gate::authorize('viewAny', Permission::class);
 
-        $permissions = Permission::withCount('roles')->get();
-
-        return Inertia::render('Admin/Permissions/Index', compact('permissions'));
+        return Inertia::render('Admin/Permissions/Index', [
+            'permissions' => $this->permissionRepository->allWithRoleCount(),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         Gate::authorize('create', Permission::class);
@@ -38,42 +35,22 @@ class PermissionController extends Controller
         return Inertia::render('Admin/Permissions/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StorePermissionRequest $request)
     {
-        Gate::authorize('create', Permission::class);
-
-        $request->validate([
-            'name' => 'required|string|max:255|unique:permissions,name',
-            'description' => 'nullable|string',
-        ]);
-
-        $permission = Permission::create([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'description' => $request->description,
-        ]);
+        $this->permissionService->create($request->validated());
 
         return redirect()->route('permissions.index')->with('message', 'Permission created successfully!');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Permission $permission)
     {
         Gate::authorize('view', $permission);
 
-        $permission->load(['roles.users']);
-
-        return Inertia::render('Admin/Permissions/Show', compact('permission'));
+        return Inertia::render('Admin/Permissions/Show', [
+            'permission' => $this->permissionRepository->loadRolesWithUsers($permission),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Permission $permission)
     {
         Gate::authorize('update', $permission);
@@ -81,35 +58,18 @@ class PermissionController extends Controller
         return Inertia::render('Admin/Permissions/Edit', compact('permission'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Permission $permission)
+    public function update(UpdatePermissionRequest $request, Permission $permission)
     {
-        Gate::authorize('update', $permission);
-
-        $request->validate([
-            'name' => 'required|string|max:255|unique:permissions,name,'.$permission->id,
-            'description' => 'nullable|string',
-        ]);
-
-        $permission->update([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'description' => $request->description,
-        ]);
+        $this->permissionService->update($permission, $request->validated());
 
         return redirect()->route('permissions.index')->with('message', 'Permission updated successfully!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Permission $permission)
     {
         Gate::authorize('delete', $permission);
 
-        $permission->delete();
+        $this->permissionRepository->delete($permission);
 
         return redirect()->route('permissions.index')->with('message', 'Permission deleted successfully!');
     }

@@ -1,6 +1,5 @@
 import { CitizenshipSelect } from '@/components/citizenship-select';
 import { FileUpload } from '@/components/file-upload';
-import { getSchoolYearOptions } from '@/lib/school-year';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,25 +7,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { router, usePage } from '@inertiajs/react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { applicantFormSchema, type ApplicantFormValues } from '@/schemas/applicant-form';
-import axios from 'axios';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { PAGE_TITLE } from '@/constants/ui';
+import { useAddApplicant } from '@/hooks/useAddApplicant';
+import AppLayout from '@/layouts/app-layout';
+import { getSchoolYearOptions } from '@/lib/school-year';
+import { type BreadcrumbItem } from '@/types';
 import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, Trash2, User, UserPlus, Users } from 'lucide-react';
-
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Add New Applicant', href: '/admissions/applicants/create' }];
 
-// ✅ Reusable tooltip label component
 const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string }) => {
     return (
         <div className="flex items-center gap-2">
@@ -46,9 +40,9 @@ const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string 
 };
 
 const FormNavigation = () => {
-    const [activeSection, setActiveSection] = React.useState('application');
+    const [activeSection, setActiveSection] = useState('application');
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleScroll = () => {
             const sections = ['application', 'personal', 'family', 'siblings', 'education', 'documents'];
 
@@ -131,421 +125,38 @@ const FormNavigation = () => {
 };
 
 export default function AddApplicant() {
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [pendingAction, setPendingAction] = useState<'discard' | 'reset' | null>(null);
-
-    const currentSemester = usePage().props.currentSemester as { name: string | null; school_year: string | null } | null;
-
-    const form = useForm<ApplicantFormValues>({
-        resolver: zodResolver(applicantFormSchema) as any,
-        mode: 'onChange',
-        defaultValues: {
-            //application info
-            application_date: new Date().toISOString().split('T')[0],
-            school_year: currentSemester?.school_year ?? '',
-            application_number: '',
-            application_status: 'Pending',
-            year_level: '',
-            semester: currentSemester?.name ?? '',
-            strand: '',
-            classification: '',
-            learning_mode: '',
-            accomplished_by_name: '',
-
-            //personal info
-            last_name: '',
-            first_name: '',
-            middle_name: '',
-            suffix: '',
-            learner_reference_number: '',
-            gender: '',
-            citizenship: '',
-            religion: '',
-            date_of_birth: '',
-            place_of_birth: '',
-            has_sibling: false,
-            email: '',
-            alt_email: '',
-            mobile_number: '',
-            present_street: '',
-            present_brgy: '',
-            present_city: '',
-            present_province: '',
-            present_zip: '',
-            permanent_street: '',
-            permanent_brgy: '',
-            permanent_city: '',
-            permanent_province: '',
-            permanent_zip: '',
-            stopped_studying: '',
-            accelerated: '',
-            health_conditions: [],
-            has_doctors_note: false,
-            doctors_note_file: null,
-
-            //family
-            father_lname: '',
-            father_fname: '',
-            father_mname: '',
-            father_living: '',
-            father_citizenship: '',
-            father_religion: '',
-            father_highest_educ: '',
-            father_occupation: '',
-            father_income: '',
-            father_business_emp: '',
-            father_business_address: '',
-            father_contact_no: '',
-            father_email: '',
-            father_slu_employee: false,
-            father_slu_dept: '',
-            mother_lname: '',
-            mother_fname: '',
-            mother_mname: '',
-            mother_living: '',
-            mother_citizenship: '',
-            mother_religion: '',
-            mother_highest_educ: '',
-            mother_occupation: '',
-            mother_income: '',
-            mother_business_emp: '',
-            mother_business_address: '',
-            mother_contact_no: '',
-            mother_email: '',
-            mother_slu_employee: false,
-            mother_slu_dept: '',
-            guardian_lname: '',
-            guardian_fname: '',
-            guardian_mname: '',
-            guardian_relationship: '',
-            guardian_citizenship: '',
-            guardian_religion: '',
-            guardian_highest_educ: '',
-            guardian_occupation: '',
-            guardian_income: '',
-            guardian_business_emp: '',
-            guardian_business_address: '',
-            guardian_contact_no: '',
-            guardian_email: '',
-            guardian_slu_employee: false,
-            guardian_slu_dept: '',
-            emergency_contact_name: '',
-            emergency_relationship: '',
-            emergency_home_phone: '',
-            emergency_mobile_phone: '',
-            emergency_email: '',
-
-            //siblings
-            siblings: [],
-
-            //education
-            schools: [],
-
-            //uploads
-            certificate_of_enrollment: null,
-            birth_certificate: null,
-            latest_report_card_front: null,
-            latest_report_card_back: null,
-        },
-    });
-
-    const handleReset = () => {
-        const currentSchoolYear = form.getValues('school_year');
-        const currentApplicationDate = form.getValues('application_date');
-
-        form.reset({
-            ...form.formState.defaultValues, // or your defaultValues object
-            application_date: currentApplicationDate,
-            school_year: currentSchoolYear,
-        });
-    };
-
-    const handleConfirmAction = () => {
-        if (pendingAction === 'discard') {
-            window.history.back();
-        } else if (pendingAction === 'reset') {
-            handleReset();
-        }
-        setShowConfirmDialog(false);
-        setPendingAction(null);
-    };
-
-    const allValues = form.watch();
-
-    const hasChanges = React.useMemo(() => {
-        return Object.entries(allValues).some(([key, value]) => {
-            if (['application_date', 'school_year', 'application_status'].includes(key)) {
-                return false;
-            }
-            if (Array.isArray(value)) return value.length > 0;
-            if (typeof value === 'boolean') return value === true; // Assuming default is false
-            if (value instanceof File) return true;
-            if (typeof value === 'string') return value.trim() !== '';
-            return value !== null && value !== undefined;
-        });
-    }, [allValues]);
-
-    // ==================== PSGC ADDRESS STATE ====================
-    type PsgcItem = {
-        code: string;
-        name: string;
-    };
-
-    // States for PRESENT address dropdowns
-    const [presentRegions, setPresentRegions] = useState<PsgcItem[]>([]);
-    const [presentProvinces, setPresentProvinces] = useState<PsgcItem[]>([]);
-    const [presentCities, setPresentCities] = useState<PsgcItem[]>([]);
-    const [presentBarangays, setPresentBarangays] = useState<PsgcItem[]>([]);
-
-    // Selected values for PRESENT address
-    const [selectedPresentRegion, setSelectedPresentRegion] = useState<string>('');
-    const [selectedPresentProvince, setSelectedPresentProvince] = useState<string>('');
-    const [selectedPresentCity, setSelectedPresentCity] = useState<string>('');
-
-    // States for PERMANENT address dropdowns
-    const [permanentRegions, setPermanentRegions] = useState<PsgcItem[]>([]);
-    const [permanentProvinces, setPermanentProvinces] = useState<PsgcItem[]>([]);
-    const [permanentCities, setPermanentCities] = useState<PsgcItem[]>([]);
-    const [permanentBarangays, setPermanentBarangays] = useState<PsgcItem[]>([]);
-
-    // Selected values for PERMANENT address
-    const [selectedPermanentRegion, setSelectedPermanentRegion] = useState<string>('');
-    const [selectedPermanentProvince, setSelectedPermanentProvince] = useState<string>('');
-    const [selectedPermanentCity, setSelectedPermanentCity] = useState<string>('');
-
-    // State to track if addresses should stay synced
-    const [isSameAddress, setIsSameAddress] = useState<boolean>(false);
-
-    // ==================== PSGC ADDRESS EFFECTS ====================
-    // Load regions on mount
-    useEffect(() => {
-        axios
-            .get<PsgcItem[]>('https://psgc.gitlab.io/api/regions')
-            .then((res) => {
-                setPresentRegions(res.data);
-                setPermanentRegions(res.data);
-            })
-            .catch(() => toast.error('Failed to load address data.'));
-    }, []);
-
-    // Load provinces when PRESENT region changes
-    useEffect(() => {
-        if (!selectedPresentRegion) return;
-
-        axios
-            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`)
-            .then((res) => setPresentProvinces(res.data))
-            .catch(() => toast.error('Failed to load address data.'));
-
-        setPresentCities([]);
-        setPresentBarangays([]);
-        setSelectedPresentProvince('');
-        setSelectedPresentCity('');
-        form.setValue('present_province', '');
-        form.setValue('present_city', '');
-        form.setValue('present_brgy', '');
-    }, [selectedPresentRegion]);
-
-    // Load cities when PRESENT province changes
-    useEffect(() => {
-        if (!selectedPresentProvince) return;
-
-        axios
-            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`)
-            .then((res) => setPresentCities(res.data))
-            .catch(() => toast.error('Failed to load address data.'));
-
-        setPresentBarangays([]);
-        setSelectedPresentCity('');
-        form.setValue('present_city', '');
-        form.setValue('present_brgy', '');
-    }, [selectedPresentProvince]);
-
-    // Load barangays when PRESENT city changes
-    useEffect(() => {
-        if (!selectedPresentCity) return;
-
-        axios
-            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`)
-            .then((res) => setPresentBarangays(res.data))
-            .catch(() => toast.error('Failed to load address data.'));
-
-        form.setValue('present_brgy', '');
-    }, [selectedPresentCity]);
-
-    // Auto-sync present to permanent when checkbox is enabled
-    useEffect(() => {
-        if (!isSameAddress) return;
-
-        if (presentRegions.length > 0) setPermanentRegions(presentRegions);
-        if (presentProvinces.length > 0) setPermanentProvinces(presentProvinces);
-        if (presentCities.length > 0) setPermanentCities(presentCities);
-        if (presentBarangays.length > 0) setPermanentBarangays(presentBarangays);
-
-        if (selectedPresentRegion !== selectedPermanentRegion) {
-            setSelectedPermanentRegion(selectedPresentRegion);
-        }
-        if (selectedPresentProvince !== selectedPermanentProvince) {
-            setSelectedPermanentProvince(selectedPresentProvince);
-        }
-        if (selectedPresentCity !== selectedPermanentCity) {
-            setSelectedPermanentCity(selectedPresentCity);
-        }
-
-        const presentStreet = form.getValues('present_street');
-        const presentZip = form.getValues('present_zip');
-        const presentProvince = form.getValues('present_province');
-        const presentCity = form.getValues('present_city');
-        const presentBrgy = form.getValues('present_brgy');
-
-        form.setValue('permanent_street', presentStreet || '', { shouldValidate: false, shouldDirty: false });
-        form.setValue('permanent_zip', presentZip || '', { shouldValidate: false, shouldDirty: false });
-        form.setValue('permanent_province', presentProvince || '', { shouldValidate: false, shouldDirty: false });
-        form.setValue('permanent_city', presentCity || '', { shouldValidate: false, shouldDirty: false });
-        form.setValue('permanent_brgy', presentBrgy || '', { shouldValidate: false, shouldDirty: false });
-    }, [
-        isSameAddress,
-        selectedPresentRegion,
-        selectedPresentProvince,
-        selectedPresentCity,
-        form.watch('present_street'),
-        form.watch('present_zip'),
-        form.watch('present_province'),
-        form.watch('present_city'),
-        form.watch('present_brgy'),
+    const {
+        form,
+        showConfirmDialog,
+        setShowConfirmDialog,
+        pendingAction,
+        setPendingAction,
+        hasChanges,
+        handleConfirmAction,
+        onSubmit,
         presentRegions,
         presentProvinces,
         presentCities,
         presentBarangays,
-    ]);
-
-    // Load provinces when PERMANENT region changes
-    useEffect(() => {
-        if (isSameAddress) return;
-        if (!selectedPermanentRegion) return;
-
-        axios
-            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPermanentRegion}/provinces`)
-            .then((res) => setPermanentProvinces(res.data))
-            .catch(() => toast.error('Failed to load address data.'));
-
-        if (!isSameAddress) {
-            setPermanentCities([]);
-            setPermanentBarangays([]);
-            setSelectedPermanentProvince('');
-            setSelectedPermanentCity('');
-            form.setValue('permanent_province', '');
-            form.setValue('permanent_city', '');
-            form.setValue('permanent_brgy', '');
-        }
-    }, [selectedPermanentRegion, isSameAddress]);
-
-    // Load cities when PERMANENT province changes
-    useEffect(() => {
-        if (isSameAddress) return;
-        if (!selectedPermanentProvince) return;
-
-        axios
-            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPermanentProvince}/cities-municipalities`)
-            .then((res) => setPermanentCities(res.data))
-            .catch(() => toast.error('Failed to load address data.'));
-
-        if (!isSameAddress) {
-            setPermanentBarangays([]);
-            setSelectedPermanentCity('');
-            form.setValue('permanent_city', '');
-            form.setValue('permanent_brgy', '');
-        }
-    }, [selectedPermanentProvince, isSameAddress]);
-
-    // Load barangays when PERMANENT city changes
-    useEffect(() => {
-        if (isSameAddress) return;
-        if (!selectedPermanentCity) return;
-
-        axios
-            .get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPermanentCity}/barangays`)
-            .then((res) => setPermanentBarangays(res.data))
-            .catch(() => toast.error('Failed to load address data.'));
-
-        if (!isSameAddress) {
-            form.setValue('permanent_brgy', '');
-        }
-    }, [selectedPermanentCity, isSameAddress]);
-
-    async function onSubmit(values: ApplicantFormValues) {
-        try {
-            const formData = new FormData();
-
-            // Append all regular form fields
-            Object.entries(values).forEach(([key, value]) => {
-                // Handle special fields that need JSON stringification
-                if (key === 'siblings' || key === 'schools') {
-                    if (Array.isArray(value) && value.length > 0) {
-                        formData.append(key, JSON.stringify(value));
-                    }
-                    return; // Skip further processing for these fields
-                }
-                // Handle health_conditions array
-                if (key === 'health_conditions') {
-                    if (Array.isArray(value) && value.length > 0) {
-                        formData.append(key, JSON.stringify(value));
-                    } else if (typeof value === 'string' && value) {
-                        formData.append(key, value);
-                    }
-                    return;
-                }
-                // Handle file uploads
-                if (
-                    key === 'certificate_of_enrollment' ||
-                    key === 'birth_certificate' ||
-                    key === 'latest_report_card_front' ||
-                    key === 'latest_report_card_back' ||
-                    key === 'doctors_note_file'
-                ) {
-                    if (value instanceof File) {
-                        formData.append(key, value);
-                    }
-                    return;
-                }
-                // Handle boolean values
-                if (typeof value === 'boolean') {
-                    formData.append(key, value ? '1' : '0');
-                    return;
-                }
-                // Handle all other fields
-                if (value !== null && value !== undefined && value !== '') {
-                    formData.append(key, value.toString());
-                }
-            });
-
-            // Submit form using Inertia
-            router.post('/admissions/applicants', formData, {
-                forceFormData: true,
-                onSuccess: () => {
-                    // Redirect to success page
-                    router.visit('/applications/success', {
-                        replace: true,
-                    });
-                },
-                onError: (errors) => {
-                    // Show first error
-                    const firstError = Object.values(errors)[0];
-                    toast.error(firstError || 'Failed to submit application. Please check the form.');
-
-                    // Set form errors
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: 'manual',
-                            message: errors[key],
-                        });
-                    });
-                },
-            });
-        } catch {
-            toast.error('An unexpected error occurred. Please try again.');
-        }
-    }
+        selectedPresentRegion,
+        setSelectedPresentRegion,
+        selectedPresentProvince,
+        setSelectedPresentProvince,
+        selectedPresentCity,
+        setSelectedPresentCity,
+        permanentRegions,
+        permanentProvinces,
+        permanentCities,
+        permanentBarangays,
+        selectedPermanentRegion,
+        setSelectedPermanentRegion,
+        selectedPermanentProvince,
+        setSelectedPermanentProvince,
+        selectedPermanentCity,
+        setSelectedPermanentCity,
+        isSameAddress,
+        setIsSameAddress,
+    } = useAddApplicant();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -590,7 +201,7 @@ export default function AddApplicant() {
                                     <ArrowLeft className="h-5 w-5" />
                                 </button>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-900">Add New Applicant</h1>
+                                    <h1 className={PAGE_TITLE}>Add New Applicant</h1>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -697,8 +308,12 @@ export default function AddApplicant() {
                                                                 <SelectContent>
                                                                     {(() => {
                                                                         const opts = getSchoolYearOptions();
-                                                                        return (opts.includes(field.value) ? opts : [field.value, ...opts].filter(Boolean)).map((y) => (
-                                                                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                                                                        return (
+                                                                            opts.includes(field.value) ? opts : [field.value, ...opts].filter(Boolean)
+                                                                        ).map((y) => (
+                                                                            <SelectItem key={y} value={y}>
+                                                                                {y}
+                                                                            </SelectItem>
                                                                         ));
                                                                     })()}
                                                                 </SelectContent>
@@ -1659,14 +1274,22 @@ export default function AddApplicant() {
                                                             <FormItem className="flex h-full flex-col justify-center">
                                                                 <LabelWithTooltip label="Father's Status" tooltip="" />
                                                                 <FormControl>
-                                                                    <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={(value) => field.onChange(value)}>
+                                                                    <RadioGroup
+                                                                        className="flex flex-row gap-4"
+                                                                        value={field.value || ''}
+                                                                        onValueChange={(value) => field.onChange(value)}
+                                                                    >
                                                                         <div className="flex items-center gap-2">
                                                                             <RadioGroupItem value="Living" id={`${field.name}-living`} />
-                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">
+                                                                                Living
+                                                                            </label>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
-                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">
+                                                                                Deceased
+                                                                            </label>
                                                                         </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
@@ -1810,14 +1433,26 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(value) => { field.onChange(value === 'true'); }}>
+                                                                        <RadioGroup
+                                                                            className="flex flex-row gap-4"
+                                                                            value={
+                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
+                                                                            }
+                                                                            onValueChange={(value) => {
+                                                                                field.onChange(value === 'true');
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-2">
                                                                                 <RadioGroupItem value="true" id={`${field.name}-yes`} />
-                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">
+                                                                                    Yes
+                                                                                </label>
                                                                             </div>
                                                                             <div className="flex items-center gap-2">
                                                                                 <RadioGroupItem value="false" id={`${field.name}-no`} />
-                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">
+                                                                                    No
+                                                                                </label>
                                                                             </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
@@ -1890,14 +1525,22 @@ export default function AddApplicant() {
                                                             <FormItem className="flex h-full flex-col justify-center">
                                                                 <LabelWithTooltip label="Mother's Status" tooltip="" />
                                                                 <FormControl>
-                                                                    <RadioGroup className="flex flex-row gap-4" value={field.value || ''} onValueChange={(value) => field.onChange(value)}>
+                                                                    <RadioGroup
+                                                                        className="flex flex-row gap-4"
+                                                                        value={field.value || ''}
+                                                                        onValueChange={(value) => field.onChange(value)}
+                                                                    >
                                                                         <div className="flex items-center gap-2">
                                                                             <RadioGroupItem value="Living" id={`${field.name}-living`} />
-                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">Living</label>
+                                                                            <label htmlFor={`${field.name}-living`} className="text-sm">
+                                                                                Living
+                                                                            </label>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <RadioGroupItem value="Deceased" id={`${field.name}-deceased`} />
-                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">Deceased</label>
+                                                                            <label htmlFor={`${field.name}-deceased`} className="text-sm">
+                                                                                Deceased
+                                                                            </label>
                                                                         </div>
                                                                     </RadioGroup>
                                                                 </FormControl>
@@ -2041,14 +1684,26 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(value) => { field.onChange(value === 'true'); }}>
+                                                                        <RadioGroup
+                                                                            className="flex flex-row gap-4"
+                                                                            value={
+                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
+                                                                            }
+                                                                            onValueChange={(value) => {
+                                                                                field.onChange(value === 'true');
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-2">
                                                                                 <RadioGroupItem value="true" id={`${field.name}-yes`} />
-                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">
+                                                                                    Yes
+                                                                                </label>
                                                                             </div>
                                                                             <div className="flex items-center gap-2">
                                                                                 <RadioGroupItem value="false" id={`${field.name}-no`} />
-                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">
+                                                                                    No
+                                                                                </label>
                                                                             </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
@@ -2336,14 +1991,26 @@ export default function AddApplicant() {
                                                                         tooltip=""
                                                                     />
                                                                     <FormControl>
-                                                                        <RadioGroup className="flex flex-row gap-4" value={field.value === true ? 'true' : field.value === false ? 'false' : ''} onValueChange={(value) => { field.onChange(value === 'true'); }}>
+                                                                        <RadioGroup
+                                                                            className="flex flex-row gap-4"
+                                                                            value={
+                                                                                field.value === true ? 'true' : field.value === false ? 'false' : ''
+                                                                            }
+                                                                            onValueChange={(value) => {
+                                                                                field.onChange(value === 'true');
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-2">
                                                                                 <RadioGroupItem value="true" id={`${field.name}-yes`} />
-                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                                <label htmlFor={`${field.name}-yes`} className="text-sm">
+                                                                                    Yes
+                                                                                </label>
                                                                             </div>
                                                                             <div className="flex items-center gap-2">
                                                                                 <RadioGroupItem value="false" id={`${field.name}-no`} />
-                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                                <label htmlFor={`${field.name}-no`} className="text-sm">
+                                                                                    No
+                                                                                </label>
                                                                             </div>
                                                                         </RadioGroup>
                                                                     </FormControl>
@@ -2471,11 +2138,15 @@ export default function AddApplicant() {
                                                                     >
                                                                         <div className="flex items-center gap-2">
                                                                             <RadioGroupItem value="true" id={`${field.name}-yes`} />
-                                                                            <label htmlFor={`${field.name}-yes`} className="text-sm">Yes</label>
+                                                                            <label htmlFor={`${field.name}-yes`} className="text-sm">
+                                                                                Yes
+                                                                            </label>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <RadioGroupItem value="false" id={`${field.name}-no`} />
-                                                                            <label htmlFor={`${field.name}-no`} className="text-sm">No</label>
+                                                                            <label htmlFor={`${field.name}-no`} className="text-sm">
+                                                                                No
+                                                                            </label>
                                                                         </div>
                                                                     </RadioGroup>
                                                                 </FormControl>

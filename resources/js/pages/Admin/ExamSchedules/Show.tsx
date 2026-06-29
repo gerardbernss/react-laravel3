@@ -1,88 +1,31 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import { type AvailableApplicant, type Schedule, useExamScheduleShow } from '@/hooks/useExamScheduleShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Clock, Edit, Loader2, MapPin, Search, Trash2, UserMinus, UserPlus, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface PersonalData {
-    first_name: string;
-    last_name: string;
-    middle_name: string | null;
-}
-
-interface ApplicationInfo {
-    id: number;
-    application_number: string;
-    personal_data: PersonalData;
-}
-
-interface Assignment {
-    id: number;
-    status: string;
-    assigned_at: string;
-    application_info: ApplicationInfo;
-}
-
-interface AvailableApplicant {
-    id: number;
-    application_number: string;
-    application_status: string;
-    first_name: string;
-    last_name: string;
-    middle_name: string | null;
-    assigned_to_schedule: string | null;
-}
-
-interface Room {
-    id: number;
-    name: string;
-    building: string | null;
-    capacity: number;
-    floor: string | null;
-}
-
-interface Schedule {
-    id: number;
-    name: string;
-    exam_type: string;
-    exam_date: string;
-    start_time: string;
-    end_time: string;
-    examination_room_id: number;
-    is_active: boolean;
-    created_at: string;
-    examination_room: Room;
-    applicant_assignments: Assignment[];
-}
+import { type ReactNode } from 'react';
 
 interface Props {
     schedule: Schedule;
     availableApplicants: AvailableApplicant[];
 }
 
-const STATUS_BADGE: Record<string, React.ReactNode> = {
-    assigned:  <Badge variant="outline">Assigned</Badge>,
+const STATUS_BADGE: Record<string, ReactNode> = {
+    assigned: <Badge variant="outline">Assigned</Badge>,
     confirmed: <Badge className="bg-blue-100 text-blue-800">Confirmed</Badge>,
-    attended:  <Badge className="bg-green-100 text-green-800">Attended</Badge>,
-    absent:    <Badge variant="destructive">Absent</Badge>,
+    attended: <Badge className="bg-green-100 text-green-800">Attended</Badge>,
+    absent: <Badge variant="destructive">Absent</Badge>,
     cancelled: <Badge variant="secondary">Cancelled</Badge>,
 };
 
 function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-    });
+    return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function formatTime(time: string) {
@@ -92,146 +35,52 @@ function formatTime(time: string) {
 }
 
 export default function Show({ schedule, availableApplicants }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Exam Schedules', href: '/exam-schedules' },
-        { title: schedule.name, href: `/exam-schedules/${schedule.id}` },
-    ];
-
-    const { delete: destroy, processing: deleting } = useForm();
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [removeDialog, setRemoveDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
-
-    // Assigned applicants table filters
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-
-    // Assign dialog state
-    const [assignOpen, setAssignOpen] = useState(false);
-    const [modalSearch, setModalSearch] = useState('');
-    const [selected, setSelected] = useState<number[]>([]);
-    const [submitting, setSubmitting] = useState(false);
-    const [assignError, setAssignError] = useState<string | null>(null);
-
-    const confirmDelete = () => {
-        destroy(`/exam-schedules/${schedule.id}`, {
-            onSuccess: () => setShowDeleteDialog(false),
-        });
-    };
-
-    const confirmRemove = () => {
-        destroy(`/exam-assignments/${removeDialog.id}`, {
-            onSuccess: () => setRemoveDialog({ open: false, id: 0, name: '' }),
-        });
-    };
-
-    const effectiveCapacity = schedule.examination_room?.capacity || 0;
-    const assignedCount = (schedule.applicant_assignments ?? []).filter((a) => a.status !== 'cancelled').length;
-    const availableSlots = Math.max(0, effectiveCapacity - assignedCount);
-    const capacityPct = effectiveCapacity > 0 ? Math.min(100, Math.round((assignedCount / effectiveCapacity) * 100)) : 0;
-
-    // ── Assigned applicants table ──
-    const filteredAssignments = useMemo(() => {
-        return (schedule.applicant_assignments ?? []).filter((a) => {
-            const q = search.toLowerCase();
-            const num = (a.application_info?.application_number ?? '').toLowerCase();
-            const name = `${a.application_info?.personal_data?.last_name ?? ''} ${a.application_info?.personal_data?.first_name ?? ''}`.toLowerCase();
-            return (!q || num.includes(q) || name.includes(q)) &&
-                   (!statusFilter || a.status === statusFilter);
-        });
-    }, [schedule.applicant_assignments, search, statusFilter]);
-
-    const paginatedAssignments = useMemo(() => filteredAssignments.slice((currentPage - 1) * pageSize, currentPage * pageSize), [filteredAssignments, currentPage, pageSize]);
-
-    // ── Assign dialog ──
-    const filteredAvailable = useMemo(() => {
-        const q = modalSearch.toLowerCase();
-        if (!q) return availableApplicants;
-        return availableApplicants.filter((a) =>
-            a.application_number.toLowerCase().includes(q) ||
-            `${a.last_name} ${a.first_name}`.toLowerCase().includes(q),
-        );
-    }, [availableApplicants, modalSearch]);
-
-    const allSelected = filteredAvailable.length > 0 && filteredAvailable.every((a) => selected.includes(a.id));
-
-    const toggleAll = () => {
-        setAssignError(null);
-        if (allSelected) {
-            const filteredIds = new Set(filteredAvailable.map((a) => a.id));
-            setSelected((prev) => prev.filter((id) => !filteredIds.has(id)));
-        } else {
-            setSelected((prev) => Array.from(new Set([...prev, ...filteredAvailable.map((a) => a.id)])));
-        }
-    };
-
-    const toggle = (id: number) => {
-        setAssignError(null);
-        setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-    };
-
-    const handleAssign = () => {
-        if (selected.length === 0) return;
-
-        const conflicts = availableApplicants.filter(
-            (a) => selected.includes(a.id) && a.assigned_to_schedule,
-        );
-
-        if (conflicts.length > 0) {
-            const names = conflicts
-                .map((a) => `${a.last_name}, ${a.first_name} → ${a.assigned_to_schedule}`)
-                .join('\n');
-            setAssignError(
-                `The following applicant${conflicts.length > 1 ? 's are' : ' is'} already assigned to another schedule:\n\n${names}\n\nRemove them from your selection before proceeding.`,
-            );
-            return;
-        }
-
-        setAssignError(null);
-        setSubmitting(true);
-        router.post(
-            '/exam-assignments/bulk',
-            { applicant_ids: selected, exam_schedule_id: schedule.id },
-            {
-                onSuccess: () => {
-                    setAssignOpen(false);
-                    setSelected([]);
-                    setModalSearch('');
-                    setAssignError(null);
-                },
-                onFinish: () => setSubmitting(false),
-            },
-        );
-    };
-
-    const openAssign = () => {
-        setSelected([]);
-        setModalSearch('');
-        setAssignError(null);
-        setAssignOpen(true);
-    };
+    const {
+        breadcrumbs,
+        deleting,
+        showDeleteDialog, setShowDeleteDialog,
+        removeDialog, setRemoveDialog,
+        search, setSearch,
+        statusFilter, setStatusFilter,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        assignOpen, setAssignOpen,
+        modalSearch, setModalSearch,
+        selected,
+        submitting,
+        assignError,
+        effectiveCapacity,
+        assignedCount,
+        availableSlots,
+        capacityPct,
+        filteredAssignments,
+        paginatedAssignments,
+        filteredAvailable,
+        allSelected,
+        confirmDelete,
+        confirmRemove,
+        toggleAll,
+        toggle,
+        handleAssign,
+        openAssign,
+    } = useExamScheduleShow({ schedule, availableApplicants });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={schedule.name} />
 
-            <div className="p-6 md:p-10">
-                {/* Back link */}
+            <div className={PAGE_PADDING}>
                 <Link href="/exam-schedules" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                     <ArrowLeft className="mr-1 h-4 w-4" />
                     Back to Schedules
                 </Link>
 
-                {/* Page header */}
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold text-gray-900">{schedule.name}</h1>
-                        <Badge className={schedule.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
+                        <h1 className={PAGE_TITLE}>{schedule.name}</h1>
+                        <AppBadge status={schedule.is_active ? 'active' : 'inactive'}>
                             {schedule.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
+                        </AppBadge>
                         <Badge variant="outline">{schedule.exam_type}</Badge>
                     </div>
                     <div className="flex shrink-0 gap-2">
@@ -239,9 +88,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                             <UserPlus className="mr-2 h-4 w-4" />
                             Assign Applicants
                             {availableApplicants.length > 0 && (
-                                <span className="ml-1.5 rounded-full bg-white/20 px-1.5 text-xs">
-                                    {availableApplicants.length}
-                                </span>
+                                <span className="ml-1.5 rounded-full bg-white/20 px-1.5 text-xs">{availableApplicants.length}</span>
                             )}
                         </Button>
                         <Link href={`/exam-schedules/${schedule.id}/edit`}>
@@ -257,8 +104,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                     </div>
                 </div>
 
-                {/* ── Schedule detail strip ── */}
-                <div className="mt-4 rounded-lg border bg-white px-4 py-3 shadow-sm">
+                <div className={`mt-4 ${CARD} px-4 py-3`}>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                         <div className="flex items-center gap-1.5 text-gray-600">
                             <Calendar className="h-3.5 w-3.5 shrink-0 text-gray-400" />
@@ -283,9 +129,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                         <div className="flex min-w-[100px] flex-1 items-center gap-2">
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
                                 <div
-                                    className={`h-full rounded-full ${
-                                        capacityPct >= 100 ? 'bg-red-500' : capacityPct >= 75 ? 'bg-amber-400' : 'bg-green-500'
-                                    }`}
+                                    className={`h-full rounded-full ${capacityPct >= 100 ? 'bg-red-500' : capacityPct >= 75 ? 'bg-amber-400' : 'bg-green-500'}`}
                                     style={{ width: `${capacityPct}%` }}
                                 />
                             </div>
@@ -294,8 +138,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                     </div>
                 </div>
 
-                {/* ── Assigned Applicants table ── */}
-                <div className="mt-6 overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className={`mt-6 overflow-hidden ${CARD}`}>
                     <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="flex items-center gap-2 font-semibold text-gray-900">
                             <Users className="h-4 w-4" />
@@ -323,7 +166,14 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                 <option value="cancelled">Cancelled</option>
                             </select>
                             {(search || statusFilter) && (
-                                <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSearch('');
+                                        setStatusFilter('');
+                                    }}
+                                >
                                     Clear
                                 </Button>
                             )}
@@ -347,9 +197,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                     paginatedAssignments.map((assignment, idx) => (
                                         <tr key={assignment.id} className="hover:bg-gray-50">
                                             <td className="px-5 py-3 text-gray-400">{idx + 1}</td>
-                                            <td className="px-5 py-3 font-medium text-gray-900">
-                                                {assignment.application_info?.application_number}
-                                            </td>
+                                            <td className="px-5 py-3 font-medium text-gray-900">{assignment.application_info?.application_number}</td>
                                             <td className="px-5 py-3 text-gray-900">
                                                 {assignment.application_info?.personal_data?.last_name},{' '}
                                                 {assignment.application_info?.personal_data?.first_name}
@@ -361,7 +209,9 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                             </td>
                                             <td className="px-5 py-3 text-gray-500">
                                                 {new Date(assignment.assigned_at).toLocaleDateString('en-US', {
-                                                    month: 'short', day: 'numeric', year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric',
                                                 })}
                                             </td>
                                             <td className="px-5 py-3 text-center">
@@ -369,11 +219,13 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                                     variant="ghost"
                                                     size="sm"
                                                     className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                    onClick={() => setRemoveDialog({
-                                                        open: true,
-                                                        id: assignment.id,
-                                                        name: `${assignment.application_info?.personal_data?.last_name}, ${assignment.application_info?.personal_data?.first_name}`,
-                                                    })}
+                                                    onClick={() =>
+                                                        setRemoveDialog({
+                                                            open: true,
+                                                            id: assignment.id,
+                                                            name: `${assignment.application_info?.personal_data?.last_name}, ${assignment.application_info?.personal_data?.first_name}`,
+                                                        })
+                                                    }
                                                 >
                                                     <UserMinus className="h-4 w-4" />
                                                 </Button>
@@ -384,10 +236,8 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                     <tr>
                                         <td colSpan={6} className="px-5 py-14 text-center">
                                             <Users className="mx-auto h-10 w-10 text-gray-300" />
-                                            <p className="mt-2 text-gray-500">
-                                                {search || statusFilter
-                                                    ? 'No applicants match your filters.'
-                                                    : 'No applicants assigned to this schedule yet.'}
+                                            <p className={`mt-2 ${BODY_TEXT}`}>
+                                                {search || statusFilter ? 'No applicants match your filters.' : 'No applicants assigned to this schedule yet.'}
                                             </p>
                                             {!search && !statusFilter && (
                                                 <Button size="sm" className="mt-4" onClick={openAssign} disabled={availableApplicants.length === 0}>
@@ -407,12 +257,14 @@ export default function Show({ schedule, availableApplicants }: Props) {
                         pageSize={pageSize}
                         currentPage={currentPage}
                         onPageChange={setCurrentPage}
-                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                        onPageSizeChange={(s) => {
+                            setPageSize(s);
+                            setCurrentPage(1);
+                        }}
                     />
                 </div>
             </div>
 
-            {/* ── Assign Applicants Dialog ── */}
             <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
                 <DialogContent className="flex h-[90vh] w-[95vw] max-w-[95vw] flex-col gap-0 p-0">
                     <DialogHeader className="border-b px-6 py-4">
@@ -423,7 +275,6 @@ export default function Show({ schedule, availableApplicants }: Props) {
                         </DialogTitle>
                     </DialogHeader>
 
-                    {/* Search */}
                     <div className="border-b px-6 py-3">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -440,13 +291,10 @@ export default function Show({ schedule, availableApplicants }: Props) {
                             <span>
                                 {filteredAvailable.length} applicant{filteredAvailable.length !== 1 ? 's' : ''} available
                             </span>
-                            {selected.length > 0 && (
-                                <span className="font-medium text-primary">{selected.length} selected</span>
-                            )}
+                            {selected.length > 0 && <span className="font-medium text-primary">{selected.length} selected</span>}
                         </div>
                     </div>
 
-                    {/* Table */}
                     <div className="min-h-0 flex-1 overflow-y-auto">
                         <table className="w-full text-sm">
                             <thead className="sticky top-0 bg-gray-50">
@@ -460,15 +308,9 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                             className="h-4 w-4 rounded border-gray-300 accent-primary"
                                         />
                                     </th>
-                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                        Application #
-                                    </th>
-                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                        Name
-                                    </th>
-                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                        Status
-                                    </th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Application #</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -481,13 +323,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                             <tr
                                                 key={applicant.id}
                                                 onClick={() => toggle(applicant.id)}
-                                                className={`cursor-pointer transition-colors ${
-                                                    hasError
-                                                        ? 'bg-red-50'
-                                                        : checked
-                                                          ? 'bg-primary/5'
-                                                          : 'hover:bg-gray-50'
-                                                }`}
+                                                className={`cursor-pointer transition-colors ${hasError ? 'bg-red-50' : checked ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
                                             >
                                                 <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                                                     <input
@@ -497,11 +333,12 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                                         className="h-4 w-4 rounded border-gray-300 accent-primary"
                                                     />
                                                 </td>
-                                                <td className="px-4 py-2.5 font-medium text-gray-900">
-                                                    {applicant.application_number}
-                                                </td>
+                                                <td className="px-4 py-2.5 font-medium text-gray-900">{applicant.application_number}</td>
                                                 <td className="px-4 py-2.5 text-gray-900">
-                                                    <span>{applicant.last_name}, {applicant.first_name}{applicant.middle_name && ` ${applicant.middle_name.charAt(0)}.`}</span>
+                                                    <span>
+                                                        {applicant.last_name}, {applicant.first_name}
+                                                        {applicant.middle_name && ` ${applicant.middle_name.charAt(0)}.`}
+                                                    </span>
                                                     {conflict && (
                                                         <span className="ml-2 inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
                                                             ⚠ {conflict}
@@ -535,7 +372,9 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                     .split('\n')
                                     .filter((l) => l.includes('→'))
                                     .map((line, i) => (
-                                        <li key={i} className="text-xs text-red-600">• {line}</li>
+                                        <li key={i} className="text-xs text-red-600">
+                                            • {line}
+                                        </li>
                                     ))}
                             </ul>
                             <p className="mt-1.5 text-xs text-red-500">Uncheck the highlighted applicants to proceed.</p>

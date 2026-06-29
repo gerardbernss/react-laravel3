@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useApplicantEnrollment } from '@/hooks/useApplicantEnrollment';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { CheckCircle2, ChevronRight, ClipboardList, CreditCard, Printer, User } from 'lucide-react';
-import { useState } from 'react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -81,75 +81,26 @@ const STEPS = [
 const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 
-const s = (v: string | null | undefined) => v ?? '';
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Enrollment({ personalData, application, fees, availableDiscounts, applicantEnrollmentOpen, assessmentNumber, assessmentSubjects }: Props) {
-    const { errors } = usePage().props as { errors: Record<string, string> };
-
-    const initialStep = assessmentNumber ? 3 : 1;
-    const [step, setStep] = useState(initialStep);
-    const [processing, setProcessing] = useState(false);
-
-    // Step 1 form state
-    const initialForm = {
-        email: s(personalData?.email),
-        mobile_number: s(personalData?.mobile_number),
-        present_street: s(personalData?.present_street),
-        present_brgy: s(personalData?.present_brgy),
-        present_city: s(personalData?.present_city),
-        present_province: s(personalData?.present_province),
-        present_zip: s(personalData?.present_zip),
-    };
-    const [form, setForm] = useState(initialForm);
-
-    // Fee calculations
-    const tuitionFee = fees.filter((f) => f.category === 'tuition').reduce((s, f) => s + f.amount, 0);
-    const miscFees   = fees.filter((f) => f.category === 'miscellaneous').reduce((s, f) => s + f.amount, 0);
-    const labFees    = fees.filter((f) => f.category === 'laboratory').reduce((s, f) => s + f.amount, 0);
-    const otherFees  = fees.filter((f) => f.category === 'special').reduce((s, f) => s + f.amount, 0);
-    const grossTotal = tuitionFee + miscFees + labFees + otherFees;
-    const netTotal   = grossTotal; // no discounts at this stage
-    const minimumDue = Math.round(netTotal * 0.3 * 100) / 100;
-
-    const isFormDirty = (Object.keys(initialForm) as (keyof typeof initialForm)[]).some(
-        (k) => form[k] !== initialForm[k],
-    );
-
-    // Step 1 → save personal info only if changed, then advance
-    const handleStep1Next = () => {
-        if (!isFormDirty) {
-            setStep(2);
-            return;
-        }
-        setProcessing(true);
-        router.post(
-            '/applicant/personal-info',
-            { ...form },
-            {
-                preserveScroll: true,
-                onSuccess: () => { setStep(2); setProcessing(false); },
-                onError: () => setProcessing(false),
-            },
-        );
-    };
-
-    // Step 2 → generate assessment then advance
-    const handleStep2Next = () => {
-        setProcessing(true);
-        router.post(
-            '/applicant/enrollment/generate-assessment',
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => { setStep(3); setProcessing(false); },
-                onError: () => setProcessing(false),
-            },
-        );
-    };
-
-    const handlePrint = () => window.print();
+    const {
+        errors,
+        step,
+        setStep,
+        processing,
+        form,
+        setForm,
+        tuitionFee,
+        miscFees,
+        labFees,
+        otherFees,
+        netTotal,
+        minimumDue,
+        handleStep1Next,
+        handleStep2Next,
+        handlePrint,
+    } = useApplicantEnrollment({ personalData, fees, assessmentNumber });
 
     if (!application) {
         return (

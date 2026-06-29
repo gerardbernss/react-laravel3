@@ -3,139 +3,74 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreDiscountTypeRequest;
+use App\Http\Requests\Admin\UpdateDiscountTypeRequest;
 use App\Models\DiscountType;
-use Illuminate\Http\Request;
+use App\Services\Admin\DiscountTypeService;
 use Inertia\Inertia;
 
 class DiscountTypeController extends Controller
 {
-    /**
-     * Display a listing of discount types.
-     */
+    public function __construct(private DiscountTypeService $discountTypeService)
+    {
+    }
+
     public function index()
     {
-        $discountTypes = DiscountType::orderBy('name')->get();
-
-        return Inertia::render('Admin/DiscountTypes/Index', [
-            'discountTypes' => $discountTypes,
-            'discountTypeOptions' => DiscountType::$discountTypes,
-            'appliesToOptions' => DiscountType::$appliesTo,
-        ]);
+        return Inertia::render('Admin/DiscountTypes/Index', $this->discountTypeService->indexData());
     }
 
-    /**
-     * Show the form for creating a new discount type.
-     */
     public function create()
     {
-        return Inertia::render('Admin/DiscountTypes/Create', [
-            'discountTypeOptions' => DiscountType::$discountTypes,
-            'appliesToOptions' => DiscountType::$appliesTo,
-        ]);
+        return Inertia::render('Admin/DiscountTypes/Create', $this->discountTypeService->formOptions());
     }
 
-    /**
-     * Store a newly created discount type.
-     */
-    public function store(Request $request)
+    public function store(StoreDiscountTypeRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:discount_types,code',
-            'discount_type' => 'required|in:percentage,fixed_amount',
-            'value' => 'required|numeric|min:0',
-            'applies_to' => 'required|in:tuition_only,all_fees,miscellaneous_only',
-            'requires_verification' => 'boolean',
-            'is_stackable' => 'boolean',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        $result = $this->discountTypeService->store($request->validated());
 
-        // Validate percentage doesn't exceed 100
-        if ($validated['discount_type'] === 'percentage' && $validated['value'] > 100) {
-            return back()->withErrors(['value' => 'Percentage discount cannot exceed 100%.']);
+        if (! empty($result['error_field'])) {
+            return back()->withErrors([$result['error_field'] => $result['error_message']]);
         }
 
-        DiscountType::create($validated);
-
-        return redirect()->route('admin.discount-types.index')
-            ->with('success', 'Discount type created successfully.');
+        return redirect()->route('admin.discount-types.index')->with('success', 'Discount type created successfully.');
     }
 
-    /**
-     * Display the specified discount type.
-     */
     public function show(DiscountType $discountType)
     {
-        return Inertia::render('Admin/DiscountTypes/Show', [
-            'discountType' => $discountType,
-            'discountTypeOptions' => DiscountType::$discountTypes,
-            'appliesToOptions' => DiscountType::$appliesTo,
-        ]);
+        return Inertia::render('Admin/DiscountTypes/Show', $this->discountTypeService->showData($discountType));
     }
 
-    /**
-     * Show the form for editing the specified discount type.
-     */
     public function edit(DiscountType $discountType)
     {
-        return Inertia::render('Admin/DiscountTypes/Edit', [
-            'discountType' => $discountType,
-            'discountTypeOptions' => DiscountType::$discountTypes,
-            'appliesToOptions' => DiscountType::$appliesTo,
-        ]);
+        return Inertia::render('Admin/DiscountTypes/Edit', $this->discountTypeService->showData($discountType));
     }
 
-    /**
-     * Update the specified discount type.
-     */
-    public function update(Request $request, DiscountType $discountType)
+    public function update(UpdateDiscountTypeRequest $request, DiscountType $discountType)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:discount_types,code,' . $discountType->id,
-            'discount_type' => 'required|in:percentage,fixed_amount',
-            'value' => 'required|numeric|min:0',
-            'applies_to' => 'required|in:tuition_only,all_fees,miscellaneous_only',
-            'requires_verification' => 'boolean',
-            'is_stackable' => 'boolean',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        $result = $this->discountTypeService->update($discountType, $request->validated());
 
-        // Validate percentage doesn't exceed 100
-        if ($validated['discount_type'] === 'percentage' && $validated['value'] > 100) {
-            return back()->withErrors(['value' => 'Percentage discount cannot exceed 100%.']);
+        if (! empty($result['error_field'])) {
+            return back()->withErrors([$result['error_field'] => $result['error_message']]);
         }
 
-        $discountType->update($validated);
-
-        return redirect()->route('admin.discount-types.index')
-            ->with('success', 'Discount type updated successfully.');
+        return redirect()->route('admin.discount-types.index')->with('success', 'Discount type updated successfully.');
     }
 
-    /**
-     * Remove the specified discount type.
-     */
     public function destroy(DiscountType $discountType)
     {
-        // Check if discount type has been used in any assessments
-        if ($discountType->assessmentDiscounts()->exists()) {
-            return back()->withErrors(['error' => 'Cannot delete discount type that has been used in assessments.']);
+        $result = $this->discountTypeService->destroy($discountType);
+
+        if (! empty($result['error'])) {
+            return back()->withErrors(['error' => $result['error']]);
         }
 
-        $discountType->delete();
-
-        return redirect()->route('admin.discount-types.index')
-            ->with('success', 'Discount type deleted successfully.');
+        return redirect()->route('admin.discount-types.index')->with('success', 'Discount type deleted successfully.');
     }
 
-    /**
-     * Toggle the active status of the discount type.
-     */
     public function toggleStatus(DiscountType $discountType)
     {
-        $discountType->update(['is_active' => !$discountType->is_active]);
+        $this->discountTypeService->toggleStatus($discountType);
 
         return back()->with('success', 'Discount type status updated successfully.');
     }

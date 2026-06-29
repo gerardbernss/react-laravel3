@@ -1,8 +1,9 @@
 ﻿import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { CARD, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { useApplicantShow } from '@/hooks/useApplicantShow';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
     ClipboardCheck,
@@ -19,8 +20,7 @@ import {
     UserPlus,
     Users,
 } from 'lucide-react';
-import React, { useState } from 'react';
-import { toast } from 'sonner';
+import React from 'react';
 
 interface InfoRowProps {
     label: string;
@@ -46,57 +46,14 @@ interface ExamResult {
 }
 
 export default function ViewProfile({ applicant, examResult }: { applicant: any; examResult: ExamResult | null }) {
-    const [activeSection, setActiveSection] = useState('application');
-    const [open, setOpen] = useState(false);
-    const [evaluateOpen, setEvaluateOpen] = useState(false);
-    const [evaluating, setEvaluating] = useState(false);
-    const [evalOutcome, setEvalOutcome] = useState<'approve' | 'revise' | 'reject' | ''>('');
-    const [evalRemarks, setEvalRemarks] = useState<string>(applicant.remarks ?? '');
-
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Applicant List', href: '/admissions/applicants' },
-        {
-            title: `${applicant.personal_data.first_name ?? ''} ${applicant.personal_data.last_name ?? ''}`,
-            href: `/admissions/applicants/${applicant.id}/show`,
-        },
-    ];
-
-    const handleEvaluate = async () => {
-        if (!evalOutcome) {
-            toast.warning('Please select an evaluation outcome.');
-            return;
-        }
-        if (evalOutcome === 'revise' && !evalRemarks.trim()) {
-            toast.warning('Please describe what needs to be revised.');
-            return;
-        }
-        setEvaluating(true);
-        try {
-            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-            const response = await fetch(`/admissions/applicants/${applicant.id}/evaluate`, {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken || '',
-                },
-                body: JSON.stringify({ evaluation: evalOutcome, remarks: evalRemarks }),
-            });
-            const data = await response.json();
-            if (response.ok) {
-                toast.success(data.message || 'Application evaluated successfully.');
-                setEvaluateOpen(false);
-                router.reload({ only: ['applicant'] });
-            } else {
-                toast.error(data.message || 'Failed to evaluate application.');
-            }
-        } catch {
-            toast.error('An error occurred. Please try again.');
-        } finally {
-            setEvaluating(false);
-        }
-    };
+    const {
+        breadcrumbs,
+        evaluateOpen, setEvaluateOpen,
+        evaluating,
+        evalOutcome, setEvalOutcome,
+        evalRemarks, setEvalRemarks,
+        handleEvaluate,
+    } = useApplicantShow({ applicant });
 
     const FormNavigation = () => {
         const [activeSection, setActiveSection] = React.useState('application');
@@ -226,7 +183,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                     <ArrowLeft className="h-5 w-5" />
                                 </button>
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-900">
+                                    <h1 className={PAGE_TITLE}>
                                         {applicant.personal_data.first_name} {applicant.personal_data.last_name}
                                     </h1>
                                     <p className="mt-1 text-sm text-gray-500">Application No: {applicant.application_number}</p>
@@ -265,7 +222,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                 <div className="mx-auto max-w-[1500px] px-10 py-8">
                     <div className="space-y-6">
                         {/* Application Information */}
-                        <div id="application" className="rounded-lg border bg-white shadow-sm">
+                        <div id="application" className={CARD}>
                             <div className="rounded-t-lg bg-[#004c88] p-4">
                                 <h2 className="text-xl font-bold text-white">Application Information</h2>
                             </div>
@@ -292,13 +249,13 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                         </div>
 
                         {/* Personal Information */}
-                        <div id="personal" className="rounded-lg border bg-white shadow-sm">
+                        <div id="personal" className={CARD}>
                             <div className="rounded-t-lg bg-[#004c88] p-4">
                                 <h2 className="text-xl font-bold text-white">Personal Information</h2>
                             </div>
                             <div className="p-6">
                                 <div className="mb-6">
-                                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                    <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                         <User className="h-5 w-5" />
                                         Basic Information
                                     </h3>
@@ -316,7 +273,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                 </div>
 
                                 <div className="mb-6">
-                                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                    <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                         <Mail className="h-5 w-5" />
                                         Contact Information
                                     </h3>
@@ -328,7 +285,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                 </div>
 
                                 <div className="mb-6">
-                                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                    <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                         <MapPin className="h-5 w-5" />
                                         Present Address
                                     </h3>
@@ -342,7 +299,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                 </div>
 
                                 <div>
-                                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                    <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                         <MapPin className="h-5 w-5" />
                                         Permanent Address
                                     </h3>
@@ -358,7 +315,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                         </div>
 
                         {/* Family Background */}
-                        <div id="family" className="rounded-lg border bg-white shadow-sm">
+                        <div id="family" className={CARD}>
                             <div className="rounded-t-lg bg-[#004c88] p-4">
                                 <h2 className="text-xl font-bold text-white">Family Background</h2>
                             </div>
@@ -366,7 +323,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                 {applicant.personal_data.family_background ? (
                                     <>
                                         <div className="mb-6">
-                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Father's Details</h3>
+                                            <h3 className={`mb-4 ${SECTION_HEADING}`}>Father's Details</h3>
                                             <div className="grid grid-cols-3 gap-6">
                                                 <InfoRow
                                                     label="Full Name"
@@ -383,7 +340,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                         </div>
 
                                         <div className="mb-6">
-                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Mother's Details</h3>
+                                            <h3 className={`mb-4 ${SECTION_HEADING}`}>Mother's Details</h3>
                                             <div className="grid grid-cols-3 gap-6">
                                                 <InfoRow
                                                     label="Full Name"
@@ -400,7 +357,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                         </div>
 
                                         <div className="mb-6">
-                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Guardian's Details</h3>
+                                            <h3 className={`mb-4 ${SECTION_HEADING}`}>Guardian's Details</h3>
                                             <div className="grid grid-cols-3 gap-6">
                                                 <InfoRow
                                                     label="Full Name"
@@ -418,7 +375,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                         </div>
 
                                         <div>
-                                            <h3 className="mb-4 text-lg font-semibold text-gray-900">Emergency Contact</h3>
+                                            <h3 className={`mb-4 ${SECTION_HEADING}`}>Emergency Contact</h3>
                                             <div className="grid grid-cols-3 gap-6">
                                                 <InfoRow label="Contact Person" value={applicant.personal_data.family_background.emergency_contact_name} />
                                                 <InfoRow label="Relationship" value={applicant.personal_data.family_background.emergency_relationship} />
@@ -434,7 +391,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                         </div>
 
                         {/* Siblings */}
-                        <div id="siblings" className="rounded-lg border bg-white shadow-sm">
+                        <div id="siblings" className={CARD}>
                             <div className="rounded-t-lg bg-[#004c88] p-4">
                                 <h2 className="text-xl font-bold text-white">Siblings (Discount)</h2>
                             </div>
@@ -467,7 +424,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                         </div>
 
                         {/* Educational Background */}
-                        <div id="education" className="rounded-lg border bg-white shadow-sm">
+                        <div id="education" className={CARD}>
                             <div className="rounded-t-lg bg-[#004c88] p-4">
                                 <h2 className="text-xl font-bold text-white">Educational Background</h2>
                             </div>
@@ -505,7 +462,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                         </div>
 
                         {/* Documents */}
-                        <div id="documents" className="rounded-lg border bg-white shadow-sm">
+                        <div id="documents" className={CARD}>
                             <div className="rounded-t-lg bg-[#004c88] p-4">
                                 <h2 className="text-xl font-bold text-white">Dcouments</h2>
                             </div>

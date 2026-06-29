@@ -1,31 +1,19 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { getSchoolYearOptions } from '@/lib/school-year';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { BODY_TEXT, CARD, FILTER_CARD, HELPER_TEXT, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { getSchoolYearOptions } from '@/lib/school-year';
+import { useFees, type Fee, type FeeFilters } from '@/hooks/useFees';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { TablePagination } from '@/components/ui/table-pagination';
-import {
-    Copy, DollarSign, Pencil, Plus, Search, Trash2, X,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface Fee {
-    id: number;
-    name: string;
-    code: string;
-    category: string;
-    is_per_unit: boolean;
-    is_required: boolean;
-    school_level: string;
-    school_year: string;
-    semester: string;
-    amount: number;
-    is_active: boolean;
-}
+import { Head, Link } from '@inertiajs/react';
+import { Copy, DollarSign, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 
 interface Props {
     fees: Fee[];
@@ -33,12 +21,7 @@ interface Props {
     categories: Record<string, string>;
     schoolLevels: Record<string, string>;
     semesters: Record<string, string>;
-    filters: {
-        school_year?: string;
-        semester?: string;
-        school_level?: string;
-        category?: string;
-    };
+    filters: FeeFilters;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -60,84 +43,173 @@ const LEVEL_COLORS: Record<string, string> = {
     SHS: 'bg-indigo-100 text-indigo-800',
 };
 
+interface FeeRowProps {
+    fee: Fee;
+    categories: Record<string, string>;
+    schoolLevels: Record<string, string>;
+    processing: boolean;
+    onToggle: (id: number) => void;
+    onDelete: (id: number, name: string) => void;
+}
+
+function FeeRow({ fee, categories, schoolLevels, processing, onToggle, onDelete }: FeeRowProps) {
+    return (
+        <tr className="hover:bg-gray-50">
+            <td className="px-4 py-3 font-mono text-xs font-medium text-gray-700">{fee.code}</td>
+            <td className="px-4 py-3 font-medium text-gray-900">{fee.name}</td>
+            <td className="px-4 py-3">
+                <Badge className={CATEGORY_COLORS[fee.category] ?? ''}>{categories[fee.category]}</Badge>
+            </td>
+            <td className="px-4 py-3">
+                <Badge className={LEVEL_COLORS[fee.school_level] ?? ''}>{schoolLevels[fee.school_level]}</Badge>
+            </td>
+            <td className="px-4 py-3 text-gray-700">{fee.school_year}</td>
+            <td className="px-4 py-3 text-gray-700">{fee.semester}</td>
+            <td className="px-4 py-3 text-right font-medium text-gray-900">
+                ₱{Number(fee.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                {fee.is_per_unit && <span className="ml-1 text-xs text-gray-400">/unit</span>}
+            </td>
+            <td className="px-4 py-3 text-center">
+                {fee.is_per_unit
+                    ? <Badge className="bg-green-100 text-green-800">Yes</Badge>
+                    : <Badge variant="outline">No</Badge>}
+            </td>
+            <td className="px-4 py-3 text-center">
+                <button onClick={() => onToggle(fee.id)} className="cursor-pointer">
+                    <AppBadge status={fee.is_active ? 'active' : 'inactive'}>
+                        {fee.is_active ? 'Active' : 'Inactive'}
+                    </AppBadge>
+                </button>
+            </td>
+            <td className="px-4 py-3">
+                <div className="flex justify-center gap-1">
+                    <Link href={`/admin/fees/${fee.id}/edit`}>
+                        <button className={TABLE_ROW_ACTION} disabled={processing}>
+                            <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                    </Link>
+                    <button
+                        onClick={() => onDelete(fee.id, fee.name)}
+                        disabled={processing}
+                        className={TABLE_ROW_ACTION_DANGER}
+                    >
+                        <Trash2 className="h-3 w-3" /> Delete
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+}
+
+interface CopyFeeDialogProps {
+    open: boolean;
+    onClose: () => void;
+    schoolYears: string[];
+    copySource: string;
+    setCopySource: (v: string) => void;
+    copyTarget: string;
+    setCopyTarget: (v: string) => void;
+    copyPct: string;
+    setCopyPct: (v: string) => void;
+    copying: boolean;
+    onCopy: () => void;
+}
+
+function CopyFeeDialog({ open, onClose, schoolYears, copySource, setCopySource, copyTarget, setCopyTarget, copyPct, setCopyPct, copying, onCopy }: CopyFeeDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Copy Fees from School Year</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div>
+                        <Label className={LABEL_TEXT}>Source School Year</Label>
+                        <Select value={copySource} onValueChange={setCopySource}>
+                            <SelectTrigger className="mt-1"><SelectValue placeholder="Select year..." /></SelectTrigger>
+                            <SelectContent>
+                                {schoolYears.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className={LABEL_TEXT}>Target School Year</Label>
+                        <Select value={copyTarget} onValueChange={setCopyTarget}>
+                            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {getSchoolYearOptions().map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className={LABEL_TEXT}>Adjustment (%)</Label>
+                        <Input
+                            type="number"
+                            placeholder="0"
+                            value={copyPct}
+                            onChange={(e) => setCopyPct(e.target.value)}
+                            className="mt-1"
+                        />
+                        <p className={`mt-1 ${HELPER_TEXT}`}>Positive = increase, negative = decrease. Leave 0 for no change.</p>
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2 border-t pt-4">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button onClick={onCopy} disabled={copying || !copySource || !copyTarget}>
+                        {copying ? 'Copying...' : 'Copy Fees'}
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function FeesIndex({ fees, schoolYears, categories, schoolLevels, semesters, filters }: Props) {
-    const { delete: destroy, processing } = useForm();
-
-    const [search, setSearch] = useState('');
-    const [filterCategory, setFilterCategory] = useState(filters.category ?? 'all');
-    const [filterLevel, setFilterLevel] = useState(filters.school_level ?? 'all');
-    const [filterYear, setFilterYear] = useState(filters.school_year ?? 'all');
-    const [filterSemester, setFilterSemester] = useState(filters.semester ?? 'all');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
-
-    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
-    const [copyModal, setCopyModal] = useState(false);
-    const [copySource, setCopySource] = useState('');
-    const [copyTarget, setCopyTarget] = useState(getSchoolYearOptions()[0]);
-    const [copyPct, setCopyPct] = useState('0');
-    const [copying, setCopying] = useState(false);
-
-    const filtered = useMemo(() => {
-        return fees.filter((f) => {
-            if (search && !f.name.toLowerCase().includes(search.toLowerCase()) && !f.code.toLowerCase().includes(search.toLowerCase())) return false;
-            if (filterCategory !== 'all' && f.category !== filterCategory) return false;
-            if (filterLevel !== 'all' && f.school_level !== filterLevel) return false;
-            if (filterYear !== 'all' && f.school_year !== filterYear) return false;
-            if (filterSemester !== 'all' && f.semester !== filterSemester) return false;
-            if (filterStatus === 'active' && !f.is_active) return false;
-            if (filterStatus === 'inactive' && f.is_active) return false;
-            return true;
-        });
-    }, [fees, search, filterCategory, filterLevel, filterYear, filterSemester, filterStatus]);
-
-    const totalPages = Math.ceil(filtered.length / pageSize);
-    const paginated = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return filtered.slice(start, start + pageSize);
-    }, [filtered, currentPage, pageSize]);
-
-    const hasFilters = search || filterCategory !== 'all' || filterLevel !== 'all' || filterYear !== 'all' || filterSemester !== 'all' || filterStatus !== 'all';
-
-    const clearFilters = () => {
-        setSearch(''); setFilterCategory('all'); setFilterLevel('all');
-        setFilterYear('all'); setFilterSemester('all'); setFilterStatus('all');
-        setCurrentPage(1);
-    };
-
-    const confirmDelete = () => {
-        destroy(`/admin/fees/${deleteDialog.id}`, {
-            onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
-        });
-    };
-
-    const handleToggle = (id: number) => {
-        router.post(`/admin/fees/${id}/toggle-status`, {}, { preserveScroll: true });
-    };
-
-    const handleCopyFromYear = () => {
-        if (!copySource || !copyTarget) return;
-        setCopying(true);
-        router.post('/admin/fees/copy-from-year', {
-            source_year: copySource,
-            target_year: copyTarget,
-            adjust_percentage: parseFloat(copyPct) || 0,
-        }, {
-            onFinish: () => { setCopying(false); setCopyModal(false); },
-        });
-    };
+    const {
+        processing,
+        deleteDialog,
+        setDeleteDialog,
+        search,
+        setSearch,
+        filterCategory,
+        setFilterCategory,
+        filterLevel,
+        setFilterLevel,
+        filterYear,
+        setFilterYear,
+        filterSemester,
+        setFilterSemester,
+        currentPage,
+        setCurrentPage,
+        pageSize,
+        setPageSize,
+        copyModal,
+        setCopyModal,
+        copySource,
+        setCopySource,
+        copyTarget,
+        setCopyTarget,
+        copyPct,
+        setCopyPct,
+        copying,
+        hasFilters,
+        filtered,
+        paginated,
+        clearFilters,
+        confirmDelete,
+        handleToggle,
+        handleCopyFromYear,
+    } = useFees(fees, filters);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Fee Management" />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <DollarSign className="h-7 w-7 text-primary" />
-                        <h1 className="text-3xl font-bold text-gray-900">Fee Management</h1>
+                        <h1 className={PAGE_TITLE}>Fee Management</h1>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => setCopyModal(true)}>
@@ -153,8 +225,7 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
+                <div className={`mb-6 ${FILTER_CARD}`}>
                     <div className="grid gap-3 md:grid-cols-6">
                         <div className="relative md:col-span-2">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -196,7 +267,7 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                     </div>
                     {hasFilters && (
                         <div className="mt-3 flex items-center gap-2">
-                            <span className="text-sm text-gray-500">Active filters:</span>
+                            <span className={BODY_TEXT}>Active filters:</span>
                             <Button variant="ghost" size="sm" onClick={clearFilters}>
                                 <X className="mr-1 h-3 w-3" /> Clear all
                             </Button>
@@ -204,82 +275,39 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                     )}
                 </div>
 
-                {/* Table */}
                 {filtered.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className={`overflow-hidden ${CARD}`}>
                         <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Code</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Category</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Level</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">School Year</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Semester</th>
+                                        <th className={TABLE_HEADER_CELL}>Code</th>
+                                        <th className={TABLE_HEADER_CELL}>Name</th>
+                                        <th className={TABLE_HEADER_CELL}>Category</th>
+                                        <th className={TABLE_HEADER_CELL}>Level</th>
+                                        <th className={TABLE_HEADER_CELL}>School Year</th>
+                                        <th className={TABLE_HEADER_CELL}>Semester</th>
                                         <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Per Unit</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                        <th className={TABLE_HEADER_CELL_CENTER}>Per Unit</th>
+                                        <th className={TABLE_HEADER_CELL_CENTER}>Status</th>
+                                        <th className={TABLE_HEADER_CELL_CENTER}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {paginated.map((fee) => (
-                                        <tr key={fee.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-mono text-xs font-medium text-gray-700">{fee.code}</td>
-                                            <td className="px-4 py-3 font-medium text-gray-900">{fee.name}</td>
-                                            <td className="px-4 py-3">
-                                                <Badge className={CATEGORY_COLORS[fee.category] ?? ''}>
-                                                    {categories[fee.category]}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <Badge className={LEVEL_COLORS[fee.school_level] ?? ''}>
-                                                    {schoolLevels[fee.school_level]}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-700">{fee.school_year}</td>
-                                            <td className="px-4 py-3 text-gray-700">{fee.semester}</td>
-                                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                                                ₱{Number(fee.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                                                {fee.is_per_unit && <span className="ml-1 text-xs text-gray-400">/unit</span>}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                {fee.is_per_unit
-                                                    ? <Badge className="bg-green-100 text-green-800">Yes</Badge>
-                                                    : <Badge variant="outline">No</Badge>}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <button
-                                                    onClick={() => handleToggle(fee.id)}
-                                                    className="cursor-pointer"
-                                                >
-                                                    <Badge className={fee.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
-                                                        {fee.is_active ? 'Active' : 'Inactive'}
-                                                    </Badge>
-                                                </button>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center gap-1">
-                                                    <Link href={`/admin/fees/${fee.id}/edit`}>
-                                                        <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                                                            <Pencil className="h-3 w-3" /> Edit
-                                                        </button>
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => setDeleteDialog({ open: true, id: fee.id, name: fee.name })}
-                                                        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-                                                    >
-                                                        <Trash2 className="h-3 w-3" /> Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        <FeeRow
+                                            key={fee.id}
+                                            fee={fee}
+                                            categories={categories}
+                                            schoolLevels={schoolLevels}
+                                            processing={processing}
+                                            onToggle={handleToggle}
+                                            onDelete={(id, name) => setDeleteDialog({ open: true, id, name })}
+                                        />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-
                         <TablePagination
                             total={filtered.length}
                             pageSize={pageSize}
@@ -290,10 +318,10 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                         />
                     </div>
                 ) : (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+                    <div className={`${CARD} p-12 text-center`}>
                         <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No fees found</h3>
-                        <p className="mt-2 text-gray-600">
+                        <h3 className={`mt-4 ${SECTION_HEADING}`}>No fees found</h3>
+                        <p className={`mt-2 ${BODY_TEXT}`}>
                             {hasFilters ? 'No fees match your filters.' : 'Get started by adding your first fee.'}
                         </p>
                         {!hasFilters && (
@@ -305,53 +333,19 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                 )}
             </div>
 
-            {/* Copy from Year Modal */}
-            {copyModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-                        <h2 className="mb-4 text-lg font-semibold">Copy Fees from School Year</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Source School Year</label>
-                                <select
-                                    value={copySource}
-                                    onChange={(e) => setCopySource(e.target.value)}
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                                >
-                                    <option value="">Select year...</option>
-                                    {schoolYears.map((y) => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Target School Year</label>
-                                <select
-                                    value={copyTarget}
-                                    onChange={(e) => setCopyTarget(e.target.value)}
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                                >
-                                    {getSchoolYearOptions().map((y) => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium">Adjustment (%)</label>
-                                <Input
-                                    type="number"
-                                    placeholder="0"
-                                    value={copyPct}
-                                    onChange={(e) => setCopyPct(e.target.value)}
-                                />
-                                <p className="mt-1 text-xs text-gray-500">Positive = increase, negative = decrease. Leave 0 for no change.</p>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setCopyModal(false)}>Cancel</Button>
-                            <Button onClick={handleCopyFromYear} disabled={copying || !copySource || !copyTarget}>
-                                {copying ? 'Copying...' : 'Copy Fees'}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <CopyFeeDialog
+                open={copyModal}
+                onClose={() => setCopyModal(false)}
+                schoolYears={schoolYears}
+                copySource={copySource}
+                setCopySource={setCopySource}
+                copyTarget={copyTarget}
+                setCopyTarget={setCopyTarget}
+                copyPct={copyPct}
+                setCopyPct={setCopyPct}
+                copying={copying}
+                onCopy={handleCopyFromYear}
+            />
 
             <ConfirmDialog
                 open={deleteDialog.open}

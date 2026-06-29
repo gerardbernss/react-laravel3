@@ -1,33 +1,10 @@
-﻿import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type BlockSectionData, type SubjectRow, useGradebookShow } from '@/hooks/useGradebookShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ClipboardList, Download, Settings, Table2 } from 'lucide-react';
-
-interface QuarterData {
-    component_count: number;
-    scored_students: number;
-    total_students: number;
-    weight_total: number;
-    validation_status: 'draft' | 'submitted' | 'finalized';
-}
-
-interface SubjectRow {
-    id: number;
-    code: string;
-    name: string;
-    faculty_name: string | null;
-    quarters: Record<string, QuarterData>;
-}
-
-interface BlockSectionData {
-    id: number;
-    code: string;
-    name: string;
-    grade_level: string | null;
-    school_year: string | null;
-    semester: string | null;
-}
+import { type ReactNode } from 'react';
 
 interface Props {
     blockSection: BlockSectionData;
@@ -38,24 +15,20 @@ interface Props {
     canManageConduct: boolean;
 }
 
-const validationBadge = (status: 'draft' | 'submitted' | 'finalized') => {
+const validationBadge = (status: 'draft' | 'submitted' | 'finalized'): ReactNode => {
     if (status === 'finalized') return <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-800">Finalized</span>;
     if (status === 'submitted') return <span className="rounded-full bg-yellow-100 px-1.5 py-0.5 text-xs font-semibold text-yellow-800">Submitted</span>;
     return <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-500">Draft</span>;
 };
 
 export default function GradebookShow({ blockSection, subjects, quarters, totalStudents, isFaculty, canManageConduct }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
-    ];
+    const { breadcrumbs } = useGradebookShow({ blockSection });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Gradebook — ${blockSection.code}`} />
 
-            <div className="p-6 md:p-10">
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href="/gradebook" className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="mr-1 h-4 w-4" />
@@ -63,10 +36,10 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                     </Link>
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">
+                            <h1 className={PAGE_TITLE}>
                                 {blockSection.code} — {blockSection.name}
                             </h1>
-                            <p className="mt-1 text-gray-600">
+                            <p className={`mt-1 ${BODY_TEXT}`}>
                                 {blockSection.grade_level}
                                 {blockSection.school_year && ` • ${blockSection.school_year}`}
                                 {blockSection.semester && ` • ${blockSection.semester}`}
@@ -97,22 +70,22 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                 </div>
 
                 {subjects.length === 0 ? (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+                    <div className={`${CARD} p-12 text-center`}>
                         <Table2 className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No subjects</h3>
-                        <p className="mt-2 text-gray-600">No subjects are assigned to this section.</p>
+                        <h3 className={`mt-4 ${SECTION_HEADING}`}>No subjects</h3>
+                        <p className={`mt-2 ${BODY_TEXT}`}>No subjects are assigned to this section.</p>
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className={`overflow-hidden ${CARD}`}>
                         <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                                        <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                             Subject
                                         </th>
                                         {quarters.map((q) => (
-                                            <th key={q} className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 min-w-[160px]">
+                                            <th key={q} className="min-w-[160px] px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 {q}
                                             </th>
                                         ))}
@@ -120,13 +93,11 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {subjects.map((subject) => (
-                                        <tr key={subject.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={subject.id} className="transition-colors hover:bg-gray-50">
                                             <td className="px-4 py-3">
                                                 <p className="font-medium text-gray-900">{subject.code}</p>
                                                 <p className="text-xs text-gray-500">{subject.name}</p>
-                                                {subject.faculty_name && (
-                                                    <p className="text-xs text-gray-400">{subject.faculty_name}</p>
-                                                )}
+                                                {subject.faculty_name && <p className="text-xs text-gray-400">{subject.faculty_name}</p>}
                                             </td>
                                             {quarters.map((q) => {
                                                 const qData = subject.quarters[q];
@@ -140,7 +111,9 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                                                                 <span className="text-xs text-gray-500">
                                                                     {qData.component_count} component{qData.component_count !== 1 ? 's' : ''}
                                                                     {!weightOk && (
-                                                                        <span className="ml-1 text-amber-500" title="Weights don't sum to 100%">⚠</span>
+                                                                        <span className="ml-1 text-amber-500" title="Weights don't sum to 100%">
+                                                                            ⚠
+                                                                        </span>
                                                                     )}
                                                                 </span>
                                                             )}
@@ -149,7 +122,7 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                                                                     {qData.scored_students}/{totalStudents} scored
                                                                 </span>
                                                             )}
-                                                            <div className="flex gap-1 mt-1">
+                                                            <div className="mt-1 flex gap-1">
                                                                 {qData.validation_status === 'draft' && (
                                                                     <Link href={`/gradebook/${blockSection.id}/${subject.id}/${q}/components`}>
                                                                         <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
@@ -159,11 +132,7 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                                                                     </Link>
                                                                 )}
                                                                 <Link href={`/gradebook/${blockSection.id}/${subject.id}/${q}/entry`}>
-                                                                    <Button
-                                                                        variant={hasComponents ? 'default' : 'outline'}
-                                                                        size="sm"
-                                                                        className="h-7 px-2 text-xs"
-                                                                    >
+                                                                    <Button variant={hasComponents ? 'default' : 'outline'} size="sm" className="h-7 px-2 text-xs">
                                                                         <Table2 className="mr-1 h-3 w-3" />
                                                                         {qData.validation_status === 'draft' ? 'Entry' : 'View'}
                                                                     </Button>

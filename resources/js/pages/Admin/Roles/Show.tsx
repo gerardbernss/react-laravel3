@@ -1,75 +1,59 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { BODY_TEXT, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
 import { usePermissions } from '@/hooks/useAuth';
+import { useRoleShow } from '@/hooks/useRoleShow';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Role } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, CheckCircle, Shield, Users, XCircle } from 'lucide-react';
-import { useState } from 'react';
+
+interface Props {
+    role: Role;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Roles', href: '/roles' },
     { title: 'Role Details', href: '/roles/show' },
 ];
 
-interface PageProps {
-    role: Role;
-}
-
-export default function Show() {
-    const { role } = usePage().props as PageProps;
+export default function Show({ role }: Props) {
     const { hasPermission } = usePermissions();
-    const { delete: destroy, processing } = useForm();
-    const [removeDialog, setRemoveDialog] = useState<{ open: boolean; userId: number; userName: string }>({ open: false, userId: 0, userName: '' });
-
-    const isSuperAdmin = role.slug === 'super-admin';
-
-    const handleRemoveRole = (userId: number, userName: string) => {
-        setRemoveDialog({ open: true, userId, userName });
-    };
-
-    const confirmRemoveRole = () => {
-        destroy(`/users/${removeDialog.userId}/remove-role`, {
-            data: { role_id: role.id } as any,
-            onSuccess: () => setRemoveDialog({ open: false, userId: 0, userName: '' }),
-        });
-    };
+    const { isSuperAdmin, processing, removeDialog, setRemoveDialog, handleRemoveRole, confirmRemoveRole } = useRoleShow({ role });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Role Details - ${role.name}`} />
-            
-            <div className="m-4">
-                <div className="flex items-center gap-4 mb-6">
+
+            <div className={PAGE_PADDING}>
+                <div className="mb-6 flex items-center gap-4">
                     <Link href="/roles">
                         <Button variant="outline" size="sm">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Roles
                         </Button>
                     </Link>
                     <div className="flex items-center gap-2">
                         <Shield className="h-5 w-5" />
-                        <h1 className="text-2xl font-bold">{role.name}</h1>
+                        <h1 className={PAGE_TITLE}>{role.name}</h1>
                     </div>
                 </div>
 
                 {isSuperAdmin && (
-                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                         <div className="flex items-center gap-2 text-yellow-800">
                             <Shield className="h-5 w-5" />
                             <span className="font-medium">Super Admin Role</span>
                         </div>
-                        <p className="text-yellow-700 text-sm mt-1">
-                            This is a protected role with full system access and special privileges.
-                        </p>
+                        <p className="mt-1 text-sm text-yellow-700">This is a protected role with full system access and special privileges.</p>
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Role Information */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
@@ -77,43 +61,47 @@ export default function Show() {
                                     <Shield className="h-5 w-5" />
                                     Role Information
                                 </CardTitle>
-                                <CardDescription>
-                                    Basic information about this role
-                                </CardDescription>
+                                <CardDescription>Basic information about this role</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">Name</label>
                                         <p className="text-lg font-semibold">{role.name}</p>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">Slug</label>
-                                        <p className="text-lg font-mono bg-gray-100 px-2 py-1 rounded">{role.slug}</p>
+                                        <p className="rounded bg-gray-100 px-2 py-1 font-mono text-lg">{role.slug}</p>
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     <label className="text-sm font-medium text-gray-500">Description</label>
                                     <p className="text-lg">{role.description || 'No description provided'}</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">Status</label>
                                         <div className="mt-1">
-                                            <Badge className={role.is_active ? 'bg-green-100 text-green-800' : ''}>
+                                            <AppBadge status={role.is_active ? 'active' : 'inactive'}>
                                                 {role.is_active ? (
-                                                    <><CheckCircle className="h-3 w-3 mr-1" />Active</>
+                                                    <>
+                                                        <CheckCircle className="mr-1 h-3 w-3" />
+                                                        Active
+                                                    </>
                                                 ) : (
-                                                    <><XCircle className="h-3 w-3 mr-1" />Inactive</>
+                                                    <>
+                                                        <XCircle className="mr-1 h-3 w-3" />
+                                                        Inactive
+                                                    </>
                                                 )}
-                                            </Badge>
+                                            </AppBadge>
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">Created</label>
-                                        <p className="text-lg flex items-center gap-1">
+                                        <p className="flex items-center gap-1 text-lg">
                                             <Calendar className="h-4 w-4" />
                                             {new Date(role.created_at).toLocaleDateString()}
                                         </p>
@@ -123,24 +111,18 @@ export default function Show() {
                         </Card>
                     </div>
 
-                    {/* Actions */}
                     <div>
                         <Card>
                             <CardHeader>
                                 <CardTitle>Actions</CardTitle>
-                                <CardDescription>
-                                    Available actions for this role
-                                </CardDescription>
+                                <CardDescription>Available actions for this role</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {hasPermission('update-roles') && (
                                     <Link href={`/roles/${role.id}/edit`} className="block">
-                                        <Button className="w-full">
-                                            Edit Role
-                                        </Button>
+                                        <Button className="w-full">Edit Role</Button>
                                     </Link>
                                 )}
-                                
                                 {hasPermission('view-roles') && (
                                     <Link href="/roles" className="block">
                                         <Button variant="outline" className="w-full">
@@ -153,41 +135,35 @@ export default function Show() {
                     </div>
                 </div>
 
-                {/* Permissions */}
                 <div className="mt-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Permissions</CardTitle>
-                            <CardDescription>
-                                Permissions assigned to this role ({role.permissions?.length || 0} total)
-                            </CardDescription>
+                            <CardDescription>Permissions assigned to this role ({role.permissions?.length || 0} total)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {role.permissions && role.permissions.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                                     {role.permissions.map((permission) => (
-                                        <div key={permission.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                        <div key={permission.id} className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
                                             <CheckCircle className="h-4 w-4 text-green-500" />
                                             <div>
                                                 <p className="font-medium">{permission.name}</p>
-                                                {permission.description && (
-                                                    <p className="text-sm text-gray-500">{permission.description}</p>
-                                                )}
+                                                {permission.description && <p className="text-sm text-gray-500">{permission.description}</p>}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                    <p>No permissions assigned to this role</p>
+                                <div className="py-8 text-center">
+                                    <Shield className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+                                    <p className={BODY_TEXT}>No permissions assigned to this role</p>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Users with this role */}
                 <div className="mt-6">
                     <Card>
                         <CardHeader>
@@ -197,14 +173,12 @@ export default function Show() {
                                         <Users className="h-5 w-5" />
                                         Users with this Role
                                     </CardTitle>
-                                    <CardDescription>
-                                        Users currently assigned to this role ({role.users?.length || 0} total)
-                                    </CardDescription>
+                                    <CardDescription>Users currently assigned to this role ({role.users?.length || 0} total)</CardDescription>
                                 </div>
                                 {hasPermission('assign-roles') && (
                                     <Link href={`/users?assign_role=${role.id}`}>
                                         <Button size="sm">
-                                            <Users className="h-4 w-4 mr-2" />
+                                            <Users className="mr-2 h-4 w-4" />
                                             Assign User
                                         </Button>
                                     </Link>
@@ -233,9 +207,7 @@ export default function Show() {
                                                         {user.email_verified_at ? 'Verified' : 'Unverified'}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>
-                                                    {new Date(user.created_at).toLocaleDateString()}
-                                                </TableCell>
+                                                <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-2">
                                                         {hasPermission('update-users') && (
@@ -246,8 +218,8 @@ export default function Show() {
                                                             </Link>
                                                         )}
                                                         {hasPermission('assign-roles') && (
-                                                            <Button 
-                                                                size="sm" 
+                                                            <Button
+                                                                size="sm"
                                                                 variant="outline"
                                                                 disabled={processing}
                                                                 onClick={() => handleRemoveRole(user.id, user.name)}
@@ -262,15 +234,16 @@ export default function Show() {
                                     </TableBody>
                                 </Table>
                             ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                    <p>No users assigned to this role</p>
+                                <div className="py-8 text-center">
+                                    <Users className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+                                    <p className={BODY_TEXT}>No users assigned to this role</p>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
                 </div>
             </div>
+
             <ConfirmDialog
                 open={removeDialog.open}
                 onClose={() => setRemoveDialog({ open: false, userId: 0, userName: '' })}

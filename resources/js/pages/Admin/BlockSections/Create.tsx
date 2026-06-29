@@ -5,26 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { BODY_TEXT, CARD, HELPER_TEXT, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type Subject, type SubjectAssignment, schoolYears, useBlockSectionCreate } from '@/hooks/useBlockSectionCreate';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Loader2, Plus, Save, X } from 'lucide-react';
-import { useState } from 'react';
-
-interface Subject {
-    id: number;
-    code: string;
-    name: string;
-    units: number;
-    semester: string | null;
-}
 
 interface Props {
     subjects: Subject[];
-}
-
-interface SubjectAssignment {
-    subject_id: number;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,104 +29,46 @@ const gradeLevels = [
 
 const semesters = ['First Semester', 'Second Semester', 'Summer', 'Full Year'];
 
-// Generate school years
-const currentYear = new Date().getFullYear();
-const schoolYears = Array.from({ length: 5 }, (_, i) => `${currentYear + i - 1}-${currentYear + i}`);
-
 export default function Create({ subjects }: Props) {
-    const [assignedSubjects, setAssignedSubjects] = useState<SubjectAssignment[]>([]);
-    const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
-
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        code: '',
-        grade_level: '',
-        school_year: schoolYears[1],
-        semester: '',
-        adviser: '',
-        room: '',
-        capacity: 40,
-        schedule: '',
-        is_active: true,
-        subjects: [] as SubjectAssignment[],
-    });
-
-    const handleAddSubject = () => {
-        if (!selectedSubjectId) return;
-
-        const subjectId = parseInt(selectedSubjectId);
-        if (assignedSubjects.some((s) => s.subject_id === subjectId)) {
-            alert('This subject is already added.');
-            return;
-        }
-
-        const updatedSubjects = [...assignedSubjects, { subject_id: subjectId }];
-        setAssignedSubjects(updatedSubjects);
-        setData('subjects', updatedSubjects);
-        setSelectedSubjectId('');
-    };
-
-    const handleRemoveSubject = (subjectId: number) => {
-        const updatedSubjects = assignedSubjects.filter((s) => s.subject_id !== subjectId);
-        setAssignedSubjects(updatedSubjects);
-        setData('subjects', updatedSubjects);
-    };
-
-    const getSubjectById = (id: number) => subjects.find((s) => s.id === id);
-
-    // Only show subjects compatible with the selected semester
-    const semesterCompatible = (s: Subject) =>
-        !data.semester || !s.semester || s.semester === 'Full Year' || s.semester === data.semester;
-
-    const availableSubjects = subjects.filter(
-        (s) => semesterCompatible(s) && !assignedSubjects.some((assigned) => assigned.subject_id === s.id)
-    );
-
-    const handleSemesterChange = (v: string) => {
-        setData('semester', v);
-        // Remove already-assigned subjects that are incompatible with the new semester
-        const compatible = assignedSubjects.filter((a) => {
-            const s = subjects.find((sub) => sub.id === a.subject_id);
-            return !s || !s.semester || s.semester === 'Full Year' || s.semester === v;
-        });
-        if (compatible.length !== assignedSubjects.length) {
-            setAssignedSubjects(compatible);
-            setData('subjects', compatible);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/block-sections');
-    };
+    const {
+        data,
+        setData,
+        processing,
+        errors,
+        assignedSubjects,
+        selectedSubjectId,
+        setSelectedSubjectId,
+        availableSubjects,
+        getSubjectById,
+        handleAddSubject,
+        handleRemoveSubject,
+        handleSemesterChange,
+        handleSubmit,
+    } = useBlockSectionCreate({ subjects });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Block Section" />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href="/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Block Sections
                     </Link>
-                    <h1 className="mt-2 text-3xl font-bold text-gray-900">Create Block Section</h1>
-                    <p className="mt-1 text-gray-600">Add a new block section with subjects</p>
+                    <h1 className={`mt-2 ${PAGE_TITLE}`}>Create Block Section</h1>
+                    <p className={`mt-1 ${BODY_TEXT}`}>Add a new block section with subjects</p>
                 </div>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit}>
                     <div className="grid gap-6 lg:grid-cols-2">
-                        {/* Section Details */}
-                        <div className="rounded-lg border bg-white p-6 shadow-sm">
-                            <h2 className="mb-4 text-lg font-semibold text-gray-900">Section Details</h2>
+                        <div className={`${CARD} p-6`}>
+                            <h2 className={`mb-4 ${SECTION_HEADING}`}>Section Details</h2>
 
                             <div className="grid gap-4">
-                                {/* Name and Code */}
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="name">Section Name *</Label>
+                                        <Label htmlFor="name" className={LABEL_TEXT}>Section Name *</Label>
                                         <Input
                                             id="name"
                                             value={data.name}
@@ -148,7 +79,7 @@ export default function Create({ subjects }: Props) {
                                         <InputError message={errors.name} className="mt-1" />
                                     </div>
                                     <div>
-                                        <Label htmlFor="code">Section Code *</Label>
+                                        <Label htmlFor="code" className={LABEL_TEXT}>Section Code *</Label>
                                         <Input
                                             id="code"
                                             value={data.code}
@@ -160,10 +91,9 @@ export default function Create({ subjects }: Props) {
                                     </div>
                                 </div>
 
-                                {/* Grade Level and School Year */}
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="grade_level">Grade Level *</Label>
+                                        <Label htmlFor="grade_level" className={LABEL_TEXT}>Grade Level *</Label>
                                         <Select value={data.grade_level} onValueChange={(v) => setData('grade_level', v)}>
                                             <SelectTrigger className="mt-1">
                                                 <SelectValue placeholder="Select grade level" />
@@ -179,7 +109,7 @@ export default function Create({ subjects }: Props) {
                                         <InputError message={errors.grade_level} className="mt-1" />
                                     </div>
                                     <div>
-                                        <Label htmlFor="school_year">School Year *</Label>
+                                        <Label htmlFor="school_year" className={LABEL_TEXT}>School Year *</Label>
                                         <Select value={data.school_year} onValueChange={(v) => setData('school_year', v)}>
                                             <SelectTrigger className="mt-1">
                                                 <SelectValue placeholder="Select school year" />
@@ -196,10 +126,9 @@ export default function Create({ subjects }: Props) {
                                     </div>
                                 </div>
 
-                                {/* Semester and Capacity */}
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="semester">Semester</Label>
+                                        <Label htmlFor="semester" className={LABEL_TEXT}>Semester</Label>
                                         <Select value={data.semester} onValueChange={handleSemesterChange}>
                                             <SelectTrigger className="mt-1">
                                                 <SelectValue placeholder="Select semester" />
@@ -215,7 +144,7 @@ export default function Create({ subjects }: Props) {
                                         <InputError message={errors.semester} className="mt-1" />
                                     </div>
                                     <div>
-                                        <Label htmlFor="capacity">Capacity *</Label>
+                                        <Label htmlFor="capacity" className={LABEL_TEXT}>Capacity *</Label>
                                         <Input
                                             id="capacity"
                                             type="number"
@@ -229,10 +158,9 @@ export default function Create({ subjects }: Props) {
                                     </div>
                                 </div>
 
-                                {/* Adviser and Room */}
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="adviser">Adviser</Label>
+                                        <Label htmlFor="adviser" className={LABEL_TEXT}>Adviser</Label>
                                         <Input
                                             id="adviser"
                                             value={data.adviser}
@@ -243,7 +171,7 @@ export default function Create({ subjects }: Props) {
                                         <InputError message={errors.adviser} className="mt-1" />
                                     </div>
                                     <div>
-                                        <Label htmlFor="room">Room</Label>
+                                        <Label htmlFor="room" className={LABEL_TEXT}>Room</Label>
                                         <Input
                                             id="room"
                                             value={data.room}
@@ -255,9 +183,8 @@ export default function Create({ subjects }: Props) {
                                     </div>
                                 </div>
 
-                                {/* Schedule */}
                                 <div>
-                                    <Label htmlFor="schedule">Schedule Notes</Label>
+                                    <Label htmlFor="schedule" className={LABEL_TEXT}>Schedule Notes</Label>
                                     <Textarea
                                         id="schedule"
                                         value={data.schedule}
@@ -269,7 +196,6 @@ export default function Create({ subjects }: Props) {
                                     <InputError message={errors.schedule} className="mt-1" />
                                 </div>
 
-                                {/* Active Status */}
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
@@ -278,21 +204,19 @@ export default function Create({ subjects }: Props) {
                                         onChange={(e) => setData('is_active', e.target.checked)}
                                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                     />
-                                    <Label htmlFor="is_active" className="cursor-pointer">
+                                    <Label htmlFor="is_active" className={`cursor-pointer ${LABEL_TEXT}`}>
                                         Active (Section is open for enrollment)
                                     </Label>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Assigned Subjects */}
-                        <div className="rounded-lg border bg-white p-6 shadow-sm">
-                            <h2 className="mb-4 text-lg font-semibold text-gray-900">Assigned Subjects</h2>
-                            <p className="mb-4 text-sm text-gray-500">
+                        <div className={`${CARD} p-6`}>
+                            <h2 className={`mb-4 ${SECTION_HEADING}`}>Assigned Subjects</h2>
+                            <p className={`mb-4 ${BODY_TEXT}`}>
                                 Select subjects to assign to this section. Schedule, room, and faculty are managed on each subject.
                             </p>
 
-                            {/* Add Subject */}
                             <div className="mb-4 flex gap-2">
                                 <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId}>
                                     <SelectTrigger className="flex-1">
@@ -312,13 +236,11 @@ export default function Create({ subjects }: Props) {
                                 </Button>
                             </div>
 
-                            {/* Subject List */}
                             {assignedSubjects.length > 0 ? (
-                                <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                                    {assignedSubjects.map((assignment) => {
+                                <div className="max-h-[500px] space-y-2 overflow-y-auto">
+                                    {assignedSubjects.map((assignment: SubjectAssignment) => {
                                         const subject = getSubjectById(assignment.subject_id);
                                         if (!subject) return null;
-
                                         return (
                                             <div key={assignment.subject_id} className="flex items-center justify-between rounded-lg border px-3 py-2">
                                                 <div>
@@ -348,20 +270,17 @@ export default function Create({ subjects }: Props) {
                                 </div>
                             ) : (
                                 <div className="rounded-lg border border-dashed p-8 text-center">
-                                    <p className="text-gray-500">No subjects assigned yet.</p>
-                                    <p className="text-sm text-gray-400">Select subjects from the dropdown above.</p>
+                                    <p className={BODY_TEXT}>No subjects assigned yet.</p>
+                                    <p className={HELPER_TEXT}>Select subjects from the dropdown above.</p>
                                 </div>
                             )}
 
                             {assignedSubjects.length > 0 && (
-                                <p className="mt-3 text-sm text-gray-500">
-                                    {assignedSubjects.length} subject(s) assigned
-                                </p>
+                                <p className={`mt-3 ${BODY_TEXT}`}>{assignedSubjects.length} subject(s) assigned</p>
                             )}
                         </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="mt-6 flex gap-3">
                         <Button type="submit" disabled={processing}>
                             {processing ? (

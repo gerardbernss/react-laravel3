@@ -1,10 +1,8 @@
-import { router, usePage } from '@inertiajs/react';
+import { useApplicationStart } from '@/hooks/useApplicationStart';
 import { BookOpen, Facebook, GraduationCap, Mail, MapPin, Phone, Users } from 'lucide-react';
-import { useState } from 'react';
 
 export default function Start() {
-    const { applicationPeriodOpen } = usePage<{ applicationPeriodOpen: boolean }>().props;
-    const [selectedType, setSelectedType] = useState('');
+    const { applicationPeriodOpen, selectedType, setSelectedType, handleProceed } = useApplicationStart();
 
     const applicationTypes = [
         {
@@ -35,12 +33,6 @@ export default function Start() {
             hoverColor: 'hover:bg-purple-600',
         },
     ];
-
-    const handleProceed = () => {
-        if (selectedType) {
-            router.visit(`/applications/apply-${selectedType}`);
-        }
-    };
 
     return (
         <div className="min-h-screen bg-[#f5f5f5]">

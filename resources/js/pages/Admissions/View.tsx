@@ -9,21 +9,15 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { useApplicantView } from '@/hooks/useApplicantView';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
 import { HiArrowLeft, HiPencil, HiTrash } from 'react-icons/hi';
 
 export default function Show({ applicant }: { applicant: any }) {
-    const [open, setOpen] = useState(false);
+    const { breadcrumbs, open, setOpen } = useApplicantView({ applicant });
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Applicant List', href: '/admissions/applicants' },
-        { title: `${applicant.first_name ?? ''} ${applicant.last_name ?? ''}`, href: `/admissions/applicants/${applicant.id}/show` },
-    ];
-
-    // Helper function to safely format date
     const formatDate = (date?: string) => (date ? new Date(date).toLocaleDateString('en-US') : '-');
 
     return (
@@ -54,7 +48,7 @@ export default function Show({ applicant }: { applicant: any }) {
                                     {applicant.personal_data.last_name?.[0] ?? ''}
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">
+                                    <h1 className={PAGE_TITLE}>
                                         {applicant.personal_data.first_name ?? ''} {applicant.personal_data.last_name ?? ''}
                                     </h1>
                                     <p className="text-sm text-gray-500">{applicant.personal_data.email ?? '-'}</p>
@@ -167,7 +161,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
     return (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 bg-gray-50 px-6 py-3">
-                <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                <h3 className={SECTION_HEADING}>{title}</h3>
             </div>
             <div className="p-6">{children}</div>
         </div>

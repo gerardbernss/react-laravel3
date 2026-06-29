@@ -1,11 +1,12 @@
 ﻿import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { useEnrollmentReport } from '@/hooks/useEnrollmentReport';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, BarChart3, CheckCircle, Clock, Users } from 'lucide-react';
-import { useState } from 'react';
 
 interface Statistics {
     total_students: number;
@@ -39,31 +40,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function EnrollmentReport({ statistics, filters = {}, schoolYears = [], semesters = [] }: Props) {
-    const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
-    const [categoryFilter, setCategoryFilter] = useState(filters.category || 'all');
-    const [schoolYear, setSchoolYear] = useState(filters.school_year || 'all');
-
-    const handleFilter = () => {
-        router.get(
-            '/enrollment/report',
-            {
-                status: statusFilter !== 'all' ? statusFilter : undefined,
-                category: categoryFilter !== 'all' ? categoryFilter : undefined,
-                school_year: schoolYear !== 'all' ? schoolYear : undefined,
-            },
-            { preserveState: true },
-        );
-    };
+    const { statusFilter, setStatusFilter, categoryFilter, setCategoryFilter, schoolYear, setSchoolYear, handleFilter } =
+        useEnrollmentReport({ filters });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Enrollment Reports" />
 
-            <div className="space-y-6 p-6 md:p-10">
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Enrollment Reports</h1>
+                        <h1 className={PAGE_TITLE}>Enrollment Reports</h1>
                     </div>
                     <Link href="/enrollment/dashboard">
                         <Button variant="outline">
@@ -74,11 +62,11 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                 </div>
 
                 {/* Filters */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-lg font-semibold">Filter Reports</h2>
+                <div className={`${CARD} p-6`}>
+                    <h2 className={`mb-4 ${SECTION_HEADING}`}>Filter Reports</h2>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>Status</label>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Statuses" />
@@ -92,7 +80,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>Category</label>
                             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Categories" />
@@ -107,7 +95,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">School Year</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>School Year</label>
                             <Select value={schoolYear} onValueChange={setSchoolYear}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All School Years" />
@@ -134,7 +122,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className={`${CARD} p-6`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Total Applicants</p>
@@ -144,7 +132,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className={`${CARD} p-6`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Pending</p>
@@ -162,7 +150,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className={`${CARD} p-6`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600">Enrolled</p>
@@ -184,7 +172,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                 {/* Breakdown Tables */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     {/* By Category */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className={CARD}>
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <h2 className="font-semibold">Applicants by Category</h2>
                         </div>
@@ -224,7 +212,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                     </div>
 
                     {/* By Year Level */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className={CARD}>
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <h2 className="font-semibold">Applicants by Year Level</h2>
                         </div>

@@ -1,11 +1,25 @@
 <?php
 namespace App\Services\Admissions;
 
+use App\Mail\Admissions\EmailConfirmationMail;
+use App\Mail\Admissions\FinalResultMail;
+use App\Mail\Admissions\ResendPortalPasswordMail;
 use App\Models\Applicant;
 use App\Models\ApplicantPersonalData;
-use App\Models\Student;
+use App\Models\StudentAssessment;
+use App\Repositories\ApplicantAssessmentRepository;
+use App\Repositories\ApplicantRepository;
+use App\Repositories\ApplicationRepository;
+use App\Repositories\EnrollmentPeriodRepository;
+use App\Repositories\ExamResultRepository;
+use App\Repositories\PortalCredentialRepository;
+use App\Repositories\StudentAssessmentRepository;
+use App\Repositories\StudentRepository;
 use App\Services\Student\CopyApplicantDataService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -26,6 +40,340 @@ use Illuminate\Support\Str;
  */
 class ApplicantService
 {
+    public function __construct(
+        private ApplicantRepository $applicantRepository,
+        private PortalCredentialRepository $portalCredentialRepository,
+        private ApplicationRepository $applicationRepository,
+        private EnrollmentPeriodRepository $enrollmentPeriodRepository,
+        private ExamResultRepository $examResultRepository,
+        private StudentRepository $studentRepository,
+        private StudentAssessmentRepository $studentAssessmentRepository,
+        private ApplicantAssessmentRepository $applicantAssessmentRepository,
+    ) {
+    }
+
+    /**
+     * Build the flattened applicant rows for the management table.
+     */
+    public function indexData(): array
+    {
+        $period = $this->enrollmentPeriodRepository->currentOrLatest();
+
+        $applications = $this->applicantRepository->allForPeriod($period)->map(fn ($application) => [
+            'id' => $application->id,
+            'application_number' => $application->application_number,
+            'application_date' => $application->application_date,
+            'application_status' => $application->application_status,
+            'strand' => $application->strand,
+            'personal_data_id' => $application->personalData->id ?? null,
+            'last_name' => $application->personalData->last_name ?? null,
+            'first_name' => $application->personalData->first_name ?? null,
+            'middle_name' => $application->personalData->middle_name ?? null,
+            'gender' => $application->personalData->gender ?? null,
+            'email' => $application->personalData->email ?? null,
+        ]);
+
+        return ['applications' => $applications];
+    }
+
+    /**
+     * Build the detail-view payload for a single applicant.
+     */
+    public function showData(int $id): array
+    {
+        $application = $this->applicantRepository->findWithShowRelations($id);
+        $examResult = $this->examResultRepository->findForPersonalData($application->applicant_personal_data_id);
+
+        return [
+            'applicant' => $application,
+            'examResult' => $examResult ? [
+                'applicant_number' => $examResult->applicant_number,
+                'exam_date' => $examResult->exam_date?->toDateString(),
+                'exam_time' => $examResult->exam_time,
+                'exam_venue' => $examResult->exam_venue,
+                'math_score' => $examResult->math_score,
+                'english_score' => $examResult->english_score,
+                'science_score' => $examResult->science_score,
+                'total_score' => $examResult->total_score,
+                'percentage_score' => $examResult->percentage_score,
+                'result' => $examResult->result,
+                'ranking' => $examResult->ranking,
+            ] : null,
+        ];
+    }
+
+    /**
+     * Build the pre-populated edit-form payload for an applicant.
+     */
+    public function editData(int $id): array
+    {
+        return ['applicant' => $this->applicantRepository->findWithEditRelations($id)];
+    }
+
+    /**
+     * Load an applicant with the relations update() needs before validation context is built.
+     */
+    public function findForUpdate(int $id): Applicant
+    {
+        return $this->applicantRepository->findWithUpdateRelations($id);
+    }
+
+    /**
+     * Delete an applicant and all associated data (see class-level notes on the
+     * shared-personal-data deletion strategy).
+     */
+    public function destroyApplicant(int $id): void
+    {
+        DB::transaction(function () use ($id) {
+            $application = $this->applicantRepository->findWithDestroyRelations($id);
+
+            if ($application->documents) {
+                $this->applicantRepository->deleteDocumentFiles([
+                    $application->documents->certificate_of_enrollment,
+                    $application->documents->birth_certificate,
+                    $application->documents->latest_report_card_front,
+                    $application->documents->latest_report_card_back,
+                ]);
+                $this->applicantRepository->deleteDocumentsRecord($application);
+            }
+
+            $personalData = $application->personalData;
+            $otherAppsCount = $personalData
+                ? $this->applicantRepository->otherApplicationsCount($personalData, $id)
+                : 0;
+
+            if ($personalData && $otherAppsCount === 0) {
+                $this->applicantRepository->deletePersonalDataCascade($personalData->id);
+            } else {
+                $this->applicantRepository->deleteEducationalBackgroundAndApplication($application);
+            }
+        });
+    }
+
+    /**
+     * Map an evaluation intent word to an application_status and persist it.
+     */
+    public function evaluateApplicant(int $id, string $evaluation, ?string $remarks): array
+    {
+        $statusMap = [
+            'approve' => 'For Exam',
+            'revise' => 'For Revision',
+            'reject' => 'Rejected',
+        ];
+
+        $applicant = $this->applicantRepository->findOrFail($id);
+        $this->applicantRepository->update($applicant, [
+            'application_status' => $statusMap[$evaluation],
+            'remarks' => $remarks,
+        ]);
+
+        return [
+            'application_status' => $applicant->application_status,
+            'remarks' => $applicant->remarks,
+        ];
+    }
+
+    /**
+     * Build the payload for the dedicated enrollment/payment page.
+     */
+    public function enrollPageData(int $id): array
+    {
+        $applicant = $this->applicantRepository->findWithPersonalDataAndAssessment($id);
+        $assessment = $applicant->assessment;
+
+        return [
+            'applicant' => [
+                'id' => $applicant->id,
+                'application_number' => $applicant->application_number,
+                'application_status' => $applicant->application_status,
+                'year_level' => $applicant->year_level,
+                'school_year' => $applicant->school_year,
+                'semester' => $applicant->semester,
+                'name' => trim(
+                    ($applicant->personalData->last_name ?? '') . ', ' .
+                    ($applicant->personalData->first_name ?? '') . ' ' .
+                    ($applicant->personalData->middle_name ?? '')
+                ),
+            ],
+            'assessment' => $assessment ? [
+                'assessment_number' => $assessment->assessment_number,
+                'school_year' => $assessment->school_year,
+                'semester' => $assessment->semester,
+                'total_tuition' => (float) $assessment->total_tuition,
+                'total_misc_fees' => (float) $assessment->total_misc_fees,
+                'total_lab_fees' => (float) $assessment->total_lab_fees,
+                'total_other_fees' => (float) $assessment->total_other_fees,
+                'gross_amount' => (float) $assessment->gross_amount,
+                'net_amount' => (float) $assessment->net_amount,
+                'minimum_amount' => (float) $assessment->minimum_amount,
+                'status' => $assessment->status,
+            ] : null,
+        ];
+    }
+
+    /**
+     * Enroll an Exam Passed applicant and record their initial payment.
+     * Creates Student + StudentAssessment + StudentPayment in one transaction.
+     */
+    public function enrollApplicant(int $id, array $data): void
+    {
+        $applicant = $this->applicantRepository->findWithPersonalDataAndAssessment($id);
+        $applicantAssessment = $applicant->assessment;
+
+        abort_if(! in_array($applicant->application_status, ['Exam Passed', 'Pending Enrollment']), 422, 'Applicant is not eligible for enrollment.');
+        abort_if(! $applicantAssessment, 422, 'No assessment found. Applicant must complete the enrollment wizard first.');
+
+        DB::transaction(function () use ($applicant, $applicantAssessment, $data) {
+            $personalData = $applicant->personalData;
+
+            $student = $this->studentRepository->createStudent([
+                'applicant_personal_data_id' => $personalData->id,
+                'applicant_id' => $applicant->id,
+                'enrollment_status' => 'Active',
+                'enrollment_date' => now(),
+                'current_year_level' => $applicant->year_level,
+                'current_semester' => $applicant->semester ?? 'First Semester',
+                'current_school_year' => $applicant->school_year,
+            ]);
+
+            $studentAssessment = $this->studentAssessmentRepository->create([
+                'student_id' => $student->id,
+                'assessment_number' => StudentAssessment::generateAssessmentNumber($applicant->school_year),
+                'school_year' => $applicantAssessment->school_year,
+                'semester' => $applicantAssessment->semester,
+                'total_tuition' => $applicantAssessment->total_tuition,
+                'total_misc_fees' => $applicantAssessment->total_misc_fees,
+                'total_lab_fees' => $applicantAssessment->total_lab_fees,
+                'total_other_fees' => $applicantAssessment->total_other_fees,
+                'gross_amount' => $applicantAssessment->gross_amount,
+                'total_discounts' => $applicantAssessment->total_discounts,
+                'net_amount' => $applicantAssessment->net_amount,
+                'payment_plan' => 'installment',
+                'minimum_amount' => $applicantAssessment->minimum_amount,
+                'mode_of_payment' => 'cash',
+                'status' => 'finalized',
+                'generated_at' => now(),
+                'finalized_at' => now(),
+                'finalized_by' => Auth::id(),
+            ]);
+
+            $this->studentAssessmentRepository->createPayment([
+                'assessment_id' => $studentAssessment->id,
+                'amount_paid' => $data['amount_paid'],
+                'payment_method' => 'cash',
+                'payment_date' => now()->toDateString(),
+                'notes' => $data['notes'] ?? null,
+                'processed_by' => Auth::id(),
+            ]);
+
+            $totalPaid = (float) $data['amount_paid'];
+            $net = (float) $applicantAssessment->net_amount;
+            $newStatus = $totalPaid >= $net ? 'paid' : ($totalPaid > 0 ? 'partial' : 'finalized');
+            $this->studentAssessmentRepository->updateAssessment($studentAssessment, ['status' => $newStatus]);
+
+            $this->applicantAssessmentRepository->update($applicantAssessment, ['status' => 'paid']);
+            $this->applicantRepository->update($applicant, ['application_status' => 'Enrolled']);
+
+            app(CopyApplicantDataService::class)->execute($student);
+        });
+    }
+
+    /**
+     * Send the final admission result email to an applicant.
+     */
+    public function sendFinalResult(int $id): array
+    {
+        return $this->sendEmail($id, function ($application) {
+            Mail::to($application->personalData->email)->send(new FinalResultMail($application));
+        }, 'Final result email sent successfully.');
+    }
+
+    /**
+     * Send an application receipt / confirmation email.
+     */
+    public function sendConfirmationEmail(int $id): array
+    {
+        return $this->sendEmail($id, function ($application) {
+            Mail::to($application->personalData->email)->send(new EmailConfirmationMail($application));
+        }, 'Confirmation email sent successfully.');
+    }
+
+    /**
+     * Generate (or regenerate) portal credentials and email them to the applicant.
+     * See class-level notes on the credential lifecycle.
+     */
+    public function sendPortalPassword(int $id): array
+    {
+        try {
+            $application = $this->applicantRepository->findWithPersonalData($id);
+
+            if (! $application->personalData?->email) {
+                return ['success' => false, 'message' => 'Applicant email not found.', 'status' => 400];
+            }
+
+            $credential = $this->portalCredentialRepository->findByApplicantId($application->id);
+            $temporaryPassword = Str::random(12);
+
+            if (! $credential) {
+                $username = $application->personalData->email;
+
+                if ($this->portalCredentialRepository->usernameExists($username)) {
+                    return ['success' => false, 'message' => 'Portal credentials already exist for this email address.', 'status' => 400];
+                }
+
+                $credential = $this->portalCredentialRepository->create([
+                    'applicant_personal_data_id' => $application->applicant_personal_data_id,
+                    'applicant_id' => $application->id,
+                    'username' => $username,
+                    'temporary_password' => bcrypt($temporaryPassword),
+                    'credentials_generated_at' => now(),
+                ]);
+            } else {
+                $this->portalCredentialRepository->update($credential, [
+                    'temporary_password' => bcrypt($temporaryPassword),
+                ]);
+            }
+
+            $credential->load('personalData');
+
+            Mail::to($application->personalData->email)
+                ->send(new ResendPortalPasswordMail($credential, $temporaryPassword));
+
+            $this->portalCredentialRepository->update($credential, [
+                'credentials_sent_at' => now(),
+                'sent_via' => 'email',
+            ]);
+
+            return ['success' => true, 'message' => 'Portal credentials emailed successfully.'];
+        } catch (\Exception $e) {
+            Log::error('Failed to send portal password email: ' . $e->getMessage());
+
+            return ['success' => false, 'message' => 'Failed to send email. Please try again.', 'status' => 500];
+        }
+    }
+
+    /**
+     * Shared email-sending helper used by sendFinalResult() and sendConfirmationEmail().
+     */
+    private function sendEmail(int $id, callable $sendAction, string $successMessage): array
+    {
+        try {
+            $application = $this->applicantRepository->findWithPersonalData($id);
+
+            if (! $application->personalData?->email) {
+                return ['success' => false, 'message' => 'Applicant email not found.', 'status' => 400];
+            }
+
+            $sendAction($application);
+
+            return ['success' => true, 'message' => $successMessage];
+        } catch (\Exception $e) {
+            Log::error('Failed to send email: ' . $e->getMessage());
+
+            return ['success' => false, 'message' => 'Failed to send email. Please try again.', 'status' => 500];
+        }
+    }
+
     /**
      * Create a brand-new applicant with all related data.
      *
@@ -89,7 +437,7 @@ class ApplicantService
     {
         if (! $existing) {
             // Try to reuse an existing personal data row for the same email.
-            $existing = ApplicantPersonalData::where('email', $data['email'])->first();
+            $existing = $this->applicationRepository->findPersonalDataByEmail($data['email']);
         }
 
         $payload = [
@@ -124,9 +472,9 @@ class ApplicantService
         ];
 
         if ($existing) {
-            $existing->update($payload);
+            $this->applicationRepository->updatePersonalData($existing, $payload);
         } else {
-            $existing = ApplicantPersonalData::create($payload);
+            $existing = $this->applicationRepository->createPersonalData($payload);
         }
 
         // Store the doctor's note PDF/image if one was uploaded in this request.
@@ -138,8 +486,7 @@ class ApplicantService
             $filename = "{$existing->id}_{$lastName}_{$firstName}_DOCTORS_NOTE." . $file->getClientOriginalExtension();
             $path     = $file->storeAs('documents/doctors_notes', $filename, 'public');
 
-            $existing->doctors_note_file = $path;
-            $existing->save();
+            $this->applicationRepository->saveDoctorsNotePath($existing, $path);
         }
 
         return $existing;
@@ -206,10 +553,7 @@ class ApplicantService
             'emergency_email'           => $data['emergency_email'] ?? null,
         ];
 
-        $personalData->familyBackground()->updateOrCreate(
-            ['applicant_personal_data_id' => $personalData->id],
-            $payload
-        );
+        $this->applicationRepository->updateOrCreateFamilyBackground($personalData, $payload);
     }
 
     /**
@@ -222,21 +566,9 @@ class ApplicantService
      */
     private function handleSiblings(ApplicantPersonalData $personalData, array $data): void
     {
-        // Remove all existing siblings before inserting the fresh list.
-        $personalData->siblings()->delete();
         $siblings = $this->decodeJsonOrArray($data['siblings'] ?? []);
 
-        if (is_array($siblings)) {
-            foreach ($siblings as $sibling) {
-                if (is_array($sibling) && ! empty($sibling['sibling_full_name'])) {
-                    $personalData->siblings()->create([
-                        'sibling_full_name'   => $sibling['sibling_full_name'],
-                        'sibling_grade_level' => $sibling['sibling_grade_level'] ?? null,
-                        'sibling_id_number'   => $sibling['sibling_id_number'] ?? null,
-                    ]);
-                }
-            }
-        }
+        $this->applicationRepository->replaceSiblings($personalData, is_array($siblings) ? $siblings : []);
     }
 
     /**
@@ -252,14 +584,14 @@ class ApplicantService
 
         if (! empty($data['application_number'])) {
             $applicationNumber = strtoupper(trim($data['application_number']));
-            if (Applicant::where('application_number', $applicationNumber)->exists()) {
+            if ($this->applicantRepository->applicationNumberExists($applicationNumber)) {
                 throw new \Exception("The application number '$applicationNumber' is already taken.");
             }
         } else {
             $applicationNumber = $this->generateApplicationNumber($data['year_level']);
         }
 
-        return Applicant::forceCreate([
+        return $this->applicantRepository->create([
             'applicant_personal_data_id' => $personalData->id,
             'application_number'         => $applicationNumber,
             'application_date'           => $data['application_date'],
@@ -305,16 +637,14 @@ class ApplicantService
         if (! empty($data['application_number']) && $data['application_number'] !== $application->application_number) {
             $manualNumber = strtoupper(trim($data['application_number']));
 
-            if (Applicant::where('application_number', $manualNumber)
-                ->where('id', '!=', $application->id)
-                ->exists()) {
+            if ($this->applicantRepository->applicationNumberExistsExcept($manualNumber, $application->id)) {
                 throw new \Exception("The application number '$manualNumber' is already taken.");
             }
 
             $payload['application_number'] = $manualNumber;
         }
 
-        $application->update($payload);
+        $this->applicantRepository->update($application, $payload);
     }
 
     /**
@@ -325,27 +655,9 @@ class ApplicantService
      */
     private function handleEducationalBackground(Applicant $application, array $data): void
     {
-        $application->educationalBackground()->delete();
         $schools = $this->decodeJsonOrArray($data['schools'] ?? []);
 
-        if (is_array($schools)) {
-            foreach ($schools as $school) {
-                if (is_array($school) && ! empty($school['school_name'])) {
-                    $application->educationalBackground()->create([
-                        'school_name'     => $school['school_name'],
-                        'school_address'  => $school['school_address'] ?? null,
-                        'from_grade'      => $school['from_grade'] ?? null,
-                        'to_grade'        => $school['to_grade'] ?? null,
-                        'from_year'       => $school['from_year'] ?? null,
-                        'to_year'         => $school['to_year'] ?? null,
-                        'honors_awards'   => $school['honors_awards'] ?? null,
-                        'general_average' => $school['general_average'] ?? null,
-                        'class_rank'      => $school['class_rank'] ?? null,
-                        'class_size'      => $school['class_size'] ?? null,
-                    ]);
-                }
-            }
-        }
+        $this->applicantRepository->replaceEducationalBackground($application, is_array($schools) ? $schools : []);
     }
 
     /**
@@ -384,10 +696,7 @@ class ApplicantService
 
         // Only write to the DB when at least one new file was uploaded.
         if (! empty($uploads)) {
-            $application->documents()->updateOrCreate(
-                ['applicant_id' => $application->id],
-                $uploads
-            );
+            $this->applicantRepository->createOrUpdateDocuments($application, $uploads);
         }
     }
 
@@ -400,24 +709,24 @@ class ApplicantService
      */
     private function handleEnrollment(Applicant $application): void
     {
-        $student = Student::where('application_id', $application->id)
-            ->orWhere('applicant_personal_data_id', $application->personalData->id)
-            ->first();
+        $student = $this->studentRepository->findForEmail($application->id, $application->personalData->id);
 
         if (! $student) {
-            $student                             = new Student();
-            $student->applicant_personal_data_id = $application->personalData->id;
-            $student->application_id             = $application->id;
-            $student->enrollment_date            = now();
-            $student->save();
+            $student = $this->studentRepository->createStudent([
+                'applicant_personal_data_id' => $application->personalData->id,
+                'application_id' => $application->id,
+                'enrollment_date' => now(),
+            ]);
         } else {
-            $student->applicant_personal_data_id = $application->personalData->id;
+            $payload = ['applicant_personal_data_id' => $application->personalData->id];
+
             // Preserve the original enrollment_date; only backfill application_id
             // if the existing record is missing it.
             if (! $student->application_id) {
-                $student->application_id = $application->id;
+                $payload['application_id'] = $application->id;
             }
-            $student->save();
+
+            $this->studentRepository->updateStudent($student, $payload);
         }
 
         app(CopyApplicantDataService::class)->execute($student);
@@ -495,9 +804,7 @@ class ApplicantService
     {
         $letter = $this->getApplicationPrefixLetter($yearLevel);
 
-        $last = Applicant::where('application_number', 'like', $letter . '%')
-            ->orderBy('application_number', 'desc')
-            ->first();
+        $last = $this->applicantRepository->lastApplicationNumberWithPrefix($letter);
 
         $nextSeq = $last ? ((int) substr($last->application_number, 1)) + 1 : 1;
 

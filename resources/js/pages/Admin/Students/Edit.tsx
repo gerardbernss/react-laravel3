@@ -1,50 +1,13 @@
 import { FileUpload } from '@/components/file-upload';
 import { SearchableSelect } from '@/components/searchable-select';
 import { Button } from '@/components/ui/button';
-import { getSchoolYearOptions } from '@/lib/school-year';
-import { useBarangays } from '@/hooks/use-barangays';
-import { useCities } from '@/hooks/use-cities';
-import { useProvinces } from '@/hooks/use-provinces';
-import { useRegions } from '@/hooks/use-regions';
+import { LABEL_TEXT, PAGE_TITLE } from '@/constants/ui';
+import { type Documents, type PersonalData, type Sibling, type StudentRecord, useStudentEdit } from '@/hooks/useStudentEdit';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-
-interface StudentRecord {
-    id: number;
-    student_id_number: string | null;
-    enrollment_status: string | null;
-    current_year_level: string | null;
-    current_school_year: string | null;
-    current_semester: string | null;
-}
-
-interface PersonalData {
-    last_name: string; first_name: string; middle_name: string | null; suffix: string | null;
-    learner_reference_number: string | null; gender: string; citizenship: string; religion: string;
-    date_of_birth: string; place_of_birth: string | null;
-    email: string; alt_email: string | null; mobile_number: string | null;
-    present_street: string | null; present_brgy: string | null; present_city: string | null;
-    present_province: string | null; present_zip: string | null;
-    permanent_street: string | null; permanent_brgy: string | null; permanent_city: string | null;
-    permanent_province: string | null; permanent_zip: string | null;
-    health_conditions: string[] | string | null;
-    has_doctors_note: boolean | null;
-    stopped_studying: string | null; accelerated: string | null;
-}
-
-interface Sibling {
-    sibling_full_name: string; sibling_grade_level: string; sibling_id_number: string;
-}
-
-interface Documents {
-    certificate_of_enrollment: string | null;
-    birth_certificate: string | null;
-    latest_report_card_front: string | null;
-    latest_report_card_back: string | null;
-}
+import { type ReactNode } from 'react';
 
 interface Props {
     student: StudentRecord;
@@ -52,6 +15,12 @@ interface Props {
     siblings: Sibling[];
     documents: Documents | null;
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Students', href: '/students' },
+    { title: 'Edit Student', href: '#' },
+];
 
 const HEALTH_CONDITIONS = [
     'Sensory Difficulties',
@@ -66,135 +35,30 @@ const HEALTH_CONDITIONS = [
 ];
 
 const GRADE_LEVELS = [
-    'Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6',
-    'Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12',
+    'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
+    'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
 ];
 
-function parseHealthConditions(raw: string[] | string | null): string[] {
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
-    try { return JSON.parse(raw); } catch { return []; }
-}
-
 export default function EditStudent({ student, personalData, siblings: initialSiblings, documents }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Students', href: '/students' },
-        { title: 'Edit Student', href: '#' },
-    ];
-
-    const initHC = parseHealthConditions(personalData?.health_conditions ?? null);
-
-    const { data, setData, post, processing, errors, transform } = useForm<{
-        _method: string;
-        // Enrollment
-        current_year_level: string; current_school_year: string;
-        current_semester: string; enrollment_status: string;
-        // Personal
-        last_name: string; first_name: string; middle_name: string; suffix: string;
-        learner_reference_number: string; gender: string; citizenship: string; religion: string;
-        date_of_birth: string; place_of_birth: string;
-        email: string; alt_email: string; mobile_number: string;
-        // Address
-        present_street: string; present_brgy: string; present_city: string;
-        present_province: string; present_zip: string;
-        permanent_street: string; permanent_brgy: string; permanent_city: string;
-        permanent_province: string; permanent_zip: string;
-        // Health
-        health_conditions: string[];
-        has_doctors_note: boolean;
-        doctors_note_file: File | null;
-        // Siblings
-        siblings: Sibling[];
-        // Documents
-        certificate_of_enrollment: File | null;
-        birth_certificate: File | null;
-        latest_report_card_front: File | null;
-        latest_report_card_back: File | null;
-    }>({
-        _method: 'PUT',
-        current_year_level:  student.current_year_level  ?? '',
-        current_school_year: student.current_school_year ?? '',
-        current_semester:    student.current_semester    ?? '',
-        enrollment_status:   student.enrollment_status   ?? 'Active',
-        last_name:                personalData?.last_name                ?? '',
-        first_name:               personalData?.first_name               ?? '',
-        middle_name:              personalData?.middle_name              ?? '',
-        suffix:                   personalData?.suffix                   ?? '',
-        learner_reference_number: personalData?.learner_reference_number ?? '',
-        gender:                   personalData?.gender                   ?? '',
-        citizenship:              personalData?.citizenship              ?? '',
-        religion:                 personalData?.religion                 ?? '',
-        date_of_birth:            personalData?.date_of_birth            ?? '',
-        place_of_birth:           personalData?.place_of_birth           ?? '',
-        email:                    personalData?.email                    ?? '',
-        alt_email:                personalData?.alt_email                ?? '',
-        mobile_number:            personalData?.mobile_number            ?? '',
-        present_street:   personalData?.present_street   ?? '',
-        present_brgy:     personalData?.present_brgy     ?? '',
-        present_city:     personalData?.present_city     ?? '',
-        present_province: personalData?.present_province ?? '',
-        present_zip:      personalData?.present_zip      ?? '',
-        permanent_street:   personalData?.permanent_street   ?? '',
-        permanent_brgy:     personalData?.permanent_brgy     ?? '',
-        permanent_city:     personalData?.permanent_city     ?? '',
-        permanent_province: personalData?.permanent_province ?? '',
-        permanent_zip:      personalData?.permanent_zip      ?? '',
-        health_conditions: initHC,
-        has_doctors_note: personalData?.has_doctors_note ?? false,
-        doctors_note_file: null,
-        siblings: initialSiblings.map(s => ({
-            sibling_full_name:  s.sibling_full_name  ?? '',
-            sibling_grade_level: s.sibling_grade_level ?? '',
-            sibling_id_number:  s.sibling_id_number  ?? '',
-        })),
-        certificate_of_enrollment: null,
-        birth_certificate: null,
-        latest_report_card_front: null,
-        latest_report_card_back: null,
-    });
-
-    // Address cascade state
-    const [presentRegionCode,   setPresentRegionCode]   = useState('');
-    const [presentProvinceCode, setPresentProvinceCode] = useState('');
-    const [presentCityCode,     setPresentCityCode]     = useState('');
-    const [permRegionCode,      setPermRegionCode]      = useState('');
-    const [permProvinceCode,    setPermProvinceCode]    = useState('');
-    const [permCityCode,        setPermCityCode]        = useState('');
-
-    const { regions }   = useRegions();
-    const { provinces: presentProvinces } = useProvinces(presentRegionCode);
-    const { cities: presentCities }       = useCities(presentProvinceCode);
-    const { barangays: presentBarangays } = useBarangays(presentCityCode);
-    const { provinces: permProvinces } = useProvinces(permRegionCode);
-    const { cities: permCities }       = useCities(permProvinceCode);
-    const { barangays: permBarangays } = useBarangays(permCityCode);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post(`/students/${student.id}`);
-    };
-
-    // Health conditions helpers
-    const toggleCondition = (condition: string) => {
-        const current = data.health_conditions;
-        setData('health_conditions',
-            current.includes(condition) ? current.filter(c => c !== condition) : [...current, condition]
-        );
-    };
-
-    // Siblings helpers
-    const addSibling = () => setData('siblings', [...data.siblings, { sibling_full_name: '', sibling_grade_level: '', sibling_id_number: '' }]);
-    const removeSibling = (i: number) => setData('siblings', data.siblings.filter((_, idx) => idx !== i));
-    const updateSibling = (i: number, field: keyof Sibling, value: string) => {
-        const updated = [...data.siblings];
-        updated[i] = { ...updated[i], [field]: value };
-        setData('siblings', updated);
-    };
+    const {
+        data, setData, processing, errors,
+        handleSubmit, toggleCondition,
+        addSibling, removeSibling, updateSibling,
+        hasAnyCondition, schoolYearOptions,
+        presentRegionCode, setPresentRegionCode,
+        presentProvinceCode, setPresentProvinceCode,
+        presentCityCode, setPresentCityCode,
+        permRegionCode, setPermRegionCode,
+        permProvinceCode, setPermProvinceCode,
+        permCityCode, setPermCityCode,
+        regions,
+        presentProvinces, presentCities, presentBarangays,
+        permProvinces, permCities, permBarangays,
+    } = useStudentEdit({ student, personalData, initialSiblings });
 
     const field = (label: string, name: keyof typeof data, required = false, type = 'text') => (
         <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className={`mb-1 block ${LABEL_TEXT}`}>
                 {label}{required && <span className="ml-1 text-red-500">*</span>}
             </label>
             <input
@@ -209,7 +73,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
 
     const selectField = (label: string, name: keyof typeof data, options: string[], required = false) => (
         <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label className={`mb-1 block ${LABEL_TEXT}`}>
                 {label}{required && <span className="ml-1 text-red-500">*</span>}
             </label>
             <select
@@ -218,13 +82,13 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
                 <option value="">Select…</option>
-                {options.map(o => <option key={o} value={o}>{o}</option>)}
+                {options.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
             {errors[name] && <p className="mt-1 text-xs text-red-500">{errors[name]}</p>}
         </div>
     );
 
-    const section = (title: string, children: React.ReactNode) => (
+    const section = (title: string, children: ReactNode) => (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-800">{title}</h2>
             {children}
@@ -237,24 +101,23 @@ export default function EditStudent({ student, personalData, siblings: initialSi
         provinceCode: string, setProvinceCode: (c: string) => void,
         cityCode: string, setCityCode: (c: string) => void,
         provinces: { value: string; label: string; code: string }[],
-        cities:    { value: string; label: string; code: string }[],
+        cities: { value: string; label: string; code: string }[],
         barangays: { value: string; label: string; code: string }[],
     ) => {
-        const brgyKey      = `${prefix}_brgy`      as keyof typeof data;
-        const cityKey      = `${prefix}_city`      as keyof typeof data;
-        const provinceKey  = `${prefix}_province`  as keyof typeof data;
-        const zipKey       = `${prefix}_zip`       as keyof typeof data;
-        const streetKey    = `${prefix}_street`    as keyof typeof data;
+        const brgyKey     = `${prefix}_brgy`     as keyof typeof data;
+        const cityKey     = `${prefix}_city`     as keyof typeof data;
+        const provinceKey = `${prefix}_province` as keyof typeof data;
+        const zipKey      = `${prefix}_zip`      as keyof typeof data;
+        const streetKey   = `${prefix}_street`   as keyof typeof data;
 
         return (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {/* Region */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Region</label>
+                    <label className={`mb-1 block ${LABEL_TEXT}`}>Region</label>
                     <SearchableSelect
                         value={regionCode}
                         onChange={(val) => {
-                            const opt = regions.find(r => r.value === val);
+                            const opt = regions.find((r) => r.value === val);
                             setRegionCode(opt?.code ?? '');
                             setProvinceCode('');
                             setCityCode('');
@@ -267,13 +130,12 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                         searchPlaceholder="Search region…"
                     />
                 </div>
-                {/* Province */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Province <span className="ml-1 text-red-500">*</span></label>
+                    <label className={`mb-1 block ${LABEL_TEXT}`}>Province <span className="ml-1 text-red-500">*</span></label>
                     <SearchableSelect
                         value={data[provinceKey] as string}
                         onChange={(val) => {
-                            const opt = provinces.find(p => p.value === val);
+                            const opt = provinces.find((p) => p.value === val);
                             setProvinceCode(opt?.code ?? '');
                             setCityCode('');
                             setData(cityKey, '');
@@ -287,13 +149,12 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     />
                     {errors[provinceKey] && <p className="mt-1 text-xs text-red-500">{errors[provinceKey]}</p>}
                 </div>
-                {/* City */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">City / Municipality <span className="ml-1 text-red-500">*</span></label>
+                    <label className={`mb-1 block ${LABEL_TEXT}`}>City / Municipality <span className="ml-1 text-red-500">*</span></label>
                     <SearchableSelect
                         value={data[cityKey] as string}
                         onChange={(val) => {
-                            const opt = cities.find(c => c.value === val);
+                            const opt = cities.find((c) => c.value === val);
                             setCityCode(opt?.code ?? '');
                             setData(brgyKey, '');
                             setData(cityKey, val);
@@ -305,9 +166,8 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     />
                     {errors[cityKey] && <p className="mt-1 text-xs text-red-500">{errors[cityKey]}</p>}
                 </div>
-                {/* Barangay */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Barangay <span className="ml-1 text-red-500">*</span></label>
+                    <label className={`mb-1 block ${LABEL_TEXT}`}>Barangay <span className="ml-1 text-red-500">*</span></label>
                     <SearchableSelect
                         value={data[brgyKey] as string}
                         onChange={(val) => setData(brgyKey, val)}
@@ -318,23 +178,21 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     />
                     {errors[brgyKey] && <p className="mt-1 text-xs text-red-500">{errors[brgyKey]}</p>}
                 </div>
-                {/* Street */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Street</label>
+                    <label className={`mb-1 block ${LABEL_TEXT}`}>Street</label>
                     <input
                         type="text"
                         value={data[streetKey] as string}
-                        onChange={e => setData(streetKey, e.target.value)}
+                        onChange={(e) => setData(streetKey, e.target.value)}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                 </div>
-                {/* ZIP */}
                 <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">ZIP Code <span className="ml-1 text-red-500">*</span></label>
+                    <label className={`mb-1 block ${LABEL_TEXT}`}>ZIP Code <span className="ml-1 text-red-500">*</span></label>
                     <input
                         type="text"
                         value={data[zipKey] as string}
-                        onChange={e => setData(zipKey, e.target.value)}
+                        onChange={(e) => setData(zipKey, e.target.value)}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                     {errors[zipKey] && <p className="mt-1 text-xs text-red-500">{errors[zipKey]}</p>}
@@ -343,15 +201,13 @@ export default function EditStudent({ student, personalData, siblings: initialSi
         );
     };
 
-    const hasAnyCondition = data.health_conditions.length > 0;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Student" />
             <form onSubmit={handleSubmit} className="space-y-6 p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Edit Student</h1>
+                        <h1 className={PAGE_TITLE}>Edit Student</h1>
                         {student.student_id_number && (
                             <p className="mt-0.5 font-mono text-sm text-gray-500">{student.student_id_number}</p>
                         )}
@@ -366,17 +222,15 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     </div>
                 </div>
 
-                {/* Enrollment Information */}
                 {section('Enrollment Information', (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {selectField('Year Level', 'current_year_level', GRADE_LEVELS, true)}
-                        {selectField('School Year', 'current_school_year', (() => { const opts = getSchoolYearOptions(); const v = data.current_school_year; return opts.includes(v) ? opts : [v, ...opts]; })(), true)}
+                        {selectField('School Year', 'current_school_year', schoolYearOptions, true)}
                         {selectField('Semester', 'current_semester', ['First Semester', 'Second Semester', 'Summer', 'Full Year'])}
                         {selectField('Enrollment Status', 'enrollment_status', ['Active', 'Pending', 'Inactive'], true)}
                     </div>
                 ))}
 
-                {/* Personal Information */}
                 {section('Personal Information', (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {field('Last Name', 'last_name', true)}
@@ -395,7 +249,6 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     </div>
                 ))}
 
-                {/* Present Address */}
                 {section('Present Address', addressSection(
                     'present',
                     presentRegionCode,   setPresentRegionCode,
@@ -404,7 +257,6 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     presentProvinces, presentCities, presentBarangays,
                 ))}
 
-                {/* Permanent Address */}
                 {section('Permanent Address', addressSection(
                     'permanent',
                     permRegionCode,   setPermRegionCode,
@@ -413,11 +265,10 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     permProvinces, permCities, permBarangays,
                 ))}
 
-                {/* Health Conditions */}
                 {section('Health Conditions', (
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            {HEALTH_CONDITIONS.map(condition => (
+                            {HEALTH_CONDITIONS.map((condition) => (
                                 <label key={condition} className="flex cursor-pointer items-center gap-2">
                                     <input
                                         type="checkbox"
@@ -436,7 +287,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                                     <input
                                         type="checkbox"
                                         checked={data.has_doctors_note}
-                                        onChange={e => setData('has_doctors_note', e.target.checked)}
+                                        onChange={(e) => setData('has_doctors_note', e.target.checked)}
                                         className="h-4 w-4 rounded border-gray-300 text-primary"
                                     />
                                     <span className="text-sm font-medium text-amber-800">
@@ -446,12 +297,12 @@ export default function EditStudent({ student, personalData, siblings: initialSi
 
                                 {data.has_doctors_note && (
                                     <div className="mt-3">
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        <label className={`mb-1 block ${LABEL_TEXT}`}>
                                             Upload Doctor's Note
                                         </label>
                                         <FileUpload
                                             value={data.doctors_note_file}
-                                            onChange={file => setData('doctors_note_file', file)}
+                                            onChange={(file) => setData('doctors_note_file', file)}
                                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                             description="PDF, JPG, PNG, DOC"
                                         />
@@ -462,7 +313,6 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     </div>
                 ))}
 
-                {/* Siblings */}
                 {section('Siblings', (
                     <div className="space-y-3">
                         {data.siblings.map((sib, i) => (
@@ -472,7 +322,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                                     <input
                                         type="text"
                                         value={sib.sibling_full_name}
-                                        onChange={e => updateSibling(i, 'sibling_full_name', e.target.value)}
+                                        onChange={(e) => updateSibling(i, 'sibling_full_name', e.target.value)}
                                         className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
                                     />
                                 </div>
@@ -481,7 +331,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                                     <input
                                         type="text"
                                         value={sib.sibling_grade_level}
-                                        onChange={e => updateSibling(i, 'sibling_grade_level', e.target.value)}
+                                        onChange={(e) => updateSibling(i, 'sibling_grade_level', e.target.value)}
                                         className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
                                     />
                                 </div>
@@ -491,7 +341,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                                         <input
                                             type="text"
                                             value={sib.sibling_id_number}
-                                            onChange={e => updateSibling(i, 'sibling_id_number', e.target.value)}
+                                            onChange={(e) => updateSibling(i, 'sibling_id_number', e.target.value)}
                                             className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
                                         />
                                     </div>
@@ -507,7 +357,6 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                     </div>
                 ))}
 
-                {/* Documents */}
                 {section('Documents', (
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         {([
@@ -517,7 +366,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                             ['latest_report_card_back',   'Report Card (Back)'],
                         ] as const).map(([key, label]) => (
                             <div key={key}>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                                <label className={`mb-1 block ${LABEL_TEXT}`}>{label}</label>
                                 {documents?.[key] && !data[key] && (
                                     <p className="mb-1 text-xs text-gray-500">
                                         Current: <span className="font-mono">{documents[key]!.split('/').pop()}</span>
@@ -525,7 +374,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                                 )}
                                 <FileUpload
                                     value={data[key]}
-                                    onChange={file => setData(key, file)}
+                                    onChange={(file) => setData(key, file)}
                                     accept=".pdf,.jpg,.jpeg,.png"
                                     description="PDF, JPG, PNG"
                                 />

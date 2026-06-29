@@ -2,50 +2,50 @@
 
 namespace App\Services\Student;
 
-use App\Models\BlockSection;
 use App\Models\EnrollmentPeriod;
-use App\Models\StudentEnrollment;
+use App\Repositories\BlockSectionRepository;
+use App\Repositories\EnrollmentPeriodRepository;
+use App\Repositories\StudentEnrollmentRepository;
+use App\Repositories\StudentRepository;
 use Illuminate\Support\Facades\DB;
 
 class AutoPromoteStudentsService
 {
+    public function __construct(
+        private readonly BlockSectionRepository $blockSectionRepository,
+        private readonly EnrollmentPeriodRepository $enrollmentPeriodRepository,
+        private readonly StudentEnrollmentRepository $studentEnrollmentRepository,
+        private readonly StudentRepository $studentRepository,
+    ) {}
+
     /**
      * Promote all students whose last enrollment is Completed into the new period's sections.
      * Returns ['promoted' => int, 'skipped' => int].
      */
     public function promote(EnrollmentPeriod $newPeriod): array
     {
-        $prevPeriod = EnrollmentPeriod::where('type', 'student')
-            ->where('id', '!=', $newPeriod->id)
-            ->latest()
-            ->first();
+        $prevPeriod = $this->enrollmentPeriodRepository->previousStudentPeriod($newPeriod->id);
 
         if (! $prevPeriod) {
             return ['promoted' => 0, 'skipped' => 0];
         }
 
-        $completedEnrollments = StudentEnrollment::with('blockSection')
-            ->where('school_year', $prevPeriod->school_year)
-            ->where('semester', $prevPeriod->semester)
-            ->where('status', StudentEnrollment::STATUS_COMPLETED)
-            ->get();
+        $completedEnrollments = $this->studentEnrollmentRepository->completedForPeriod(
+            $prevPeriod->school_year,
+            $prevPeriod->semester
+        );
 
         if ($completedEnrollments->isEmpty()) {
             return ['promoted' => 0, 'skipped' => 0];
         }
 
-        // Preload sections for the new period, grouped by "grade_level|strand"
-        $targetSections = BlockSection::where('school_year', $newPeriod->school_year)
-            ->where('semester', $newPeriod->semester)
-            ->where('is_active', true)
-            ->orderBy('current_enrollment')
-            ->get()
-            ->groupBy(fn($s) => $s->grade_level . '|' . ($s->strand ?? ''));
+        $targetSections = $this->blockSectionRepository->activeSectionsForPeriodGroupedByKey(
+            $newPeriod->school_year,
+            $newPeriod->semester
+        );
 
-        // Preload student IDs already enrolled in the new period (idempotency guard)
-        $alreadyEnrolled = StudentEnrollment::where('school_year', $newPeriod->school_year)
-            ->where('semester', $newPeriod->semester)
-            ->pluck('student_id')
+        $alreadyEnrolled = $this->studentEnrollmentRepository
+            ->enrolledStudentIdsForPeriod($newPeriod->school_year, $newPeriod->semester)
             ->flip();
 
         $promoted = 0;
@@ -76,14 +76,14 @@ class AutoPromoteStudentsService
                 $sectionKey = $nextGrade . '|' . ($strand ?? '');
                 $sections   = $targetSections->get($sectionKey, collect());
 
-                $section = $sections->first(fn($s) => $s->current_enrollment < $s->capacity);
+                $section = $sections->first(fn ($s) => $s->current_enrollment < $s->capacity);
 
                 if (! $section) {
                     $skipped++;
                     continue;
                 }
 
-                StudentEnrollment::create([
+                $this->studentEnrollmentRepository->create([
                     'student_id'       => $enrollment->student_id,
                     'block_section_id' => $section->id,
                     'school_year'      => $newPeriod->school_year,
@@ -91,17 +91,16 @@ class AutoPromoteStudentsService
                     'year_level'       => $nextGrade,
                     'student_category' => $this->getCategory($nextGrade),
                     'enrollment_date'  => today(),
-                    'status'           => StudentEnrollment::STATUS_ENROLLED,
+                    'status'           => 'Enrolled',
                 ]);
 
-                // Update student's current period fields
-                $enrollment->student->update([
+                $this->studentRepository->updateStudent($enrollment->student, [
                     'current_year_level'  => $nextGrade,
                     'current_semester'    => $newPeriod->semester,
                     'current_school_year' => $newPeriod->school_year,
                 ]);
 
-                $section->incrementEnrollment();
+                $this->blockSectionRepository->incrementEnrollment($section);
 
                 $promoted++;
             }
@@ -112,7 +111,6 @@ class AutoPromoteStudentsService
 
     private function nextGrade(string $currentGrade, string $prevSchoolYear, string $newSchoolYear): ?string
     {
-        // Same school year = semester-to-semester progression (grade stays the same)
         if ($prevSchoolYear === $newSchoolYear) {
             return $currentGrade;
         }
@@ -128,9 +126,9 @@ class AutoPromoteStudentsService
             'Grade 7'  => 'Grade 8',
             'Grade 8'  => 'Grade 9',
             'Grade 9'  => 'Grade 10',
-            'Grade 10' => null,    // strand selection required — admin assigns manually
+            'Grade 10' => null,
             'Grade 11' => 'Grade 12',
-            'Grade 12' => null,    // graduated — no further enrollment
+            'Grade 12' => null,
         ];
 
         return array_key_exists($currentGrade, $progression)

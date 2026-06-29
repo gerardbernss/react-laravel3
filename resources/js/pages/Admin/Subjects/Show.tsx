@@ -1,65 +1,25 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { AppBadge } from '@/components/app-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type Subject, useSubjectShow } from '@/hooks/useSubjectShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, BookOpen, Edit, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-
-interface BlockSection {
-    id: number;
-    name: string;
-    code: string;
-    grade_level: string;
-    school_year: string;
-    pivot: {
-        teacher: string | null;
-    };
-}
-
-interface Subject {
-    id: number;
-    code: string;
-    name: string;
-    description: string | null;
-    units: number;
-    type: string;
-    grade_level: string | null;
-    semester: string | null;
-    default_schedule: { display: string; room: string | null } | null;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    block_sections: BlockSection[];
-}
 
 interface Props {
     subject: Subject;
 }
 
 export default function Show({ subject }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Subjects', href: '/subjects' },
-        { title: subject.code, href: `/subjects/${subject.id}` },
-    ];
-
-    const { delete: destroy, processing } = useForm();
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-    const confirmDelete = () => {
-        destroy(`/subjects/${subject.id}`, {
-            onSuccess: () => setShowDeleteDialog(false),
-        });
-    };
+    const { breadcrumbs, processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = useSubjectShow({ subject });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${subject.code} - ${subject.name}`} />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href="/subjects" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
@@ -69,10 +29,8 @@ export default function Show({ subject }: Props) {
                     <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold text-gray-900">{subject.code}</h1>
-                                <Badge className={subject.is_active ? 'bg-green-100 text-green-800' : ''}>
-                                    {subject.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
+                                <h1 className={PAGE_TITLE}>{subject.code}</h1>
+                                <AppBadge status={subject.is_active ? 'active' : 'inactive'} />
                             </div>
                             <p className="mt-1 text-xl text-gray-600">{subject.name}</p>
                         </div>
@@ -93,9 +51,8 @@ export default function Show({ subject }: Props) {
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Subject Details */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <BookOpen className="h-5 w-5" />
                             Subject Details
                         </h2>
@@ -144,9 +101,8 @@ export default function Show({ subject }: Props) {
                         </dl>
                     </div>
 
-                    {/* Assigned Block Sections */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 ${SECTION_HEADING}`}>
                             Assigned to Block Sections ({subject.block_sections?.length || 0})
                         </h2>
 
@@ -176,11 +132,12 @@ export default function Show({ subject }: Props) {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-center text-gray-500">Not assigned to any block sections yet.</p>
+                            <p className={`text-center ${BODY_TEXT}`}>Not assigned to any block sections yet.</p>
                         )}
                     </div>
                 </div>
             </div>
+
             <ConfirmDialog
                 open={showDeleteDialog}
                 onClose={() => setShowDeleteDialog(false)}

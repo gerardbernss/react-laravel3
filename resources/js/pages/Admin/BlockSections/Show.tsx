@@ -1,68 +1,22 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { BODY_TEXT, CARD, HELPER_TEXT, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import {
+    type AvailableStudent,
+    type BlockSection,
+    type EnrolledStudent,
+    type Subject,
+    studentFullName,
+    useBlockSectionShow,
+} from '@/hooks/useBlockSectionShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, BookOpen, Edit, LayoutGrid, Plus, Search, Trash2, UserMinus, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface Subject {
-    id: number;
-    code: string;
-    name: string;
-    units: number;
-    type: string;
-    pivot: {
-        teacher: string | null;
-        schedule: string | null;
-        room: string | null;
-    };
-}
-
-interface EnrolledStudent {
-    id: number;
-    enrollment_date: string;
-    status: string;
-    student: {
-        id: number;
-        student_id_number: string;
-        personal_data: {
-            first_name: string | null;
-            last_name: string | null;
-            middle_name: string | null;
-        } | null;
-    };
-}
-
-interface AvailableStudent {
-    id: number;
-    student_id_number: string;
-    personal_data: {
-        first_name: string | null;
-        last_name: string | null;
-    } | null;
-}
-
-interface BlockSection {
-    id: number;
-    name: string;
-    code: string;
-    grade_level: string;
-    school_year: string;
-    semester: string | null;
-    adviser: string | null;
-    room: string | null;
-    capacity: number;
-    current_enrollment: number;
-    schedule: string | null;
-    is_active: boolean;
-    created_at: string;
-    subjects: Subject[];
-}
 
 interface Props {
     blockSection: BlockSection;
@@ -70,112 +24,50 @@ interface Props {
     availableStudents: AvailableStudent[];
 }
 
-function studentFullName(pd: { first_name: string | null; last_name: string | null; middle_name?: string | null } | null) {
-    if (!pd) return '—';
-    return [pd.last_name, pd.first_name, pd.middle_name].filter(Boolean).join(', ');
-}
-
 export default function Show({ blockSection, enrolledStudents, availableStudents }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Block Sections', href: '/block-sections' },
-        { title: blockSection.code, href: `/block-sections/${blockSection.id}` },
-    ];
-
-    // --- Delete section ---
-    const { delete: destroy, processing } = useForm();
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-    const confirmDelete = () => {
-        destroy(`/block-sections/${blockSection.id}`, {
-            onSuccess: () => setShowDeleteDialog(false),
-        });
-    };
-
-    const totalUnits = blockSection.subjects.reduce((sum, s) => sum + s.units, 0);
-    const isFull = blockSection.current_enrollment >= blockSection.capacity;
-
-    // --- Tab state ---
-    const [activeTab, setActiveTab] = useState<'students' | 'subjects'>('students');
-
-    // --- Add student dialog ---
-    const [showAddDialog, setShowAddDialog] = useState(false);
-    const [addSearch, setAddSearch] = useState('');
-    const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-    const [addProcessing, setAddProcessing] = useState(false);
-
-    const filteredAvailable = useMemo(() => {
-        if (!addSearch.trim()) return availableStudents;
-        const q = addSearch.toLowerCase();
-        return availableStudents.filter((s) => {
-            const name = `${s.personal_data?.last_name ?? ''} ${s.personal_data?.first_name ?? ''}`.toLowerCase();
-            return name.includes(q) || s.student_id_number.toLowerCase().includes(q);
-        });
-    }, [addSearch, availableStudents]);
-
-    const openAddDialog = () => {
-        setAddSearch('');
-        setSelectedStudentId(null);
-        setShowAddDialog(true);
-    };
-
-    const closeAddDialog = () => {
-        setShowAddDialog(false);
-        setAddSearch('');
-        setSelectedStudentId(null);
-    };
-
-    const handleAddStudent = () => {
-        if (!selectedStudentId) return;
-        setAddProcessing(true);
-        router.post(
-            `/block-sections/${blockSection.id}/add-student`,
-            { student_id: selectedStudentId },
-            {
-                onSuccess: closeAddDialog,
-                onFinish: () => setAddProcessing(false),
-            },
-        );
-    };
-
-    // --- Pagination: Students tab ---
-    const [studentsPage, setStudentsPage] = useState(1);
-    const [studentsPageSize, setStudentsPageSize] = useState(10);
-
-    // --- Pagination: Subjects tab ---
-    const [subjectsPage, setSubjectsPage] = useState(1);
-    const [subjectsPageSize, setSubjectsPageSize] = useState(10);
-
-    // --- Filter enrolled students ---
-    const [studentSearch, setStudentSearch] = useState('');
-    const filteredEnrolled = useMemo(() => {
-        if (!studentSearch.trim()) return enrolledStudents;
-        const q = studentSearch.toLowerCase();
-        return enrolledStudents.filter((e) => {
-            const name = studentFullName(e.student.personal_data).toLowerCase();
-            return name.includes(q) || e.student.student_id_number.toLowerCase().includes(q);
-        });
-    }, [studentSearch, enrolledStudents]);
-
-    const paginatedEnrolled = useMemo(() => filteredEnrolled.slice((studentsPage - 1) * studentsPageSize, studentsPage * studentsPageSize), [filteredEnrolled, studentsPage, studentsPageSize]);
-    const paginatedSubjects = useMemo(() => blockSection.subjects.slice((subjectsPage - 1) * subjectsPageSize, subjectsPage * subjectsPageSize), [blockSection.subjects, subjectsPage, subjectsPageSize]);
-
-    // --- Remove student ---
-    const [enrollmentToRemove, setEnrollmentToRemove] = useState<EnrolledStudent | null>(null);
-
-    const confirmRemove = () => {
-        if (!enrollmentToRemove) return;
-        router.delete(`/block-sections/${blockSection.id}/students/${enrollmentToRemove.id}`, {
-            onSuccess: () => setEnrollmentToRemove(null),
-        });
-    };
+    const {
+        processing,
+        showDeleteDialog,
+        setShowDeleteDialog,
+        activeTab,
+        setActiveTab,
+        showAddDialog,
+        closeAddDialog,
+        addSearch,
+        setAddSearch,
+        selectedStudentId,
+        setSelectedStudentId,
+        addProcessing,
+        studentsPage,
+        setStudentsPage,
+        studentsPageSize,
+        setStudentsPageSize,
+        subjectsPage,
+        setSubjectsPage,
+        subjectsPageSize,
+        setSubjectsPageSize,
+        studentSearch,
+        setStudentSearch,
+        enrollmentToRemove,
+        setEnrollmentToRemove,
+        breadcrumbs,
+        totalUnits,
+        isFull,
+        filteredAvailable,
+        filteredEnrolled,
+        paginatedEnrolled,
+        paginatedSubjects,
+        openAddDialog,
+        handleAddStudent,
+        confirmDelete,
+        confirmRemove,
+    } = useBlockSectionShow({ blockSection, enrolledStudents, availableStudents });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${blockSection.code} - ${blockSection.name}`} />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href="/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
@@ -185,12 +77,12 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                     <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold text-gray-900">{blockSection.name}</h1>
-                                <Badge className={blockSection.is_active ? 'bg-green-100 text-green-800' : ''}>
+                                <h1 className={PAGE_TITLE}>{blockSection.name}</h1>
+                                <AppBadge status={blockSection.is_active ? 'active' : 'inactive'}>
                                     {blockSection.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
+                                </AppBadge>
                             </div>
-                            <p className="mt-1 text-gray-600">
+                            <p className={`mt-1 ${BODY_TEXT}`}>
                                 {blockSection.code} • {blockSection.grade_level} • {blockSection.school_year}
                                 {blockSection.semester && ` • ${blockSection.semester}`}
                             </p>
@@ -215,10 +107,8 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                     </div>
                 </div>
 
-                {/* Info grid — 2 columns */}
                 <div className="mb-6 grid gap-4 lg:grid-cols-2">
-                    {/* Section Details */}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className={`${CARD} p-4`}>
                         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
                             <LayoutGrid className="h-4 w-4" />
                             Section Details
@@ -259,8 +149,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                         </dl>
                     </div>
 
-                    {/* Enrollment Stats + Add Student CTA */}
-                    <div className="rounded-lg border bg-white p-4 shadow-sm">
+                    <div className={`${CARD} p-4`}>
                         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900">
                             <Users className="h-4 w-4" />
                             Enrollment
@@ -305,7 +194,6 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                             </div>
                         </div>
 
-                        {/* Primary Add Student CTA — visible without scrolling */}
                         <div className="mt-3 border-t pt-3">
                             {isFull ? (
                                 <div className="rounded-md bg-red-50 px-3 py-1.5 text-center text-xs font-medium text-red-600">
@@ -321,9 +209,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                     </div>
                 </div>
 
-                {/* Tabs: Students / Subjects */}
-                <div className="rounded-lg border bg-white shadow-sm">
-                    {/* Tab headers */}
+                <div className={CARD}>
                     <div className="flex border-b">
                         <button
                             onClick={() => setActiveTab('students')}
@@ -363,10 +249,8 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                         </button>
                     </div>
 
-                    {/* ── Students Tab ── */}
                     {activeTab === 'students' && (
                         <div className="p-6">
-                            {/* Tab toolbar */}
                             <div className="mb-4">
                                 <Input
                                     placeholder="Search by name or student ID..."
@@ -377,55 +261,58 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                             </div>
 
                             {filteredEnrolled.length > 0 ? (
-                                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="sticky top-0 z-10 bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Student ID</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Full Name</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Enrolled On</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Status</th>
-                                                <th className="px-4 py-3 text-center font-semibold text-gray-900">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {paginatedEnrolled.map((e) => (
-                                                <tr key={e.id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-mono text-sm text-gray-600">
-                                                        {e.student.student_id_number}
-                                                    </td>
-                                                    <td className="px-4 py-3 font-medium text-gray-900">
-                                                        {studentFullName(e.student.personal_data)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-gray-600">
-                                                        {e.enrollment_date ? new Date(e.enrollment_date).toLocaleDateString() : '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <Badge className="bg-green-100 text-green-800">{e.status}</Badge>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="border-red-200 text-red-600 hover:bg-red-50"
-                                                            onClick={() => setEnrollmentToRemove(e)}
-                                                        >
-                                                            <UserMinus className="mr-1 h-4 w-4" />
-                                                            Remove
-                                                        </Button>
-                                                    </td>
+                                <div className={`overflow-hidden ${CARD}`}>
+                                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="sticky top-0 z-10 bg-gray-50">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Student ID</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Full Name</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Enrolled On</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Status</th>
+                                                    <th className="px-4 py-3 text-center font-semibold text-gray-900">Action</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {paginatedEnrolled.map((e) => (
+                                                    <tr key={e.id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-3 font-mono text-sm text-gray-600">
+                                                            {e.student.student_id_number}
+                                                        </td>
+                                                        <td className="px-4 py-3 font-medium text-gray-900">
+                                                            {studentFullName(e.student.personal_data)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-gray-600">
+                                                            {e.enrollment_date ? new Date(e.enrollment_date).toLocaleDateString() : '—'}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <AppBadge status={e.status}>{e.status}</AppBadge>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                                                onClick={() => setEnrollmentToRemove(e)}
+                                                            >
+                                                                <UserMinus className="mr-1 h-4 w-4" />
+                                                                Remove
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                     <TablePagination
                                         total={filteredEnrolled.length}
                                         pageSize={studentsPageSize}
                                         currentPage={studentsPage}
                                         onPageChange={setStudentsPage}
-                                        onPageSizeChange={(s) => { setStudentsPageSize(s); setStudentsPage(1); }}
+                                        onPageSizeChange={(s) => {
+                                            setStudentsPageSize(s);
+                                            setStudentsPage(1);
+                                        }}
                                     />
                                 </div>
                             ) : enrolledStudents.length === 0 ? (
@@ -435,68 +322,70 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                     <p className="mt-1 text-sm text-gray-500">Use the "Add Student" button above to assign students.</p>
                                 </div>
                             ) : (
-                                <div className="py-8 text-center text-sm text-gray-500">No students match your search.</div>
+                                <div className={`py-8 text-center ${BODY_TEXT}`}>No students match your search.</div>
                             )}
                         </div>
                     )}
 
-                    {/* ── Subjects Tab ── */}
                     {activeTab === 'subjects' && (
                         <div className="p-6">
                             {blockSection.subjects.length > 0 ? (
-                                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                                <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="sticky top-0 z-10 bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Code</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Subject Name</th>
-                                                <th className="px-4 py-3 text-center font-semibold text-gray-900">Units</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Type</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Teacher</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Schedule</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-900">Room</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {paginatedSubjects.map((subject) => (
-                                                <tr key={subject.id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3">
-                                                        <Link
-                                                            href={`/subjects/${subject.id}`}
-                                                            className="font-medium text-primary hover:underline"
-                                                        >
-                                                            {subject.code}
-                                                        </Link>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-gray-900">{subject.name}</td>
-                                                    <td className="px-4 py-3 text-center">{subject.units}</td>
-                                                    <td className="px-4 py-3">
-                                                        <Badge variant="outline">{subject.type}</Badge>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-gray-600">{subject.pivot.teacher || '—'}</td>
-                                                    <td className="px-4 py-3 text-gray-600">{subject.pivot.schedule || '—'}</td>
-                                                    <td className="px-4 py-3 text-gray-600">{subject.pivot.room || '—'}</td>
+                                <div className={`overflow-hidden ${CARD}`}>
+                                    <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="sticky top-0 z-10 bg-gray-50">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Code</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Subject Name</th>
+                                                    <th className="px-4 py-3 text-center font-semibold text-gray-900">Units</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Type</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Teacher</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Schedule</th>
+                                                    <th className="px-4 py-3 text-left font-semibold text-gray-900">Room</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot className="bg-gray-50">
-                                            <tr>
-                                                <td colSpan={2} className="px-4 py-3 text-right font-semibold">
-                                                    Total
-                                                </td>
-                                                <td className="px-4 py-3 text-center font-semibold">{totalUnits}</td>
-                                                <td colSpan={4}></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {paginatedSubjects.map((subject: Subject) => (
+                                                    <tr key={subject.id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-3">
+                                                            <Link
+                                                                href={`/subjects/${subject.id}`}
+                                                                className="font-medium text-primary hover:underline"
+                                                            >
+                                                                {subject.code}
+                                                            </Link>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-gray-900">{subject.name}</td>
+                                                        <td className="px-4 py-3 text-center">{subject.units}</td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge variant="outline">{subject.type}</Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-gray-600">{subject.pivot.teacher || '—'}</td>
+                                                        <td className="px-4 py-3 text-gray-600">{subject.pivot.schedule || '—'}</td>
+                                                        <td className="px-4 py-3 text-gray-600">{subject.pivot.room || '—'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            <tfoot className="bg-gray-50">
+                                                <tr>
+                                                    <td colSpan={2} className="px-4 py-3 text-right font-semibold">
+                                                        Total
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center font-semibold">{totalUnits}</td>
+                                                    <td colSpan={4}></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
                                     <TablePagination
                                         total={blockSection.subjects.length}
                                         pageSize={subjectsPageSize}
                                         currentPage={subjectsPage}
                                         onPageChange={setSubjectsPage}
-                                        onPageSizeChange={(s) => { setSubjectsPageSize(s); setSubjectsPage(1); }}
+                                        onPageSizeChange={(s) => {
+                                            setSubjectsPageSize(s);
+                                            setSubjectsPage(1);
+                                        }}
                                     />
                                 </div>
                             ) : (
@@ -515,14 +404,12 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                 </div>
             </div>
 
-            {/* Add student dialog */}
             <Dialog open={showAddDialog} onOpenChange={(open) => { if (!open) closeAddDialog(); }}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Add Student to {blockSection.name}</DialogTitle>
                     </DialogHeader>
 
-                    {/* Search */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <Input
@@ -534,14 +421,13 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                         />
                     </div>
 
-                    {/* Student table */}
                     <div className="max-h-80 overflow-y-auto rounded-lg border">
                         {availableStudents.length === 0 ? (
-                            <div className="px-4 py-10 text-center text-sm text-gray-500">
+                            <div className={`px-4 py-10 text-center ${BODY_TEXT}`}>
                                 No available students for this school year / semester.
                             </div>
                         ) : filteredAvailable.length === 0 ? (
-                            <div className="px-4 py-10 text-center text-sm text-gray-500">No students match your search.</div>
+                            <div className={`px-4 py-10 text-center ${BODY_TEXT}`}>No students match your search.</div>
                         ) : (
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 bg-gray-50 text-xs font-semibold uppercase text-gray-500">
@@ -570,9 +456,10 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                         )}
                     </div>
 
-                    <p className="text-xs text-gray-500">{filteredAvailable.length} student{filteredAvailable.length !== 1 ? 's' : ''} available</p>
+                    <p className={HELPER_TEXT}>
+                        {filteredAvailable.length} student{filteredAvailable.length !== 1 ? 's' : ''} available
+                    </p>
 
-                    {/* Actions */}
                     <div className="flex justify-end gap-2 border-t pt-2">
                         <Button variant="outline" onClick={closeAddDialog} disabled={addProcessing}>Cancel</Button>
                         <Button onClick={handleAddStudent} disabled={!selectedStudentId || addProcessing}>
@@ -582,7 +469,6 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                 </DialogContent>
             </Dialog>
 
-            {/* Delete section dialog */}
             <ConfirmDialog
                 open={showDeleteDialog}
                 onClose={() => setShowDeleteDialog(false)}
@@ -594,7 +480,6 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                 processing={processing}
             />
 
-            {/* Remove student dialog */}
             <ConfirmDialog
                 open={!!enrollmentToRemove}
                 onClose={() => setEnrollmentToRemove(null)}

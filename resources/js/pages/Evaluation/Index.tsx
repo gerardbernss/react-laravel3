@@ -1,291 +1,157 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { FILTER_CARD, PAGE_PADDING, TABLE_HEADER_CELL } from '@/constants/ui';
+import { getStatusBadgeProps, handleCalendarChange } from '@/hooks/useAdmissionsIndex';
+import { EVALUATION_COLUMNS, useEvaluation, type Applicant, type ApplicantColumnKey } from '@/hooks/useEvaluation';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
-import { Badge } from '@/components/ui/badge';
+import { Head, Link } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react';
-import { TablePagination } from '@/components/ui/table-pagination';
-import { useMemo, useState } from 'react';
-import { DateRange, DropdownNavProps, DropdownProps } from 'react-day-picker';
+import { CalendarIcon, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import type { DropdownNavProps, DropdownProps } from 'react-day-picker';
 import { HiEye, HiPlus, HiTrash } from 'react-icons/hi';
-import { toast } from 'sonner';
-
-interface Applicant {
-    id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-    gender?: string;
-    application_date?: string;
-    application_status?: string;
-    strand?: string;
-}
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Evaluation/Assessment',
-        href: dashboard().url,
-    },
+    { title: 'Evaluation/Assessment', href: dashboard().url },
 ];
+
+function SortIcon({ col, sortConfig }: {
+    col: ApplicantColumnKey;
+    sortConfig: { key: ApplicantColumnKey | null; direction: 'asc' | 'desc' };
+}) {
+    if (sortConfig.key !== col) return null;
+    return sortConfig.direction === 'asc'
+        ? <ChevronUp className="h-3.5 w-3.5" />
+        : <ChevronDown className="h-3.5 w-3.5" />;
+}
+
+interface ApplicantRowProps {
+    row: Applicant;
+    visibleColumns: ApplicantColumnKey[];
+    selectedRows: number[];
+    onSelectRow: (id: number) => void;
+    onDeleteClick: (id: number) => void;
+}
+
+function ApplicantRow({ row, visibleColumns, selectedRows, onSelectRow, onDeleteClick }: ApplicantRowProps) {
+    const { variant, label } = getStatusBadgeProps(row.application_status);
+    return (
+        <tr className={`border-b border-gray-200 transition-all hover:bg-slate-50 ${selectedRows.includes(row.id) ? 'bg-blue-50' : ''}`}>
+            <td className="px-4 py-3">
+                <input
+                    type="checkbox"
+                    checked={selectedRows.includes(row.id)}
+                    onChange={() => onSelectRow(row.id)}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                />
+            </td>
+            {visibleColumns.includes('id') && <td className="px-4 py-3 font-medium text-gray-900">{row.id}</td>}
+            {visibleColumns.includes('first_name') && <td className="px-4 py-3 font-medium text-gray-900">{row.first_name}</td>}
+            {visibleColumns.includes('last_name') && <td className="px-4 py-3 font-medium text-gray-900">{row.last_name}</td>}
+            {visibleColumns.includes('email') && <td className="px-4 py-3 text-gray-600">{row.email}</td>}
+            {visibleColumns.includes('gender') && <td className="px-4 py-3 text-gray-900">{row.gender}</td>}
+            {visibleColumns.includes('strand') && <td className="px-4 py-3 text-gray-900">{row.strand}</td>}
+            {visibleColumns.includes('application_date') && (
+                <td className="px-4 py-3 text-gray-900">
+                    {row.application_date
+                        ? new Date(row.application_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+                        : ''}
+                </td>
+            )}
+            {visibleColumns.includes('application_status') && (
+                <td className="px-4 py-3">
+                    <Badge variant={variant}>{label}</Badge>
+                </td>
+            )}
+            <td className="px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                    <Link
+                        href={`/admissions/applicants/${row.id}/show`}
+                        className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-50"
+                        title="View"
+                    >
+                        <HiEye size={16} />
+                    </Link>
+                    <button
+                        onClick={() => onDeleteClick(row.id)}
+                        className="cursor-pointer rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50"
+                        title="Delete"
+                    >
+                        <HiTrash size={16} />
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+}
 
 interface Props {
     applications: Applicant[];
 }
 
 export default function Index({ applications }: Props) {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedGender, setSelectedGender] = useState<string>('all');
-    const [selectedStatus, setSelectedStatus] = useState<string>('all');
-    const [selectedStrand, setSelectedStrand] = useState<string>('all');
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedApplicantId, setSelectedApplicantId] = useState<number | null>(null);
-    const [dateRange, setDateRange] = useState<DateRange | undefined>();
-    const [sortConfig, setSortConfig] = useState<{ key: keyof Applicant | null; direction: 'asc' | 'desc' }>({
-        key: null,
-        direction: 'asc',
-    });
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [selectedRows, setSelectedRows] = useState<number[]>([]);
-    const [visibleColumns, setVisibleColumns] = useState<(keyof Applicant)[]>([
-        'id',
-        'first_name',
-        'last_name',
-        'email',
-        'gender',
-        'strand',
-        'application_date',
-        'application_status',
-    ]);
-
-    const handleCalendarChange = (_value: string | number, _e: React.ChangeEventHandler<HTMLSelectElement>) => {
-        const _event = {
-            target: {
-                value: String(_value),
-            },
-        } as React.ChangeEvent<HTMLSelectElement>;
-        _e(_event);
-    };
-
-    const handleDeleteClick = (id: number) => {
-        setSelectedApplicantId(id);
-        setDeleteDialogOpen(true);
-    };
-
-    const handleDeleteConfirm = () => {
-        if (selectedApplicantId === null) return;
-
-        router.delete(`/admissions/applicants/${selectedApplicantId}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Applicant deleted successfully!');
-                setDeleteDialogOpen(false);
-                setSelectedApplicantId(null);
-            },
-            onError: () => {
-                toast.error('Failed to delete applicant. Please try again.');
-                setDeleteDialogOpen(false);
-            },
-        });
-    };
-
-    const handleDeleteCancel = () => {
-        setDeleteDialogOpen(false);
-        setSelectedApplicantId(null);
-    };
-
-    const handleSort = (key: keyof Applicant) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            setSelectedRows(paginatedApplicants.map((row) => row.id));
-        } else {
-            setSelectedRows([]);
-        }
-    };
-
-    const handleSelectRow = (id: number) => {
-        setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
-    };
-
-    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-
-    const handleBulkDelete = () => {
-        setShowBulkDeleteDialog(true);
-    };
-
-    const confirmBulkDelete = () => {
-        // TODO: implement actual bulk delete endpoint
-        toast.success(`${selectedRows.length} applicants deleted successfully!`);
-        setSelectedRows([]);
-        setShowBulkDeleteDialog(false);
-    };
-
-    const toggleColumnVisibility = (key: keyof Applicant) => {
-        setVisibleColumns((prev) => (prev.includes(key) ? prev.filter((col) => col !== key) : [...prev, key]));
-    };
-
-    const handleExport = () => {
-        const headers = columns.filter((col) => visibleColumns.includes(col.key)).map((col) => col.label);
-        const csvContent = [
-            headers.join(','),
-            ...sortedApplicants.map((row) =>
-                columns
-                    .filter((col) => visibleColumns.includes(col.key))
-                    .map((col) => {
-                        const value = row[col.key];
-                        if (col.key === 'application_date' && value) {
-                            return new Date(value).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: '2-digit',
-                            });
-                        }
-                        return value || '';
-                    })
-                    .join(','),
-            ),
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `applicants-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        toast.success('Data exported successfully!');
-    };
-
-    const filteredApplicants = useMemo(() => {
-        return applications.filter((a) => {
-            const matchesSearch =
-                a.id.toString().includes(searchQuery) ||
-                a.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                a.email?.toLowerCase().includes(searchQuery.toLowerCase());
-
-            const matchesGender = selectedGender === 'all' || a.gender?.toLowerCase() === selectedGender.toLowerCase();
-            const matchesStatus = selectedStatus === 'all' || a.application_status?.toLowerCase() === selectedStatus.toLowerCase();
-            const matchesStrand = selectedStrand === 'all' || a.strand?.toLowerCase() === selectedStrand.toLowerCase();
-
-            let matchesDate = true;
-            if (dateRange?.from) {
-                if (!a.application_date) {
-                    matchesDate = false;
-                } else {
-                    const appDateStr = a.application_date.split(' ')[0];
-                    const appDate = new Date(appDateStr);
-                    const fromDate = new Date(dateRange.from);
-
-                    appDate.setHours(0, 0, 0, 0);
-                    fromDate.setHours(0, 0, 0, 0);
-
-                    if (dateRange.to) {
-                        const toDate = new Date(dateRange.to);
-                        toDate.setHours(0, 0, 0, 0);
-                        matchesDate = appDate.getTime() >= fromDate.getTime() && appDate.getTime() <= toDate.getTime();
-                    } else {
-                        matchesDate = appDate.getTime() >= fromDate.getTime();
-                    }
-                }
-            }
-
-            return matchesSearch && matchesGender && matchesStatus && matchesDate && matchesStrand;
-        });
-    }, [applications, searchQuery, selectedGender, selectedStatus, dateRange, selectedStrand]);
-
-    const sortedApplicants = useMemo(() => {
-        if (!sortConfig.key) return filteredApplicants;
-
-        return [...filteredApplicants].sort((a, b) => {
-            const aValue = a[sortConfig.key!];
-            const bValue = b[sortConfig.key!];
-
-            if (aValue == null && bValue == null) return 0;
-            if (aValue == null) return 1;
-            if (bValue == null) return -1;
-
-            if (aValue < bValue) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
-    }, [filteredApplicants, sortConfig]);
-
-    const paginatedApplicants = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        return sortedApplicants.slice(startIndex, startIndex + pageSize);
-    }, [sortedApplicants, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(sortedApplicants.length / pageSize);
-
-    const columns = [
-        { key: 'id' as keyof Applicant, label: 'ID' },
-        { key: 'first_name' as keyof Applicant, label: 'First Name' },
-        { key: 'last_name' as keyof Applicant, label: 'Last Name' },
-        { key: 'email' as keyof Applicant, label: 'Email' },
-        { key: 'gender' as keyof Applicant, label: 'Gender' },
-        { key: 'strand' as keyof Applicant, label: 'Program/Strand' },
-        { key: 'application_date' as keyof Applicant, label: 'Application Date' },
-        { key: 'application_status' as keyof Applicant, label: 'Application Status' },
-    ];
+    const {
+        searchQuery, setSearchQuery,
+        selectedGender, setSelectedGender,
+        selectedStatus, setSelectedStatus,
+        selectedStrand, setSelectedStrand,
+        deleteDialogOpen, setDeleteDialogOpen,
+        dateRange, setDateRange,
+        sortConfig,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        selectedRows,
+        visibleColumns,
+        showBulkDeleteDialog, setShowBulkDeleteDialog,
+        sortedApplicants,
+        paginatedApplicants,
+        handleDeleteClick,
+        handleDeleteConfirm,
+        handleDeleteCancel,
+        handleSort,
+        handleSelectAll,
+        handleSelectRow,
+        handleBulkDelete,
+        confirmBulkDelete,
+        toggleColumnVisibility,
+        handleExport,
+        clearFilters,
+    } = useEvaluation(applications);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Evaluation/Assessment" />
 
-            <div className="p-10">
-                <h1 className="mb-6 text-3xl font-semibold text-gray-800">Evaluation/Assessment</h1>
+            <div className={PAGE_PADDING}>
+                <h1 className="mb-6 text-3xl font-bold text-gray-900">Evaluation/Assessment</h1>
 
-                {/* Search + Filters + Columns + Export */}
-                <div className="mb-4 space-y-3">
-                    {/* SEARCH ROW: use CSS grid so label baseline and button align perfectly */}
-                    <div className="grid w-full grid-cols-1 items-start gap-3 md:grid-cols-[1fr_auto] md:items-start">
-                        {/* LEFT: label + search input */}
+                <div className={`mb-4 ${FILTER_CARD}`}>
+                    <div className="mb-3 grid w-full grid-cols-1 items-start gap-3 md:grid-cols-[1fr_auto]">
                         <div>
                             <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                            <div className="flex items-center">
-                                <div className="flex h-10 w-full items-center justify-start rounded-md border border-gray-300 bg-white text-sm shadow-sm focus-within:ring-2 focus-within:ring-blue-400 hover:bg-gray-50 md:w-[400px]">
-                                    <span className="pr-2 pl-3 text-gray-500">🔍</span>
-                                    <input
-                                        type="text"
-                                        placeholder="Search by ID, Name, Email, or Applicant No."
-                                        value={searchQuery}
-                                        onChange={(e) => {
-                                            setSearchQuery(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="h-full w-full bg-transparent pr-3 text-sm text-gray-700 outline-none"
-                                    />
-                                </div>
+                            <div className="relative w-full md:w-[400px]">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <Input
+                                    placeholder="Search by ID, Name, Email, or Applicant No."
+                                    value={searchQuery}
+                                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                    className="pl-10"
+                                />
                             </div>
                         </div>
-
-                        {/* RIGHT: label spacer + button — spacer enforces exact vertical alignment */}
                         <div className="flex flex-col items-start md:items-end">
-                            {/* spacer to match the label line height on md+; invisible on small screens */}
                             <div className="hidden h-4 md:block" />
                             <Link
-                                href={`/admissions/applicants/create`}
+                                href="/admissions/applicants/create"
                                 className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg"
-                                style={{ minWidth: 'fit-content', whiteSpace: 'nowrap' }}
                             >
                                 <HiPlus size={18} />
                                 Add New Applicant
@@ -293,39 +159,12 @@ export default function Index({ applications }: Props) {
                         </div>
                     </div>
 
-                    {/* FILTERS + COLUMNS/EXPORT ROW */}
-                    <div className="flex flex-wrap items-end gap-3 md:items-end md:justify-between">
-                        {/* Left: filters */}
+                    <div className="flex flex-wrap items-end gap-3 md:justify-between">
                         <div className="flex flex-wrap items-end gap-3">
-                            <button type="button" className="flex h-10 items-center px-2 text-gray-600">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={1.5}
-                                    stroke="currentColor"
-                                    className="h-5 w-5"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h18m-5.25 6.75H8.25m4.5 6.75H12" />
-                                </svg>
-                            </button>
-
                             <div className="flex flex-col">
                                 <label className="mb-1 text-xs font-medium text-gray-600">Gender</label>
-                                <Select
-                                    value={selectedGender}
-                                    onValueChange={(val) => {
-                                        setSelectedGender(val);
-                                        setCurrentPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        className={`h-10 w-[150px] rounded-md text-sm transition-all ${
-                                            selectedGender !== 'all'
-                                                ? 'border-2 border-gray-400 font-bold text-gray-900'
-                                                : 'border border-gray-300 text-gray-700'
-                                        } bg-white shadow-sm`}
-                                    >
+                                <Select value={selectedGender} onValueChange={(v) => { setSelectedGender(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className={`h-10 w-[150px] bg-white shadow-sm ${selectedGender !== 'all' ? 'border-2 border-gray-400 font-bold text-gray-900' : 'border border-gray-300 text-gray-700'}`}>
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -338,14 +177,8 @@ export default function Index({ applications }: Props) {
 
                             <div className="flex flex-col">
                                 <label className="mb-1 text-xs font-medium text-gray-600">Application Status</label>
-                                <Select
-                                    value={selectedStatus}
-                                    onValueChange={(val) => {
-                                        setSelectedStatus(val);
-                                        setCurrentPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-10 w-[150px] rounded-md border border-gray-300 bg-white text-sm shadow-sm">
+                                <Select value={selectedStatus} onValueChange={(v) => { setSelectedStatus(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className="h-10 w-[150px] border border-gray-300 bg-white shadow-sm">
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -365,21 +198,13 @@ export default function Index({ applications }: Props) {
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
-                                            className={`h-10 w-[350px] justify-start rounded-md text-left text-sm font-normal ${
-                                                dateRange
-                                                    ? 'border-2 border-gray-400 font-bold text-gray-900'
-                                                    : 'border border-gray-300 text-gray-700'
-                                            } bg-white shadow-sm hover:bg-gray-50`}
+                                            className={`h-10 w-[350px] justify-start text-left text-sm font-normal bg-white shadow-sm hover:bg-gray-50 ${dateRange ? 'border-2 border-gray-400 font-bold text-gray-900' : 'border border-gray-300 text-gray-700'}`}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
                                             {dateRange?.from ? (
-                                                dateRange.to ? (
-                                                    <>
-                                                        {format(dateRange.from, 'LLL dd, y')} - {format(dateRange.to, 'LLL dd, y')}
-                                                    </>
-                                                ) : (
-                                                    format(dateRange.from, 'LLL dd, y')
-                                                )
+                                                dateRange.to
+                                                    ? <>{format(dateRange.from, 'LLL dd, y')} - {format(dateRange.to, 'LLL dd, y')}</>
+                                                    : format(dateRange.from, 'LLL dd, y')
                                             ) : (
                                                 <span>Pick a date range</span>
                                             )}
@@ -391,49 +216,36 @@ export default function Index({ applications }: Props) {
                                             mode="range"
                                             defaultMonth={dateRange?.from}
                                             selected={dateRange}
-                                            onSelect={(range) => {
-                                                setDateRange(range);
-                                                setCurrentPage(1);
-                                            }}
+                                            onSelect={(range) => { setDateRange(range); setCurrentPage(1); }}
                                             numberOfMonths={2}
                                             captionLayout="dropdown"
                                             startMonth={new Date(1980, 0)}
                                             endMonth={new Date()}
                                             hideNavigation
-                                            classNames={{
-                                                month_caption: 'mx-0',
-                                            }}
+                                            classNames={{ month_caption: 'mx-0' }}
                                             components={{
-                                                DropdownNav: (props: DropdownNavProps) => {
-                                                    return <div className="flex w-full items-center gap-2">{props.children}</div>;
-                                                },
-                                                Dropdown: (props: DropdownProps) => {
-                                                    return (
-                                                        <Select
-                                                            value={String(props.value)}
-                                                            onValueChange={(value) => {
-                                                                if (props.onChange) {
-                                                                    handleCalendarChange(value, props.onChange);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <SelectTrigger className="h-8 w-fit font-medium first:grow">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="max-h-[min(26rem,var(--radix-select-content-available-height))]">
-                                                                {props.options?.map((option) => (
-                                                                    <SelectItem
-                                                                        key={option.value}
-                                                                        value={String(option.value)}
-                                                                        disabled={option.disabled}
-                                                                    >
-                                                                        {option.label}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    );
-                                                },
+                                                DropdownNav: (props: DropdownNavProps) => (
+                                                    <div className="flex w-full items-center gap-2">{props.children}</div>
+                                                ),
+                                                Dropdown: (props: DropdownProps) => (
+                                                    <Select
+                                                        value={String(props.value)}
+                                                        onValueChange={(value) => {
+                                                            if (props.onChange) handleCalendarChange(value, props.onChange);
+                                                        }}
+                                                    >
+                                                        <SelectTrigger className="h-8 w-fit font-medium first:grow">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="max-h-[min(26rem,var(--radix-select-content-available-height))]">
+                                                            {props.options?.map((option) => (
+                                                                <SelectItem key={option.value} value={String(option.value)} disabled={option.disabled}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ),
                                             }}
                                         />
                                     </PopoverContent>
@@ -442,20 +254,8 @@ export default function Index({ applications }: Props) {
 
                             <div className="flex flex-col">
                                 <label className="mb-1 text-xs font-medium text-gray-600">Program/Strand</label>
-                                <Select
-                                    value={selectedStrand}
-                                    onValueChange={(val) => {
-                                        setSelectedStrand(val);
-                                        setCurrentPage(1);
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        className={`h-10 w-[450px] rounded-md text-sm transition-all ${
-                                            selectedStrand !== 'all'
-                                                ? 'border-2 border-gray-400 font-bold text-gray-900'
-                                                : 'border border-gray-300 text-gray-700'
-                                        } bg-white shadow-sm`}
-                                    >
+                                <Select value={selectedStrand} onValueChange={(v) => { setSelectedStrand(v); setCurrentPage(1); }}>
+                                    <SelectTrigger className={`h-10 w-[450px] bg-white shadow-sm ${selectedStrand !== 'all' ? 'border-2 border-gray-400 font-bold text-gray-900' : 'border border-gray-300 text-gray-700'}`}>
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -472,30 +272,15 @@ export default function Index({ applications }: Props) {
                                 </Select>
                             </div>
 
-                            <Button
-                                variant="ghost"
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setSelectedGender('all');
-                                    setSelectedStatus('all');
-                                    setDateRange(undefined);
-                                    setSelectedStrand('all');
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 text-sm text-gray-700 hover:underline active:bg-gray-300"
-                            >
+                            <Button variant="ghost" onClick={clearFilters} className="h-10 text-sm text-gray-700 hover:underline active:bg-gray-300">
                                 Clear
                             </Button>
                         </div>
 
-                        {/* Right side: Columns + Export inline with filters */}
                         <div className="mt-3 flex items-end gap-2 md:mt-0">
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                                    >
+                                    <Button variant="outline" className="h-10 border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                                         <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                         </svg>
@@ -505,18 +290,16 @@ export default function Index({ applications }: Props) {
                                 <PopoverContent className="w-56" align="end">
                                     <div className="space-y-2">
                                         <h4 className="mb-2 text-sm font-semibold">Toggle Columns</h4>
-                                        {columns.map((column) => (
+                                        {EVALUATION_COLUMNS.map((column) => (
                                             <div key={String(column.key)} className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
-                                                    id={String(column.key)}
+                                                    id={`col-${String(column.key)}`}
                                                     checked={visibleColumns.includes(column.key)}
                                                     onChange={() => toggleColumnVisibility(column.key)}
                                                     className="h-4 w-4 rounded border-gray-300"
                                                 />
-                                                <label htmlFor={String(column.key)} className="text-sm">
-                                                    {column.label}
-                                                </label>
+                                                <label htmlFor={`col-${String(column.key)}`} className="text-sm">{column.label}</label>
                                             </div>
                                         ))}
                                     </div>
@@ -525,16 +308,11 @@ export default function Index({ applications }: Props) {
 
                             <Button
                                 variant="outline"
-                                className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                className="h-10 border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                                 onClick={handleExport}
                             >
                                 <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                    />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 Export
                             </Button>
@@ -542,7 +320,6 @@ export default function Index({ applications }: Props) {
                     </div>
                 </div>
 
-                {/* Bulk Actions */}
                 {selectedRows.length > 0 && (
                     <div className="mb-4 flex items-center gap-3 rounded-lg bg-blue-50 p-3">
                         <span className="text-sm font-medium text-gray-700">{selectedRows.length} row(s) selected</span>
@@ -555,7 +332,6 @@ export default function Index({ applications }: Props) {
                     </div>
                 )}
 
-                {/* Custom DataGrid Table */}
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
@@ -569,117 +345,31 @@ export default function Index({ applications }: Props) {
                                             className="h-4 w-4 cursor-pointer rounded border-gray-300"
                                         />
                                     </th>
-                                    {columns
-                                        .filter((col) => visibleColumns.includes(col.key))
-                                        .map((column) => (
-                                            <th
-                                                key={String(column.key)}
-                                                onClick={() => handleSort(column.key)}
-                                                className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 transition-colors hover:bg-gray-100"
-                                            >
-                                                <div className="flex items-center gap-1.5">
-                                                    {column.label}
-                                                    {sortConfig.key === column.key &&
-                                                        (sortConfig.direction === 'asc' ? (
-                                                            <ChevronUp className="h-3.5 w-3.5" />
-                                                        ) : (
-                                                            <ChevronDown className="h-3.5 w-3.5" />
-                                                        ))}
-                                                </div>
-                                            </th>
-                                        ))}
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                    {EVALUATION_COLUMNS.filter((col) => visibleColumns.includes(col.key)).map((column) => (
+                                        <th
+                                            key={String(column.key)}
+                                            onClick={() => handleSort(column.key)}
+                                            className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                {column.label}
+                                                <SortIcon col={column.key} sortConfig={sortConfig} />
+                                            </div>
+                                        </th>
+                                    ))}
+                                    <th className={TABLE_HEADER_CELL}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedApplicants.map((row) => (
-                                    <tr
+                                    <ApplicantRow
                                         key={row.id}
-                                        className={`border-b border-gray-200 transition-all hover:bg-slate-50 ${
-                                            selectedRows.includes(row.id) ? 'bg-blue-50' : ''
-                                        }`}
-                                    >
-                                        <td className="px-4 py-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedRows.includes(row.id)}
-                                                onChange={() => handleSelectRow(row.id)}
-                                                className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                                            />
-                                        </td>
-                                        {visibleColumns.includes('id') && <td className="px-4 py-3 font-medium text-gray-900">{row.id}</td>}
-                                        {visibleColumns.includes('first_name') && (
-                                            <td className="px-4 py-3 font-medium text-gray-900">{row.first_name}</td>
-                                        )}
-                                        {visibleColumns.includes('last_name') && (
-                                            <td className="px-4 py-3 font-medium text-gray-900">{row.last_name}</td>
-                                        )}
-                                        {visibleColumns.includes('email') && <td className="px-4 py-3 text-gray-600">{row.email}</td>}
-                                        {visibleColumns.includes('gender') && <td className="px-4 py-3 text-gray-900">{row.gender}</td>}
-                                        {visibleColumns.includes('strand') && <td className="px-4 py-3 text-gray-900">{row.strand}</td>}
-                                        {visibleColumns.includes('application_date') && (
-                                            <td className="px-4 py-3 text-gray-900">
-                                                {row.application_date
-                                                    ? new Date(row.application_date).toLocaleDateString('en-US', {
-                                                          year: 'numeric',
-                                                          month: 'short',
-                                                          day: '2-digit',
-                                                      })
-                                                    : ''}
-                                            </td>
-                                        )}
-                                        {visibleColumns.includes('application_status') && (
-                                            <td className="px-4 py-3">
-                                                {(() => {
-                                                    const status = row.application_status?.toLowerCase() || '';
-                                                    let variant: 'outline' | 'success' | 'secondary' | 'default' = 'outline';
-                                                    let label = row.application_status || 'Pending';
-
-                                                    switch (status) {
-                                                        case 'pending':
-                                                            variant = 'outline';
-                                                            label = 'Pending';
-                                                            break;
-                                                        case 'exam taken':
-                                                        case 'inactive':
-                                                            variant = 'default';
-                                                            label = 'Exam Taken';
-                                                            break;
-                                                        case 'enrolled':
-                                                        case 'active':
-                                                            variant = 'success';
-                                                            label = 'Enrolled';
-                                                            break;
-                                                        default:
-                                                            variant = 'outline';
-                                                            label = 'Pending';
-                                                    }
-
-                                                    return (
-                                                        <Badge variant={variant}>{label}</Badge>
-                                                    );
-                                                })()}
-                                            </td>
-                                        )}
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <Link
-                                                    href={`/admissions/applicants/${row.id}/show`}
-                                                    className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-50"
-                                                    title="View"
-                                                >
-                                                    <HiEye size={16} />
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDeleteClick(row.id)}
-                                                    className="cursor-pointer rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50"
-                                                    title="Delete"
-                                                >
-                                                    <HiTrash size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                        row={row}
+                                        visibleColumns={visibleColumns}
+                                        selectedRows={selectedRows}
+                                        onSelectRow={handleSelectRow}
+                                        onDeleteClick={handleDeleteClick}
+                                    />
                                 ))}
                             </tbody>
                         </table>
@@ -695,7 +385,6 @@ export default function Index({ applications }: Props) {
                 />
             </div>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -703,15 +392,12 @@ export default function Index({ applications }: Props) {
                         <DialogDescription>Are you sure you want to delete this applicant? This action cannot be undone.</DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2 sm:gap-0">
-                        <Button className="mr-2" type="button" variant="outline" onClick={handleDeleteCancel}>
-                            Cancel
-                        </Button>
-                        <Button type="button" variant="destructive" onClick={handleDeleteConfirm}>
-                            Delete
-                        </Button>
+                        <Button className="mr-2" type="button" variant="outline" onClick={handleDeleteCancel}>Cancel</Button>
+                        <Button type="button" variant="destructive" onClick={handleDeleteConfirm}>Delete</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
             <ConfirmDialog
                 open={showBulkDeleteDialog}
                 onClose={() => setShowBulkDeleteDialog(false)}

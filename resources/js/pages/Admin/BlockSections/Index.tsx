@@ -8,44 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { AppBadge } from '@/components/AppBadge';
+import { BODY_TEXT, CARD, FILTER_CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { GRADE_LEVELS, useBlockSections, type BlockSection, type BlockSectionSortKey } from '@/hooks/useBlockSections';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
-import {
-    ChevronDown,
-    ChevronUp,
-    Copy,
-    Eye,
-    LayoutGrid,
-    Pencil,
-    Plus,
-    Search,
-    SquareStack,
-    Trash2,
-    Users,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface Subject {
-    id: number;
-    code: string;
-    name: string;
-}
-
-interface BlockSection {
-    id: number;
-    name: string;
-    code: string;
-    grade_level: string;
-    school_year: string;
-    semester: string | null;
-    adviser: string | null;
-    room: string | null;
-    capacity: number;
-    current_enrollment: number;
-    is_active: boolean;
-    subjects: Subject[];
-}
+import { Head, Link } from '@inertiajs/react';
+import { ChevronDown, ChevronUp, Copy, Eye, LayoutGrid, Pencil, Plus, Search, SquareStack, Trash2, Users } from 'lucide-react';
 
 interface Props {
     blockSections: BlockSection[];
@@ -57,118 +26,181 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Block Sections', href: '/block-sections' },
 ];
 
-const gradeLevels = [
-    'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
-    'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
-];
+function SortIcon({ col, sortConfig }: { col: BlockSectionSortKey; sortConfig: { key: BlockSectionSortKey | null; direction: 'asc' | 'desc' } }) {
+    if (sortConfig.key !== col) return <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />;
+    return sortConfig.direction === 'asc'
+        ? <ChevronUp className="ml-1 inline h-3 w-3" />
+        : <ChevronDown className="ml-1 inline h-3 w-3" />;
+}
 
-type SortKey = 'name' | 'grade_level' | 'school_year' | 'status';
+interface BlockSectionRowProps {
+    section: BlockSection;
+    processing: boolean;
+    onDelete: (id: number, name: string) => void;
+}
+
+function BlockSectionRow({ section, processing, onDelete }: BlockSectionRowProps) {
+    return (
+        <tr className={TABLE_ROW}>
+            <td className="px-4 py-3">
+                <p className="font-medium text-gray-900">{section.name}</p>
+                <p className="text-xs text-gray-500">{section.code}</p>
+            </td>
+            <td className="px-4 py-3 text-gray-600">{section.grade_level}</td>
+            <td className="px-4 py-3">
+                <p className="text-gray-900">{section.school_year}</p>
+                {section.semester && <p className="text-xs text-gray-500">{section.semester}</p>}
+            </td>
+            <td className="px-4 py-3 text-center">
+                <Badge variant="outline">{section.subjects?.length || 0}</Badge>
+            </td>
+            <td className="px-4 py-3 text-center">
+                <div className="flex items-center justify-center gap-1">
+                    <Users className="h-4 w-4 text-gray-400" />
+                    <span className={section.current_enrollment >= section.capacity ? 'text-red-600' : ''}>
+                        {section.current_enrollment}/{section.capacity}
+                    </span>
+                </div>
+            </td>
+            <td className="px-4 py-3 text-center">
+                <AppBadge status={section.is_active ? 'active' : 'inactive'}>
+                    {section.is_active ? 'Active' : 'Inactive'}
+                </AppBadge>
+            </td>
+            <td className="px-4 py-3">
+                <div className="flex justify-center gap-1">
+                    <Link href={`/block-sections/${section.id}`}>
+                        <button className={TABLE_ROW_ACTION}>
+                            <Eye className="h-3 w-3" /> View
+                        </button>
+                    </Link>
+                    <Link href={`/block-sections/${section.id}/edit`}>
+                        <button className={TABLE_ROW_ACTION}>
+                            <Pencil className="h-3 w-3" /> Edit
+                        </button>
+                    </Link>
+                    <button
+                        onClick={() => onDelete(section.id, section.name)}
+                        disabled={processing || section.current_enrollment > 0}
+                        className={TABLE_ROW_ACTION_DANGER}
+                    >
+                        <Trash2 className="h-3 w-3" /> Delete
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+}
+
+interface CopyDialogProps {
+    open: boolean;
+    onClose: () => void;
+    schoolYears: string[];
+    copyForm: ReturnType<typeof useBlockSections>['copyForm'];
+    onSubmit: (e: React.FormEvent) => void;
+}
+
+function CopyDialog({ open, onClose, schoolYears, copyForm, onSubmit }: CopyDialogProps) {
+    return (
+        <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Copy Sections to New Year</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-gray-500">
+                    Clones every section (with its subjects, schedules, and capacity) from one school year into a new one,
+                    with enrollment reset to 0. Sections and students already enrolled in the source year are left untouched.
+                </p>
+                <form onSubmit={onSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="from_school_year" className={LABEL_TEXT}>From School Year *</Label>
+                        <Select
+                            value={copyForm.data.from_school_year}
+                            onValueChange={(v) => copyForm.setData('from_school_year', v)}
+                        >
+                            <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Select school year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {schoolYears.map((year) => (
+                                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={copyForm.errors.from_school_year} className="mt-1" />
+                    </div>
+                    <div>
+                        <Label htmlFor="to_school_year" className={LABEL_TEXT}>To School Year *</Label>
+                        <Input
+                            id="to_school_year"
+                            value={copyForm.data.to_school_year}
+                            onChange={(e) => copyForm.setData('to_school_year', e.target.value)}
+                            placeholder="e.g., 2026-2027"
+                            className="mt-1"
+                        />
+                        <InputError message={copyForm.errors.to_school_year} className="mt-1" />
+                    </div>
+                    <InputError message={copyForm.errors.error} className="mt-1" />
+                    <div className="flex justify-end gap-2 border-t pt-4">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={copyForm.processing}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={copyForm.processing || !copyForm.data.from_school_year || !copyForm.data.to_school_year}
+                        >
+                            {copyForm.processing ? 'Copying...' : 'Copy Sections'}
+                        </Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function Index({ blockSections, schoolYears }: Props) {
-    const { delete: destroy, processing } = useForm();
-    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
-
-    // --- Copy sections to a new school year ---
-    const [showCopyDialog, setShowCopyDialog] = useState(false);
-    const copyForm = useForm({
-        from_school_year: schoolYears[schoolYears.length - 1] ?? '',
-        to_school_year: '',
-    });
-
-    const openCopyDialog = () => {
-        copyForm.reset();
-        copyForm.setData('from_school_year', schoolYears[schoolYears.length - 1] ?? '');
-        setShowCopyDialog(true);
-    };
-
-    const handleCopySubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        copyForm.post('/block-sections/copy-year', {
-            onSuccess: () => setShowCopyDialog(false),
-        });
-    };
-
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
-    const [selectedSchoolYear, setSelectedSchoolYear] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
-
-    const filteredSections = useMemo(() => {
-        return blockSections.filter((s) => {
-            const q = searchQuery.toLowerCase();
-            const matchesSearch = !q || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q);
-            const matchesGrade = !selectedGradeLevel || s.grade_level === selectedGradeLevel;
-            const matchesYear = !selectedSchoolYear || s.school_year === selectedSchoolYear;
-            const matchesStatus = !selectedStatus || (selectedStatus === 'active' ? s.is_active : !s.is_active);
-            return matchesSearch && matchesGrade && matchesYear && matchesStatus;
-        });
-    }, [blockSections, searchQuery, selectedGradeLevel, selectedSchoolYear, selectedStatus]);
-
-    const sortedSections = useMemo(() => {
-        if (!sortConfig.key) return filteredSections;
-        return [...filteredSections].sort((a, b) => {
-            let aVal = '';
-            let bVal = '';
-            if (sortConfig.key === 'name') { aVal = a.name; bVal = b.name; }
-            else if (sortConfig.key === 'grade_level') { aVal = a.grade_level; bVal = b.grade_level; }
-            else if (sortConfig.key === 'school_year') { aVal = a.school_year; bVal = b.school_year; }
-            else if (sortConfig.key === 'status') { aVal = a.is_active ? 'active' : 'inactive'; bVal = b.is_active ? 'active' : 'inactive'; }
-            return aVal.localeCompare(bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
-        });
-    }, [filteredSections, sortConfig]);
-
-    const totalPages = Math.ceil(sortedSections.length / pageSize);
-    const paginatedSections = useMemo(
-        () => sortedSections.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-        [sortedSections, currentPage, pageSize],
-    );
-
-    const toggleSort = (key: SortKey) =>
-        setSortConfig((prev) =>
-            prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' },
-        );
-
-    const SortIcon = ({ col }: { col: SortKey }) =>
-        sortConfig.key !== col ? (
-            <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />
-        ) : sortConfig.direction === 'asc' ? (
-            <ChevronUp className="ml-1 inline h-3 w-3" />
-        ) : (
-            <ChevronDown className="ml-1 inline h-3 w-3" />
-        );
-
-    const clearFilters = () => {
-        setSearchQuery('');
-        setSelectedGradeLevel('');
-        setSelectedSchoolYear('');
-        setSelectedStatus('');
-        setCurrentPage(1);
-    };
-
-    const hasFilters = searchQuery || selectedGradeLevel || selectedSchoolYear || selectedStatus;
-
-    const confirmDelete = () => {
-        destroy(`/block-sections/${deleteDialog.id}`, {
-            onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
-        });
-    };
+    const {
+        processing,
+        deleteDialog,
+        setDeleteDialog,
+        showCopyDialog,
+        setShowCopyDialog,
+        copyForm,
+        searchQuery,
+        setSearchQuery,
+        selectedGradeLevel,
+        setSelectedGradeLevel,
+        selectedSchoolYear,
+        setSelectedSchoolYear,
+        selectedStatus,
+        setSelectedStatus,
+        currentPage,
+        setCurrentPage,
+        pageSize,
+        setPageSize,
+        sortConfig,
+        hasFilters,
+        sortedSections,
+        paginatedSections,
+        toggleSort,
+        clearFilters,
+        confirmDelete,
+        openCopyDialog,
+        handleCopySubmit,
+    } = useBlockSections(blockSections, schoolYears);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Block Sections" />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="flex items-center gap-3">
                             <SquareStack className="h-7 w-7 text-primary" />
-                            <h1 className="text-3xl font-bold text-gray-900">Block Sections</h1>
+                            <h1 className={PAGE_TITLE}>Block Sections</h1>
                         </div>
-                        <p className="mt-1 text-gray-600">Manage block sections with assigned subjects</p>
+                        <p className={`mt-1 ${BODY_TEXT}`}>Manage block sections with assigned subjects</p>
                     </div>
                     <div className="flex gap-2">
                         <Tooltip>
@@ -189,19 +221,16 @@ export default function Index({ blockSections, schoolYears }: Props) {
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="mb-6 rounded-lg border bg-white p-6 shadow-sm">
-                    <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                        <div className="mb-3 flex h-10 w-full items-center rounded-lg border border-gray-300 bg-white md:w-[400px]">
-                            <span className="pl-3 pr-2 text-gray-500">
-                                <Search className="h-4 w-4" />
-                            </span>
-                            <input
-                                className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+                <div className={`mb-6 ${FILTER_CARD}`}>
+                    <div className="mb-3">
+                        <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>
+                        <div className="relative w-full md:w-[400px]">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <Input
                                 placeholder="Search by code or name..."
                                 value={searchQuery}
                                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                className="pl-10"
                             />
                         </div>
                     </div>
@@ -210,7 +239,7 @@ export default function Index({ blockSections, schoolYears }: Props) {
                             <SelectTrigger className="w-40"><SelectValue placeholder="Grade Level" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Grade Levels</SelectItem>
-                                {gradeLevels.map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                                {GRADE_LEVELS.map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}
                             </SelectContent>
                         </Select>
                         <Select value={selectedSchoolYear || 'all'} onValueChange={(v) => { setSelectedSchoolYear(v === 'all' ? '' : v); setCurrentPage(1); }}>
@@ -232,27 +261,26 @@ export default function Index({ blockSections, schoolYears }: Props) {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className={`overflow-hidden ${CARD}`}>
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
                             <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
-                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100" onClick={() => toggleSort('name')}>
-                                        Section <SortIcon col="name" />
+                                    <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('name')}>
+                                        Section <SortIcon col="name" sortConfig={sortConfig} />
                                     </th>
-                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100" onClick={() => toggleSort('grade_level')}>
-                                        Grade Level <SortIcon col="grade_level" />
+                                    <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('grade_level')}>
+                                        Grade Level <SortIcon col="grade_level" sortConfig={sortConfig} />
                                     </th>
-                                    <th className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100" onClick={() => toggleSort('school_year')}>
-                                        School Year <SortIcon col="school_year" />
+                                    <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('school_year')}>
+                                        School Year <SortIcon col="school_year" sortConfig={sortConfig} />
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Subjects</th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Enrollment</th>
-                                    <th className="cursor-pointer px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100" onClick={() => toggleSort('status')}>
-                                        Status <SortIcon col="status" />
+                                    <th className={TABLE_HEADER_CELL_CENTER}>Subjects</th>
+                                    <th className={TABLE_HEADER_CELL_CENTER}>Enrollment</th>
+                                    <th className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('status')}>
+                                        Status <SortIcon col="status" sortConfig={sortConfig} />
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                    <th className={TABLE_HEADER_CELL_CENTER}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -260,65 +288,22 @@ export default function Index({ blockSections, schoolYears }: Props) {
                                     <tr>
                                         <td colSpan={7} className="px-4 py-12 text-center">
                                             <LayoutGrid className="mx-auto h-10 w-10 text-gray-300" />
-                                            <p className="mt-2 text-gray-500">
+                                            <p className={`mt-2 ${BODY_TEXT}`}>
                                                 {hasFilters ? 'No block sections match your filters.' : 'No block sections found.'}
                                             </p>
                                         </td>
                                     </tr>
                                 ) : paginatedSections.map((section) => (
-                                    <tr key={section.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
-                                        <td className="px-4 py-3">
-                                            <p className="font-medium text-gray-900">{section.name}</p>
-                                            <p className="text-xs text-gray-500">{section.code}</p>
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600">{section.grade_level}</td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-gray-900">{section.school_year}</p>
-                                            {section.semester && <p className="text-xs text-gray-500">{section.semester}</p>}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <Badge variant="outline">{section.subjects?.length || 0}</Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Users className="h-4 w-4 text-gray-400" />
-                                                <span className={section.current_enrollment >= section.capacity ? 'text-red-600' : ''}>
-                                                    {section.current_enrollment}/{section.capacity}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <Badge className={section.is_active ? 'bg-green-100 text-green-800' : ''}>
-                                                {section.is_active ? 'Active' : 'Inactive'}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex justify-center gap-1">
-                                                <Link href={`/block-sections/${section.id}`}>
-                                                    <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                                                        <Eye className="h-3 w-3" /> View
-                                                    </button>
-                                                </Link>
-                                                <Link href={`/block-sections/${section.id}/edit`}>
-                                                    <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                                                        <Pencil className="h-3 w-3" /> Edit
-                                                    </button>
-                                                </Link>
-                                                <button
-                                                    onClick={() => setDeleteDialog({ open: true, id: section.id, name: section.name })}
-                                                    disabled={processing || section.current_enrollment > 0}
-                                                    className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
-                                                >
-                                                    <Trash2 className="h-3 w-3" /> Delete
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <BlockSectionRow
+                                        key={section.id}
+                                        section={section}
+                                        processing={processing}
+                                        onDelete={(id, name) => setDeleteDialog({ open: true, id, name })}
+                                    />
                                 ))}
                             </tbody>
                         </table>
                     </div>
-
                     <TablePagination
                         total={sortedSections.length}
                         pageSize={pageSize}
@@ -340,62 +325,13 @@ export default function Index({ blockSections, schoolYears }: Props) {
                 processing={processing}
             />
 
-            {/* Copy sections to a new school year */}
-            <Dialog open={showCopyDialog} onOpenChange={(open) => { if (!open) setShowCopyDialog(false); }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Copy Sections to New Year</DialogTitle>
-                    </DialogHeader>
-
-                    <p className="text-sm text-gray-500">
-                        Clones every section (with its subjects, schedules, and capacity) from one school year into a new one,
-                        with enrollment reset to 0. Sections and students already enrolled in the source year are left untouched.
-                    </p>
-
-                    <form onSubmit={handleCopySubmit} className="space-y-4">
-                        <div>
-                            <Label htmlFor="from_school_year">From School Year *</Label>
-                            <Select
-                                value={copyForm.data.from_school_year}
-                                onValueChange={(v) => copyForm.setData('from_school_year', v)}
-                            >
-                                <SelectTrigger className="mt-1">
-                                    <SelectValue placeholder="Select school year" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {schoolYears.map((year) => (
-                                        <SelectItem key={year} value={year}>{year}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={copyForm.errors.from_school_year} className="mt-1" />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="to_school_year">To School Year *</Label>
-                            <Input
-                                id="to_school_year"
-                                value={copyForm.data.to_school_year}
-                                onChange={(e) => copyForm.setData('to_school_year', e.target.value)}
-                                placeholder="e.g., 2026-2027"
-                                className="mt-1"
-                            />
-                            <InputError message={copyForm.errors.to_school_year} className="mt-1" />
-                        </div>
-
-                        <InputError message={copyForm.errors.error} className="mt-1" />
-
-                        <div className="flex justify-end gap-2 border-t pt-4">
-                            <Button type="button" variant="outline" onClick={() => setShowCopyDialog(false)} disabled={copyForm.processing}>
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={copyForm.processing || !copyForm.data.from_school_year || !copyForm.data.to_school_year}>
-                                {copyForm.processing ? 'Copying...' : 'Copy Sections'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            <CopyDialog
+                open={showCopyDialog}
+                onClose={() => setShowCopyDialog(false)}
+                schoolYears={schoolYears}
+                copyForm={copyForm}
+                onSubmit={handleCopySubmit}
+            />
         </AppLayout>
     );
 }

@@ -1,11 +1,14 @@
+import { AppInput } from '@/components/AppInput';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LABEL_TEXT, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import { usePermissionCreate } from '@/hooks/usePermissionCreate';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Key } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -13,36 +16,24 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create Permission', href: '/permissions/create' },
 ];
 
-interface PageProps {
-    // No additional props needed for create page
-}
-
 export default function Create() {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        description: '',
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/permissions');
-    };
+    const { data, setData, processing, errors, handleSubmit } = usePermissionCreate();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Permission" />
-            
-            <div className="m-4">
-                <div className="flex items-center gap-4 mb-6">
+
+            <div className={PAGE_PADDING}>
+                <div className="mb-6 flex items-center gap-4">
                     <Link href="/permissions">
                         <Button variant="outline" size="sm">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Permissions
                         </Button>
                     </Link>
                     <div className="flex items-center gap-2">
                         <Key className="h-5 w-5" />
-                        <h1 className="text-2xl font-bold">Create New Permission</h1>
+                        <h1 className={PAGE_TITLE}>Create New Permission</h1>
                     </div>
                 </div>
 
@@ -50,32 +41,23 @@ export default function Create() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Permission Information</CardTitle>
-                            <CardDescription>
-                                Create a new permission that can be assigned to roles.
-                            </CardDescription>
+                            <CardDescription>Create a new permission that can be assigned to roles.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Permission Name *</Label>
-                                    <Input
-                                        id="name"
-                                        type="text"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        placeholder="e.g., Manage Users"
-                                        className={errors.name ? 'border-red-500' : ''}
-                                    />
-                                    {errors.name && (
-                                        <p className="text-sm text-red-500">{errors.name}</p>
-                                    )}
-                                    <p className="text-sm text-gray-500">
-                                        The slug will be automatically generated from the name.
-                                    </p>
-                                </div>
+                                <AppInput
+                                    id="name"
+                                    label="Permission Name *"
+                                    type="text"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    placeholder="e.g., Manage Users"
+                                    error={errors.name}
+                                    hint="The slug will be automatically generated from the name."
+                                />
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="description">Description</Label>
+                                    <Label htmlFor="description" className={LABEL_TEXT}>Description</Label>
                                     <Textarea
                                         id="description"
                                         value={data.description}
@@ -84,9 +66,7 @@ export default function Create() {
                                         rows={3}
                                         className={errors.description ? 'border-red-500' : ''}
                                     />
-                                    {errors.description && (
-                                        <p className="text-sm text-red-500">{errors.description}</p>
-                                    )}
+                                    <InputError message={errors.description} />
                                 </div>
 
                                 <div className="flex justify-end gap-4">

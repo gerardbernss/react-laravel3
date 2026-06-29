@@ -1,0 +1,52 @@
+import { type BreadcrumbItem } from '@/types';
+import { useForm } from '@inertiajs/react';
+import { type FormEvent } from 'react';
+
+export interface Subject {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    units: number;
+    type: string;
+    grade_level: string | null;
+    semester: string | null;
+    user_id: number | null;
+    is_active: boolean;
+    default_schedule: { days: string; time: string; room: string | null } | null;
+}
+
+interface Params {
+    subject: Subject;
+}
+
+export function useSubjectEdit({ subject }: Params) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Subjects', href: '/subjects' },
+        { title: subject.code, href: `/subjects/${subject.id}` },
+        { title: 'Edit', href: `/subjects/${subject.id}/edit` },
+    ];
+
+    const { data, setData, put, processing, errors } = useForm({
+        code: subject.code,
+        name: subject.name,
+        description: subject.description ?? '',
+        units: subject.units,
+        type: subject.type,
+        grade_level: subject.grade_level ?? '',
+        semester: subject.semester ?? '',
+        days: subject.default_schedule?.days ?? '',
+        time: subject.default_schedule?.time ?? '',
+        room: subject.default_schedule?.room ?? '',
+        user_id: subject.user_id as number | null,
+        is_active: subject.is_active,
+    });
+
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        put(`/subjects/${subject.id}`);
+    };
+
+    return { breadcrumbs, data, setData, processing, errors, handleSubmit };
+}

@@ -3,28 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreProgramRequest;
+use App\Http\Requests\Admin\UpdateProgramRequest;
 use App\Models\Program;
-use Illuminate\Http\Request;
+use App\Repositories\ProgramRepository;
+use App\Services\Admin\ProgramService;
 use Inertia\Inertia;
 
 class ProgramsController extends Controller
 {
-    /**
-     * Display a listing of programs.
-     */
+    public function __construct(
+        private ProgramRepository $programRepository,
+        private ProgramService $programService,
+    ) {
+    }
+
     public function index()
     {
-        $programs = Program::orderBy('code')->get();
-
         return Inertia::render('Admin/Programs/Index', [
-            'programs' => $programs,
+            'programs' => $this->programRepository->allOrderedByCode(),
             'schools' => Program::$schools,
         ]);
     }
 
-    /**
-     * Show the form for creating a new program.
-     */
     public function create()
     {
         return Inertia::render('Admin/Programs/Create', [
@@ -32,28 +33,14 @@ class ProgramsController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created program.
-     */
-    public function store(Request $request)
+    public function store(StoreProgramRequest $request)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:programs,code',
-            'description' => 'required|string|max:255',
-            'school' => 'required|in:Laboratory Elementary School,Junior High School,Senior High School',
-            'is_active' => 'boolean',
-            'max_load' => 'required|integer|min:0|max:100',
-        ]);
-
-        Program::create($validated);
+        $this->programService->create($request->validated());
 
         return redirect()->route('programs.index')
             ->with('success', 'Program created successfully.');
     }
 
-    /**
-     * Show the form for editing the specified program.
-     */
     public function edit(Program $program)
     {
         return Inertia::render('Admin/Programs/Edit', [
@@ -62,42 +49,25 @@ class ProgramsController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified program.
-     */
-    public function update(Request $request, Program $program)
+    public function update(UpdateProgramRequest $request, Program $program)
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:programs,code,' . $program->id,
-            'description' => 'required|string|max:255',
-            'school' => 'required|in:Laboratory Elementary School,Junior High School,Senior High School',
-            'is_active' => 'boolean',
-            'max_load' => 'required|integer|min:0|max:100',
-        ]);
-
-        $program->update($validated);
+        $this->programService->update($program, $request->validated());
 
         return redirect()->route('programs.index')
             ->with('success', 'Program updated successfully.');
     }
 
-    /**
-     * Remove the specified program.
-     */
     public function destroy(Program $program)
     {
-        $program->delete();
+        $this->programRepository->delete($program);
 
         return redirect()->route('programs.index')
             ->with('success', 'Program deleted successfully.');
     }
 
-    /**
-     * Toggle program active status.
-     */
     public function toggleStatus(Program $program)
     {
-        $program->update(['is_active' => !$program->is_active]);
+        $this->programService->toggleStatus($program);
 
         return back()->with('success', 'Program status updated successfully.');
     }

@@ -3,40 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { BODY_TEXT, CARD, FILTER_CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type BlockSection, type StudentRow, type SubjectOption, useAttendanceSheet } from '@/hooks/useAttendanceSheet';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle, Clock, History, Loader2, Save, ShieldCheck, UserX, Users, XCircle } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
-
-interface StudentRow {
-    enrollment_id: number;
-    student_id: number;
-    student_id_number: string;
-    last_name: string;
-    first_name: string;
-    middle_name: string | null;
-    status: string | null;
-    remarks: string;
-    attendance_id: number | null;
-}
-
-interface SubjectOption {
-    id: number;
-    code: string;
-    name: string;
-}
-
-interface BlockSection {
-    id: number;
-    code: string;
-    name: string;
-    grade_level: string | null;
-    strand: string | null;
-    school_year: string | null;
-    semester: string | null;
-    adviser: string | null;
-}
 
 interface Props {
     blockSection: BlockSection;
@@ -47,12 +18,6 @@ interface Props {
     missedDates: string[];
 }
 
-type AttendanceChange = {
-    student_enrollment_id: number;
-    status: string;
-    remarks: string;
-};
-
 const STATUS_ICONS = [
     { status: 'Present', icon: CheckCircle, activeClass: 'text-green-600 bg-green-100', title: 'Present' },
     { status: 'Absent', icon: XCircle, activeClass: 'text-red-600 bg-red-100', title: 'Absent' },
@@ -62,16 +27,11 @@ const STATUS_ICONS = [
 
 function getStatusColor(status: string | null): string {
     switch (status) {
-        case 'Present':
-            return 'bg-green-50';
-        case 'Absent':
-            return 'bg-red-50';
-        case 'Late':
-            return 'bg-yellow-50';
-        case 'Excused':
-            return 'bg-blue-50';
-        default:
-            return '';
+        case 'Present': return 'bg-green-50';
+        case 'Absent': return 'bg-red-50';
+        case 'Late': return 'bg-yellow-50';
+        case 'Excused': return 'bg-blue-50';
+        default: return '';
     }
 }
 
@@ -85,151 +45,29 @@ function formatDate(dateStr: string): string {
 }
 
 export default function Sheet({ blockSection, students, selectedDate, selectedSubjectId, subjects, missedDates }: Props) {
-    const [changes, setChanges] = useState<Map<number, AttendanceChange>>(new Map());
-    const [saving, setSaving] = useState(false);
-    const [missedOpen, setMissedOpen] = useState(false);
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Attendance', href: '/attendance' },
-        { title: blockSection.code, href: `/attendance/${blockSection.id}` },
-    ];
-
-    // Initialize changes from existing data
-    const getCurrentValue = useCallback(
-        (student: StudentRow): { status: string | null; remarks: string } => {
-            const change = changes.get(student.enrollment_id);
-            if (change) return { status: change.status, remarks: change.remarks };
-            return { status: student.status, remarks: student.remarks };
-        },
-        [changes],
-    );
-
-    const handleStatusChange = useCallback((enrollmentId: number, student: StudentRow, status: string) => {
-        setChanges((prev) => {
-            const next = new Map(prev);
-            const existing = next.get(enrollmentId);
-            next.set(enrollmentId, {
-                student_enrollment_id: enrollmentId,
-                status,
-                remarks: existing?.remarks ?? student.remarks ?? '',
-            });
-            return next;
-        });
-    }, []);
-
-    const handleRemarksChange = useCallback((enrollmentId: number, student: StudentRow, remarks: string) => {
-        setChanges((prev) => {
-            const next = new Map(prev);
-            const existing = next.get(enrollmentId);
-            next.set(enrollmentId, {
-                student_enrollment_id: enrollmentId,
-                status: existing?.status ?? student.status ?? 'Present',
-                remarks,
-            });
-            return next;
-        });
-    }, []);
-
-    const markAllAs = useCallback(
-        (status: string) => {
-            setChanges((prev) => {
-                const next = new Map(prev);
-                for (const student of students) {
-                    const existing = next.get(student.enrollment_id);
-                    next.set(student.enrollment_id, {
-                        student_enrollment_id: student.enrollment_id,
-                        status,
-                        remarks: existing?.remarks ?? student.remarks ?? '',
-                    });
-                }
-                return next;
-            });
-        },
-        [students],
-    );
-
-    // Live statistics based on current changes
-    const liveStats = useMemo(() => {
-        let present = 0,
-            absent = 0,
-            late = 0,
-            excused = 0,
-            marked = 0;
-        for (const student of students) {
-            const { status } = getCurrentValue(student);
-            if (status) {
-                marked++;
-                if (status === 'Present') present++;
-                else if (status === 'Absent') absent++;
-                else if (status === 'Late') late++;
-                else if (status === 'Excused') excused++;
-            }
-        }
-        return {
-            total_students: students.length,
-            marked_count: marked,
-            present_count: present,
-            absent_count: absent,
-            late_count: late,
-            excused_count: excused,
-            attendance_rate: marked > 0 ? Math.round(((present + late) / marked) * 1000) / 10 : null,
-        };
-    }, [students, getCurrentValue]);
-
-    const hasChanges = changes.size > 0;
-
-    const handleSubjectChange = (subjectId: string) => {
-        router.get(
-            `/attendance/${blockSection.id}`,
-            {
-                date: selectedDate,
-                subject_id: subjectId,
-            },
-            { preserveState: false },
-        );
-    };
-
-    const handleDateChange = (date: string) => {
-        router.get(
-            `/attendance/${blockSection.id}`,
-            {
-                date,
-                subject_id: selectedSubjectId,
-            },
-            { preserveState: false },
-        );
-    };
-
-    const handleSave = () => {
-        if (!hasChanges) return;
-        setSaving(true);
-
-        const attendance = Array.from(changes.values());
-
-        router.post(
-            `/attendance/${blockSection.id}`,
-            {
-                date: selectedDate,
-                subject_id: selectedSubjectId,
-                attendance,
-            },
-            {
-                preserveScroll: true,
-                onFinish: () => {
-                    setSaving(false);
-                    setChanges(new Map());
-                },
-            },
-        );
-    };
+    const {
+        changes,
+        saving,
+        missedOpen,
+        setMissedOpen,
+        breadcrumbs,
+        getCurrentValue,
+        handleStatusChange,
+        handleRemarksChange,
+        markAllAs,
+        liveStats,
+        hasChanges,
+        handleSubjectChange,
+        handleDateChange,
+        handleSave,
+        discardChanges,
+    } = useAttendanceSheet({ blockSection, students, selectedDate, selectedSubjectId });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Attendance - ${blockSection.code}`} />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <div className="mb-4 flex items-center gap-4">
                         <Link
@@ -260,7 +98,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                     </div>
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">
+                            <h1 className={PAGE_TITLE}>
                                 {blockSection.code} — {blockSection.name}
                             </h1>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -283,7 +121,6 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                     </div>
                 </div>
 
-                {/* Missed-dates dialog */}
                 <Dialog open={missedOpen} onOpenChange={setMissedOpen}>
                     <DialogContent className="max-w-lg">
                         <DialogHeader>
@@ -302,9 +139,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">#</th>
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Date</th>
                                             <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Day</th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                Action
-                                            </th>
+                                            <th className="px-4 py-2 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -337,10 +172,9 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                     </DialogContent>
                 </Dialog>
 
-                {/* Controls: Subject + Date */}
-                <div className="mb-4 flex flex-wrap items-end gap-4 rounded-lg border bg-white p-4 shadow-sm">
+                <div className={`mb-4 flex flex-wrap items-end gap-4 ${FILTER_CARD}`}>
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">Subject</label>
+                        <label className={`mb-1 block ${LABEL_TEXT}`}>Subject</label>
                         <Select value={String(selectedSubjectId)} onValueChange={handleSubjectChange}>
                             <SelectTrigger className="w-64">
                                 <SelectValue placeholder="Select Subject" />
@@ -355,7 +189,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                         </Select>
                     </div>
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">Date</label>
+                        <label className={`mb-1 block ${LABEL_TEXT}`}>Date</label>
                         <Input type="date" value={selectedDate} onChange={(e) => handleDateChange(e.target.value)} className="w-48" />
                     </div>
                     <div className="flex gap-2">
@@ -375,7 +209,6 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                     )}
                 </div>
 
-                {/* Statistics Bar */}
                 <div className="mb-4 flex flex-wrap items-center gap-12 px-2 pt-6">
                     <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 shrink-0 text-blue-500" />
@@ -404,35 +237,23 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                     </div>
                 </div>
 
-                {/* Attendance Table */}
                 {students.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className={`overflow-hidden ${CARD}`}>
                         <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
-                                            #
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
-                                            Student ID
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
-                                            Student Name
-                                        </th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
-                                            Status
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">
-                                            Remarks
-                                        </th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">#</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">Student ID</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">Student Name</th>
+                                        <th className="px-4 py-3 text-center text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">Status</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium tracking-wider whitespace-nowrap text-gray-500 uppercase">Remarks</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {students.map((student, index) => {
                                         const current = getCurrentValue(student);
                                         const isChanged = changes.has(student.enrollment_id);
-
                                         return (
                                             <tr
                                                 key={student.enrollment_id}
@@ -487,20 +308,19 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                         </div>
                     </div>
                 ) : (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+                    <div className={`${CARD} p-12 text-center`}>
                         <Users className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No students enrolled</h3>
-                        <p className="mt-2 text-gray-600">No students are enrolled in this section yet.</p>
+                        <h3 className={`mt-4 ${SECTION_HEADING}`}>No students enrolled</h3>
+                        <p className={`mt-2 ${BODY_TEXT}`}>No students are enrolled in this section yet.</p>
                     </div>
                 )}
 
-                {/* Bottom Save Bar */}
                 {hasChanges && (
                     <div className="mt-4 flex items-center justify-end gap-4 rounded-lg border bg-amber-50 p-4 shadow-sm">
                         <span className="text-sm text-amber-700">
                             You have {changes.size} unsaved change{changes.size !== 1 ? 's' : ''}
                         </span>
-                        <Button variant="outline" onClick={() => setChanges(new Map())} disabled={saving}>
+                        <Button variant="outline" onClick={discardChanges} disabled={saving}>
                             Discard
                         </Button>
                         <Button onClick={handleSave} disabled={saving}>

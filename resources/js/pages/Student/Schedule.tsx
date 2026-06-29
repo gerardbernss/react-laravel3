@@ -1,18 +1,11 @@
-﻿import StudentLayout from '@/layouts/student-layout';
+import {
+    DAYS, GRID_END_MIN, GRID_HEIGHT, GRID_START_MIN, PALETTE, PX_PER_HOUR,
+    hourLabel, useStudentSchedule, type Subject,
+} from '@/hooks/useStudentSchedule';
+import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { CalendarDays, LayoutList } from 'lucide-react';
-import { useState } from 'react';
-
-interface Subject {
-    subject_code: string | null;
-    subject_name: string | null;
-    units: string | number;
-    schedule: string | null;
-    room: string | null;
-    teacher: string | null;
-    grade_status: string | null;
-}
 
 interface Enrollment {
     school_year: string;
@@ -29,157 +22,18 @@ interface Props {
     subjects: Subject[];
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
-
-// Day abbreviation tokens → index into DAYS (0=Mon … 5=Sat).
-// Two-char tokens are tried before single-char to avoid "T" eating "Th".
-const DAY_MAP: Record<string, number> = {
-    Mo: 0, M: 0,
-    Tu: 1, T: 1,
-    W: 2,
-    Th: 3,
-    F: 4,
-    Sa: 5, S: 5,
-};
-
-// Whole-string day codes offered by the Subject schedule form's dropdown
-// (Admin/Subjects/Edit.tsx) — matched verbatim before falling back to the
-// char-by-char tokenizer below, since "Daily" has no per-character mapping
-// and "MTWTHF" trips up the tokenizer's case-sensitive "Th" lookup.
-const DAY_CODE_MAP: Record<string, number[]> = {
-    MWF: [0, 2, 4],
-    TTh: [1, 3],
-    Daily: [0, 1, 2, 3, 4],
-    MTWTHF: [0, 1, 2, 3, 4],
-};
-
-// Calendar grid: 7 AM → 9 PM, 1 hour = 64 px
-const GRID_START_MIN = 7 * 60;   // 420
-const GRID_END_MIN   = 21 * 60;  // 1260
-const PX_PER_HOUR    = 64;
-const GRID_HEIGHT    = ((GRID_END_MIN - GRID_START_MIN) / 60) * PX_PER_HOUR; // 896
-
-// 8-colour palette assigned by subject index
-const PALETTE = [
-    'bg-blue-100 border-blue-400 text-blue-900',
-    'bg-green-100 border-green-400 text-green-900',
-    'bg-amber-100 border-amber-400 text-amber-900',
-    'bg-purple-100 border-purple-400 text-purple-900',
-    'bg-rose-100 border-rose-400 text-rose-900',
-    'bg-cyan-100 border-cyan-400 text-cyan-900',
-    'bg-orange-100 border-orange-400 text-orange-900',
-    'bg-teal-100 border-teal-400 text-teal-900',
-] as const;
-
-// ── Helper: parse schedule string ─────────────────────────────────────────────
-
-interface ParsedSchedule {
-    days: number[];      // indices into DAYS (0=Mon … 5=Sat)
-    start: number;       // minutes since midnight
-    end: number;
-    startLabel: string;
-    endLabel: string;
-}
-
-function parseSchedule(raw: string | null): ParsedSchedule | null {
-    if (!raw) return null;
-
-    const spaceIdx = raw.indexOf(' ');
-    if (spaceIdx === -1) return null;
-
-    const dayStr  = raw.slice(0, spaceIdx).trim();
-    const timeStr = raw.slice(spaceIdx + 1).trim();
-
-    // Known whole-string day codes first (covers "Daily" and "MTWTHF",
-    // which the char-by-char tokenizer below can't handle correctly).
-    const days: number[] = [];
-    if (dayStr in DAY_CODE_MAP) {
-        days.push(...DAY_CODE_MAP[dayStr]);
-    } else {
-        // Tokenise day string: try two-char token first, then one-char
-        let i = 0;
-        while (i < dayStr.length) {
-            const two = dayStr.slice(i, i + 2);
-            const one = dayStr.slice(i, i + 1);
-            if (two in DAY_MAP) {
-                days.push(DAY_MAP[two]);
-                i += 2;
-            } else if (one in DAY_MAP) {
-                days.push(DAY_MAP[one]);
-                i += 1;
-            } else {
-                i += 1; // skip unknown char
-            }
-        }
-    }
-
-    if (days.length === 0) return null;
-
-    // Parse "H:MM-H:MM" or "HH:MM-HH:MM"
-    const timeParts = timeStr.split('-');
-    if (timeParts.length !== 2) return null;
-
-    const toMins = (t: string): number | null => {
-        const parts = t.trim().split(':');
-        if (parts.length !== 2) return null;
-        const h = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10);
-        if (isNaN(h) || isNaN(m)) return null;
-        return h * 60 + m;
-    };
-
-    const start = toMins(timeParts[0]);
-    const end   = toMins(timeParts[1]);
-    if (start === null || end === null || end <= start) return null;
-
-    return {
-        days,
-        start,
-        end,
-        startLabel: timeParts[0].trim(),
-        endLabel:   timeParts[1].trim(),
-    };
-}
-
-// ── Hour label helper ─────────────────────────────────────────────────────────
-
-function hourLabel(h: number): string {
-    if (h === 0)  return '12 AM';
-    if (h < 12)   return `${h} AM`;
-    if (h === 12) return '12 PM';
-    return `${h - 12} PM`;
-}
-
-// ── Breadcrumbs ───────────────────────────────────────────────────────────────
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Schedule', href: '/student/schedule' },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
-    const [view, setView] = useState<'table' | 'calendar'>('table');
-
-    // Pre-parse schedules once so the calendar render is cheap
-    const parsed = subjects.map((s, idx) => ({
-        subject: s,
-        idx,
-        parsed: parseSchedule(s.schedule),
-        color:  PALETTE[idx % PALETTE.length],
-    }));
-
-    const unscheduled = parsed.filter((p) => p.parsed === null);
+    const { view, setView, parsed, unscheduled } = useStudentSchedule(subjects);
 
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="Class Schedule" />
 
             <div className="space-y-6 p-4 md:p-6">
-
-                {/* ── Page header with view toggle ── */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Class Schedule</h1>
@@ -190,17 +44,12 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                         )}
                     </div>
 
-                    {/* Toggle — only show when there is data */}
                     {enrollment && subjects.length > 0 && (
                         <div className="flex shrink-0 items-center overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                             <button
                                 onClick={() => setView('table')}
                                 title="Table view"
-                                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-                                    view === 'table'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'text-gray-500 hover:bg-gray-50'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${view === 'table' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                             >
                                 <LayoutList className="h-4 w-4" />
                                 <span className="hidden sm:inline">Table</span>
@@ -209,11 +58,7 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                             <button
                                 onClick={() => setView('calendar')}
                                 title="Calendar view"
-                                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-                                    view === 'calendar'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'text-gray-500 hover:bg-gray-50'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${view === 'calendar' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                             >
                                 <CalendarDays className="h-4 w-4" />
                                 <span className="hidden sm:inline">Calendar</span>
@@ -222,7 +67,6 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                     )}
                 </div>
 
-                {/* ── Empty states ── */}
                 {!isEnrolled ? (
                     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 text-center">
                         <CalendarDays className="mb-3 h-10 w-10 text-gray-400" />
@@ -242,8 +86,6 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                         <p className="mt-1 text-xs text-gray-400">Your subjects will appear here once they are assigned.</p>
                     </div>
                 ) : view === 'table' ? (
-
-                    /* ── Table view ─────────────────────────────────────────── */
                     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                         <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -273,9 +115,7 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                                 </tbody>
                                 <tfoot className="border-t border-gray-200 bg-gray-50">
                                     <tr>
-                                        <td colSpan={3} className="px-4 py-3 text-right text-sm font-semibold text-gray-600">
-                                            Total Units
-                                        </td>
+                                        <td colSpan={3} className="px-4 py-3 text-right text-sm font-semibold text-gray-600">Total Units</td>
                                         <td className="px-4 py-3 text-center font-bold text-gray-800">
                                             {subjects.reduce((sum, s) => sum + Number(s.units), 0)}
                                         </td>
@@ -285,18 +125,12 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                             </table>
                         </div>
                     </div>
-
                 ) : (
-
-                    /* ── Calendar view ───────────────────────────────────────── */
                     <div className="space-y-4">
                         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                             <div className="overflow-x-auto">
                                 <div className="min-w-[640px]">
-
-                                    {/* Day-column headers */}
                                     <div className="flex border-b border-gray-200 bg-gray-50">
-                                        {/* Time axis spacer */}
                                         <div className="w-14 shrink-0" />
                                         {DAYS.map((day) => (
                                             <div
@@ -308,10 +142,7 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                                         ))}
                                     </div>
 
-                                    {/* Grid body */}
                                     <div className="flex" style={{ height: GRID_HEIGHT }}>
-
-                                        {/* Time axis */}
                                         <div className="relative w-14 shrink-0 border-r border-gray-200">
                                             {Array.from({ length: (GRID_END_MIN - GRID_START_MIN) / 60 }, (_, h) => (
                                                 <div
@@ -326,13 +157,8 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                                             ))}
                                         </div>
 
-                                        {/* Day columns */}
                                         {DAYS.map((day, dayIdx) => (
-                                            <div
-                                                key={day}
-                                                className="relative flex-1 border-l border-gray-200"
-                                            >
-                                                {/* Hour grid lines */}
+                                            <div key={day} className="relative flex-1 border-l border-gray-200">
                                                 {Array.from({ length: (GRID_END_MIN - GRID_START_MIN) / 60 }, (_, h) => (
                                                     <div
                                                         key={h}
@@ -341,16 +167,11 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                                                     />
                                                 ))}
 
-                                                {/* Subject blocks for this day */}
                                                 {parsed.map(({ subject, idx, parsed: ps, color }) => {
                                                     if (!ps || !ps.days.includes(dayIdx)) return null;
-
                                                     const top    = ((ps.start - GRID_START_MIN) / 60) * PX_PER_HOUR;
                                                     const height = ((ps.end - ps.start) / 60) * PX_PER_HOUR;
-
-                                                    // Clamp to grid bounds
                                                     if (top + height <= 0 || top >= GRID_HEIGHT) return null;
-
                                                     return (
                                                         <div
                                                             key={idx}
@@ -372,7 +193,6 @@ export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
                             </div>
                         </div>
 
-                        {/* Unscheduled subjects */}
                         {unscheduled.length > 0 && (
                             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4">
                                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">

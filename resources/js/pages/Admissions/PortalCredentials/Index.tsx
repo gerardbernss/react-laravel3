@@ -1,4 +1,4 @@
-﻿import {
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -10,30 +10,15 @@
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { CARD, FILTER_CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION } from '@/constants/ui';
+import { usePortalCredentials, type Credential, type CredentialSortKey } from '@/hooks/usePortalCredentials';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ChevronDown, ChevronUp, Eye, Key, KeyRound, Mail, RefreshCw, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface PersonalData {
-    id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-}
-
-interface Credential {
-    id: number;
-    username: string;
-    access_status: string;
-    credentials_sent_at: string | null;
-    last_login_at: string | null;
-    login_attempts: number;
-    personal_data?: PersonalData;
-}
 
 interface Props {
     credentials: Credential[];
@@ -44,168 +29,138 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Portal Credentials', href: '/portal-credentials' },
 ];
 
-type SortKey = 'name' | 'username' | 'status' | 'last_login_at' | 'credentials_sent_at';
+function SortIcon({ col, sortConfig }: { col: CredentialSortKey; sortConfig: { key: CredentialSortKey | null; direction: 'asc' | 'desc' } }) {
+    if (sortConfig.key !== col) return <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />;
+    return sortConfig.direction === 'asc'
+        ? <ChevronUp className="ml-1 inline h-3 w-3" />
+        : <ChevronDown className="ml-1 inline h-3 w-3" />;
+}
+
+function getStatusBadge(status: string) {
+    switch (status?.toLowerCase()) {
+        case 'active':    return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        case 'suspended': return <Badge variant="destructive">Suspended</Badge>;
+        case 'inactive':  return <Badge variant="secondary">Inactive</Badge>;
+        default:          return <Badge variant="outline">{status || 'Active'}</Badge>;
+    }
+}
+
+interface CredentialRowProps {
+    credential: Credential;
+    onSend: (credential: Credential) => void;
+    onResend: (credential: Credential) => void;
+}
+
+function CredentialRow({ credential, onSend, onResend }: CredentialRowProps) {
+    return (
+        <tr className={TABLE_ROW}>
+            <td className="px-4 py-3">
+                <p className="font-medium text-gray-900">
+                    {credential.personal_data?.first_name} {credential.personal_data?.last_name}
+                </p>
+                <p className="text-sm text-gray-500">{credential.personal_data?.email}</p>
+            </td>
+            <td className="px-4 py-3 font-mono text-gray-600">{credential.username}</td>
+            <td className="px-4 py-3 text-center">{getStatusBadge(credential.access_status)}</td>
+            <td className="px-4 py-3 text-center text-gray-600">{credential.login_attempts || 0}/5</td>
+            <td className="px-4 py-3 text-gray-600">
+                {credential.last_login_at
+                    ? new Date(credential.last_login_at).toLocaleDateString()
+                    : 'Never'}
+            </td>
+            <td className="px-4 py-3 text-center">
+                {credential.credentials_sent_at ? (
+                    <Badge className="bg-green-100 text-green-800">
+                        {new Date(credential.credentials_sent_at).toLocaleDateString()}
+                    </Badge>
+                ) : (
+                    <Badge variant="secondary">Not Sent</Badge>
+                )}
+            </td>
+            <td className="px-4 py-3">
+                <div className="flex justify-center gap-1">
+                    <Link href={`/portal-credentials/${credential.id}`}>
+                        <Button variant="outline" size="sm" title="View Details">
+                            <Eye className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    {!credential.credentials_sent_at && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onSend(credential)}
+                            className="text-green-600 hover:text-green-700"
+                            title="Send Credentials"
+                        >
+                            <Mail className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {credential.credentials_sent_at && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onResend(credential)}
+                            className="text-purple-600 hover:text-purple-700"
+                            title="Resend Credentials"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
+}
 
 export default function Index({ credentials }: Props) {
-    const [sendDialogOpen, setSendDialogOpen] = useState(false);
-    const [resendDialogOpen, setResendDialogOpen] = useState(false);
-    const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedStatus, setSelectedStatus] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [sortConfig, setSortConfig] = useState<{ key: SortKey | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
-
-    const filteredItems = useMemo(() => {
-        return credentials.filter((c) => {
-            const q = searchQuery.toLowerCase();
-            const fullName = `${c.personal_data?.first_name ?? ''} ${c.personal_data?.last_name ?? ''}`.toLowerCase();
-            const matchesSearch =
-                !q || fullName.includes(q) || (c.personal_data?.email ?? '').toLowerCase().includes(q) || c.username.toLowerCase().includes(q);
-            const matchesStatus = !selectedStatus || c.access_status?.toLowerCase() === selectedStatus.toLowerCase();
-            return matchesSearch && matchesStatus;
-        });
-    }, [credentials, searchQuery, selectedStatus]);
-
-    const sortedItems = useMemo(() => {
-        if (!sortConfig.key) return filteredItems;
-        return [...filteredItems].sort((a, b) => {
-            let aVal = '';
-            let bVal = '';
-            if (sortConfig.key === 'name') {
-                aVal = `${a.personal_data?.last_name ?? ''} ${a.personal_data?.first_name ?? ''}`;
-                bVal = `${b.personal_data?.last_name ?? ''} ${b.personal_data?.first_name ?? ''}`;
-            } else if (sortConfig.key === 'username') {
-                aVal = a.username;
-                bVal = b.username;
-            } else if (sortConfig.key === 'status') {
-                aVal = a.access_status;
-                bVal = b.access_status;
-            } else if (sortConfig.key === 'last_login_at') {
-                aVal = a.last_login_at ?? '';
-                bVal = b.last_login_at ?? '';
-            } else if (sortConfig.key === 'credentials_sent_at') {
-                aVal = a.credentials_sent_at ?? '';
-                bVal = b.credentials_sent_at ?? '';
-            }
-            return aVal.localeCompare(bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
-        });
-    }, [filteredItems, sortConfig]);
-
-    const totalPages = Math.ceil(sortedItems.length / pageSize);
-    const paginatedItems = useMemo(
-        () => sortedItems.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-        [sortedItems, currentPage, pageSize],
-    );
-
-    const toggleSort = (key: SortKey) =>
-        setSortConfig((prev) => (prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }));
-
-    const SortIcon = ({ col }: { col: SortKey }) =>
-        sortConfig.key !== col ? (
-            <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />
-        ) : sortConfig.direction === 'asc' ? (
-            <ChevronUp className="ml-1 inline h-3 w-3" />
-        ) : (
-            <ChevronDown className="ml-1 inline h-3 w-3" />
-        );
-
-    const clearFilters = () => {
-        setSearchQuery('');
-        setSelectedStatus('');
-        setCurrentPage(1);
-    };
-
-    const hasFilters = searchQuery || selectedStatus;
-
-    const getStatusBadge = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'active':
-                return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-            case 'suspended':
-                return <Badge variant="destructive">Suspended</Badge>;
-            case 'inactive':
-                return <Badge variant="secondary">Inactive</Badge>;
-            default:
-                return <Badge variant="outline">{status || 'Active'}</Badge>;
-        }
-    };
-
-    const handleSendCredentials = () => {
-        if (selectedCredential) {
-            router.post(
-                `/portal-credentials/${selectedCredential.id}/send`,
-                {},
-                {
-                    onSuccess: () => {
-                        setSendDialogOpen(false);
-                        setSelectedCredential(null);
-                    },
-                },
-            );
-        }
-    };
-
-    const handleResend = () => {
-        if (selectedCredential) {
-            router.post(
-                `/portal-credentials/${selectedCredential.id}/resend`,
-                {},
-                {
-                    onSuccess: () => {
-                        setResendDialogOpen(false);
-                        setSelectedCredential(null);
-                    },
-                },
-            );
-        }
-    };
+    const {
+        sendDialogOpen, setSendDialogOpen,
+        resendDialogOpen, setResendDialogOpen,
+        selectedCredential,
+        searchQuery, setSearchQuery,
+        selectedStatus, setSelectedStatus,
+        currentPage, setCurrentPage,
+        pageSize, setPageSize,
+        sortConfig,
+        hasFilters,
+        sortedItems,
+        paginatedItems,
+        toggleSort,
+        clearFilters,
+        openSendDialog,
+        openResendDialog,
+        handleSendCredentials,
+        handleResend,
+    } = usePortalCredentials(credentials);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Portal Credentials" />
 
-            <div className="space-y-6 p-6 md:p-10">
-                {/* Header */}
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <KeyRound className="h-7 w-7 text-primary" />
-                            <h1 className="text-3xl font-bold text-gray-900">Portal Credentials</h1>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <KeyRound className="h-7 w-7 text-primary" />
+                        <h1 className={PAGE_TITLE}>Portal Credentials</h1>
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <div>
+                <div className={FILTER_CARD}>
+                    <div className="mb-3">
                         <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                        <div className="mb-3 flex h-10 w-full items-center rounded-lg border border-gray-300 bg-white md:w-[400px]">
-                            <span className="pr-2 pl-3 text-gray-500">
-                                <Search className="h-4 w-4" />
-                            </span>
-                            <input
-                                className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+                        <div className="relative w-full md:w-[400px]">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <Input
                                 placeholder="Search by name, email, or username..."
                                 value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setCurrentPage(1);
-                                }}
+                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                className="pl-10"
                             />
                         </div>
                     </div>
                     <div className="flex flex-wrap items-end gap-3">
-                        <Select
-                            value={selectedStatus || 'all'}
-                            onValueChange={(v) => {
-                                setSelectedStatus(v === 'all' ? '' : v);
-                                setCurrentPage(1);
-                            }}
-                        >
-                            <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
+                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                            <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="Active">Active</SelectItem>
@@ -213,54 +168,32 @@ export default function Index({ credentials }: Props) {
                                 <SelectItem value="Suspended">Suspended</SelectItem>
                             </SelectContent>
                         </Select>
-                        {hasFilters && (
-                            <Button variant="ghost" onClick={clearFilters}>
-                                Clear
-                            </Button>
-                        )}
+                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className={`overflow-hidden ${CARD}`}>
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
                             <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
-                                    <th
-                                        className="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                                        onClick={() => toggleSort('name')}
-                                    >
-                                        Name <SortIcon col="name" />
+                                    <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('name')}>
+                                        Name <SortIcon col="name" sortConfig={sortConfig} />
                                     </th>
-                                    <th
-                                        className="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                                        onClick={() => toggleSort('username')}
-                                    >
-                                        Username (Email) <SortIcon col="username" />
+                                    <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('username')}>
+                                        Username (Email) <SortIcon col="username" sortConfig={sortConfig} />
                                     </th>
-                                    <th
-                                        className="cursor-pointer px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase"
-                                        onClick={() => toggleSort('status')}
-                                    >
-                                        Status <SortIcon col="status" />
+                                    <th className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('status')}>
+                                        Status <SortIcon col="status" sortConfig={sortConfig} />
                                     </th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                        Login Attempts
+                                    <th className={TABLE_HEADER_CELL_CENTER}>Login Attempts</th>
+                                    <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('last_login_at')}>
+                                        Last Login <SortIcon col="last_login_at" sortConfig={sortConfig} />
                                     </th>
-                                    <th
-                                        className="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                                        onClick={() => toggleSort('last_login_at')}
-                                    >
-                                        Last Login <SortIcon col="last_login_at" />
+                                    <th className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('credentials_sent_at')}>
+                                        Credentials Sent <SortIcon col="credentials_sent_at" sortConfig={sortConfig} />
                                     </th>
-                                    <th
-                                        className="cursor-pointer px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase"
-                                        onClick={() => toggleSort('credentials_sent_at')}
-                                    >
-                                        Credentials Sent <SortIcon col="credentials_sent_at" />
-                                    </th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Actions</th>
+                                    <th className={TABLE_HEADER_CELL_CENTER}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -273,88 +206,27 @@ export default function Index({ credentials }: Props) {
                                             </p>
                                         </td>
                                     </tr>
-                                ) : (
-                                    paginatedItems.map((credential) => (
-                                        <tr key={credential.id} className="border-b border-gray-200 transition-all hover:bg-slate-50">
-                                            <td className="px-4 py-3">
-                                                <p className="font-medium text-gray-900">
-                                                    {credential.personal_data?.first_name} {credential.personal_data?.last_name}
-                                                </p>
-                                                <p className="text-sm text-gray-500">{credential.personal_data?.email}</p>
-                                            </td>
-                                            <td className="px-4 py-3 font-mono text-gray-600">{credential.username}</td>
-                                            <td className="px-4 py-3 text-center">{getStatusBadge(credential.access_status)}</td>
-                                            <td className="px-4 py-3 text-center text-gray-600">{credential.login_attempts || 0}/5</td>
-                                            <td className="px-4 py-3 text-gray-600">
-                                                {credential.last_login_at ? new Date(credential.last_login_at).toLocaleDateString() : 'Never'}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                {credential.credentials_sent_at ? (
-                                                    <Badge className="bg-green-100 text-green-800">
-                                                        {new Date(credential.credentials_sent_at).toLocaleDateString()}
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="secondary">Not Sent</Badge>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center gap-1">
-                                                    <Link href={`/portal-credentials/${credential.id}`}>
-                                                        <Button variant="outline" size="sm" title="View Details">
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
-                                                    {!credential.credentials_sent_at && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                setSelectedCredential(credential);
-                                                                setSendDialogOpen(true);
-                                                            }}
-                                                            className="text-green-600 hover:text-green-700"
-                                                            title="Send Credentials"
-                                                        >
-                                                            <Mail className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                    {credential.credentials_sent_at && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                setSelectedCredential(credential);
-                                                                setResendDialogOpen(true);
-                                                            }}
-                                                            className="text-purple-600 hover:text-purple-700"
-                                                            title="Resend Credentials"
-                                                        >
-                                                            <RefreshCw className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                ) : paginatedItems.map((credential) => (
+                                    <CredentialRow
+                                        key={credential.id}
+                                        credential={credential}
+                                        onSend={openSendDialog}
+                                        onResend={openResendDialog}
+                                    />
+                                ))}
                             </tbody>
                         </table>
                     </div>
-
                     <TablePagination
                         total={sortedItems.length}
                         pageSize={pageSize}
                         currentPage={currentPage}
                         onPageChange={setCurrentPage}
-                        onPageSizeChange={(s) => {
-                            setPageSize(s);
-                            setCurrentPage(1);
-                        }}
+                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
                     />
                 </div>
             </div>
 
-            {/* Send Credentials Dialog */}
             <AlertDialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -363,8 +235,7 @@ export default function Index({ credentials }: Props) {
                             {selectedCredential && (
                                 <>
                                     Login credentials will be sent to <strong>{selectedCredential.personal_data?.email}</strong>.
-                                    <br />
-                                    <br />
+                                    <br /><br />
                                     The applicant will use these credentials to access their portal.
                                 </>
                             )}
@@ -377,7 +248,6 @@ export default function Index({ credentials }: Props) {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Resend Credentials Dialog */}
             <AlertDialog open={resendDialogOpen} onOpenChange={setResendDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -386,8 +256,7 @@ export default function Index({ credentials }: Props) {
                             {selectedCredential && (
                                 <>
                                     A new password will be generated and sent to <strong>{selectedCredential.personal_data?.email}</strong>.
-                                    <br />
-                                    <br />
+                                    <br /><br />
                                     The previous password will no longer work.
                                 </>
                             )}

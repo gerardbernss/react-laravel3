@@ -1,80 +1,25 @@
-﻿import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BODY_TEXT, LABEL_TEXT, PAGE_TITLE } from '@/constants/ui';
+import {
+    type Documents,
+    type EducationalBackground,
+    type Enrollment,
+    type FamilyBackground,
+    type PersonalData,
+    type Sibling,
+    type StudentRecord,
+    type Withdrawal,
+    useStudentShow,
+} from '@/hooks/useStudentShow';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Edit, FileText, Printer, XCircle } from 'lucide-react';
-import { useState } from 'react';
-
-interface PersonalData {
-    id: number;
-    last_name: string; first_name: string; middle_name: string | null; suffix: string | null;
-    learner_reference_number: string | null; gender: string; citizenship: string; religion: string;
-    date_of_birth: string; place_of_birth: string | null;
-    email: string; alt_email: string | null; mobile_number: string | null;
-    present_street: string | null; present_brgy: string | null; present_city: string | null;
-    present_province: string | null; present_zip: string | null;
-    permanent_street: string | null; permanent_brgy: string | null; permanent_city: string | null;
-    permanent_province: string | null; permanent_zip: string | null;
-    stopped_studying: string | null; accelerated: string | null;
-    health_conditions: string[] | string | null;
-    has_doctors_note: boolean | null;
-    doctors_note_file: string | null;
-}
-
-interface FamilyBackground {
-    father_lname: string | null; father_fname: string | null; father_mname: string | null;
-    father_living: string | null; father_contact_no: string | null; father_email: string | null;
-    father_occupation: string | null;
-    mother_lname: string | null; mother_fname: string | null; mother_mname: string | null;
-    mother_living: string | null; mother_contact_no: string | null; mother_email: string | null;
-    mother_occupation: string | null;
-    guardian_lname: string | null; guardian_fname: string | null;
-    guardian_relationship: string | null; guardian_contact_no: string | null; guardian_email: string | null;
-    emergency_contact_name: string | null; emergency_relationship: string | null;
-    emergency_mobile_phone: string | null; emergency_home_phone: string | null;
-}
-
-interface Sibling {
-    sibling_full_name: string | null; sibling_grade_level: string | null; sibling_id_number: string | null;
-}
-
-interface EducationalBackground {
-    id: number;
-    school_name: string | null; school_address: string | null;
-    from_grade: string | null; to_grade: string | null;
-    from_year: string | null; to_year: string | null;
-    honors_awards: string | null; general_average: string | null;
-    class_rank: string | null; class_size: string | null;
-}
-
-interface Documents {
-    certificate_of_enrollment: string | null;
-    birth_certificate: string | null;
-    latest_report_card_front: string | null;
-    latest_report_card_back: string | null;
-}
-
-interface Enrollment {
-    id: number; school_year: string; semester: string; year_level: string; status: string;
-}
-
-interface StudentRecord {
-    id: number; student_id_number: string | null; enrollment_status: string | null;
-    current_year_level: string | null; current_school_year: string | null;
-    current_semester: string | null; enrollment_date: string | null; source: string;
-}
-
-interface Withdrawal {
-    withdrawal_type: string;
-    refund_amount: number;
-    reason: string | null;
-    processed_by: string | null;
-    created_at: string;
-}
+import { type ReactNode } from 'react';
 
 interface Props {
     student: StudentRecord;
@@ -93,7 +38,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Student Profile', href: '#' },
 ];
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function Row({ label, value }: { label: string; value: ReactNode }) {
     return (
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
             <span className="w-44 shrink-0 text-sm font-medium text-gray-500">{label}</span>
@@ -102,7 +47,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
     return (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-800">{title}</h2>
@@ -131,23 +76,11 @@ function FileLink({ path, label }: { path: string | null; label: string }) {
     );
 }
 
+const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+
 export default function ShowStudent({ student, personalData, familyBackground, siblings, educationalBackground, documents, enrollments, withdrawal }: Props) {
-    const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
-    const withdrawForm = useForm({ withdrawal_type: 'during_enrollment', refund_amount: '0', reason: '' });
-
-    const handleWithdraw = (e: React.FormEvent) => {
-        e.preventDefault();
-        withdrawForm.post(`/students/${student.id}/withdraw`, {
-            onSuccess: () => { setShowWithdrawDialog(false); withdrawForm.reset(); },
-        });
-    };
-
-    const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
-
-    const fullName = personalData
-        ? `${personalData.last_name}, ${personalData.first_name}${personalData.middle_name ? ` ${personalData.middle_name}` : ''}${personalData.suffix ? `, ${personalData.suffix}` : ''}`
-        : 'Unknown';
+    const { showWithdrawDialog, setShowWithdrawDialog, withdrawForm, handleWithdraw, fullName } = useStudentShow({ student, personalData });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -159,10 +92,9 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     Back to Students
                 </Link>
 
-                {/* Header */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+                        <h1 className={PAGE_TITLE}>{fullName}</h1>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
                             {student.student_id_number && <span className="font-mono">{student.student_id_number}</span>}
                             {student.enrollment_status && (
@@ -205,7 +137,6 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     </div>
                 )}
 
-                {/* Enrollment Info */}
                 <Section title="Enrollment Information">
                     <Row label="Year Level" value={student.current_year_level} />
                     <Row label="School Year" value={student.current_school_year} />
@@ -213,7 +144,6 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     <Row label="Enrollment Date" value={student.enrollment_date} />
                 </Section>
 
-                {/* Personal Info */}
                 {personalData && (
                     <Section title="Personal Information">
                         <Row label="Full Name" value={fullName} />
@@ -247,7 +177,6 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     </Section>
                 )}
 
-                {/* Family Background */}
                 {familyBackground && (
                     <Section title="Family Background">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Father</p>
@@ -273,7 +202,6 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     </Section>
                 )}
 
-                {/* Siblings */}
                 <Section title="Siblings">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full text-sm">
@@ -301,7 +229,6 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     </div>
                 </Section>
 
-                {/* Educational Background */}
                 <Section title="Educational Background">
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="min-w-full text-sm">
@@ -321,25 +248,24 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                                         <td colSpan={6} className="py-4 text-center text-sm text-gray-400">No educational background added.</td>
                                     </tr>
                                 ) : educationalBackground.map((eb) => (
-                                        <tr key={eb.id}>
-                                            <td className="py-1.5 pr-4 text-gray-800">{eb.school_name ?? '—'}</td>
-                                            <td className="py-1.5 pr-4 text-gray-600">{eb.school_address ?? '—'}</td>
-                                            <td className="py-1.5 pr-4 text-gray-600 whitespace-nowrap">
-                                                {eb.from_grade && eb.to_grade ? `${eb.from_grade} – ${eb.to_grade}` : (eb.from_grade ?? eb.to_grade ?? '—')}
-                                            </td>
-                                            <td className="py-1.5 pr-4 text-gray-600 whitespace-nowrap">
-                                                {eb.from_year && eb.to_year ? `${eb.from_year} – ${eb.to_year}` : (eb.from_year ?? eb.to_year ?? '—')}
-                                            </td>
-                                            <td className="py-1.5 pr-4 text-gray-600">{eb.general_average ?? '—'}</td>
-                                            <td className="py-1.5 text-gray-600">{eb.honors_awards ?? '—'}</td>
-                                        </tr>
-                                    ))}
+                                    <tr key={eb.id}>
+                                        <td className="py-1.5 pr-4 text-gray-800">{eb.school_name ?? '—'}</td>
+                                        <td className="py-1.5 pr-4 text-gray-600">{eb.school_address ?? '—'}</td>
+                                        <td className="py-1.5 pr-4 whitespace-nowrap text-gray-600">
+                                            {eb.from_grade && eb.to_grade ? `${eb.from_grade} – ${eb.to_grade}` : (eb.from_grade ?? eb.to_grade ?? '—')}
+                                        </td>
+                                        <td className="py-1.5 pr-4 whitespace-nowrap text-gray-600">
+                                            {eb.from_year && eb.to_year ? `${eb.from_year} – ${eb.to_year}` : (eb.from_year ?? eb.to_year ?? '—')}
+                                        </td>
+                                        <td className="py-1.5 pr-4 text-gray-600">{eb.general_average ?? '—'}</td>
+                                        <td className="py-1.5 text-gray-600">{eb.honors_awards ?? '—'}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 </Section>
 
-                {/* Documents */}
                 {documents && (
                     <Section title="Uploaded Documents">
                         <div className="space-y-3">
@@ -351,7 +277,6 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                     </Section>
                 )}
 
-                {/* Enrollment History */}
                 {enrollments.length > 0 && (
                     <Section title="Enrollment History">
                         <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
@@ -397,9 +322,9 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                         <DialogTitle className="text-red-700">Withdraw Student</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleWithdraw} className="space-y-4">
-                        <p className="text-sm text-gray-600">This action is permanent and cannot be undone.</p>
+                        <p className={`text-sm ${BODY_TEXT}`}>This action is permanent and cannot be undone.</p>
                         <div>
-                            <Label htmlFor="s_withdrawal_type">Withdrawal Type</Label>
+                            <Label htmlFor="s_withdrawal_type" className={LABEL_TEXT}>Withdrawal Type</Label>
                             <Select value={withdrawForm.data.withdrawal_type} onValueChange={(v) => withdrawForm.setData('withdrawal_type', v)}>
                                 <SelectTrigger id="s_withdrawal_type" className="mt-1">
                                     <SelectValue />
@@ -411,7 +336,7 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                             </Select>
                         </div>
                         <div>
-                            <Label htmlFor="s_refund_amount">Refund Amount (₱)</Label>
+                            <Label htmlFor="s_refund_amount" className={LABEL_TEXT}>Refund Amount (₱)</Label>
                             <Input
                                 id="s_refund_amount"
                                 type="number"
@@ -424,7 +349,7 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                             {withdrawForm.errors.refund_amount && <p className="mt-1 text-sm text-red-600">{withdrawForm.errors.refund_amount}</p>}
                         </div>
                         <div>
-                            <Label htmlFor="s_reason">Reason (optional)</Label>
+                            <Label htmlFor="s_reason" className={LABEL_TEXT}>Reason (optional)</Label>
                             <textarea
                                 id="s_reason"
                                 rows={3}

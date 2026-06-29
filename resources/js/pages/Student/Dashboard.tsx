@@ -1,8 +1,9 @@
+import { useDashboard } from '@/hooks/useDashboard';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ChevronDown, GraduationCap, Megaphone, User } from 'lucide-react';
-import { useState } from 'react';
 
 interface Props {
     student: {
@@ -54,48 +55,29 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Dashboard({ student, personalData, application, studentRecord, announcements }: Props) {
     const { currentSemester } = usePage().props as { currentSemester?: { name: string | null; school_year: string | null } };
-    const [openIds, setOpenIds] = useState<Set<number>>(new Set());
-
-    const toggleAnnouncement = (id: number) => {
-        setOpenIds((prev) => {
-            const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
-            return next;
-        });
-    };
-
-    const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return 'N/A';
-        return new Date(dateStr).toLocaleDateString('en-PH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-    };
+    const { openIds, toggleAnnouncement, formatDate } = useDashboard();
 
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="Student Dashboard" />
 
-            <div className="p-6 md:p-10">
-                {/* Welcome Section */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-8 flex items-start justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Welcome, {personalData?.first_name || 'Student'}!</h1>
-                        <p className="mt-2 text-gray-600">
+                        <h1 className={PAGE_TITLE}>Welcome, {personalData?.first_name || 'Student'}!</h1>
+                        <p className={`mt-2 ${BODY_TEXT}`}>
                             Here's an overview of your student dashboard. Check back here for important updates, announcements, and quick access to
                             your enrollment and personal information.
                         </p>
                     </div>
                     {currentSemester?.name && (
-                        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary shrink-0">
+                        <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
                             <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
                             {currentSemester.name} · {currentSemester.school_year}
                         </div>
                     )}
                 </div>
 
-                {/* Password Change Warning */}
                 {!student.password_changed && (
                     <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                         <div className="flex items-center gap-3">
@@ -113,14 +95,13 @@ export default function Dashboard({ student, personalData, application, studentR
                     </div>
                 )}
 
-                {/* Announcements (left) & Student Status (right) */}
                 <div className="mb-8 grid gap-6 lg:grid-cols-3">
-                    {/* Announcements Section */}
-                    <div className="rounded-lg border bg-white shadow-sm lg:col-span-2">
+                    {/* Announcements */}
+                    <div className={`${CARD} lg:col-span-2`}>
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <div className="flex items-center gap-2">
                                 <Megaphone className="h-5 w-5 text-gray-600" />
-                                <h2 className="text-lg font-semibold text-gray-900">Announcements</h2>
+                                <h2 className={SECTION_HEADING}>Announcements</h2>
                                 {announcements.length > 0 && (
                                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                                         {announcements.length}
@@ -186,11 +167,11 @@ export default function Dashboard({ student, personalData, application, studentR
                     </div>
 
                     {/* Student Status */}
-                    <div className="rounded-lg border bg-white shadow-sm">
+                    <div className={CARD}>
                         <div className="border-b bg-gray-50 px-6 py-4">
                             <div className="flex items-center gap-2">
                                 <User className="h-5 w-5 text-gray-600" />
-                                <h2 className="text-lg font-semibold text-gray-900">Student Status</h2>
+                                <h2 className={SECTION_HEADING}>Student Status</h2>
                             </div>
                         </div>
                         <div className="p-6">
@@ -198,7 +179,7 @@ export default function Dashboard({ student, personalData, application, studentR
                                 {studentRecord.student_id_number && (
                                     <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
                                         <GraduationCap className="mx-auto h-8 w-8 text-primary" />
-                                        <p className="mt-2 text-xs font-medium text-gray-500 uppercase">Student ID</p>
+                                        <p className="mt-2 text-xs font-medium uppercase text-gray-500">Student ID</p>
                                         <p className="text-xl font-bold text-primary">{studentRecord.student_id_number}</p>
                                     </div>
                                 )}
@@ -231,7 +212,9 @@ export default function Dashboard({ student, personalData, application, studentR
                                     <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
                                         <AlertCircle className="mx-auto h-10 w-10 text-red-500" />
                                         <p className="mt-2 text-lg font-bold text-red-700">Withdrawn</p>
-                                        <p className="text-xs text-red-600">Your enrollment has been withdrawn. Please contact the Registrar's Office.</p>
+                                        <p className="text-xs text-red-600">
+                                            Your enrollment has been withdrawn. Please contact the Registrar's Office.
+                                        </p>
                                     </div>
                                 ) : (
                                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center">
@@ -242,28 +225,28 @@ export default function Dashboard({ student, personalData, application, studentR
 
                                 {application?.grade_level && (
                                     <div>
-                                        <p className="text-xs font-medium text-gray-500 uppercase">Grade Level</p>
+                                        <p className="text-xs font-medium uppercase text-gray-500">Grade Level</p>
                                         <p className="mt-1 font-medium text-gray-900">{application.grade_level}</p>
                                     </div>
                                 )}
 
                                 {application?.strand && (
                                     <div>
-                                        <p className="text-xs font-medium text-gray-500 uppercase">Strand / Track</p>
+                                        <p className="text-xs font-medium uppercase text-gray-500">Strand / Track</p>
                                         <p className="mt-1 font-medium text-gray-900">{application.strand}</p>
                                     </div>
                                 )}
 
                                 {application?.school_year && (
                                     <div>
-                                        <p className="text-xs font-medium text-gray-500 uppercase">School Year</p>
+                                        <p className="text-xs font-medium uppercase text-gray-500">School Year</p>
                                         <p className="mt-1 font-medium text-gray-900">{application.school_year}</p>
                                     </div>
                                 )}
 
                                 {studentRecord.enrollment_date && (
                                     <div>
-                                        <p className="text-xs font-medium text-gray-500 uppercase">Enrolled On</p>
+                                        <p className="text-xs font-medium uppercase text-gray-500">Enrolled On</p>
                                         <p className="mt-1 font-medium text-gray-900">{formatDate(studentRecord.enrollment_date)}</p>
                                     </div>
                                 )}

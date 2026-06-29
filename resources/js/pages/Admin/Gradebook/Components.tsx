@@ -1,31 +1,11 @@
-﻿import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { BODY_TEXT, CARD, FILTER_CARD, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import { type BlockSectionData, type GradeComponent, type SubjectData, useGradebookComponents } from '@/hooks/useGradebookComponents';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, CheckCircle, Trash2 } from 'lucide-react';
-
-interface GradeComponent {
-    id: number;
-    name: string;
-    hps: number;
-    weight: number;
-    order: number;
-}
-
-interface BlockSectionData {
-    id: number;
-    code: string;
-    name: string;
-    school_year: string | null;
-}
-
-interface SubjectData {
-    id: number;
-    code: string;
-    name: string;
-}
 
 interface Props {
     blockSection: BlockSectionData;
@@ -36,60 +16,34 @@ interface Props {
 }
 
 export default function GradebookComponents({ blockSection, subject, quarter, components, weightTotal }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
-        { title: `${subject.code} ${quarter}`, href: `/gradebook/${blockSection.id}/${subject.id}/${quarter}/components` },
-    ];
-
-    const { data, setData, post, processing, errors, reset } = useForm({
-        block_section_id: blockSection.id,
-        subject_id: subject.id,
-        grading_quarter: quarter,
-        name: '',
-        hps: '',
-        weight: '',
+    const { breadcrumbs, data, setData, processing, errors, weightOk, remainingWeight, submit, deleteComponent } = useGradebookComponents({
+        blockSection,
+        subject,
+        quarter,
+        weightTotal,
     });
-
-    function submit(e: React.FormEvent) {
-        e.preventDefault();
-        post('/gradebook/components', {
-            onSuccess: () => reset('name', 'hps', 'weight'),
-        });
-    }
-
-    function deleteComponent(id: number) {
-        if (!confirm('Delete this component? All scores for it will be lost.')) return;
-        router.delete(`/gradebook/components/${id}`);
-    }
-
-    const weightOk = Math.abs(weightTotal - 100) < 0.01;
-    const remainingWeight = Math.max(0, 100 - weightTotal);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Components — ${subject.code} ${quarter}`} />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href={`/gradebook/${blockSection.id}`} className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Section
                     </Link>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold text-gray-900">
+                        <h1 className={PAGE_TITLE}>
                             {subject.code} — {quarter} Components
                         </h1>
                         <span className="rounded-full bg-blue-100 px-3 py-0.5 text-xs font-semibold text-blue-700">{quarter}</span>
                     </div>
-                    <p className="mt-1 text-gray-600">
+                    <p className={`mt-1 ${BODY_TEXT}`}>
                         {subject.name} · {blockSection.code} · {blockSection.school_year}
                     </p>
                 </div>
 
-                {/* Weight summary */}
                 <div
                     className={`mb-6 flex items-center gap-2 rounded-lg border p-3 text-sm ${weightOk ? 'border-green-300 bg-green-50 text-green-800' : 'border-amber-300 bg-amber-50 text-amber-800'}`}
                 >
@@ -101,48 +55,42 @@ export default function GradebookComponents({ blockSection, subject, quarter, co
                     </span>
                 </div>
 
-                {/* Two-column layout: table left, form right */}
                 <div className="flex items-start gap-6">
-                    {/* Components table — takes remaining space */}
                     <div className="min-w-0 flex-1">
                         {components.length > 0 ? (
-                            <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                            <div className={`overflow-hidden ${CARD}`}>
                                 <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">#</th>
-                                            <th className="px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                Component
-                                            </th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">HPS</th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                                Weight %
-                                            </th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium tracking-wider text-gray-500 uppercase"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {components.map((c, idx) => (
-                                            <tr key={c.id} className="transition-colors hover:bg-gray-50">
-                                                <td className="px-4 py-3 text-xs text-gray-400">{idx + 1}</td>
-                                                <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                                                <td className="px-4 py-3 text-center text-gray-700">{c.hps}</td>
-                                                <td className="px-4 py-3 text-center text-gray-700">{c.weight}%</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
-                                                        onClick={() => deleteComponent(c.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </td>
+                                    <table className="w-full text-sm">
+                                        <thead className="sticky top-0 z-10 bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
+                                                <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Component</th>
+                                                <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">HPS</th>
+                                                <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Weight %</th>
+                                                <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500"></th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {components.map((c, idx) => (
+                                                <tr key={c.id} className="transition-colors hover:bg-gray-50">
+                                                    <td className="px-4 py-3 text-xs text-gray-400">{idx + 1}</td>
+                                                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-700">{c.hps}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-700">{c.weight}%</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                                                            onClick={() => deleteComponent(c.id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         ) : (
@@ -160,10 +108,9 @@ export default function GradebookComponents({ blockSection, subject, quarter, co
                         )}
                     </div>
 
-                    {/* Add component form — fixed width, smaller than table */}
                     <div className="sticky top-20 w-150 shrink-0">
-                        <div className="rounded-lg border bg-white p-4 shadow-sm">
-                            <h2 className="mb-3 text-xs font-semibold tracking-wide text-gray-500 uppercase">Add Component</h2>
+                        <div className={FILTER_CARD}>
+                            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Add Component</h2>
                             <form onSubmit={submit} className="flex flex-col gap-3">
                                 <div>
                                     <Label htmlFor="name" className="text-xs">

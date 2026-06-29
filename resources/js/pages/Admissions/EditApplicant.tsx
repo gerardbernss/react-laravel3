@@ -5,16 +5,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { PAGE_TITLE } from '@/constants/ui';
+import { useApplicantEdit } from '@/hooks/useApplicantEdit';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { HelpCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 import { HiArrowLeft } from 'react-icons/hi';
-import { Toaster, toast } from 'sonner';
-import { z } from 'zod';
+import { Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Applicant List', href: '/admissions/applicants' },
@@ -40,217 +39,22 @@ const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string 
     );
 };
 
-const applicantFormSchema = z.object({
-    // Application info
-    application_date: z.string().optional(),
-    prio_no: z.string().optional(),
-    business_unit: z.string().optional(),
-    campus_site: z.string().optional(),
-    entry_class: z.string().optional(),
-    stud_batch: z.string().optional(),
-    semester: z.string().optional(),
-    schedule_pref: z.string().optional(),
-    pchoice1: z.string().optional(),
-    pchoice2: z.string().optional(),
-    pchoice3: z.string().optional(),
-    curr_code: z.string().optional(),
-    year_level: z.string().optional(),
-    // Personal info
-    lrn: z.string().optional(),
-    first_name: z.string().optional(),
-    middle_name: z.string().optional(),
-    last_name: z.string().optional(),
-    suffix: z.string().optional(),
-    gender: z.string().optional(),
-    citizenship: z.string().optional(),
-    religion: z.string().optional(),
-    date_of_birth: z.string().optional(),
-    place_of_birth: z.string().optional(),
-    civil_status: z.string().optional(),
-    birth_order: z.string().optional(),
-    mother_tongue: z.string().optional(),
-    ethnicity: z.string().optional(),
+interface Props {
+    applicant: any;
+}
 
-    // Contact info
-    phone: z.string().optional(),
-    email: z.string().optional(),
-    street: z.string().optional(),
-    brgy: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    zip_code: z.string().optional(),
-    father_name: z.string().optional(),
-    father_number: z.string().optional(),
-
-    mother_name: z.string().optional(),
-    mother_number: z.string().optional(),
-    emergency_contact_name: z.string().optional(),
-    emergency_contact_number: z.string().optional(),
-
-    // Other info
-    financial_source: z.string().optional(),
-    exam_schedule: z.string().optional(),
-});
-
-type ApplicantFormValues = z.infer<typeof applicantFormSchema>;
-
-export default function EditApplicant() {
-    const { props } = usePage<{ applicant: any }>();
-    const applicant = props.applicant;
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [pendingFormData, setPendingFormData] = useState<ApplicantFormValues | null>(null);
-    const [showDiscardDialog, setShowDiscardDialog] = useState(false);
-    const [showResetDialog, setShowResetDialog] = useState(false);
-
-    const form = useForm<ApplicantFormValues>({
-        resolver: zodResolver(applicantFormSchema),
-        mode: 'onChange',
-        defaultValues: applicant
-            ? {
-                  application_date: applicant.application_date || '',
-                  prio_no: applicant.prio_no || '',
-                  business_unit: applicant.business_unit || '',
-                  campus_site: applicant.campus_site || '',
-                  entry_class: applicant.entry_class || '',
-                  stud_batch: applicant.stud_batch || '',
-                  semester: applicant.semester || '',
-                  schedule_pref: applicant.schedule_pref || '',
-                  pchoice1: applicant.pchoice1 || '',
-                  pchoice2: applicant.pchoice2 || '',
-                  pchoice3: applicant.pchoice3 || '',
-                  curr_code: applicant.curr_code || '',
-                  year_level: applicant.year_level || '',
-
-                  lrn: applicant.lrn || '',
-                  first_name: applicant.first_name || '',
-                  middle_name: applicant.middle_name || '',
-                  last_name: applicant.last_name || '',
-                  suffix: applicant.suffix || '',
-                  gender: applicant.gender || '',
-                  citizenship: applicant.citizenship || '',
-                  religion: applicant.religion || '',
-                  date_of_birth: applicant.date_of_birth || '',
-                  place_of_birth: applicant.place_of_birth || '',
-                  civil_status: applicant.civil_status || '',
-                  birth_order: applicant.birth_order || '',
-                  mother_tongue: applicant.mother_tongue || '',
-                  ethnicity: applicant.ethnicity || '',
-
-                  email: applicant.email || '',
-                  phone: applicant.phone || '',
-                  street: applicant.street || '',
-                  brgy: applicant.brgy || '',
-                  city: applicant.city || '',
-                  state: applicant.state || '',
-                  zip_code: applicant.zip_code || '',
-                  father_name: applicant.father_name || '',
-                  father_number: applicant.father_number || '',
-                  mother_name: applicant.mother_name || '',
-                  mother_number: applicant.mother_number || '',
-                  emergency_contact_name: applicant.emergency_contact_name || '',
-                  emergency_contact_number: applicant.emergency_contact_number || '',
-
-                  financial_source: applicant.financial_source || '',
-                  exam_schedule: applicant.exam_schedule || '',
-              }
-            : {},
-    });
-
-    // Check if form has been modified
-    const isDirty = form.formState.isDirty;
-
-    useEffect(() => {
-        if (applicant) {
-            const formatDate = (date: string | null) => {
-                if (!date) return '';
-                const d = new Date(date);
-                if (isNaN(d.getTime())) return '';
-                return d.toISOString().split('T')[0];
-            };
-
-            form.reset({
-                //application info
-                application_date: formatDate(applicant.application_date) || '',
-                prio_no: applicant.prio_no || '',
-                business_unit: applicant.business_unit || '',
-                campus_site: applicant.campus_site || '',
-                entry_class: applicant.entry_class || '',
-                stud_batch: applicant.stud_batch || '',
-                semester: applicant.semester || '',
-                schedule_pref: applicant.schedule_pref || '',
-                pchoice1: applicant.pchoice1 || '',
-                pchoice2: applicant.pchoice2 || '',
-                pchoice3: applicant.pchoice3 || '',
-                curr_code: applicant.curr_code || '',
-                year_level: applicant.year_level || '',
-
-                //personal
-                lrn: applicant.lrn || '',
-                first_name: applicant.first_name || '',
-                middle_name: applicant.middle_name || '',
-                last_name: applicant.last_name || '',
-                suffix: applicant.suffix || '',
-                gender: applicant.gender || '',
-                citizenship: applicant.citizenship || '',
-                religion: applicant.religion || '',
-                date_of_birth: formatDate(applicant.date_of_birth) || '',
-                place_of_birth: applicant.place_of_birth || '',
-                civil_status: applicant.civil_status || '',
-                birth_order: applicant.birth_order || '',
-                mother_tongue: applicant.mother_tongue || '',
-                ethnicity: applicant.ethnicity || '',
-
-                //contact info
-                email: applicant.email || '',
-                phone: applicant.phone || '',
-                street: applicant.street || '',
-                brgy: applicant.brgy || '',
-                city: applicant.city || '',
-                state: applicant.state || '',
-                zip_code: applicant.zip_code || '',
-                father_name: applicant.father_name || '',
-                father_number: applicant.father_number || '',
-                mother_name: applicant.mother_name || '',
-                mother_number: applicant.mother_number || '',
-                emergency_contact_name: applicant.emergency_contact_name || '',
-                emergency_contact_number: applicant.emergency_contact_number || '',
-                financial_source: applicant.financial_source || '',
-                exam_schedule: formatDate(applicant.exam_schedule) || '',
-            });
-        }
-    }, [applicant, form]);
-
-    // Handle form submission - show confirmation dialog first
-    function onSubmit(values: ApplicantFormValues) {
-        setPendingFormData(values);
-        setShowConfirmDialog(true);
-    }
-
-    // Handle confirmed submission
-    function handleConfirmedSubmit() {
-        if (!pendingFormData) return;
-
-        router.put(`/admissions/applicants/${applicant.id}`, pendingFormData, {
-            preserveScroll: true, // Stay at current scroll position
-            preserveState: true, // Preserve current component state
-            onSuccess: () => {
-                toast.success('Applicant updated successfully!');
-                setShowConfirmDialog(false);
-                setPendingFormData(null);
-            },
-            onError: (errors) => {
-                Object.keys(errors).forEach((key) => {
-                    form.setError(key as any, {
-                        type: 'server',
-                        message: errors[key],
-                    });
-                });
-                toast.error('Failed to update. Please check the form.');
-                setShowConfirmDialog(false);
-                setPendingFormData(null);
-            },
-        });
-    }
+export default function EditApplicant({ applicant }: Props) {
+    const {
+        form,
+        showConfirmDialog, setShowConfirmDialog,
+        pendingFormData, setPendingFormData,
+        showDiscardDialog, setShowDiscardDialog,
+        showResetDialog, setShowResetDialog,
+        onSubmit,
+        handleConfirmedSubmit,
+        handleDiscardConfirm,
+        handleResetConfirm,
+    } = useApplicantEdit({ applicant });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -301,7 +105,7 @@ export default function EditApplicant() {
                         <HiArrowLeft size={18} />
                         Back
                     </Button>
-                    <h1 className="mb-2 text-3xl font-bold text-gray-900">
+                    <h1 className={`mb-2 ${PAGE_TITLE}`}>
                         Edit Applicant -- {applicant.personal_data.first_name} {applicant.personal_data.last_name}
                     </h1>
                 </div>
@@ -1239,10 +1043,7 @@ export default function EditApplicant() {
             <ConfirmDialog
                 open={showDiscardDialog}
                 onClose={() => setShowDiscardDialog(false)}
-                onConfirm={() => {
-                    setShowDiscardDialog(false);
-                    window.history.back();
-                }}
+                onConfirm={handleDiscardConfirm}
                 title="Discard Changes"
                 description="Are you sure you want to discard changes? All unsaved changes will be lost."
                 confirmLabel="Discard"
@@ -1251,10 +1052,7 @@ export default function EditApplicant() {
             <ConfirmDialog
                 open={showResetDialog}
                 onClose={() => setShowResetDialog(false)}
-                onConfirm={() => {
-                    form.reset();
-                    setShowResetDialog(false);
-                }}
+                onConfirm={handleResetConfirm}
                 title="Reset Form"
                 description="Are you sure you want to reset the form? All unsaved changes will be lost."
                 confirmLabel="Reset"

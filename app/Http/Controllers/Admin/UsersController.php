@@ -3,66 +3,48 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-
-use App\Models\Role;
+use App\Http\Requests\Admin\AssignRoleRequest;
+use App\Http\Requests\Admin\RemoveRoleRequest;
+use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Repositories\RoleRepository;
+use App\Repositories\UserRepository;
+use App\Services\Admin\UserService;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class UsersController extends Controller
 {
-    public function __construct()
-    {
-        // Authorization is handled in individual methods
+    public function __construct(
+        private UserRepository $userRepository,
+        private RoleRepository $roleRepository,
+        private UserService $userService,
+    ) {
     }
 
     public function index()
     {
         Gate::authorize('viewAny', User::class);
 
-        $users = User::with(['roles', 'role'])->get();
-        $roles = Role::where('is_active', true)->get();
-
-        return Inertia::render('Admin/Users/Index', compact('users', 'roles'));
+        return Inertia::render('Admin/Users/Index', [
+            'users' => $this->userRepository->allWithRoles(),
+            'roles' => $this->roleRepository->allActive(),
+        ]);
     }
 
     public function create()
     {
         Gate::authorize('create', User::class);
 
-        $roles = Role::where('is_active', true)->get();
-
-        return Inertia::render('Admin/Users/Create', compact('roles'));
+        return Inertia::render('Admin/Users/Create', [
+            'roles' => $this->roleRepository->allActive(),
+        ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        Gate::authorize('create', User::class);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'role_id' => 'nullable|exists:roles,id',
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id' => $request->role_id,
-        ]);
-
-        // Always sync many-to-many roles, include primary role_id if provided
-        $roleIds = collect($request->input('roles', []));
-        if ($request->filled('role_id')) {
-            $roleIds->push((int) $request->role_id);
-        }
-        $user->roles()->sync($roleIds->unique()->all());
+        $this->userService->create($request->validated());
 
         return redirect()->route('users.index')->with('message', 'User created successfully!');
     }
@@ -71,44 +53,15 @@ class UsersController extends Controller
     {
         Gate::authorize('view', $user);
 
-        $user->load(['roles', 'role']);
-        $roles = Role::where('is_active', true)->get();
-
-        return Inertia::render('Admin/Users/Edit', compact('user', 'roles'));
+        return Inertia::render('Admin/Users/Edit', [
+            'user' => $this->userRepository->loadRoles($user),
+            'roles' => $this->roleRepository->allActive(),
+        ]);
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
-        Gate::authorize('update', $user);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$user->id,
-            'password' => 'nullable|string|min:8',
-            'role_id' => 'nullable|exists:roles,id',
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
-        ]);
-
-        $updateData = [
-            'name' => $request->name,
-            'email' => $request->email,
-            'role_id' => $request->role_id,
-        ];
-
-        // Only update password if provided
-        if ($request->filled('password')) {
-            $updateData['password'] = Hash::make($request->password);
-        }
-
-        $user->update($updateData);
-
-        // Always sync many-to-many roles, include primary role_id if provided
-        $roleIds = collect($request->input('roles', []));
-        if ($request->filled('role_id')) {
-            $roleIds->push((int) $request->role_id);
-        }
-        $user->roles()->sync($roleIds->unique()->all());
+        $this->userService->update($user, $request->validated());
 
         return redirect()->route('users.index')->with('message', 'User updated successfully!');
     }
@@ -117,41 +70,21 @@ class UsersController extends Controller
     {
         Gate::authorize('delete', $user);
 
-        $user->delete();
+        $this->userRepository->delete($user);
 
         return redirect()->route('users.index')->with('message', 'User deleted successfully!');
     }
 
-    /**
-     * Assign a role to a user.
-     */
-    public function assignRole(Request $request, User $user)
+    public function assignRole(AssignRoleRequest $request, User $user)
     {
-        Gate::authorize('assignRole', $user);
-
-        $request->validate([
-            'role_id' => 'required|exists:roles,id',
-        ]);
-
-        $role = Role::findOrFail($request->role_id);
-        $user->assignRole($role);
+        $this->userService->assignRole($user, $request->validated('role_id'));
 
         return redirect()->back()->with('message', 'Role assigned successfully!');
     }
 
-    /**
-     * Remove a role from a user.
-     */
-    public function removeRole(Request $request, User $user)
+    public function removeRole(RemoveRoleRequest $request, User $user)
     {
-        Gate::authorize('removeRole', $user);
-
-        $request->validate([
-            'role_id' => 'required|exists:roles,id',
-        ]);
-
-        $role = Role::findOrFail($request->role_id);
-        $user->removeRole($role);
+        $this->userService->removeRole($user, $request->validated('role_id'));
 
         return redirect()->back()->with('message', 'Role removed successfully!');
     }

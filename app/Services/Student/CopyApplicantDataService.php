@@ -3,10 +3,7 @@
 namespace App\Services\Student;
 
 use App\Models\Student;
-use App\Models\StudentDocuments;
-use App\Models\StudentFamilyBackground;
-use App\Models\StudentPersonalData;
-use App\Models\StudentSiblings;
+use App\Repositories\StudentRepository;
 
 /**
  * Mirrors an applicant's personal data into the student-side tables on enrollment.
@@ -34,6 +31,8 @@ use App\Models\StudentSiblings;
  */
 class CopyApplicantDataService
 {
+    public function __construct(private StudentRepository $studentRepository) {}
+
     /**
      * @param Student $studentRecord The newly enrolled student whose data should be mirrored.
      */
@@ -44,7 +43,7 @@ class CopyApplicantDataService
             return;
         }
 
-        $spd = StudentPersonalData::updateOrCreate(
+        $spd = $this->studentRepository->updateOrCreatePersonalData(
             ['applicant_personal_data_id' => $pd->id],
             [
                 'email'                    => $pd->email,
@@ -79,11 +78,11 @@ class CopyApplicantDataService
             ]
         );
 
-        $studentRecord->update(['student_personal_data_id' => $spd->id]);
+        $this->studentRepository->updateStudent($studentRecord, ['student_personal_data_id' => $spd->id]);
 
         $fb = $pd->familyBackground;
         if ($fb) {
-            StudentFamilyBackground::updateOrCreate(
+            $this->studentRepository->updateOrCreateFamilyBackground(
                 ['student_personal_data_id' => $spd->id],
                 [
                     'father_lname'              => $fb->father_lname,
@@ -141,7 +140,7 @@ class CopyApplicantDataService
         }
 
         foreach ($pd->siblings as $sibling) {
-            StudentSiblings::firstOrCreate(
+            $this->studentRepository->firstOrCreateSibling(
                 [
                     'student_personal_data_id' => $spd->id,
                     'sibling_full_name'        => $sibling->sibling_full_name,
@@ -155,8 +154,8 @@ class CopyApplicantDataService
 
         $docs = $studentRecord->application?->documents;
         if ($docs) {
-            StudentDocuments::updateOrCreate(
-                ['student_personal_data_id' => $spd->id],
+            $this->studentRepository->updateOrCreateDocuments(
+                $spd->id,
                 [
                     'certificate_of_enrollment' => $docs->certificate_of_enrollment,
                     'birth_certificate'          => $docs->birth_certificate,

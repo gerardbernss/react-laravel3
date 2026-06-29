@@ -2,16 +2,13 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { type Sibling, type School, useApplicantPersonalInfo } from '@/hooks/useApplicantPersonalInfo';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Edit2, FileText, GraduationCap, Heart, Save, User, UserPlus, Users, X } from 'lucide-react';
-import { type ChangeEvent, useEffect, useState } from 'react';
+import { Head } from '@inertiajs/react';
+import { ArrowLeft, Edit2, FileText, GraduationCap, Heart, User, UserPlus, Users, X } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-interface Sibling { sibling_full_name: string; sibling_grade_level: string; sibling_id_number: string }
-interface School  { school_name: string; school_address: string; from_grade: string; to_grade: string; from_year: string; to_year: string; honors_awards: string; general_average: string; class_rank: string; class_size: string }
 
 interface Props {
     personalData: {
@@ -72,13 +69,6 @@ const NAV_ITEMS = [
     { id: 'documents',  label: 'Documents',            icon: <FileText className="h-5 w-5" /> },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const s = (v: string | null | undefined) => v ?? '';
-const b = (v: boolean | null | undefined) => v ? 'true' : 'false';
-const blankSibling = (): Sibling => ({ sibling_full_name: '', sibling_grade_level: '', sibling_id_number: '' });
-const blankSchool  = (): School  => ({ school_name: '', school_address: '', from_grade: '', to_grade: '', from_year: '', to_year: '', honors_awards: '', general_average: '', class_rank: '', class_size: '' });
-
 // ─── Field wrapper ────────────────────────────────────────────────────────────
 
 const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
@@ -102,123 +92,32 @@ export default function ApplicantPersonalInfo({
     educationalBackground: initSchools,
     documents: initDocs,
 }: Props) {
-    const { errors, applicationPeriodOpen } = usePage<{ errors: Record<string, string>; applicationPeriodOpen: boolean }>().props;
-
-    const [isEditing, setIsEditing]   = useState(false);
-    const [processing, setProcessing] = useState(false);
-    const [activeSection, setActiveSection] = useState('personal');
-
-    // ── Form state ─────────────────────────────────────────────────────────
-    const initForm = {
-        email: s(pd?.email), alt_email: s(pd?.alt_email), mobile_number: s(pd?.mobile_number),
-        present_street: s(pd?.present_street), present_brgy: s(pd?.present_brgy),
-        present_city: s(pd?.present_city), present_province: s(pd?.present_province), present_zip: s(pd?.present_zip),
-        permanent_street: s(pd?.permanent_street), permanent_brgy: s(pd?.permanent_brgy),
-        permanent_city: s(pd?.permanent_city), permanent_province: s(pd?.permanent_province), permanent_zip: s(pd?.permanent_zip),
-        stopped_studying: s(pd?.stopped_studying), accelerated: s(pd?.accelerated),
-        health_conditions: Array.isArray(pd?.health_conditions) ? pd.health_conditions : [] as string[],
-        has_doctors_note: b(pd?.has_doctors_note),
-        father_lname: s(fb?.father_lname), father_fname: s(fb?.father_fname), father_mname: s(fb?.father_mname),
-        father_living: s(fb?.father_living), father_citizenship: s(fb?.father_citizenship),
-        father_religion: s(fb?.father_religion), father_highest_educ: s(fb?.father_highest_educ),
-        father_occupation: s(fb?.father_occupation), father_income: s(fb?.father_income?.toString()),
-        father_business_emp: s(fb?.father_business_emp), father_business_address: s(fb?.father_business_address),
-        father_contact_no: s(fb?.father_contact_no), father_email: s(fb?.father_email),
-        father_slu_employee: b(fb?.father_slu_employee), father_slu_dept: s(fb?.father_slu_dept),
-        mother_lname: s(fb?.mother_lname), mother_fname: s(fb?.mother_fname), mother_mname: s(fb?.mother_mname),
-        mother_living: s(fb?.mother_living), mother_citizenship: s(fb?.mother_citizenship),
-        mother_religion: s(fb?.mother_religion), mother_highest_educ: s(fb?.mother_highest_educ),
-        mother_occupation: s(fb?.mother_occupation), mother_income: s(fb?.mother_income?.toString()),
-        mother_business_emp: s(fb?.mother_business_emp), mother_business_address: s(fb?.mother_business_address),
-        mother_contact_no: s(fb?.mother_contact_no), mother_email: s(fb?.mother_email),
-        mother_slu_employee: b(fb?.mother_slu_employee), mother_slu_dept: s(fb?.mother_slu_dept),
-        guardian_lname: s(fb?.guardian_lname), guardian_fname: s(fb?.guardian_fname), guardian_mname: s(fb?.guardian_mname),
-        guardian_relationship: s(fb?.guardian_relationship), guardian_citizenship: s(fb?.guardian_citizenship),
-        guardian_religion: s(fb?.guardian_religion), guardian_highest_educ: s(fb?.guardian_highest_educ),
-        guardian_occupation: s(fb?.guardian_occupation), guardian_income: s(fb?.guardian_income?.toString()),
-        guardian_business_emp: s(fb?.guardian_business_emp), guardian_business_address: s(fb?.guardian_business_address),
-        guardian_contact_no: s(fb?.guardian_contact_no), guardian_email: s(fb?.guardian_email),
-        guardian_slu_employee: b(fb?.guardian_slu_employee), guardian_slu_dept: s(fb?.guardian_slu_dept),
-        emergency_contact_name: s(fb?.emergency_contact_name), emergency_relationship: s(fb?.emergency_relationship),
-        emergency_home_phone: s(fb?.emergency_home_phone), emergency_mobile_phone: s(fb?.emergency_mobile_phone),
-        emergency_email: s(fb?.emergency_email),
-    };
-
-    const [form, setForm]     = useState(initForm);
-    const [siblings, setSiblings] = useState<Sibling[]>(initSiblings.length ? initSiblings : []);
-    const [schools, setSchools]   = useState<School[]>(initSchools.length ? initSchools : []);
-    const [docFiles, setDocFiles] = useState<Record<string, File | null>>({
-        certificate_of_enrollment: null, birth_certificate: null,
-        latest_report_card_front: null, latest_report_card_back: null, doctors_note_file: null,
-    });
-
-    // ── Scrollspy ──────────────────────────────────────────────────────────
-    useEffect(() => {
-        const onScroll = () => {
-            for (const item of [...NAV_ITEMS].reverse()) {
-                const el = document.getElementById(item.id);
-                if (el && el.getBoundingClientRect().top <= 160) {
-                    setActiveSection(item.id);
-                    return;
-                }
-            }
-            setActiveSection('personal');
-        };
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
-
-    const scrollToSection = (id: string) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const offset = 160;
-        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
-        setActiveSection(id);
-        window.scrollTo({ top, behavior: 'smooth' });
-    };
-
-    // ── Handlers ───────────────────────────────────────────────────────────
-    const set = (key: string) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-        setForm(p => ({ ...p, [key]: e.target.value }));
-
-    const toggleHealth = (option: string) =>
-        setForm(p => ({
-            ...p,
-            health_conditions: p.health_conditions.includes(option)
-                ? p.health_conditions.filter(h => h !== option)
-                : [...p.health_conditions, option],
-        }));
-
-    const onFile = (key: string) => (e: ChangeEvent<HTMLInputElement>) =>
-        setDocFiles(p => ({ ...p, [key]: e.target.files?.[0] ?? null }));
-
-    const setSibling = (i: number, key: keyof Sibling, val: string) =>
-        setSiblings(p => p.map((s, idx) => idx === i ? { ...s, [key]: val } : s));
-
-    const setSchool = (i: number, key: keyof School, val: string) =>
-        setSchools(p => p.map((sc, idx) => idx === i ? { ...sc, [key]: val } : sc));
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setProcessing(true);
-        router.post('/applicant/personal-info', {
-            ...form,
-            siblings,
-            schools,
-            ...docFiles,
-        } as Record<string, unknown>, {
-            onSuccess: () => { setIsEditing(false); setProcessing(false); },
-            onFinish: () => setProcessing(false),
-        });
-    };
-
-    const handleCancel = () => {
-        setForm(initForm);
-        setSiblings(initSiblings.length ? initSiblings : []);
-        setSchools(initSchools.length ? initSchools : []);
-        setDocFiles({ certificate_of_enrollment: null, birth_certificate: null, latest_report_card_front: null, latest_report_card_back: null, doctors_note_file: null });
-        setIsEditing(false);
-    };
+    const {
+        errors,
+        applicationPeriodOpen,
+        isEditing,
+        setIsEditing,
+        processing,
+        activeSection,
+        form,
+        setForm,
+        siblings,
+        schools,
+        docFiles,
+        scrollToSection,
+        handleBack,
+        set,
+        toggleHealth,
+        onFile,
+        setSibling,
+        setSchool,
+        addSibling,
+        removeSibling,
+        addSchool,
+        removeSchool,
+        handleSubmit,
+        handleCancel,
+    } = useApplicantPersonalInfo({ personalData: pd, familyBackground: fb, siblings: initSiblings, educationalBackground: initSchools });
 
     if (!pd) {
         return (
@@ -245,7 +144,7 @@ export default function ApplicantPersonalInfo({
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <button type="button" className="rounded-full p-2 transition-colors hover:bg-blue-100"
-                                    onClick={() => router.visit('/applicant/dashboard')}>
+                                    onClick={handleBack}>
                                     <ArrowLeft className="h-5 w-5" />
                                 </button>
                                 <h1 className="text-3xl font-bold text-gray-900">
@@ -709,7 +608,7 @@ export default function ApplicantPersonalInfo({
                                                     </td>
                                                     {isEditing && (
                                                         <td className="py-2">
-                                                            <button type="button" onClick={() => setSiblings(p => p.filter((_, idx) => idx !== i))}
+                                                            <button type="button" onClick={() => removeSibling(i)}
                                                                 className="text-red-500 hover:text-red-700">
                                                                 <X className="h-4 w-4" />
                                                             </button>
@@ -723,7 +622,7 @@ export default function ApplicantPersonalInfo({
                             )}
                             {isEditing && (
                                 <Button type="button" variant="outline" size="sm" className="mt-4"
-                                    onClick={() => setSiblings(p => [...p, blankSibling()])}>
+                                    onClick={addSibling}>
                                     + Add Sibling
                                 </Button>
                             )}
@@ -745,7 +644,7 @@ export default function ApplicantPersonalInfo({
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-sm font-semibold text-gray-700">School {i + 1}</span>
                                             {isEditing && (
-                                                <button type="button" onClick={() => setSchools(p => p.filter((_, idx) => idx !== i))}
+                                                <button type="button" onClick={() => removeSchool(i)}
                                                     className="text-red-500 hover:text-red-700">
                                                     <X className="h-4 w-4" />
                                                 </button>
@@ -771,7 +670,7 @@ export default function ApplicantPersonalInfo({
                             </div>
                             {isEditing && (
                                 <Button type="button" variant="outline" size="sm" className="mt-4"
-                                    onClick={() => setSchools(p => [...p, blankSchool()])}>
+                                    onClick={addSchool}>
                                     + Add School
                                 </Button>
                             )}

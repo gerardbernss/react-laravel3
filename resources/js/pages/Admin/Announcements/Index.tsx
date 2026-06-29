@@ -1,27 +1,16 @@
+import { AppBadge } from '@/components/AppBadge';
+import { AppTable } from '@/components/AppTable';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { BODY_TEXT, FILTER_CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { useAnnouncementList, type Announcement } from '@/hooks/useAnnouncementList';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { TablePagination } from '@/components/ui/table-pagination';
+import { Head, Link } from '@inertiajs/react';
 import { Megaphone, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
-
-interface Announcement {
-    announcement_id: number;
-    title: string;
-    content: string;
-    target_audience: string;
-    attachment: string | null;
-    publish_start: string | null;
-    publish_end: string | null;
-    status: 'draft' | 'scheduled' | 'active' | 'expired';
-    created_at: string;
-    creator: { id: number; name: string } | null;
-}
 
 interface Props {
     announcements: Announcement[];
@@ -32,11 +21,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Announcements', href: '/admin/announcements' },
 ];
 
-const statusColors: Record<string, string> = {
-    active:    'bg-green-100 text-green-800',
-    scheduled: 'bg-blue-100 text-blue-800',
-    expired:   'bg-gray-100 text-gray-600',
-    draft:     'bg-yellow-100 text-yellow-800',
+const AUDIENCE_COLOR: Record<string, 'blue' | 'yellow' | 'gray'> = {
+    students: 'blue',
+    applicants: 'yellow',
 };
 
 function formatDate(dt: string | null) {
@@ -48,60 +35,36 @@ function formatDate(dt: string | null) {
 }
 
 export default function Index({ announcements }: Props) {
-    const { delete: destroy, processing } = useForm();
-    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; title: string }>({
-        open: false, id: 0, title: '',
-    });
-
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [audienceFilter, setAudienceFilter] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-
-    const filtered = useMemo(() => {
-        return announcements.filter((a) => {
-            const matchesSearch = !search || a.title.toLowerCase().includes(search.toLowerCase());
-            const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-            const matchesAudience = audienceFilter === 'all' || a.target_audience === audienceFilter;
-            return matchesSearch && matchesStatus && matchesAudience;
-        });
-    }, [announcements, search, statusFilter, audienceFilter]);
-
-    const totalPages = Math.ceil(filtered.length / pageSize);
-
-    const paginated = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return filtered.slice(start, start + pageSize);
-    }, [filtered, currentPage, pageSize]);
-
-    const hasFilters = search || statusFilter !== 'all' || audienceFilter !== 'all';
-
-    const clearFilters = () => {
-        setSearch('');
-        setStatusFilter('all');
-        setAudienceFilter('all');
-        setCurrentPage(1);
-    };
-
-    const confirmDelete = () => {
-        destroy(`/admin/announcements/${deleteDialog.id}`, {
-            onSuccess: () => setDeleteDialog({ open: false, id: 0, title: '' }),
-        });
-    };
+    const {
+        processing,
+        deleteDialog,
+        setDeleteDialog,
+        search,
+        setSearch,
+        statusFilter,
+        setStatusFilter,
+        audienceFilter,
+        setAudienceFilter,
+        currentPage,
+        setCurrentPage,
+        pageSize,
+        setPageSize,
+        filtered,
+        paginated,
+        hasFilters,
+        clearFilters,
+        confirmDelete,
+    } = useAnnouncementList(announcements);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Announcements" />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <Megaphone className="h-7 w-7 text-primary" />
-                            <h1 className="text-3xl font-bold text-gray-900">Announcements</h1>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <Megaphone className="h-7 w-7 text-primary" />
+                        <h1 className={PAGE_TITLE}>Announcements</h1>
                     </div>
                     <Link href="/admin/announcements/create">
                         <Button>
@@ -111,8 +74,7 @@ export default function Index({ announcements }: Props) {
                     </Link>
                 </div>
 
-                {/* Filters */}
-                <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
+                <div className={`mb-6 ${FILTER_CARD}`}>
                     <div className="grid gap-4 md:grid-cols-4">
                         <div className="relative md:col-span-2">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -157,92 +119,80 @@ export default function Index({ announcements }: Props) {
                     )}
                 </div>
 
-                {/* Table */}
                 {filtered.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
-                            <table className="w-full text-sm">
-                                <thead className="sticky top-0 z-10 bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Title</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Audience</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Publish Start</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Publish End</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created By</th>
-                                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {paginated.map((a) => (
-                                        <tr key={a.announcement_id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3">
-                                                <p className="font-medium text-gray-900">{a.title}</p>
-                                                {a.attachment && (
-                                                    <a
-                                                        href={`/storage/${a.attachment}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-xs text-blue-600 hover:underline"
-                                                    >
-                                                        View attachment
-                                                    </a>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <Badge className={statusColors[a.status]}>
-                                                    {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <Badge className={
-                                                    a.target_audience === 'students'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : a.target_audience === 'applicants'
-                                                            ? 'bg-orange-100 text-orange-800'
-                                                            : 'bg-gray-100 text-gray-700'
-                                                }>
-                                                    {a.target_audience === 'all' ? 'Everyone' : a.target_audience.charAt(0).toUpperCase() + a.target_audience.slice(1)}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600">{formatDate(a.publish_start)}</td>
-                                            <td className="px-4 py-3 text-gray-600">{formatDate(a.publish_end)}</td>
-                                            <td className="px-4 py-3 text-gray-600">{a.creator?.name ?? '—'}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center gap-1">
-                                                    <Link href={`/admin/announcements/${a.announcement_id}/edit`}>
-                                                        <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                                                            <Pencil className="h-3 w-3" /> Edit
-                                                        </button>
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => setDeleteDialog({ open: true, id: a.announcement_id, title: a.title })}
-                                                        disabled={processing}
-                                                        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
-                                                    >
-                                                        <Trash2 className="h-3 w-3" /> Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <TablePagination
-                            total={filtered.length}
-                            pageSize={pageSize}
-                            currentPage={currentPage}
-                            onPageChange={setCurrentPage}
-                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
-                        />
-                    </div>
+                    <AppTable
+                        footer={
+                            <TablePagination
+                                total={filtered.length}
+                                pageSize={pageSize}
+                                currentPage={currentPage}
+                                onPageChange={setCurrentPage}
+                                onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                            />
+                        }
+                    >
+                        <AppTable.Head>
+                            <AppTable.Th>Title</AppTable.Th>
+                            <AppTable.Th center>Status</AppTable.Th>
+                            <AppTable.Th center>Audience</AppTable.Th>
+                            <AppTable.Th>Publish Start</AppTable.Th>
+                            <AppTable.Th>Publish End</AppTable.Th>
+                            <AppTable.Th>Created By</AppTable.Th>
+                            <AppTable.Th center>Actions</AppTable.Th>
+                        </AppTable.Head>
+                        <AppTable.Body>
+                            {paginated.map((a) => (
+                                <AppTable.Row key={a.announcement_id}>
+                                    <AppTable.Td>
+                                        <p className="font-medium text-gray-900">{a.title}</p>
+                                        {a.attachment && (
+                                            <a
+                                                href={`/storage/${a.attachment}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-blue-600 hover:underline"
+                                            >
+                                                View attachment
+                                            </a>
+                                        )}
+                                    </AppTable.Td>
+                                    <AppTable.Td className="text-center">
+                                        <AppBadge status={a.status.charAt(0).toUpperCase() + a.status.slice(1)} />
+                                    </AppTable.Td>
+                                    <AppTable.Td className="text-center">
+                                        <AppBadge
+                                            status={a.target_audience === 'all' ? 'Everyone' : a.target_audience.charAt(0).toUpperCase() + a.target_audience.slice(1)}
+                                            color={AUDIENCE_COLOR[a.target_audience] ?? 'gray'}
+                                        />
+                                    </AppTable.Td>
+                                    <AppTable.Td className="text-gray-600">{formatDate(a.publish_start)}</AppTable.Td>
+                                    <AppTable.Td className="text-gray-600">{formatDate(a.publish_end)}</AppTable.Td>
+                                    <AppTable.Td className="text-gray-600">{a.creator?.name ?? '—'}</AppTable.Td>
+                                    <AppTable.Td>
+                                        <div className="flex justify-center gap-1">
+                                            <Link href={`/admin/announcements/${a.announcement_id}/edit`}>
+                                                <button className={TABLE_ROW_ACTION}>
+                                                    <Pencil className="h-3 w-3" /> Edit
+                                                </button>
+                                            </Link>
+                                            <button
+                                                onClick={() => setDeleteDialog({ open: true, id: a.announcement_id, title: a.title })}
+                                                disabled={processing}
+                                                className={TABLE_ROW_ACTION_DANGER}
+                                            >
+                                                <Trash2 className="h-3 w-3" /> Delete
+                                            </button>
+                                        </div>
+                                    </AppTable.Td>
+                                </AppTable.Row>
+                            ))}
+                        </AppTable.Body>
+                    </AppTable>
                 ) : (
                     <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
                         <Megaphone className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No announcements found</h3>
-                        <p className="mt-2 text-gray-600">
+                        <h3 className={`mt-4 ${SECTION_HEADING}`}>No announcements found</h3>
+                        <p className={`mt-2 ${BODY_TEXT}`}>
                             {hasFilters
                                 ? 'No announcements match your filters. Try adjusting your search criteria.'
                                 : 'Get started by creating your first announcement.'}

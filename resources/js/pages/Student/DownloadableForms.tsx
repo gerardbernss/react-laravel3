@@ -1,3 +1,4 @@
+import { PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -21,9 +22,9 @@ export default function DownloadableForms() {
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="Downloadable Forms" />
 
-            <div className="p-6 md:p-10">
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Downloadable Forms</h1>
+                    <h1 className={PAGE_TITLE}>Downloadable Forms</h1>
                 </div>
 
                 <ul className="mx-8 space-y-3">

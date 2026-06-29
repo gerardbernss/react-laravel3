@@ -1,3 +1,4 @@
+import { CARD } from '@/constants/ui';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -90,11 +91,11 @@ export default function StatementOfAccount({ statement, totalBilled, totalPaid, 
                     <>
                         {/* Summary cards */}
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                            <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className={`${CARD} p-4`}>
                                 <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Total Charges</p>
                                 <p className="mt-1 text-xl font-bold text-gray-900">{formatCurrency(totalBilled)}</p>
                             </div>
-                            <div className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className={`${CARD} p-4`}>
                                 <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Total Payments</p>
                                 <p className="mt-1 text-xl font-bold text-green-700">{formatCurrency(totalPaid)}</p>
                             </div>
@@ -109,7 +110,7 @@ export default function StatementOfAccount({ statement, totalBilled, totalPaid, 
                         {/* Per-semester ledger */}
                         <div className="space-y-4">
                             {statement.map((a) => (
-                                <div key={a.id} className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                                <div key={a.id} className={`overflow-hidden ${CARD}`}>
                                     <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-gray-50 px-4 py-3">
                                         <div>
                                             <p className="font-mono text-xs text-gray-500">{a.assessment_number}</p>

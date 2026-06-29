@@ -3,16 +3,24 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\DeleteAccountRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Services\Settings\AccountDeletionService;
+use App\Services\Settings\ProfileUpdateService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private ProfileUpdateService $profileUpdateService,
+        private AccountDeletionService $accountDeletionService,
+    ) {
+    }
+
     /**
      * Show the user's profile settings page.
      */
@@ -29,13 +37,7 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
-
-        $request->user()->save();
+        $this->profileUpdateService->execute($request->user(), $request->validated());
 
         return to_route('profile.edit');
     }
@@ -43,23 +45,9 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(DeleteAccountRequest $request): RedirectResponse
     {
-        $user = $request->user();
-
-        // For Google OAuth users, no password validation is required
-        if (! $user->hasGoogleAccount()) {
-            $request->validate([
-                'password' => ['required', 'current_password'],
-            ]);
-        }
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $this->accountDeletionService->execute($request);
 
         return redirect('/');
     }

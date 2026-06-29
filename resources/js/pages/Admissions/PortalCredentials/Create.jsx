@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import { BODY_TEXT, HELPER_TEXT, PAGE_TITLE } from '@/constants/ui';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
@@ -32,8 +33,8 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
                 <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
                     {/* Header */}
                     <div className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-900">Create Portal Credentials</h1>
-                        <p className="text-gray-600 mt-1">Set up portal access for an applicant</p>
+                        <h1 className={PAGE_TITLE}>Create Portal Credentials</h1>
+                        <p className={`mt-1 ${BODY_TEXT}`}>Set up portal access for an applicant</p>
                     </div>
 
                     {/* Form */}
@@ -91,7 +92,7 @@ export default function CreatePortalCredential({ auth, applicants = [] }) {
                                             {selectedApplicant.applicant_personal_data?.email || selectedApplicant.applicant_personal_data?.email_address || 'No email available'}
                                         </p>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className={`mt-1 ${HELPER_TEXT}`}>
                                         The applicant's email address will be used as their portal username.
                                     </p>
                                     {errors.username && (

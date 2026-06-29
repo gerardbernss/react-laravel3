@@ -1,58 +1,24 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type Room, useExaminationRoomShow } from '@/hooks/useExaminationRoomShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Building2, Calendar, Edit, Trash2, Users } from 'lucide-react';
-import { useState } from 'react';
-
-interface ExamSchedule {
-    id: number;
-    name: string;
-    exam_date: string;
-    start_time: string;
-    end_time: string;
-}
-
-interface Room {
-    id: number;
-    name: string;
-    building: string | null;
-    capacity: number;
-    floor: string | null;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    exam_schedules: ExamSchedule[];
-}
 
 interface Props {
     room: Room;
 }
 
 export default function Show({ room }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Examination Rooms', href: '/examination-rooms' },
-        { title: room.name, href: `/examination-rooms/${room.id}` },
-    ];
-
-    const { delete: destroy, processing } = useForm();
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-    const confirmDelete = () => {
-        destroy(`/examination-rooms/${room.id}`, {
-            onSuccess: () => setShowDeleteDialog(false),
-        });
-    };
+    const { breadcrumbs, processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = useExaminationRoomShow({ room });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={room.name} />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href="/examination-rooms" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
@@ -62,10 +28,10 @@ export default function Show({ room }: Props) {
                     <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold text-gray-900">{room.name}</h1>
-                                <Badge className={room.is_active ? 'bg-green-100 text-green-800' : ''}>
+                                <h1 className={PAGE_TITLE}>{room.name}</h1>
+                                <AppBadge status={room.is_active ? 'active' : 'inactive'}>
                                     {room.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
+                                </AppBadge>
                             </div>
                             {room.building && <p className="mt-1 text-xl text-gray-600">{room.building}</p>}
                         </div>
@@ -86,13 +52,11 @@ export default function Show({ room }: Props) {
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Room Details */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <Building2 className="h-5 w-5" />
                             Room Details
                         </h2>
-
                         <dl className="space-y-4">
                             <div className="grid grid-cols-2 gap-2">
                                 <dt className="text-sm text-gray-500">Room Name</dt>
@@ -118,9 +82,8 @@ export default function Show({ room }: Props) {
                         </dl>
                     </div>
 
-                    {/* Recent Exam Schedules */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <Calendar className="h-5 w-5" />
                             Recent Exam Schedules ({room.exam_schedules?.length || 0})
                         </h2>
@@ -146,11 +109,12 @@ export default function Show({ room }: Props) {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-center text-gray-500">No exam schedules in this room yet.</p>
+                            <p className={`text-center ${BODY_TEXT}`}>No exam schedules in this room yet.</p>
                         )}
                     </div>
                 </div>
             </div>
+
             <ConfirmDialog
                 open={showDeleteDialog}
                 onClose={() => setShowDeleteDialog(false)}

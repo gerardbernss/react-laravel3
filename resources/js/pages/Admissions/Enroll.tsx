@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CARD, LABEL_TEXT, PAGE_TITLE } from '@/constants/ui';
+import { useApplicantEnroll } from '@/hooks/useApplicantEnroll';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertCircle, AlertTriangle, ArrowLeft, CheckCircle2, Clock, GraduationCap, Receipt } from 'lucide-react';
 
 interface ApplicantInfo {
@@ -34,26 +36,18 @@ interface Props {
     assessment: AssessmentInfo | null;
 }
 
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Finance', href: '/admin/finance/assessments' },
+    { title: 'Assessments', href: '/admin/finance/assessments' },
+    { title: 'Enrollment Payment', href: '#' },
+];
+
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 }
 
 export default function ApplicantEnroll({ applicant, assessment }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Finance', href: '/admin/finance/assessments' },
-        { title: 'Assessments', href: '/admin/finance/assessments' },
-        { title: 'Enrollment Payment', href: '#' },
-    ];
-
-    const { data, setData, post, processing, errors } = useForm({
-        amount_paid: '',
-        notes: '',
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post(`/admissions/applicants/${applicant.id}/enroll`);
-    };
+    const { data, setData, processing, errors, handleSubmit } = useApplicantEnroll({ applicantId: applicant.id });
 
     const enteredAmount = parseFloat(data.amount_paid) || 0;
     const willFullyPay  = assessment ? enteredAmount >= assessment.net_amount : false;
@@ -72,7 +66,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
                             Back to Assessments
                         </Button>
                     </Link>
-                    <h1 className="text-2xl font-bold text-gray-900">Enrollment Payment</h1>
+                    <h1 className={PAGE_TITLE}>Enrollment Payment</h1>
                     <p className="mt-1 text-sm text-gray-500">
                         {applicant.application_number} · {applicant.year_level} · {applicant.school_year}
                         {applicant.semester ? ` · ${applicant.semester}` : ''}
@@ -95,7 +89,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
                         {/* Right column — assessment details */}
                         <div className="space-y-4 lg:order-last lg:col-span-2">
                             {/* Applicant info */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                            <div className={`${CARD} p-4`}>
                                 <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500">
                                     Applicant Information
                                 </h2>
@@ -123,7 +117,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
                             </div>
 
                             {/* Fee breakdown */}
-                            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                            <div className={`${CARD} p-4`}>
                                 <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500">
                                     Fee Assessment — {assessment.assessment_number}
                                 </h2>
@@ -191,7 +185,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
 
                         {/* Left column — record payment */}
                         <div className="lg:order-first">
-                            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                            <div className={`${CARD} p-5`}>
                                 <div className="mb-4 flex items-center gap-2">
                                     <Receipt className="h-5 w-5 text-blue-600" />
                                     <h2 className="font-semibold text-gray-900">Record Payment</h2>
@@ -216,7 +210,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     {/* Amount */}
                                     <div>
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        <label className={`mb-1 block ${LABEL_TEXT}`}>
                                             Amount Paid <span className="text-red-500">*</span>
                                         </label>
                                         <Input
@@ -234,7 +228,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
 
                                     {/* Notes */}
                                     <div>
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        <label className={`mb-1 block ${LABEL_TEXT}`}>
                                             Notes <span className="text-gray-400">(optional)</span>
                                         </label>
                                         <textarea

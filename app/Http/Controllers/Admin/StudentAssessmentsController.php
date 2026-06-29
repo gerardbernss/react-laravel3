@@ -3,302 +3,73 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Applicant;
-use App\Models\ApplicantAssessment;
-use App\Models\EnrollmentPeriod;
+use App\Http\Requests\Admin\ProcessAssessmentPaymentRequest;
+use App\Http\Requests\Admin\UpdateAssessmentMinimumAmountRequest;
+use App\Http\Requests\Admin\UpdateAssessmentPaymentRequest;
 use App\Models\StudentAssessment;
 use App\Models\StudentPayment;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Services\Admin\StudentAssessmentService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
 class StudentAssessmentsController extends Controller
 {
+    public function __construct(private StudentAssessmentService $studentAssessmentService)
+    {
+    }
+
     public function index()
     {
-        $currentPeriod = EnrollmentPeriod::where('is_open', true)
-            ->where(function ($q) { $q->whereNull('start_date')->orWhereDate('start_date', '<=', today()); })
-            ->where(function ($q) { $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()); })
-            ->first()
-            ?? EnrollmentPeriod::latest()->first();
-
-        $studentAssessments = StudentAssessment::with(['student.personalData', 'payments'])
-            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
-            ->latest()
-            ->get()
-            ->map(fn ($a) => [
-                'id'                => $a->id,
-                'type'              => 'student',
-                'assessment_number' => $a->assessment_number,
-                'school_year'       => $a->school_year,
-                'semester'          => $a->semester,
-                'status'            => $a->status,
-                'gross_amount'      => (float) $a->gross_amount,
-                'total_discounts'   => (float) $a->total_discounts,
-                'net_amount'        => (float) $a->net_amount,
-                'total_paid'        => $a->total_paid,
-                'balance'           => $a->remaining_balance,
-                'student_name'      => $a->student?->personalData
-                    ? $a->student->personalData->last_name . ', ' . $a->student->personalData->first_name
-                    : '—',
-                'student_id_number' => $a->student?->student_id_number ?? '—',
-                'grade_level'       => $a->student?->current_year_level ?? '—',
-                'applicant_id'      => null,
-            ]);
-
-        // Include Exam Passed applicants who have an ApplicantAssessment (pending enrollment)
-        $applicantAssessments = ApplicantAssessment::with(['applicant.personalData'])
-            ->where('status', 'pending')
-            ->when($currentPeriod, fn($q) => $currentPeriod->applyTo($q))
-            ->latest()
-            ->get()
-            ->map(fn ($a) => [
-                'id'                => $a->id,
-                'type'              => 'applicant',
-                'assessment_number' => $a->assessment_number,
-                'school_year'       => $a->school_year,
-                'semester'          => $a->semester,
-                'status'            => 'for_enrollment',
-                'gross_amount'      => (float) $a->gross_amount,
-                'total_discounts'   => 0,
-                'net_amount'        => (float) $a->net_amount,
-                'total_paid'        => 0,
-                'balance'           => (float) $a->net_amount,
-                'student_name'      => $a->applicant?->personalData
-                    ? $a->applicant->personalData->last_name . ', ' . $a->applicant->personalData->first_name
-                    : '—',
-                'student_id_number' => '—',
-                'grade_level'       => $a->applicant?->year_level ?? '—',
-                'applicant_id'      => $a->applicant?->id,
-            ]);
-
-        $assessments = $studentAssessments->concat($applicantAssessments)->sortByDesc('id')->values();
-
-        $schoolYears = StudentAssessment::select('school_year')
-            ->distinct()
-            ->orderByDesc('school_year')
-            ->pluck('school_year');
-
-        $openStudentPeriod = EnrollmentPeriod::where('type', 'student')
-            ->where('is_open', true)
-            ->where(function ($q) { $q->whereNull('close_date')->orWhereDate('close_date', '>=', today()); })
-            ->first();
-
-        return Inertia::render('Admin/Finance/Assessments/Index', [
-            'assessments'       => $assessments,
-            'schoolYears'       => $schoolYears,
-            'openStudentPeriod' => $openStudentPeriod ? [
-                'id'          => $openStudentPeriod->id,
-                'school_year' => $openStudentPeriod->school_year,
-                'semester'    => $openStudentPeriod->semester,
-            ] : null,
-        ]);
+        return Inertia::render('Admin/Finance/Assessments/Index', $this->studentAssessmentService->indexData());
     }
 
     public function show(StudentAssessment $assessment)
     {
-        $assessment->load(['student.personalData', 'payments.processedBy']);
-
-        return Inertia::render('Admin/Finance/Assessments/Show', [
-            'assessment' => [
-                'id'                => $assessment->id,
-                'assessment_number' => $assessment->assessment_number,
-                'school_year'       => $assessment->school_year,
-                'semester'          => $assessment->semester,
-                'status'            => $assessment->status,
-                'total_tuition'     => (float) $assessment->total_tuition,
-                'total_misc_fees'   => (float) $assessment->total_misc_fees,
-                'total_lab_fees'    => (float) $assessment->total_lab_fees,
-                'total_other_fees'  => (float) $assessment->total_other_fees,
-                'gross_amount'      => (float) $assessment->gross_amount,
-                'total_discounts'   => (float) $assessment->total_discounts,
-                'prior_balance'     => (float) $assessment->prior_balance,
-                'net_amount'        => (float) $assessment->net_amount,
-                'payment_plan'      => $assessment->payment_plan ?? 'full',
-                'minimum_amount'    => $assessment->minimum_required,
-                'total_paid'        => $assessment->total_paid,
-                'balance'           => $assessment->remaining_balance,
-                'finalized_at'        => $assessment->finalized_at?->format('F d, Y'),
-                'student'           => $assessment->student ? [
-                    'student_id'  => $assessment->student->student_id_number,
-                    'name'        => $assessment->student->personalData
-                        ? trim($assessment->student->personalData->last_name . ', '
-                            . $assessment->student->personalData->first_name . ' '
-                            . ($assessment->student->personalData->middle_name ?? ''))
-                        : '—',
-                    'grade_level' => $assessment->student->current_year_level,
-                    'school_year' => $assessment->student->current_school_year,
-                ] : null,
-                'payments'          => $assessment->payments->map(fn ($p) => [
-                    'id'               => $p->id,
-                    'amount_paid'      => (float) $p->amount_paid,
-                    'payment_method'   => $p->payment_method,
-                    'reference_number' => $p->reference_number,
-                    'payment_date'     => $p->payment_date->format('M d, Y'),
-                    'notes'            => $p->notes,
-                    'processed_by'     => $p->processedBy?->name ?? '—',
-                ]),
-            ],
-        ]);
+        return Inertia::render('Admin/Finance/Assessments/Show', $this->studentAssessmentService->showData($assessment));
     }
 
-    public function processPayment(Request $request, StudentAssessment $assessment)
+    public function processPayment(ProcessAssessmentPaymentRequest $request, StudentAssessment $assessment)
     {
-        if ($assessment->status === 'paid') {
-            return back()->withErrors(['error' => 'This assessment has already been fully paid.']);
+        $result = $this->studentAssessmentService->processPayment($assessment, $request->validated());
+
+        if (! empty($result['error'])) {
+            return back()->withErrors(['error' => $result['error']]);
         }
 
-        $balance = $assessment->remaining_balance;
-
-        $validated = $request->validate([
-            'amount_paid'      => ['required', 'numeric', 'min:0.01', 'max:' . $balance],
-            'payment_method'   => ['required', 'in:cash,check,bank_transfer,gcash,maya'],
-            'reference_number' => ['nullable', 'string', 'max:100'],
-            'payment_date'     => ['required', 'date', 'before_or_equal:today'],
-            'notes'            => ['nullable', 'string', 'max:500'],
-        ]);
-
-        StudentPayment::create([
-            'assessment_id'    => $assessment->id,
-            'amount_paid'      => $validated['amount_paid'],
-            'payment_method'   => $validated['payment_method'],
-            'reference_number' => $validated['reference_number'] ?? null,
-            'payment_date'     => $validated['payment_date'],
-            'notes'            => $validated['notes'] ?? null,
-            'processed_by'     => Auth::id(),
-        ]);
-
-        $this->recalculateAssessmentStatus($assessment);
-
-        $assessment->refresh();
-
-        return back()->with('success', $assessment->status === 'paid'
-            ? 'Payment recorded. Student is now fully enrolled.'
-            : 'Partial payment recorded successfully.');
+        return back()->with('success', $result['message']);
     }
 
-    public function updatePayment(Request $request, StudentAssessment $assessment, StudentPayment $payment)
+    public function updatePayment(UpdateAssessmentPaymentRequest $request, StudentAssessment $assessment, StudentPayment $payment)
     {
-        // Max is remaining balance PLUS the payment's own amount (since we're replacing it)
-        $maxAmount = $assessment->remaining_balance + (float) $payment->amount_paid;
-
-        $validated = $request->validate([
-            'amount_paid'      => ['required', 'numeric', 'min:0.01', 'max:' . $maxAmount],
-            'payment_method'   => ['required', 'in:cash,check,bank_transfer,gcash,maya'],
-            'reference_number' => ['nullable', 'string', 'max:100'],
-            'payment_date'     => ['required', 'date', 'before_or_equal:today'],
-            'notes'            => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $payment->update($validated);
-
-        $this->recalculateAssessmentStatus($assessment);
-
-        $assessment->refresh();
+        $this->studentAssessmentService->updatePayment($assessment, $payment, $request->validated());
 
         return back()->with('success', 'Payment updated successfully.');
     }
 
     public function deletePayment(StudentAssessment $assessment, StudentPayment $payment)
     {
-        $payment->delete();
-
-        $this->recalculateAssessmentStatus($assessment);
+        $this->studentAssessmentService->deletePayment($assessment, $payment);
 
         return back()->with('success', 'Payment deleted.');
     }
 
-    public function syncStatus(StudentAssessment $assessment): \Illuminate\Http\RedirectResponse
+    public function syncStatus(StudentAssessment $assessment): RedirectResponse
     {
-        $this->recalculateAssessmentStatus($assessment);
+        $this->studentAssessmentService->syncStatus($assessment);
+
         return back()->with('success', 'Enrollment status synced.');
     }
 
-    public function debugStatus(StudentAssessment $assessment): \Illuminate\Http\JsonResponse
+    public function debugStatus(StudentAssessment $assessment): JsonResponse
     {
-        $assessment->refresh();
-        $student = $assessment->student;
-
-        return response()->json([
-            'assessment_id'      => $assessment->id,
-            'student_id'         => $assessment->student_id,
-            'total_paid'         => $assessment->total_paid,
-            'minimum_required'   => $assessment->minimum_required,
-            'minimum_amount_col' => $assessment->minimum_amount,
-            'net_amount'         => $assessment->net_amount,
-            'payment_plan'       => $assessment->payment_plan,
-            'student_found'      => $student ? true : false,
-            'student_apd_id'     => $student?->applicant_personal_data_id,
-            'student_aai_id'     => $student?->applicant_id,
-            'student_enroll'     => $student?->enrollment_status,
-            'portal_cred'        => $student?->portalCredential ? [
-                'id'     => $student->portalCredential->id,
-                'aai_id' => $student->portalCredential->applicant_id,
-            ] : null,
-            'application_via_student'   => $student?->application?->id,
-            'application_via_portal'    => $student?->portalCredential?->application?->id,
-            'application_via_apd'       => $student ? Applicant::where('applicant_personal_data_id', $student->applicant_personal_data_id)->latest()->value('id') : null,
-            'application_status'        => $student?->application?->application_status
-                ?? $student?->portalCredential?->application?->application_status,
-        ]);
+        return response()->json($this->studentAssessmentService->debugStatus($assessment));
     }
 
-    public function updateMinimumAmount(Request $request, StudentAssessment $assessment): \Illuminate\Http\RedirectResponse
+    public function updateMinimumAmount(UpdateAssessmentMinimumAmountRequest $request, StudentAssessment $assessment): RedirectResponse
     {
-        $validated = $request->validate([
-            'minimum_amount' => ['required', 'numeric', 'min:0', 'max:' . (float) $assessment->net_amount],
-        ]);
-
-        $assessment->update($validated);
-        $this->recalculateAssessmentStatus($assessment);
+        $this->studentAssessmentService->updateMinimumAmount($assessment, $request->validated());
 
         return back()->with('success', 'Minimum amount updated.');
-    }
-
-    private function recalculateAssessmentStatus(StudentAssessment $assessment): void
-    {
-        $assessment->refresh();
-        $totalPaid       = round($assessment->total_paid, 2);
-        $netAmount       = round((float) $assessment->net_amount, 2);
-        $minimumRequired = round($assessment->minimum_required, 2);
-
-        if ($totalPaid >= $netAmount) {
-            $newStatus = 'paid';
-        } elseif ($totalPaid > 0) {
-            $newStatus = 'partial';
-        } else {
-            $newStatus = 'finalized';
-        }
-
-        $assessment->update(['status' => $newStatus]);
-
-        $student = $assessment->student;
-        if (!$student) {
-            return;
-        }
-
-        // Resolve application — try multiple paths:
-        // 1. students.applicant_id (direct FK)
-        // 2. portal_credentials.applicant_id (what the student portal actually reads)
-        // 3. Fallback via applicant_personal_data_id
-        $application = $student->application
-            ?? $student->portalCredential?->application
-            ?? Applicant::where('applicant_personal_data_id', $student->applicant_personal_data_id)
-                ->latest()
-                ->first();
-
-        // Backfill the missing FK so future calls don't need the fallback
-        if ($application && !$student->applicant_id) {
-            $student->update(['applicant_id' => $application->id]);
-        }
-
-        if ($totalPaid >= $minimumRequired) {
-            $student->update(['enrollment_status' => 'Active']);
-            $application?->update(['application_status' => 'Enrolled']);
-        } elseif ($application?->application_status === 'Enrolled') {
-            // Payment reduced below minimum — revert to Pending
-            $student->update(['enrollment_status' => 'Pending']);
-            $application->update(['application_status' => 'Pending']);
-        }
     }
 }

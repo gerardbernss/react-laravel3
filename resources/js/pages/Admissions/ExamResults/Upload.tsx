@@ -1,11 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { useExamResultsUpload } from '@/hooks/useExamResultsUpload';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, FileText, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 
 interface Conflict {
     applicant_number: string;
@@ -49,41 +50,14 @@ function downloadSample() {
 }
 
 export default function UploadExamResults({ importConflicts, importWarning, hasPending }: Props) {
-    const { data, setData, post, processing, errors } = useForm<{ file: File | null }>({ file: null });
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [conflictOpen, setConflictOpen] = useState(false);
-    const [confirming, setConfirming] = useState(false);
-
-    // Open the dialog automatically when conflicts arrive from the server
-    useEffect(() => {
-        if (importConflicts && importConflicts.length > 0) {
-            setConflictOpen(true);
-        }
-    }, [importConflicts]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/exam-results/upload', { forceFormData: true });
-    };
-
-    const handleConfirm = (overwrite: boolean) => {
-        setConfirming(true);
-        router.post('/exam-results/upload/confirm', { overwrite }, {
-            onFinish: () => setConfirming(false),
-        });
-    };
-
-    const handleCancelConflict = () => {
-        setConflictOpen(false);
-        // Clear the session-stored pending rows by navigating fresh
-        router.get('/exam-results/upload');
-    };
+    const { data, setData, processing, errors, inputRef, conflictOpen, confirming, handleSubmit, handleConfirm, handleCancelConflict } =
+        useExamResultsUpload({ importConflicts });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Upload Exam Results" />
 
-            <div className="p-6 md:p-10">
+            <div className={PAGE_PADDING}>
                 <div className="mb-6">
                     <Link href="/exam-results" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
@@ -92,14 +66,14 @@ export default function UploadExamResults({ importConflicts, importWarning, hasP
 
                     <div className="mt-3 flex items-center gap-3">
                         <Upload className="h-7 w-7 text-primary" />
-                        <h1 className="text-3xl font-bold text-gray-900">Upload Exam Results</h1>
+                        <h1 className={PAGE_TITLE}>Upload Exam Results</h1>
                     </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Upload form */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-semibold text-gray-900">Select CSV File</h2>
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 ${SECTION_HEADING}`}>Select CSV File</h2>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
@@ -150,9 +124,9 @@ export default function UploadExamResults({ importConflicts, importWarning, hasP
                     </div>
 
                     {/* Instructions */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 text-lg font-semibold text-gray-900">CSV Format</h2>
-                        <p className="mb-3 text-sm text-gray-600">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 ${SECTION_HEADING}`}>CSV Format</h2>
+                        <p className={`mb-3 ${BODY_TEXT}`}>
                             The CSV file must have the following column headers in the first row (order does not matter):
                         </p>
                         <ul className="space-y-1">

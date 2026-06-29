@@ -4,9 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { BODY_TEXT, CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import { useSubjectCreate } from '@/hooks/useSubjectCreate';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
 interface FacultyUser {
@@ -33,49 +35,31 @@ const subjectTypes = ['Core', 'Major', 'Minor', 'Elective', 'Specialized'];
 const semesters = ['First Semester', 'Second Semester', 'Summer', 'Full Year'];
 
 export default function Create({ facultyUsers }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        code: '',
-        name: '',
-        description: '',
-        units: 3,
-        type: 'Core',
-        grade_level: '',
-        semester: '',
-        days: '',
-        time: '',
-        room: '',
-        user_id: null as number | null,
-        is_active: true,
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/subjects');
-    };
+    const { data, setData, processing, errors, handleSubmit } = useSubjectCreate();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Subject" />
 
-            <div className="p-6 md:p-10">
+            <div className={PAGE_PADDING}>
                 {/* Header */}
                 <div className="mb-6">
                     <Link href="/subjects" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Subjects
                     </Link>
-                    <h1 className="mt-2 text-3xl font-bold text-gray-900">Create Subject</h1>
-                    <p className="mt-1 text-gray-600">Add a new subject to the system</p>
+                    <h1 className={`mt-2 ${PAGE_TITLE}`}>Create Subject</h1>
+                    <p className={`mt-1 ${BODY_TEXT}`}>Add a new subject to the system</p>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="max-w-2xl">
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
+                    <div className={`${CARD} p-6`}>
                         <div className="grid gap-6">
                             {/* Code and Name */}
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <Label htmlFor="code">Subject Code *</Label>
+                                    <Label htmlFor="code" className={LABEL_TEXT}>Subject Code *</Label>
                                     <Input
                                         id="code"
                                         value={data.code}
@@ -86,7 +70,7 @@ export default function Create({ facultyUsers }: Props) {
                                     <InputError message={errors.code} className="mt-1" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="name">Subject Name *</Label>
+                                    <Label htmlFor="name" className={LABEL_TEXT}>Subject Name *</Label>
                                     <Input
                                         id="name"
                                         value={data.name}
@@ -100,7 +84,7 @@ export default function Create({ facultyUsers }: Props) {
 
                             {/* Description */}
                             <div>
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description" className={LABEL_TEXT}>Description</Label>
                                 <Textarea
                                     id="description"
                                     value={data.description}
@@ -115,7 +99,7 @@ export default function Create({ facultyUsers }: Props) {
                             {/* Units and Type */}
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <Label htmlFor="units">Units *</Label>
+                                    <Label htmlFor="units" className={LABEL_TEXT}>Units *</Label>
                                     <Input
                                         id="units"
                                         type="number"
@@ -128,7 +112,7 @@ export default function Create({ facultyUsers }: Props) {
                                     <InputError message={errors.units} className="mt-1" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="type">Subject Type *</Label>
+                                    <Label htmlFor="type" className={LABEL_TEXT}>Subject Type *</Label>
                                     <Select value={data.type} onValueChange={(v) => setData('type', v)}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue placeholder="Select type" />
@@ -148,7 +132,7 @@ export default function Create({ facultyUsers }: Props) {
                             {/* Grade Level and Semester */}
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <Label htmlFor="grade_level">Grade Level</Label>
+                                    <Label htmlFor="grade_level" className={LABEL_TEXT}>Grade Level</Label>
                                     <Select
                                         value={data.grade_level}
                                         onValueChange={(v) => setData('grade_level', v)}
@@ -167,7 +151,7 @@ export default function Create({ facultyUsers }: Props) {
                                     <InputError message={errors.grade_level} className="mt-1" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="semester">Semester</Label>
+                                    <Label htmlFor="semester" className={LABEL_TEXT}>Semester</Label>
                                     <Select value={data.semester} onValueChange={(v) => setData('semester', v)}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue placeholder="Select semester" />
@@ -187,7 +171,7 @@ export default function Create({ facultyUsers }: Props) {
                             {/* Schedule */}
                             <div className="grid gap-4 md:grid-cols-3">
                                 <div>
-                                    <Label htmlFor="days">Days</Label>
+                                    <Label htmlFor="days" className={LABEL_TEXT}>Days</Label>
                                     <Select value={data.days} onValueChange={(v) => setData('days', v)}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue placeholder="Select days" />
@@ -202,7 +186,7 @@ export default function Create({ facultyUsers }: Props) {
                                     <InputError message={errors.days} className="mt-1" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="time">Time</Label>
+                                    <Label htmlFor="time" className={LABEL_TEXT}>Time</Label>
                                     <Input
                                         id="time"
                                         value={data.time}
@@ -213,7 +197,7 @@ export default function Create({ facultyUsers }: Props) {
                                     <InputError message={errors.time} className="mt-1" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="room">Room</Label>
+                                    <Label htmlFor="room" className={LABEL_TEXT}>Room</Label>
                                     <Input
                                         id="room"
                                         value={data.room}
@@ -227,7 +211,7 @@ export default function Create({ facultyUsers }: Props) {
 
                             {/* Faculty */}
                             <div>
-                                <Label htmlFor="user_id">Faculty</Label>
+                                <Label htmlFor="user_id" className={LABEL_TEXT}>Faculty</Label>
                                 <Select
                                     value={data.user_id?.toString() ?? '__none__'}
                                     onValueChange={(v) => setData('user_id', v === '__none__' ? null : parseInt(v))}
@@ -256,7 +240,7 @@ export default function Create({ facultyUsers }: Props) {
                                     onChange={(e) => setData('is_active', e.target.checked)}
                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                 />
-                                <Label htmlFor="is_active" className="cursor-pointer">
+                                <Label htmlFor="is_active" className={`cursor-pointer ${LABEL_TEXT}`}>
                                     Active (Subject is available for enrollment)
                                 </Label>
                             </div>

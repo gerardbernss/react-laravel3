@@ -4,11 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { BODY_TEXT, CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { usePermissions } from '@/hooks/useAuth';
+import { PERMISSION_COLUMNS, usePermissionTable, type PermissionColumnKey } from '@/hooks/usePermissionTable';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Permission } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { TablePagination } from '@/components/ui/table-pagination';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ChevronDown,
     ChevronUp,
@@ -24,182 +26,148 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+
+interface PageProps {
+    flash: { message?: string };
+    permissions: Permission[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Permissions', href: '/permissions' },
 ];
 
-interface PageProps {
-    flash: {
-        message?: string;
-    };
-    permissions: Permission[];
+interface PermissionTableRowProps {
+    permission: Permission;
+    visibleColumns: PermissionColumnKey[];
+    isSelected: boolean;
+    processing: boolean;
+    onSelect: (id: number) => void;
+    onDelete: (id: number, name: string) => void;
+}
+
+function PermissionTableRow({ permission, visibleColumns, isSelected, processing, onSelect, onDelete }: PermissionTableRowProps) {
+    const { hasPermission } = usePermissions();
+
+    return (
+        <tr className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+            <td className="whitespace-nowrap px-6 py-4">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onSelect(permission.id)}
+                    className="h-4 w-4 rounded border-gray-300"
+                />
+            </td>
+            {visibleColumns.includes('id') && (
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{permission.id}</td>
+            )}
+            {visibleColumns.includes('name') && (
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-gray-900">
+                        <Key className="h-4 w-4" />
+                        {permission.name}
+                    </div>
+                </td>
+            )}
+            {visibleColumns.includes('slug') && (
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                    <Badge variant="outline" className="font-mono text-xs">{permission.slug}</Badge>
+                </td>
+            )}
+            {visibleColumns.includes('description') && (
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                    {permission.description || 'No description'}
+                </td>
+            )}
+            {visibleColumns.includes('roles_count') && (
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                    <div className="flex items-center gap-1 text-gray-600">
+                        <Users className="h-4 w-4" />
+                        {permission.roles_count || 0}
+                    </div>
+                </td>
+            )}
+            {visibleColumns.includes('created_at') && (
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                    {new Date(permission.created_at).toLocaleDateString()}
+                </td>
+            )}
+            {visibleColumns.includes('actions') && (
+                <td className="whitespace-nowrap px-6 py-4">
+                    <div className="flex justify-center gap-2">
+                        {hasPermission('view-permissions') && (
+                            <Link href={`/permissions/${permission.id}`}>
+                                <button className={TABLE_ROW_ACTION}>
+                                    <Eye className="h-3 w-3" /> View
+                                </button>
+                            </Link>
+                        )}
+                        {hasPermission('update-permissions') && (
+                            <Link href={`/permissions/${permission.id}/edit`}>
+                                <button className={TABLE_ROW_ACTION}>
+                                    <Pencil className="h-3 w-3" /> Edit
+                                </button>
+                            </Link>
+                        )}
+                        {hasPermission('delete-permissions') && (
+                            <button
+                                disabled={processing}
+                                onClick={() => onDelete(permission.id, permission.name)}
+                                className={TABLE_ROW_ACTION_DANGER}
+                            >
+                                <Trash2 className="h-3 w-3" /> Delete
+                            </button>
+                        )}
+                    </div>
+                </td>
+            )}
+        </tr>
+    );
 }
 
 export default function Index() {
     const { flash, permissions } = usePage().props as unknown as PageProps;
     const { hasPermission } = usePermissions();
-
-    const [hideAlert, setHideAlert] = useState<boolean>(false);
-    const { processing, delete: destroy } = useForm();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortConfig, setSortConfig] = useState<{ key: keyof Permission | null; direction: 'asc' | 'desc' }>({
-        key: null,
-        direction: 'asc',
-    });
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [selectedRows, setSelectedRows] = useState<number[]>([]);
-    const [visibleColumns, setVisibleColumns] = useState<(keyof Permission | 'actions')[]>([
-        'id',
-        'name',
-        'slug',
-        'description',
-        'roles_count',
-        'created_at',
-        'actions',
-    ]);
-
-    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number; name: string }>({ open: false, id: 0, name: '' });
-    const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-
-    const handleDelete = (id: number, name: string) => {
-        setDeleteDialog({ open: true, id, name });
-    };
-
-    const confirmDelete = () => {
-        setHideAlert(false);
-        destroy(`/permissions/${deleteDialog.id}`, {
-            onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
-        });
-    };
-
-    const handleSort = (key: keyof Permission) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            setSelectedRows(paginatedPermissions.map((row) => row.id));
-        } else {
-            setSelectedRows([]);
-        }
-    };
-
-    const handleSelectRow = (id: number) => {
-        setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
-    };
-
-    const handleBulkDelete = () => {
-        setShowBulkDeleteDialog(true);
-    };
-
-    const confirmBulkDelete = () => {
-        // TODO: implement actual bulk delete endpoint
-        setSelectedRows([]);
-        setShowBulkDeleteDialog(false);
-    };
-
-    const toggleColumnVisibility = (key: keyof Permission | 'actions') => {
-        setVisibleColumns((prev) => (prev.includes(key) ? prev.filter((col) => col !== key) : [...prev, key]));
-    };
-
-    const handleExport = () => {
-        const headers = columns.filter((col) => visibleColumns.includes(col.key) && col.key !== 'actions').map((col) => col.label);
-
-        const csvContent = [
-            headers.join(','),
-            ...sortedPermissions.map((row) =>
-                columns
-                    .filter((col) => visibleColumns.includes(col.key) && col.key !== 'actions')
-                    .map((col) => {
-                        const value = row[col.key as keyof Permission];
-                        if (col.key === 'created_at' && value) {
-                            return new Date(value as string).toDateString();
-                        }
-                        if (col.key === 'roles_count') {
-                            return value || 0;
-                        }
-                        return value || '';
-                    })
-                    .join(','),
-            ),
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `permissions-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    };
-
-    const filteredPermissions = useMemo(() => {
-        return permissions.filter((permission) => {
-            const matchesSearch =
-                permission.id.toString().includes(searchQuery) ||
-                permission.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                permission.slug?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                permission.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-            return matchesSearch;
-        });
-    }, [permissions, searchQuery]);
-
-    const sortedPermissions = useMemo(() => {
-        if (!sortConfig.key) return filteredPermissions;
-
-        return [...filteredPermissions].sort((a, b) => {
-            const aValue = a[sortConfig.key!];
-            const bValue = b[sortConfig.key!];
-
-            if (aValue == null && bValue == null) return 0;
-            if (aValue == null) return 1;
-            if (bValue == null) return -1;
-
-            if (aValue < bValue) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
-    }, [filteredPermissions, sortConfig]);
-
-    const paginatedPermissions = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        return sortedPermissions.slice(startIndex, startIndex + pageSize);
-    }, [sortedPermissions, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(sortedPermissions.length / pageSize);
-
-    const columns = [
-        { key: 'id' as keyof Permission, label: 'ID' },
-        { key: 'name' as keyof Permission, label: 'Name' },
-        { key: 'slug' as keyof Permission, label: 'Slug' },
-        { key: 'description' as keyof Permission, label: 'Description' },
-        { key: 'roles_count' as keyof Permission, label: 'Roles Count' },
-        { key: 'created_at' as keyof Permission, label: 'Created At' },
-    ];
+    const {
+        hideAlert,
+        setHideAlert,
+        processing,
+        searchQuery,
+        setSearchQuery,
+        sortConfig,
+        currentPage,
+        setCurrentPage,
+        pageSize,
+        setPageSize,
+        selectedRows,
+        visibleColumns,
+        deleteDialog,
+        setDeleteDialog,
+        showBulkDeleteDialog,
+        setShowBulkDeleteDialog,
+        sortedPermissions,
+        paginatedPermissions,
+        handleSort,
+        handleSelectAll,
+        handleSelectRow,
+        handleDelete,
+        confirmDelete,
+        handleBulkDelete,
+        confirmBulkDelete,
+        toggleColumnVisibility,
+        handleExport,
+    } = usePermissionTable(permissions);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Permissions" />
 
-            <div className="space-y-6 p-6 md:p-10">
-                {/* Header */}
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">System Permissions</h1>
-                        <p className="mt-1 text-gray-600">Manage system permissions and access controls</p>
+                        <h1 className={PAGE_TITLE}>System Permissions</h1>
+                        <p className={`mt-1 ${BODY_TEXT}`}>Manage system permissions and access controls</p>
                     </div>
                     {hasPermission('create-permissions') && (
                         <Link href="/permissions/create">
@@ -211,7 +179,6 @@ export default function Index() {
                     )}
                 </div>
 
-                {/* Flash Message */}
                 {flash.message && !hideAlert && (
                     <Alert variant="default" className="border-green-200 bg-green-50">
                         <Megaphone className="h-4 w-4 text-green-600" />
@@ -223,22 +190,17 @@ export default function Index() {
                     </Alert>
                 )}
 
-                {/* Filters */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className={`${CARD} p-6`}>
                     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-                        {/* Search */}
                         <div className="flex-1 md:max-w-sm">
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Search</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <Input
                                     type="text"
                                     placeholder="Search by ID, Name, Slug, or Description..."
                                     value={searchQuery}
-                                    onChange={(e) => {
-                                        setSearchQuery(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
+                                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                                     className="pl-10 pr-10"
                                 />
                                 {searchQuery && (
@@ -252,7 +214,6 @@ export default function Index() {
                             </div>
                         </div>
 
-                        {/* Columns + Export */}
                         <div className="flex gap-2">
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -264,24 +225,23 @@ export default function Index() {
                                 <PopoverContent className="w-48" align="end">
                                     <div className="space-y-2">
                                         <h4 className="mb-2 text-sm font-semibold">Toggle Columns</h4>
-                                        {[...columns, { key: 'actions' as const, label: 'Actions' }].map((column) => (
-                                            <div key={String(column.key)} className="flex items-center space-x-2">
+                                        {[...PERMISSION_COLUMNS, { key: 'actions' as const, label: 'Actions' }].map((col) => (
+                                            <div key={String(col.key)} className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
-                                                    id={String(column.key)}
-                                                    checked={visibleColumns.includes(column.key)}
-                                                    onChange={() => toggleColumnVisibility(column.key)}
+                                                    id={`perm-col-${String(col.key)}`}
+                                                    checked={visibleColumns.includes(col.key)}
+                                                    onChange={() => toggleColumnVisibility(col.key)}
                                                     className="h-4 w-4 rounded border-gray-300"
                                                 />
-                                                <label htmlFor={String(column.key)} className="text-sm">
-                                                    {column.label}
+                                                <label htmlFor={`perm-col-${String(col.key)}`} className="text-sm">
+                                                    {col.label}
                                                 </label>
                                             </div>
                                         ))}
                                     </div>
                                 </PopoverContent>
                             </Popover>
-
                             <Button variant="outline" onClick={handleExport}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Export
@@ -290,7 +250,6 @@ export default function Index() {
                     </div>
                 </div>
 
-                {/* Bulk Actions */}
                 {selectedRows.length > 0 && (
                     <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
                         <span className="text-sm font-medium text-blue-800">{selectedRows.length} row(s) selected</span>
@@ -303,9 +262,8 @@ export default function Index() {
                     </div>
                 )}
 
-                {/* Table */}
                 {permissions?.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className={`overflow-hidden ${CARD}`}>
                         <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="sticky top-0 z-10 bg-gray-50">
@@ -318,129 +276,56 @@ export default function Index() {
                                                 className="h-4 w-4 rounded border-gray-300"
                                             />
                                         </th>
-                                        {columns
-                                            .filter((col) => visibleColumns.includes(col.key))
-                                            .map((column) => (
-                                                <th
-                                                    key={String(column.key)}
-                                                    onClick={() => handleSort(column.key)}
-                                                    className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        {column.label}
-                                                        {sortConfig.key === column.key &&
-                                                            (sortConfig.direction === 'asc' ? (
-                                                                <ChevronUp className="h-4 w-4" />
-                                                            ) : (
-                                                                <ChevronDown className="h-4 w-4" />
-                                                            ))}
-                                                    </div>
-                                                </th>
-                                            ))}
-                                        {visibleColumns.includes('actions') && (
-                                            <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                                                Actions
+                                        {PERMISSION_COLUMNS.filter((col) => visibleColumns.includes(col.key)).map((col) => (
+                                            <th
+                                                key={String(col.key)}
+                                                onClick={() => handleSort(col.key)}
+                                                className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {col.label}
+                                                    {sortConfig.key === col.key &&
+                                                        (sortConfig.direction === 'asc' ? (
+                                                            <ChevronUp className="h-4 w-4" />
+                                                        ) : (
+                                                            <ChevronDown className="h-4 w-4" />
+                                                        ))}
+                                                </div>
                                             </th>
+                                        ))}
+                                        {visibleColumns.includes('actions') && (
+                                            <th className={TABLE_HEADER_CELL_CENTER}>Actions</th>
                                         )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 bg-white">
                                     {paginatedPermissions.map((permission) => (
-                                        <tr
+                                        <PermissionTableRow
                                             key={permission.id}
-                                            className={`hover:bg-gray-50 ${selectedRows.includes(permission.id) ? 'bg-blue-50' : ''}`}
-                                        >
-                                            <td className="whitespace-nowrap px-6 py-4">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedRows.includes(permission.id)}
-                                                    onChange={() => handleSelectRow(permission.id)}
-                                                    className="h-4 w-4 rounded border-gray-300"
-                                                />
-                                            </td>
-                                            {visibleColumns.includes('id') && (
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{permission.id}</td>
-                                            )}
-                                            {visibleColumns.includes('name') && (
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                    <div className="flex items-center gap-2 font-medium text-gray-900">
-                                                        <Key className="h-4 w-4" />
-                                                        {permission.name}
-                                                    </div>
-                                                </td>
-                                            )}
-                                            {visibleColumns.includes('slug') && (
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                    <Badge variant="outline" className="font-mono text-xs">
-                                                        {permission.slug}
-                                                    </Badge>
-                                                </td>
-                                            )}
-                                            {visibleColumns.includes('description') && (
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                                    {permission.description || 'No description'}
-                                                </td>
-                                            )}
-                                            {visibleColumns.includes('roles_count') && (
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                    <div className="flex items-center gap-1 text-gray-600">
-                                                        <Users className="h-4 w-4" />
-                                                        {permission.roles_count || 0}
-                                                    </div>
-                                                </td>
-                                            )}
-                                            {visibleColumns.includes('created_at') && (
-                                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                                    {new Date(permission.created_at).toLocaleDateString()}
-                                                </td>
-                                            )}
-                                            {visibleColumns.includes('actions') && (
-                                                <td className="whitespace-nowrap px-6 py-4">
-                                                    <div className="flex justify-center gap-2">
-                                                        {hasPermission('view-permissions') && (
-                                                            <Link href={`/permissions/${permission.id}`}>
-                                                                <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                                                                    <Eye className="h-3 w-3" /> View
-                                                                </button>
-                                                            </Link>
-                                                        )}
-                                                        {hasPermission('update-permissions') && (
-                                                            <Link href={`/permissions/${permission.id}/edit`}>
-                                                                <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
-                                                                    <Pencil className="h-3 w-3" /> Edit
-                                                                </button>
-                                                            </Link>
-                                                        )}
-                                                        {hasPermission('delete-permissions') && (
-                                                            <button
-                                                                disabled={processing}
-                                                                onClick={() => handleDelete(permission.id, permission.name)}
-                                                                className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
-                                                            >
-                                                                <Trash2 className="h-3 w-3" /> Delete
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            )}
-                                        </tr>
+                                            permission={permission}
+                                            visibleColumns={visibleColumns}
+                                            isSelected={selectedRows.includes(permission.id)}
+                                            processing={processing}
+                                            onSelect={handleSelectRow}
+                                            onDelete={handleDelete}
+                                        />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    <TablePagination
-                        total={sortedPermissions.length}
-                        pageSize={pageSize}
-                        currentPage={currentPage}
-                        onPageChange={setCurrentPage}
-                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
-                    />
+                        <TablePagination
+                            total={sortedPermissions.length}
+                            pageSize={pageSize}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                        />
                     </div>
                 ) : (
-                    <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
+                    <div className={`${CARD} p-12 text-center`}>
                         <Key className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">No permissions found</h3>
-                        <p className="mt-2 text-gray-600">Get started by creating your first permission.</p>
+                        <h3 className={`mt-4 ${SECTION_HEADING}`}>No permissions found</h3>
+                        <p className={`mt-2 ${BODY_TEXT}`}>Get started by creating your first permission.</p>
                         {hasPermission('create-permissions') && (
                             <Link href="/permissions/create">
                                 <Button className="mt-4">
@@ -451,8 +336,8 @@ export default function Index() {
                         )}
                     </div>
                 )}
-
             </div>
+
             <ConfirmDialog
                 open={deleteDialog.open}
                 onClose={() => setDeleteDialog({ open: false, id: 0, name: '' })}

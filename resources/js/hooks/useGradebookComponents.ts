@@ -1,0 +1,65 @@
+import { router, useForm } from '@inertiajs/react';
+import { type FormEvent } from 'react';
+
+export interface GradeComponent {
+    id: number;
+    name: string;
+    hps: number;
+    weight: number;
+    order: number;
+}
+
+export interface BlockSectionData {
+    id: number;
+    code: string;
+    name: string;
+    school_year: string | null;
+}
+
+export interface SubjectData {
+    id: number;
+    code: string;
+    name: string;
+}
+
+interface Params {
+    blockSection: BlockSectionData;
+    subject: SubjectData;
+    quarter: string;
+    weightTotal: number;
+}
+
+export function useGradebookComponents({ blockSection, subject, quarter, weightTotal }: Params) {
+    const breadcrumbs = [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Gradebook', href: '/gradebook' },
+        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
+        { title: `${subject.code} ${quarter}`, href: `/gradebook/${blockSection.id}/${subject.id}/${quarter}/components` },
+    ];
+
+    const { data, setData, post, processing, errors, reset } = useForm({
+        block_section_id: blockSection.id,
+        subject_id: subject.id,
+        grading_quarter: quarter,
+        name: '',
+        hps: '',
+        weight: '',
+    });
+
+    const weightOk = Math.abs(weightTotal - 100) < 0.01;
+    const remainingWeight = Math.max(0, 100 - weightTotal);
+
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
+        post('/gradebook/components', {
+            onSuccess: () => reset('name', 'hps', 'weight'),
+        });
+    };
+
+    const deleteComponent = (id: number) => {
+        if (!confirm('Delete this component? All scores for it will be lost.')) return;
+        router.delete(`/gradebook/components/${id}`);
+    };
+
+    return { breadcrumbs, data, setData, processing, errors, weightOk, remainingWeight, submit, deleteComponent };
+}

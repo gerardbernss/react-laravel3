@@ -1,26 +1,12 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { type DiscountType, useDiscountTypeShow } from '@/hooks/useDiscountTypeShow';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-
-interface DiscountType {
-    id: number;
-    name: string;
-    code: string;
-    discount_type: string;
-    value: string;
-    applies_to: string;
-    requires_verification: boolean;
-    is_stackable: boolean;
-    description: string | null;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
 
 interface Props {
     discountType: DiscountType;
@@ -28,43 +14,31 @@ interface Props {
     appliesToOptions: Record<string, string>;
 }
 
+function formatValue(discountType: DiscountType): string {
+    if (discountType.discount_type === 'percentage') {
+        return `${discountType.value}%`;
+    }
+    return `₱${parseFloat(discountType.value).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+}
+
 export default function Show({ discountType, discountTypeOptions, appliesToOptions }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Discounts', href: '/admin/discount-types' },
-        { title: discountType.name, href: `/admin/discount-types/${discountType.id}` },
-    ];
-
-    const { delete: destroy, processing } = useForm();
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-    const confirmDelete = () => {
-        destroy(`/admin/discount-types/${discountType.id}`, {
-            onSuccess: () => setShowDeleteDialog(false),
-        });
-    };
-
-    const formatValue = () => {
-        if (discountType.discount_type === 'percentage') {
-            return `${discountType.value}%`;
-        }
-        return `₱${parseFloat(discountType.value).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-    };
+    const { breadcrumbs, processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = useDiscountTypeShow({
+        discountType,
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={discountType.name} />
 
-            <div className="p-6 md:p-10">
-                {/* Header */}
+            <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <Link href="/admin/discount-types" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Back to Discounts
                         </Link>
-                        <h1 className="mt-2 text-3xl font-bold text-gray-900">{discountType.name}</h1>
-                        <p className="mt-1 font-mono text-gray-600">{discountType.code}</p>
+                        <h1 className={`mt-2 ${PAGE_TITLE}`}>{discountType.name}</h1>
+                        <p className={`mt-1 font-mono ${BODY_TEXT}`}>{discountType.code}</p>
                     </div>
                     <div className="flex gap-2">
                         <Link href={`/admin/discount-types/${discountType.id}/edit`}>
@@ -73,29 +47,29 @@ export default function Show({ discountType, discountTypeOptions, appliesToOptio
                                 Edit
                             </Button>
                         </Link>
-                        <Button variant="outline" onClick={() => setShowDeleteDialog(true)} disabled={processing} className="text-red-600 hover:text-red-700">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteDialog(true)}
+                            disabled={processing}
+                            className="text-red-600 hover:text-red-700"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </Button>
                     </div>
                 </div>
 
-                {/* Details Card */}
-                <div className="max-w-2xl rounded-lg border bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-lg font-semibold text-gray-900">Discount Type Details</h2>
+                <div className={`max-w-2xl ${CARD} p-6`}>
+                    <h2 className={`mb-4 ${SECTION_HEADING}`}>Discount Type Details</h2>
                     <dl className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <dt className="text-sm text-gray-500">Discount Value</dt>
-                            <dd className="mt-1 text-2xl font-bold text-primary">
-                                {formatValue()}
-                            </dd>
+                            <dd className="mt-1 text-2xl font-bold text-primary">{formatValue(discountType)}</dd>
                         </div>
                         <div>
                             <dt className="text-sm text-gray-500">Discount Type</dt>
                             <dd className="mt-1">
-                                <Badge variant="outline">
-                                    {discountTypeOptions[discountType.discount_type]}
-                                </Badge>
+                                <Badge variant="outline">{discountTypeOptions[discountType.discount_type]}</Badge>
                             </dd>
                         </div>
                         <div>
@@ -121,9 +95,9 @@ export default function Show({ discountType, discountTypeOptions, appliesToOptio
                         <div>
                             <dt className="text-sm text-gray-500">Status</dt>
                             <dd className="mt-1">
-                                <Badge className={discountType.is_active ? 'bg-green-100 text-green-800' : ''}>
+                                <AppBadge status={discountType.is_active ? 'active' : 'inactive'}>
                                     {discountType.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
+                                </AppBadge>
                             </dd>
                         </div>
                         {discountType.description && (
@@ -134,19 +108,16 @@ export default function Show({ discountType, discountTypeOptions, appliesToOptio
                         )}
                         <div>
                             <dt className="text-sm text-gray-500">Created</dt>
-                            <dd className="mt-1 text-gray-700">
-                                {new Date(discountType.created_at).toLocaleDateString()}
-                            </dd>
+                            <dd className="mt-1 text-gray-700">{new Date(discountType.created_at).toLocaleDateString()}</dd>
                         </div>
                         <div>
                             <dt className="text-sm text-gray-500">Last Updated</dt>
-                            <dd className="mt-1 text-gray-700">
-                                {new Date(discountType.updated_at).toLocaleDateString()}
-                            </dd>
+                            <dd className="mt-1 text-gray-700">{new Date(discountType.updated_at).toLocaleDateString()}</dd>
                         </div>
                     </dl>
                 </div>
             </div>
+
             <ConfirmDialog
                 open={showDeleteDialog}
                 onClose={() => setShowDeleteDialog(false)}

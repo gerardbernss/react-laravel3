@@ -2,11 +2,12 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_ROW_ACTION } from '@/constants/ui';
+import { useEnrollmentDashboard } from '@/hooks/useEnrollmentDashboard';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Clock, Eye, Search, Users } from 'lucide-react';
-import { useState } from 'react';
 
 interface PersonalData {
     first_name: string;
@@ -61,22 +62,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function EnrollmentDashboard({ applicants, filters = {}, statistics, currentPeriod }: Props) {
-    const [search, setSearch] = useState(filters.search || '');
-    const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
-    const [categoryFilter, setCategoryFilter] = useState(filters.category || 'all');
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.get(
-            '/enrollment/dashboard',
-            {
-                search: search || undefined,
-                status: statusFilter !== 'all' ? statusFilter : undefined,
-                category: categoryFilter !== 'all' ? categoryFilter : undefined,
-            },
-            { preserveState: true },
-        );
-    };
+    const { search, setSearch, statusFilter, setStatusFilter, categoryFilter, setCategoryFilter, handleSearch } =
+        useEnrollmentDashboard({ filters });
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -93,10 +80,10 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Enrollment Management" />
 
-            <div className="space-y-6 p-6 md:p-10">
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold text-gray-900">Enrollment Management</h1>
+                    <h1 className={PAGE_TITLE}>Enrollment Management</h1>
                     {currentPeriod && (
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
                             currentPeriod.is_open
@@ -111,7 +98,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="rounded-lg border bg-white p-3 shadow-sm">
+                    <div className={`${CARD} p-3`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-gray-600">Pending</p>
@@ -121,7 +108,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-3 shadow-sm">
+                    <div className={`${CARD} p-3`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-gray-600">Enrolled</p>
@@ -131,7 +118,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                         </div>
                     </div>
 
-                    <div className="rounded-lg border bg-white p-3 shadow-sm">
+                    <div className={`${CARD} p-3`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-gray-600">Total</p>
@@ -143,10 +130,10 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                 </div>
 
                 {/* Filters */}
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className={`${CARD} p-6`}>
                     <form onSubmit={handleSearch} className="grid grid-cols-1 gap-4 md:grid-cols-5">
                         <div className="md:col-span-2">
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Search Applicant</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>Search Applicant</label>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                 <Input
@@ -160,7 +147,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>Status</label>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Statuses" />
@@ -174,7 +161,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
+                            <label className={`mb-1 block ${LABEL_TEXT}`}>Category</label>
                             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Categories" />
@@ -198,7 +185,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                 </div>
 
                 {/* Table */}
-                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className={`overflow-hidden ${CARD}`}>
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="sticky top-0 z-10 bg-gray-50">
@@ -250,7 +237,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm">
                                             <Link href={`/enrollment/${applicant.id}`}>
-                                                <button className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                                                <button className={TABLE_ROW_ACTION}>
                                                     <Eye className="h-3 w-3" /> View
                                                 </button>
                                             </Link>

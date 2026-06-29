@@ -1,61 +1,44 @@
+import { AppInput } from '@/components/AppInput';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LABEL_TEXT, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import { useRoleCreate } from '@/hooks/useRoleCreate';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Permission } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Shield } from 'lucide-react';
+
+interface Props {
+    permissions: Permission[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Roles', href: '/roles' },
     { title: 'Create Role', href: '/roles/create' },
 ];
 
-interface PageProps {
-    permissions: Permission[];
-}
-
-export default function Create() {
-    const { permissions } = usePage().props as PageProps;
-
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        description: '',
-        is_active: true,
-        permissions: [] as number[],
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/roles');
-    };
-
-    const handlePermissionChange = (permissionId: number, checked: boolean) => {
-        if (checked) {
-            setData('permissions', [...data.permissions, permissionId]);
-        } else {
-            setData('permissions', data.permissions.filter(id => id !== permissionId));
-        }
-    };
+export default function Create({ permissions }: Props) {
+    const { data, setData, processing, errors, handleSubmit, handlePermissionChange } = useRoleCreate();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Role" />
-            
-            <div className="m-4">
-                <div className="flex items-center gap-4 mb-6">
+
+            <div className={PAGE_PADDING}>
+                <div className="mb-6 flex items-center gap-4">
                     <Link href="/roles">
                         <Button variant="outline" size="sm">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Roles
                         </Button>
                     </Link>
                     <div className="flex items-center gap-2">
                         <Shield className="h-5 w-5" />
-                        <h1 className="text-2xl font-bold">Create New Role</h1>
+                        <h1 className={PAGE_TITLE}>Create New Role</h1>
                     </div>
                 </div>
 
@@ -63,30 +46,23 @@ export default function Create() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Role Information</CardTitle>
-                            <CardDescription>
-                                Create a new role and assign permissions to it.
-                            </CardDescription>
+                            <CardDescription>Create a new role and assign permissions to it.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">Role Name *</Label>
-                                        <Input
-                                            id="name"
-                                            type="text"
-                                            value={data.name}
-                                            onChange={(e) => setData('name', e.target.value)}
-                                            placeholder="e.g., Content Manager"
-                                            className={errors.name ? 'border-red-500' : ''}
-                                        />
-                                        {errors.name && (
-                                            <p className="text-sm text-red-500">{errors.name}</p>
-                                        )}
-                                    </div>
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <AppInput
+                                        id="name"
+                                        label="Role Name *"
+                                        type="text"
+                                        value={data.name}
+                                        onChange={(e) => setData('name', e.target.value)}
+                                        placeholder="e.g., Content Manager"
+                                        error={errors.name}
+                                    />
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="is_active">Status</Label>
+                                        <Label htmlFor="is_active" className={LABEL_TEXT}>Status</Label>
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id="is_active"
@@ -99,7 +75,7 @@ export default function Create() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="description">Description</Label>
+                                    <Label htmlFor="description" className={LABEL_TEXT}>Description</Label>
                                     <Textarea
                                         id="description"
                                         value={data.description}
@@ -108,35 +84,26 @@ export default function Create() {
                                         rows={3}
                                         className={errors.description ? 'border-red-500' : ''}
                                     />
-                                    {errors.description && (
-                                        <p className="text-sm text-red-500">{errors.description}</p>
-                                    )}
+                                    <InputError message={errors.description} />
                                 </div>
 
                                 <div className="space-y-4">
-                                    <Label>Permissions</Label>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <Label className={LABEL_TEXT}>Permissions</Label>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                         {permissions?.map((permission) => (
                                             <div key={permission.id} className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id={`permission-${permission.id}`}
                                                     checked={data.permissions.includes(permission.id)}
-                                                    onCheckedChange={(checked) => 
-                                                        handlePermissionChange(permission.id, checked as boolean)
-                                                    }
+                                                    onCheckedChange={(checked) => handlePermissionChange(permission.id, checked as boolean)}
                                                 />
-                                                <Label 
-                                                    htmlFor={`permission-${permission.id}`}
-                                                    className="text-sm font-normal"
-                                                >
+                                                <Label htmlFor={`permission-${permission.id}`} className="text-sm font-normal">
                                                     {permission.name}
                                                 </Label>
                                             </div>
                                         ))}
                                     </div>
-                                    {errors.permissions && (
-                                        <p className="text-sm text-red-500">{errors.permissions}</p>
-                                    )}
+                                    <InputError message={errors.permissions} />
                                 </div>
 
                                 <div className="flex justify-end gap-4">

@@ -1,11 +1,12 @@
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CARD, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { useStudentPersonalInfo, type PersonalData } from '@/hooks/useStudentPersonalInfo';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Edit2, Mail, MapPin, Save, User, Users, X } from 'lucide-react';
-import { useState } from 'react';
 
 interface InfoRowProps {
     label: string;
@@ -19,31 +20,7 @@ interface Props {
         id: number;
         username: string;
     };
-    personalData: {
-        id: number;
-        first_name: string;
-        last_name: string;
-        middle_name: string | null;
-        suffix: string | null;
-        gender: string | null;
-        citizenship: string | null;
-        religion: string | null;
-        date_of_birth: string | null;
-        place_of_birth: string | null;
-        email: string;
-        alt_email: string | null;
-        mobile_number: string | null;
-        present_street: string | null;
-        present_brgy: string | null;
-        present_city: string | null;
-        present_province: string | null;
-        present_zip: string | null;
-        permanent_street: string | null;
-        permanent_brgy: string | null;
-        permanent_city: string | null;
-        permanent_province: string | null;
-        permanent_zip: string | null;
-    } | null;
+    personalData: PersonalData | null;
     familyBackground: {
         father_fname: string | null;
         father_lname: string | null;
@@ -79,46 +56,20 @@ const InfoRow = ({ label, value, editable, editComponent }: InfoRowProps) => (
 );
 
 export default function PersonalInfo({ personalData, familyBackground }: Props) {
-    const [isEditing, setIsEditing] = useState(false);
-
-    const { data, setData, put, processing, errors, reset } = useForm({
-        alt_email: personalData?.alt_email || '',
-        mobile_number: personalData?.mobile_number || '',
-        present_street: personalData?.present_street || '',
-        present_brgy: personalData?.present_brgy || '',
-        present_city: personalData?.present_city || '',
-        present_province: personalData?.present_province || '',
-        present_zip: personalData?.present_zip || '',
-        permanent_street: personalData?.permanent_street || '',
-        permanent_brgy: personalData?.permanent_brgy || '',
-        permanent_city: personalData?.permanent_city || '',
-        permanent_province: personalData?.permanent_province || '',
-        permanent_zip: personalData?.permanent_zip || '',
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        put('/student/personal-info', {
-            onSuccess: () => setIsEditing(false),
-        });
-    };
-
-    const handleCancel = () => {
-        reset();
-        setIsEditing(false);
-    };
+    const { isEditing, setIsEditing, data, setData, processing, errors, handleSubmit, handleCancel } =
+        useStudentPersonalInfo(personalData);
 
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="Personal Information" />
 
             <div className="min-h-screen bg-[#f5f5f5]">
-                {/* Header */}
+
                 <div className="sticky top-0 z-40 bg-white shadow-sm">
                     <div className="mx-auto max-w-[1500px] px-10 py-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900">
+                                <h1 className={PAGE_TITLE}>
                                     {personalData ? `${personalData.first_name} ${personalData.last_name}` : 'Personal Information'}
                                 </h1>
                             </div>
@@ -147,13 +98,13 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                     </div>
                 </div>
 
-                {/* Content */}
+
                 <div className="mx-auto max-w-[1500px] px-10 py-8">
                     {personalData ? (
                         <form onSubmit={handleSubmit}>
                             <div className="space-y-6">
-                                {/* Personal Information */}
-                                <div className="rounded-lg border bg-white shadow-sm">
+
+                                <div className={CARD}>
                                     <div className="rounded-t-lg bg-primary p-4">
                                         <h2 className="flex items-center gap-2 text-xl font-bold text-white">
                                             <User className="h-5 w-5" />
@@ -162,7 +113,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                     </div>
                                     <div className="p-6">
                                         <div className="mb-6">
-                                            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                            <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                                 <User className="h-5 w-5" />
                                                 Basic Information
                                             </h3>
@@ -185,7 +136,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                         </div>
 
                                         <div className="mb-6">
-                                            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                            <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                                 <Mail className="h-5 w-5" />
                                                 Contact Information
                                             </h3>
@@ -233,7 +184,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                         </div>
 
                                         <div className="mb-6">
-                                            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                            <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                                 <MapPin className="h-5 w-5" />
                                                 Present Address
                                             </h3>
@@ -325,7 +276,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                         </div>
 
                                         <div>
-                                            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                            <h3 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                                                 <MapPin className="h-5 w-5" />
                                                 Permanent Address
                                             </h3>
@@ -420,9 +371,9 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                     </div>
                                 </div>
 
-                                {/* Family Background */}
+
                                 {familyBackground && (
-                                    <div className="rounded-lg border bg-white shadow-sm">
+                                    <div className={CARD}>
                                         <div className="rounded-t-lg bg-primary p-4">
                                             <h2 className="flex items-center gap-2 text-xl font-bold text-white">
                                                 <Users className="h-5 w-5" />
@@ -431,7 +382,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                         </div>
                                         <div className="p-6">
                                             <div className="mb-6">
-                                                <h3 className="mb-4 text-lg font-semibold text-gray-900">Father&apos;s Details</h3>
+                                                <h3 className={`mb-4 ${SECTION_HEADING}`}>Father&apos;s Details</h3>
                                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                                     <InfoRow
                                                         label="Full Name"
@@ -448,7 +399,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                                             </div>
 
                                             <div className="mb-6">
-                                                <h3 className="mb-4 text-lg font-semibold text-gray-900">Mother&apos;s Details</h3>
+                                                <h3 className={`mb-4 ${SECTION_HEADING}`}>Mother&apos;s Details</h3>
                                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                                     <InfoRow
                                                         label="Full Name"
@@ -466,7 +417,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
 
                                             {(familyBackground.guardian_fname || familyBackground.guardian_lname) && (
                                                 <div>
-                                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">Guardian&apos;s Details</h3>
+                                                    <h3 className={`mb-4 ${SECTION_HEADING}`}>Guardian&apos;s Details</h3>
                                                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                                         <InfoRow
                                                             label="Full Name"
@@ -489,7 +440,7 @@ export default function PersonalInfo({ personalData, familyBackground }: Props) 
                             </div>
                         </form>
                     ) : (
-                        <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
+                        <div className={`${CARD} p-8 text-center`}>
                             <User className="mx-auto h-12 w-12 text-gray-400" />
                             <h2 className="mt-4 text-lg font-semibold text-gray-900">No Personal Data Found</h2>
                             <p className="mt-2 text-gray-600">

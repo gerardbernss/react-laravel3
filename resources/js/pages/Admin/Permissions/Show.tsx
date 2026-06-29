@@ -1,41 +1,35 @@
+import { AppBadge } from '@/components/AppBadge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { BODY_TEXT, HELPER_TEXT, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
 import { usePermissions } from '@/hooks/useAuth';
+import { usePermissionShow } from '@/hooks/usePermissionShow';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Permission } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Key, Users } from 'lucide-react';
-import { useState } from 'react';
+
+interface Props {
+    permission: Permission;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Permissions', href: '/permissions' },
     { title: 'Permission Details', href: '/permissions/show' },
 ];
 
-interface PageProps {
-    permission: Permission;
-}
-
-export default function Show() {
-    const { permission } = usePage().props as PageProps;
+export default function Show({ permission }: Props) {
     const { hasPermission } = usePermissions();
-    const { delete: destroy, processing } = useForm();
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-    const confirmDelete = () => {
-        destroy(`/permissions/${permission.id}`, {
-            onSuccess: () => setShowDeleteDialog(false),
-        });
-    };
+    const { processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = usePermissionShow({ permission });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Permission: ${permission.name}`} />
 
-            <div className="m-4">
+            <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
                     <Link href="/permissions">
                         <Button variant="outline" size="sm">
@@ -45,13 +39,12 @@ export default function Show() {
                     </Link>
                     <div className="flex items-center gap-2">
                         <Key className="h-5 w-5" />
-                        <h1 className="text-2xl font-bold">Permission Details</h1>
+                        <h1 className={PAGE_TITLE}>Permission Details</h1>
                     </div>
                 </div>
 
                 <div className="max-w-4xl">
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        {/* Permission Information */}
                         <div className="lg:col-span-2">
                             <Card>
                                 <CardHeader>
@@ -63,19 +56,19 @@ export default function Show() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700">Name</label>
+                                        <label className={LABEL_TEXT}>Name</label>
                                         <p className="text-lg font-semibold">{permission.name}</p>
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700">Slug</label>
+                                        <label className={LABEL_TEXT}>Slug</label>
                                         <Badge variant="outline" className="font-mono">
                                             {permission.slug}
                                         </Badge>
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700">Description</label>
+                                        <label className={LABEL_TEXT}>Description</label>
                                         <p className="text-gray-600">{permission.description || 'No description provided'}</p>
                                     </div>
 
@@ -95,7 +88,7 @@ export default function Show() {
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-medium text-gray-700">Total Users with this Permission</label>
+                                        <label className={LABEL_TEXT}>Total Users with this Permission</label>
                                         <div className="flex items-center gap-2">
                                             <Users className="h-4 w-4 text-blue-500" />
                                             <span className="text-lg font-semibold text-blue-600">
@@ -107,7 +100,6 @@ export default function Show() {
                             </Card>
                         </div>
 
-                        {/* Actions Sidebar */}
                         <div>
                             <Card>
                                 <CardHeader>
@@ -120,14 +112,8 @@ export default function Show() {
                                             <Button className="w-full">Edit Permission</Button>
                                         </Link>
                                     )}
-
                                     {hasPermission('delete-permissions') && (
-                                        <Button
-                                            variant="destructive"
-                                            className="w-full"
-                                            disabled={processing}
-                                            onClick={() => setShowDeleteDialog(true)}
-                                        >
+                                        <Button variant="destructive" className="w-full" disabled={processing} onClick={() => setShowDeleteDialog(true)}>
                                             Delete Permission
                                         </Button>
                                     )}
@@ -136,8 +122,7 @@ export default function Show() {
                         </div>
                     </div>
 
-                    {/* Roles with this permission */}
-                    {permission?.roles && permission?.roles.length > 0 && (
+                    {permission.roles && permission.roles.length > 0 ? (
                         <Card className="mt-6">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -157,7 +142,7 @@ export default function Show() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {permission?.roles.map((role) => (
+                                        {permission.roles.map((role) => (
                                             <TableRow key={role.id}>
                                                 <TableCell className="font-medium">{role.name}</TableCell>
                                                 <TableCell>
@@ -166,9 +151,9 @@ export default function Show() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge className={role.is_active ? 'bg-green-100 text-green-800' : ''}>
+                                                    <AppBadge status={role.is_active ? 'active' : 'inactive'}>
                                                         {role.is_active ? 'Active' : 'Inactive'}
-                                                    </Badge>
+                                                    </AppBadge>
                                                 </TableCell>
                                                 <TableCell>{role.users?.length || 0}</TableCell>
                                             </TableRow>
@@ -177,20 +162,19 @@ export default function Show() {
                                 </Table>
                             </CardContent>
                         </Card>
-                    )}
-
-                    {(!permission.roles || permission.roles.length === 0) && (
+                    ) : (
                         <Card className="mt-6">
                             <CardContent className="py-8 text-center">
                                 <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                                <h3 className="mb-2 text-lg font-medium text-gray-900">No roles assigned</h3>
-                                <p className="text-gray-500">This permission is not currently assigned to any roles.</p>
-                                <p className="text-sm text-gray-400 mt-2">No users will have access to this permission until it's assigned to at least one role.</p>
+                                <h3 className={`mb-2 ${SECTION_HEADING}`}>No roles assigned</h3>
+                                <p className={BODY_TEXT}>This permission is not currently assigned to any roles.</p>
+                                <p className={`mt-2 ${HELPER_TEXT}`}>No users will have access to this permission until it's assigned to at least one role.</p>
                             </CardContent>
                         </Card>
                     )}
                 </div>
             </div>
+
             <ConfirmDialog
                 open={showDeleteDialog}
                 onClose={() => setShowDeleteDialog(false)}

@@ -1,11 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL } from '@/constants/ui';
+import { useEnrollmentAuditLog } from '@/hooks/useEnrollmentAuditLog';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, History } from 'lucide-react';
-import { TablePagination } from '@/components/ui/table-pagination';
-import { useMemo, useState } from 'react';
 
 interface AuditLog {
     id: number;
@@ -33,25 +33,8 @@ interface Props {
 }
 
 export default function AuditLog({ applicant, auditLogs }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Enrollment Management', href: '/enrollment/dashboard' },
-        {
-            title: `${applicant.personal_data?.last_name}, ${applicant.personal_data?.first_name}`,
-            href: `/enrollment/${applicant.id}`,
-        },
-        { title: 'Audit Log', href: `/enrollment/${applicant.id}/audit-log` },
-    ];
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-
-    const totalPages = Math.ceil(auditLogs.length / pageSize);
-
-    const paginatedLogs = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return auditLogs.slice(start, start + pageSize);
-    }, [auditLogs, currentPage, pageSize]);
+    const { breadcrumbs, currentPage, setCurrentPage, pageSize, paginatedLogs, handlePageSizeChange } =
+        useEnrollmentAuditLog({ applicant, auditLogs });
 
     const getActionBadge = (action: string) => {
         const actionLower = action.toLowerCase();
@@ -68,12 +51,12 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Enrollment Audit Log" />
 
-            <div className="space-y-6 p-6 md:p-10">
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Enrollment Audit Log</h1>
-                        <p className="mt-1 text-gray-600">
+                        <h1 className={PAGE_TITLE}>Enrollment Audit Log</h1>
+                        <p className={`mt-1 ${BODY_TEXT}`}>
                             Complete activity history for {applicant.personal_data?.first_name} {applicant.personal_data?.last_name}
                         </p>
                         <p className="text-sm text-gray-500">Application #: {applicant.application_number}</p>
@@ -87,7 +70,7 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
                 </div>
 
                 {/* Audit Log Table */}
-                <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className={`overflow-hidden ${CARD}`}>
                     <div className="flex items-center gap-2 border-b bg-gray-50 px-6 py-4">
                         <History className="h-5 w-5 text-gray-600" />
                         <h2 className="font-semibold">Activity History</h2>
@@ -100,19 +83,19 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <th className={TABLE_HEADER_CELL}>
                                         Date &amp; Time
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <th className={TABLE_HEADER_CELL}>
                                         Action
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <th className={TABLE_HEADER_CELL}>
                                         Status Change
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <th className={TABLE_HEADER_CELL}>
                                         Performed By
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <th className={TABLE_HEADER_CELL}>
                                         Details
                                     </th>
                                 </tr>
@@ -171,7 +154,7 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
                             pageSize={pageSize}
                             currentPage={currentPage}
                             onPageChange={setCurrentPage}
-                            onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                            onPageSizeChange={handlePageSizeChange}
                         />
                     )}
                 </div>

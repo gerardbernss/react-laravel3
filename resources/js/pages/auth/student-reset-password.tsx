@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { useStudentResetPassword } from '@/hooks/useStudentResetPassword';
+import { Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
 
 interface StudentResetPasswordProps {
     token: string;
@@ -13,19 +13,7 @@ interface StudentResetPasswordProps {
 }
 
 export default function StudentResetPassword({ token, email }: StudentResetPasswordProps) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        token: token,
-        email: email,
-        password: '',
-        password_confirmation: '',
-    });
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        post('/student/reset-password', {
-            onFinish: () => reset('password', 'password_confirmation'),
-        });
-    };
+    const { data, setData, processing, errors, submit } = useStudentResetPassword({ token, email });
 
     return (
         <AuthLayout title="Reset Password" description="Please enter your new password below">

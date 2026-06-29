@@ -1,9 +1,10 @@
 ﻿import AppLayout from '@/layouts/app-layout';
+import { BODY_TEXT, PAGE_TITLE } from '@/constants/ui';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { dashboard } from '@/routes';
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link } from '@inertiajs/react';
 import { BookOpen, CalendarCheck, ClipboardList, Clock, GraduationCap, LayoutGrid, Megaphone, Users } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 
 interface Stats {
     total_applicants: number;
@@ -126,6 +127,8 @@ export default function Dashboard({
     currentSchoolYear = '',
     announcements = [],
 }: Props) {
+    const { currentSemester, leftColRef, leftColHeight, totalCategory } = useAdminDashboard(categoryBreakdown);
+
     // Faculty dashboard
     if (isFaculty) {
         const totalStudents = myClasses.reduce((sum, c) => sum + Number(c.enrolled_count), 0);
@@ -143,9 +146,9 @@ export default function Dashboard({
                     <div>
                         <div className="flex items-center gap-3">
                             <LayoutGrid className="h-7 w-7 text-primary" />
-                            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                            <h1 className={PAGE_TITLE}>Dashboard</h1>
                         </div>
-                        <p className="mt-1 text-gray-600">Welcome back — here's your teaching overview</p>
+                        <p className={`mt-1 ${BODY_TEXT}`}>Welcome back — here's your teaching overview</p>
                     </div>
 
                     {/* Stats Cards */}
@@ -328,24 +331,6 @@ export default function Dashboard({
             </AppLayout>
         );
     }
-
-    // SharedData is the typed interface for shared Inertia props (see types/index.d.ts).
-    // Passing it as a generic gives TypeScript the shape of currentSemester so
-    // accessing .name and .school_year is type-safe rather than `unknown`.
-    const { currentSemester } = usePage<SharedData>().props;
-
-    const leftColRef = useRef<HTMLDivElement>(null);
-    const [leftColHeight, setLeftColHeight] = useState<number | undefined>();
-
-    useEffect(() => {
-        const el = leftColRef.current;
-        if (!el) return;
-        const ro = new ResizeObserver(() => setLeftColHeight(el.offsetHeight));
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, []);
-
-    const totalCategory = categoryBreakdown.reduce((sum, item) => sum + Number(item.count), 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

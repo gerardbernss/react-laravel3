@@ -5,28 +5,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { useStudentLogin } from '@/hooks/useStudentLogin';
+import { Head } from '@inertiajs/react';
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
 
 interface StudentLoginProps {
     status?: string;
 }
 
 export default function StudentLogin({ status }: StudentLoginProps) {
-    const [showPassword, setShowPassword] = useState(false);
-    const { data, setData, post, processing, errors, reset } = useForm({
-        username: '',
-        password: '',
-        remember: false,
-    });
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        post('/student/login', {
-            onFinish: () => reset('password'),
-        });
-    };
+    const { showPassword, setShowPassword, data, setData, processing, errors, submit } = useStudentLogin();
 
     return (
         <AuthLayout title="Student Portal Login" description="Enter your portal credentials to access your account">

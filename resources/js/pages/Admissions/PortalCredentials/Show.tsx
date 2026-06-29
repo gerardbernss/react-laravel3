@@ -11,9 +11,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
+import { usePortalCredentialShow } from '@/hooks/usePortalCredentialShow';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Key, Mail, RefreshCw, Shield, User } from 'lucide-react';
 
 interface PersonalData {
@@ -58,17 +60,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Show({ credential }: Props) {
-    const handleResend = () => {
-        router.post(`/portal-credentials/${credential.id}/resend`);
-    };
-
-    const handleSuspend = () => {
-        router.post(`/portal-credentials/${credential.id}/suspend`);
-    };
-
-    const handleReactivate = () => {
-        router.post(`/portal-credentials/${credential.id}/reactivate`);
-    };
+    const { handleResend, handleSuspend, handleReactivate, handleSend } = usePortalCredentialShow({ credentialId: credential.id });
 
 const getStatusBadge = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -98,7 +90,7 @@ const getStatusBadge = (status: string) => {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Portal Credential Details" />
 
-            <div className="space-y-6 p-6 md:p-10">
+            <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div className="mb-6">
                     <Link href="/portal-credentials" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
@@ -109,12 +101,12 @@ const getStatusBadge = (status: string) => {
                     <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold text-gray-900">
+                                <h1 className={PAGE_TITLE}>
                                     {credential.personal_data?.first_name} {credential.personal_data?.last_name}
                                 </h1>
                                 {getStatusBadge(credential.access_status)}
                             </div>
-                            <p className="mt-1 text-gray-600">{credential.username}</p>
+                            <p className={`mt-1 ${BODY_TEXT}`}>{credential.username}</p>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
@@ -198,8 +190,8 @@ const getStatusBadge = (status: string) => {
 
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Personal Information */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <User className="h-5 w-5" />
                             Personal Information
                         </h2>
@@ -225,8 +217,8 @@ const getStatusBadge = (status: string) => {
                     </div>
 
                     {/* Credential Details */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <Key className="h-5 w-5" />
                             Credential Details
                         </h2>
@@ -258,8 +250,8 @@ const getStatusBadge = (status: string) => {
                     </div>
 
                     {/* Activity Information */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <Calendar className="h-5 w-5" />
                             Activity Information
                         </h2>
@@ -294,8 +286,8 @@ const getStatusBadge = (status: string) => {
                     </div>
 
                     {/* Email Actions */}
-                    <div className="rounded-lg border bg-white p-6 shadow-sm">
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <div className={`${CARD} p-6`}>
+                        <h2 className={`mb-4 flex items-center gap-2 ${SECTION_HEADING}`}>
                             <Mail className="h-5 w-5" />
                             Email Actions
                         </h2>
@@ -319,7 +311,7 @@ const getStatusBadge = (status: string) => {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => router.post(`/portal-credentials/${credential.id}/send`)}>
+                                            <AlertDialogAction onClick={handleSend}>
                                                 Send Credentials
                                             </AlertDialogAction>
                                         </AlertDialogFooter>

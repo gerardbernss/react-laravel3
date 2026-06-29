@@ -3,68 +3,49 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreExaminationRoomRequest;
+use App\Http\Requests\Admin\UpdateExaminationRoomRequest;
 use App\Models\ExaminationRoom;
-use Illuminate\Http\Request;
+use App\Repositories\ExaminationRoomRepository;
+use App\Services\Admin\ExaminationRoomService;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 
 class ExaminationRoomsController extends Controller
 {
-    /**
-     * Display a listing of examination rooms.
-     */
+    public function __construct(
+        private ExaminationRoomRepository $examinationRoomRepository,
+        private ExaminationRoomService $examinationRoomService,
+    ) {
+    }
+
     public function index()
     {
-        $rooms = ExaminationRoom::orderBy('building')->orderBy('name')->get();
-
         return Inertia::render('Admin/ExaminationRooms/Index', [
-            'rooms' => $rooms,
+            'rooms' => $this->examinationRoomRepository->allOrdered(),
         ]);
     }
 
-    /**
-     * Show the form for creating a new room.
-     */
     public function create()
     {
         return Inertia::render('Admin/ExaminationRooms/Create');
     }
 
-    /**
-     * Store a newly created room.
-     */
-    public function store(Request $request)
+    public function store(StoreExaminationRoomRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'building' => 'nullable|string|max:255',
-            'capacity' => 'required|integer|min:1|max:500',
-            'floor' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
-        ExaminationRoom::create($validated);
+        $this->examinationRoomService->create($request->validated());
 
         return redirect()->route('examination-rooms.index')
             ->with('success', 'Examination room created successfully.');
     }
 
-    /**
-     * Display the specified room.
-     */
     public function show(ExaminationRoom $examinationRoom)
     {
-        $examinationRoom->load(['examSchedules' => function ($query) {
-            $query->orderBy('exam_date', 'desc')->limit(10);
-        }]);
-
         return Inertia::render('Admin/ExaminationRooms/Show', [
-            'room' => $examinationRoom,
+            'room' => $this->examinationRoomRepository->loadRecentExamSchedules($examinationRoom),
         ]);
     }
 
-    /**
-     * Show the form for editing the specified room.
-     */
     public function edit(ExaminationRoom $examinationRoom)
     {
         return Inertia::render('Admin/ExaminationRooms/Edit', [
@@ -72,38 +53,21 @@ class ExaminationRoomsController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified room.
-     */
-    public function update(Request $request, ExaminationRoom $examinationRoom)
+    public function update(UpdateExaminationRoomRequest $request, ExaminationRoom $examinationRoom)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'building' => 'nullable|string|max:255',
-            'capacity' => 'required|integer|min:1|max:500',
-            'floor' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
-        $examinationRoom->update($validated);
+        $this->examinationRoomService->update($examinationRoom, $request->validated());
 
         return redirect()->route('examination-rooms.index')
             ->with('success', 'Examination room updated successfully.');
     }
 
-    /**
-     * Remove the specified room.
-     */
     public function destroy(ExaminationRoom $examinationRoom)
     {
-        // Check if room has schedules
-        if ($examinationRoom->examSchedules()->count() > 0) {
+        if (! $this->examinationRoomService->delete($examinationRoom)) {
             return back()->withErrors([
                 'error' => 'Cannot delete room. It has associated exam schedules.',
             ]);
         }
-
-        $examinationRoom->delete();
 
         return redirect()->route('examination-rooms.index')
             ->with('success', 'Examination room deleted successfully.');
@@ -112,13 +76,8 @@ class ExaminationRoomsController extends Controller
     /**
      * Get active rooms for dropdown (API).
      */
-    public function getActiveRooms()
+    public function getActiveRooms(): JsonResponse
     {
-        $rooms = ExaminationRoom::active()
-            ->orderBy('building')
-            ->orderBy('name')
-            ->get(['id', 'name', 'building', 'capacity', 'floor']);
-
-        return response()->json($rooms);
+        return response()->json($this->examinationRoomRepository->activeForDropdown());
     }
 }

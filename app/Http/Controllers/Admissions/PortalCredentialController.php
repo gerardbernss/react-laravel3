@@ -1,18 +1,13 @@
 <?php
+
 namespace App\Http\Controllers\Admissions;
 
 use App\Http\Controllers\Controller;
-
 use App\Http\Requests\Admissions\StorePortalCredentialRequest;
-use App\Mail\Admissions\PortalPasswordMail;
-use App\Mail\Admissions\ResendPortalPasswordMail;
-use App\Models\Applicant;
 use App\Models\PortalCredential;
-use Illuminate\Http\Request;
+use App\Repositories\PortalCredentialRepository;
+use App\Services\Admissions\PortalCredentialService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 /**
@@ -22,219 +17,80 @@ use Inertia\Inertia;
  * The main portal credential send flow also exists in ApplicantController::sendPortalPassword()
  * for the inline "send credentials" action on the applicant detail page; this
  * controller handles the dedicated portal-credentials management area.
- *
- * Credential lifecycle:
- *   store()      — create new credential, hash the password, email it immediately
- *   send()       — generate a fresh password and email it (first-time send)
- *   resend()     — generate a fresh password and email it again (re-send)
- *   suspend()    — set access_status = 'Suspended', reset login_attempts to 0
- *   reactivate() — set access_status = 'Active', reset login_attempts to 0
- *
- * Passwords are always Str::random(12) — plain text is passed to the Mailable
- * and discarded; only the bcrypt hash is stored in temporary_password.
- *
- * The statistics() method provides aggregate counts used by the admin dashboard
- * to monitor credential distribution progress.
  */
 class PortalCredentialController extends Controller
 {
-    /**
-     * Display all portal credentials
-     */
+    public function __construct(
+        private PortalCredentialRepository $portalCredentialRepository,
+        private PortalCredentialService $portalCredentialService,
+    ) {
+    }
+
     public function index()
     {
-        $credentials = PortalCredential::with(['personalData', 'application'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
         return Inertia::render('Admissions/PortalCredentials/Index', [
-            'credentials' => $credentials,
+            'credentials' => $this->portalCredentialRepository->allWithRelations(),
         ]);
     }
 
-    /**
-     * Show form to generate credentials
-     */
     public function create()
     {
-        $applicants = Applicant::with('applicantPersonalData')->get();
-
         return Inertia::render('Admissions/PortalCredentials/Create', [
-            'applicants' => $applicants,
+            'applicants' => $this->portalCredentialRepository->applicantsWithPersonalData(),
         ]);
     }
 
-    /**
-     * Store new portal credentials
-     */
     public function store(StorePortalCredentialRequest $request)
     {
-        $validated = $request->validated();
+        $result = $this->portalCredentialService->store($request->validated(), Auth::id());
 
-        // Get the applicant's personal data to retrieve their email
-        $personalData = \App\Models\ApplicantPersonalData::findOrFail($validated['applicant_personal_data_id']);
-
-        // Validate that the applicant has an email address
-        if (empty($personalData->email)) {
-            return back()->withErrors(['email' => 'The applicant does not have an email address. Please update their profile first.']);
+        if (! empty($result['error_field'])) {
+            return back()->withErrors([$result['error_field'] => $result['error_message']]);
         }
 
-        // Use the applicant's email as the username
-        $username = $personalData->email;
-
-        // Check if credentials already exist for this email
-        if (PortalCredential::where('username', $username)->exists()) {
-            return back()->withErrors(['username' => 'Portal credentials already exist for this email address.']);
-        }
-
-        // Generate temporary password
-        $temporaryPassword = Str::random(12);
-
-        $credential = PortalCredential::create([
-            'applicant_personal_data_id'    => $validated['applicant_personal_data_id'],
-            'applicant_id' => $validated['applicant_id'],
-            'username'                      => $username,
-            'temporary_password'            => bcrypt($temporaryPassword), // Hash the password
-            'credentials_generated_at'      => now(),
-            'created_by'                    => Auth::id(),
-        ]);
-
-        // Send email with credentials
-        try {
-            if ($credential->personalData && $credential->personalData->email) {
-                Mail::to($credential->personalData->email)
-                    ->send(new PortalPasswordMail($credential, $temporaryPassword));
-
-                // Mark as sent
-                $credential->update([
-                    'credentials_sent_at' => now(),
-                    'sent_via'            => 'email',
-                ]);
-            }
-        } catch (\Exception $e) {
-            // Log the error but don't fail the entire operation
-            Log::error('Failed to send portal credentials email: ' . $e->getMessage());
-        }
-
-        return redirect()->route('portal-credentials.show', $credential->id)
+        return redirect()->route('portal-credentials.show', $result['credential']->id)
             ->with('success', 'Portal credentials generated and sent to applicant successfully.');
     }
 
-    /**
-     * Show credential details
-     */
     public function show(PortalCredential $credential)
     {
-        $credential->load(['personalData', 'application']);
-
         return Inertia::render('Admissions/PortalCredentials/Show', [
-            'credential' => $credential,
+            'credential' => $this->portalCredentialRepository->loadRelations($credential),
         ]);
     }
 
-    /**
-     * Send credentials to applicant
-     */
     public function send(PortalCredential $credential)
     {
-        try {
-            if ($credential->personalData && $credential->personalData->email) {
-                // Generate a temporary password for sending
-                $temporaryPassword = Str::random(12);
+        $result = $this->portalCredentialService->send($credential);
 
-                // Update credential with new password
-                $credential->update([
-                    'temporary_password'  => bcrypt($temporaryPassword),
-                    'credentials_sent_at' => now(),
-                    'sent_via'            => 'email',
-                ]);
-
-                // Send email with new credentials
-                Mail::to($credential->personalData->email)
-                    ->send(new ResendPortalPasswordMail($credential, $temporaryPassword));
-
-                return back()->with('success', 'Portal password sent to applicant successfully.');
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to send portal credentials: ' . $e->getMessage());
-            return back()->with('error', 'Failed to send credentials. Please try again.');
-        }
-
-        return back()->with('error', 'Applicant email not found.');
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
-    /**
-     * Resend credentials with new password
-     */
     public function resend(PortalCredential $credential)
     {
-        try {
-            // Generate new temporary password
-            $newPassword = Str::random(12);
+        $result = $this->portalCredentialService->resend($credential);
 
-            // Update credential with new password
-            $credential->update([
-                'temporary_password'  => bcrypt($newPassword),
-                'credentials_sent_at' => now(),
-                'sent_via'            => 'email',
-                'resent_count'        => ($credential->resent_count ?? 0) + 1,
-            ]);
-
-            // Send email with new credentials
-            if ($credential->personalData && $credential->personalData->email) {
-                Mail::to($credential->personalData->email)
-                    ->send(new ResendPortalPasswordMail($credential, $newPassword));
-            }
-
-            return back()->with('success', 'New credentials generated and sent to applicant.');
-        } catch (\Exception $e) {
-            Log::error('Failed to resend portal credentials: ' . $e->getMessage());
-            return back()->with('error', 'Failed to resend credentials. Please try again.');
-        }
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
-    /**
-     * Suspend access
-     */
     public function suspend(PortalCredential $credential)
     {
-        $credential->update([
-            'access_status'  => 'Suspended',
-            'login_attempts' => 0,
-        ]);
+        $this->portalCredentialService->suspend($credential);
 
         return back()->with('success', 'Portal access suspended.');
     }
 
-    /**
-     * Reactivate access
-     */
     public function reactivate(PortalCredential $credential)
     {
-        $credential->update([
-            'access_status'  => 'Active',
-            'login_attempts' => 0,
-        ]);
+        $this->portalCredentialService->reactivate($credential);
 
         return back()->with('success', 'Portal access reactivated.');
     }
 
-/**
-     * Get credential statistics
-     */
     public function statistics()
     {
-        $stats = [
-            'total_credentials' => PortalCredential::count(),
-            'total_activated'   => PortalCredential::where('is_activated', true)->count(),
-            'total_suspended'   => PortalCredential::whereNotNull('access_suspended_at')->count(),
-            'credentials_sent'  => PortalCredential::whereNotNull('credentials_sent_at')->count(),
-            'password_changed'  => PortalCredential::where('password_changed', true)->count(),
-            'with_logins'       => PortalCredential::whereNotNull('last_login_at')->count(),
-        ];
-
         return Inertia::render('Admissions/PortalCredentials/Statistics', [
-            'statistics' => $stats,
+            'statistics' => $this->portalCredentialService->statistics(),
         ]);
     }
 }

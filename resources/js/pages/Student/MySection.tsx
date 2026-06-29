@@ -1,3 +1,4 @@
+import { CARD, SECTION_HEADING } from '@/constants/ui';
 import StudentLayout from '@/layouts/student-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -42,10 +43,10 @@ export default function MySection({ targetYear, targetSemester, blockSection, su
                 {blockSection ? (
                     <div className="space-y-6">
                         {/* Section details */}
-                        <div className="rounded-lg border bg-white p-6 shadow-sm">
+                        <div className={`${CARD} p-6`}>
                             <div className="mb-4 flex items-center gap-2">
                                 <LayoutGrid className="h-5 w-5 text-blue-600" />
-                                <h2 className="text-lg font-semibold text-gray-900">Section Details</h2>
+                                <h2 className={SECTION_HEADING}>Section Details</h2>
                             </div>
                             <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                                 <div>
@@ -82,10 +83,10 @@ export default function MySection({ targetYear, targetSemester, blockSection, su
                         </div>
 
                         {/* Subjects */}
-                        <div className="rounded-lg border bg-white shadow-sm">
+                        <div className={CARD}>
                             <div className="flex items-center gap-2 border-b px-6 py-4">
                                 <BookOpen className="h-5 w-5 text-blue-600" />
-                                <h2 className="text-lg font-semibold text-gray-900">Subjects</h2>
+                                <h2 className={SECTION_HEADING}>Subjects</h2>
                             </div>
                             {subjects.length > 0 ? (
                                 <table className="w-full text-sm">
