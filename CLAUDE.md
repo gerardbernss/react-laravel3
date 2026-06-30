@@ -19,8 +19,8 @@ Backend:
 - `app/Http/Resources` — response formatting for anything sent to Inertia.
 
 Frontend:
-- `resources/js/Pages` — Inertia page components, mirroring Laravel route groups.
-- `resources/js/Components` — reusable UI components.
+- `resources/js/pages` — Inertia page components, mirroring Laravel route groups.
+- `resources/js/components` — reusable UI components.
 - `resources/js/hooks` — custom React hooks.
 
 ## Conventions
@@ -30,7 +30,7 @@ Frontend:
 - Business logic goes in `app/Services`.
 - Database queries go in `app/Repositories`.
 - Use Form Requests for all validation, never validate in controllers.
-- Use Resource classes for all Inertia responses.
+- Controllers pass plain arrays from Services directly to `Inertia::render()` — no Resource classes.
 - Method names follow Laravel convention: `index`, `show`, `store`, `update`, `destroy`.
 - Always use `DB::transaction()` for multi-step writes.
 - Use Eloquent relationships instead of raw Oracle SQL wherever possible.
@@ -38,8 +38,8 @@ Frontend:
 ### React (frontend)
 - Components: PascalCase filenames and function names.
 - Hooks: camelCase, prefixed with `use` (e.g. `useUserForm`).
-- Pages (Inertia): stored in `resources/js/Pages`, mirroring Laravel route groups.
-- Shared components: stored in `resources/js/Components`.
+- Pages (Inertia): stored in `resources/js/pages`, mirroring Laravel route groups.
+- Shared components: stored in `resources/js/components`.
 - Extract any logic longer than 10 lines from JSX into a custom hook.
 - No business logic inside components — hooks only.
 - Props: destructure at the top of every component.
@@ -56,7 +56,7 @@ Frontend:
 Laravel Controller → Inertia::render() → React Page Component (as props)
 ```
 
-Controller delegates to a Service for logic and a Repository for data access, formats the result through a Resource, and passes it to `Inertia::render()`. The React Page Component under `resources/js/Pages` receives that payload as props and renders it — it does not fetch or compute business data itself.
+Controller delegates to a Service for logic and a Repository for data access, then passes the result array directly to `Inertia::render()`. The React Page Component under `resources/js/pages` receives that payload as props and renders it — it does not fetch or compute business data itself.
 
 ## Oracle-specific rules
 

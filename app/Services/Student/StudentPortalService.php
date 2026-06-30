@@ -660,6 +660,8 @@ class StudentPortalService
             return false;
         }
 
+        // Collect all sibling IDs and full names upfront, then check in bulk
+        // (2 queries max regardless of sibling count, instead of up to 2 per sibling).
         $ids = $siblings->pluck('sibling_id_number')->filter()->values()->all();
         $names = $siblings->pluck('sibling_full_name')->filter()->map(fn ($n) => trim($n))->values()->all();
 
@@ -807,6 +809,9 @@ class StudentPortalService
             return ['ok' => false, 'errors' => ['error' => 'You are already enrolled.']];
         }
 
+        // Wrap all writes in a single transaction: student record upsert,
+        // application status update, and the full data-copy into student tables
+        // must all succeed together or roll back together.
         DB::transaction(function () use ($personalData, $application) {
             $studentRecord = $personalData->student;
 
@@ -828,6 +833,7 @@ class StudentPortalService
 
             $this->applicantRepository->update($application, ['application_status' => 'Enrolled']);
 
+            // Mirrors applicant_* snapshot tables into student_* tables on enrollment.
             app(CopyApplicantDataService::class)->execute($studentRecord);
         });
 
@@ -859,6 +865,9 @@ class StudentPortalService
             return ['ok' => false, 'errors' => ['error' => 'Your fee assessment has already been submitted.']];
         }
 
+        // Wrap the entire enrollment write sequence in a transaction:
+        // student record, fee assessment, application status, and data copy
+        // must all commit together or not at all.
         DB::transaction(function () use ($personalData, $application, $studentRecord, $targetYear, $targetSem, $data) {
             if (! $studentRecord) {
                 $studentRecord = $this->studentRepository->createStudent([

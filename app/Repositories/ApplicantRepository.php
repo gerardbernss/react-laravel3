@@ -200,11 +200,14 @@ class ApplicantRepository
             'educationalBackground',
             'documents',
             'portalCredential',
+            // Oracle does not support LIMIT inside eager load subqueries.
+            // Load all logs ordered by date, then trim to 20 on the collection.
             'auditLogs' => function ($q) {
                 $q->orderBy('created_at', 'desc');
             },
         ]);
 
+        // Slice after loading — avoids generating a LIMIT clause that Oracle rejects.
         $applicant->setRelation('auditLogs', $applicant->auditLogs->take(20));
     }
 

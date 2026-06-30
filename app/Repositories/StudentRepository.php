@@ -136,6 +136,8 @@ class StudentRepository
         })->where('enrollment_status', 'Active')->exists();
     }
 
+    // Bulk check: returns true if any of the given student ID numbers belong to an active student.
+    // Used in place of per-sibling EXISTS queries to avoid N+1 in the sibling discount check.
     public function hasAnyActiveSiblingByIds(array $ids): bool
     {
         return Student::whereIn('student_id_number', $ids)
@@ -143,6 +145,9 @@ class StudentRepository
             ->exists();
     }
 
+    // Bulk check: returns true if any of the given full names match an active student.
+    // Uses Oracle's || concatenation operator (standard SQL, not MySQL-specific).
+    // Builds a single parameterised IN clause to avoid N+1.
     public function hasAnyActiveSiblingByFullNames(array $fullNames): bool
     {
         return Student::whereHas('personalData', function ($q) use ($fullNames) {

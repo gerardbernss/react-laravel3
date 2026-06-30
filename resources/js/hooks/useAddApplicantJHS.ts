@@ -310,34 +310,61 @@ export function useAddApplicantJHS() {
     };
 
     useEffect(() => {
-        axios.get<PsgcItem[]>('https://psgc.gitlab.io/api/regions').then((res) => {
-            setPresentRegions(res.data);
-            setPermanentRegions(res.data);
-        }).catch(console.error);
+        const fetchRegions = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>('https://psgc.gitlab.io/api/regions');
+                setPresentRegions(res.data);
+                setPermanentRegions(res.data);
+            } catch (error) {
+                console.error('Failed to fetch regions:', error);
+            }
+        };
+        fetchRegions();
     }, []);
 
     useEffect(() => {
         if (!selectedPresentRegion) return;
-        axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`)
-            .then((res) => setPresentProvinces(res.data)).catch(console.error);
         setPresentCities([]); setPresentBarangays([]);
         setSelectedPresentProvince(''); setSelectedPresentCity('');
         form.setValue('present_province', ''); form.setValue('present_city', ''); form.setValue('present_brgy', '');
+        const fetchProvinces = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPresentRegion}/provinces`);
+                setPresentProvinces(res.data);
+            } catch (error) {
+                console.error('Failed to fetch provinces:', error);
+            }
+        };
+        fetchProvinces();
     }, [selectedPresentRegion]);
 
     useEffect(() => {
         if (!selectedPresentProvince) return;
-        axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`)
-            .then((res) => setPresentCities(res.data)).catch(console.error);
         setPresentBarangays([]); setSelectedPresentCity('');
         form.setValue('present_city', ''); form.setValue('present_brgy', '');
+        const fetchCities = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPresentProvince}/cities-municipalities`);
+                setPresentCities(res.data);
+            } catch (error) {
+                console.error('Failed to fetch cities:', error);
+            }
+        };
+        fetchCities();
     }, [selectedPresentProvince]);
 
     useEffect(() => {
         if (!selectedPresentCity) return;
-        axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`)
-            .then((res) => setPresentBarangays(res.data)).catch(console.error);
         form.setValue('present_brgy', '');
+        const fetchBarangays = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPresentCity}/barangays`);
+                setPresentBarangays(res.data);
+            } catch (error) {
+                console.error('Failed to fetch barangays:', error);
+            }
+        };
+        fetchBarangays();
     }, [selectedPresentCity]);
 
     useEffect(() => {
@@ -369,30 +396,47 @@ export function useAddApplicantJHS() {
 
     useEffect(() => {
         if (isSameAddress || !selectedPermanentRegion) return;
-        axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPermanentRegion}/provinces`)
-            .then((res) => setPermanentProvinces(res.data)).catch(console.error);
-        if (!isSameAddress) {
-            setPermanentCities([]); setPermanentBarangays([]);
-            setSelectedPermanentProvince(''); setSelectedPermanentCity('');
-            form.setValue('permanent_province', ''); form.setValue('permanent_city', ''); form.setValue('permanent_brgy', '');
-        }
+        setPermanentCities([]); setPermanentBarangays([]);
+        setSelectedPermanentProvince(''); setSelectedPermanentCity('');
+        form.setValue('permanent_province', ''); form.setValue('permanent_city', ''); form.setValue('permanent_brgy', '');
+        const fetchProvinces = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/regions/${selectedPermanentRegion}/provinces`);
+                setPermanentProvinces(res.data);
+            } catch (error) {
+                console.error('Failed to fetch provinces:', error);
+            }
+        };
+        fetchProvinces();
     }, [selectedPermanentRegion, isSameAddress]);
 
     useEffect(() => {
         if (isSameAddress || !selectedPermanentProvince) return;
-        axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPermanentProvince}/cities-municipalities`)
-            .then((res) => setPermanentCities(res.data)).catch(console.error);
-        if (!isSameAddress) {
-            setPermanentBarangays([]); setSelectedPermanentCity('');
-            form.setValue('permanent_city', ''); form.setValue('permanent_brgy', '');
-        }
+        setPermanentBarangays([]); setSelectedPermanentCity('');
+        form.setValue('permanent_city', ''); form.setValue('permanent_brgy', '');
+        const fetchCities = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/provinces/${selectedPermanentProvince}/cities-municipalities`);
+                setPermanentCities(res.data);
+            } catch (error) {
+                console.error('Failed to fetch cities:', error);
+            }
+        };
+        fetchCities();
     }, [selectedPermanentProvince, isSameAddress]);
 
     useEffect(() => {
         if (isSameAddress || !selectedPermanentCity) return;
-        axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPermanentCity}/barangays`)
-            .then((res) => setPermanentBarangays(res.data)).catch(console.error);
-        if (!isSameAddress) form.setValue('permanent_brgy', '');
+        form.setValue('permanent_brgy', '');
+        const fetchBarangays = async () => {
+            try {
+                const res = await axios.get<PsgcItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${selectedPermanentCity}/barangays`);
+                setPermanentBarangays(res.data);
+            } catch (error) {
+                console.error('Failed to fetch barangays:', error);
+            }
+        };
+        fetchBarangays();
     }, [selectedPermanentCity, isSameAddress]);
 
     // Email verification

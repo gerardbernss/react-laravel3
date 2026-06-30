@@ -14,6 +14,8 @@ class ExaminationRoomRepository
 
     public function loadRecentExamSchedules(ExaminationRoom $room): ExaminationRoom
     {
+        // Oracle does not support LIMIT inside eager load subqueries.
+        // Load all schedules ordered by date, then trim to 10 on the collection.
         $room->load(['examSchedules' => function ($query) {
             $query->orderBy('exam_date', 'desc');
         }]);
