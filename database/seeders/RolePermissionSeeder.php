@@ -63,6 +63,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Manage Exam Results', 'slug' => 'manage-exam-results', 'description' => 'Can upload and view applicant exam results'],
             ['name' => 'Manage Applications', 'slug' => 'manage-applications', 'description' => 'Can manage applicant admissions records'],
             ['name' => 'Manage Student ID Assignment', 'slug' => 'manage-student-id-assignment', 'description' => 'Can assign and email student IDs to enrolled applicants'],
+            ['name' => 'Manage Portal Credentials', 'slug' => 'manage-portal-credentials', 'description' => 'Can generate, send, suspend, and reactivate student portal login credentials'],
 
             // Employee permissions
             ['name' => 'Manage Employees', 'slug' => 'manage-employees', 'description' => 'Can create and manage employee records'],
@@ -139,6 +140,7 @@ class RolePermissionSeeder extends Seeder
             'manage-applications',
             'manage-student-id-assignment',
             'manage-employees',
+            'manage-portal-credentials',
         ], 'and', false)->pluck('id')->toArray();
         $adminRole->syncPermissions(array_unique(array_merge($adminPermissions, $adminExtraPermissions)));
 
