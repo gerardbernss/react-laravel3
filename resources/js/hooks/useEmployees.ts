@@ -28,6 +28,7 @@ export const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
     contractual: 'Contractual',
 };
 
+/** Apply employee list filters via Inertia navigation and handle employee deactivation. */
 export function useEmployees(filters: EmployeeFilters) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [department, setDepartment] = useState(filters.department ?? '');

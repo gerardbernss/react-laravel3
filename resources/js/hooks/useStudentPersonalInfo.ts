@@ -27,6 +27,7 @@ export interface PersonalData {
     permanent_zip: string | null;
 }
 
+/** Manage the student personal info edit form, posting changes to /student/profile. */
 export function useStudentPersonalInfo(personalData: PersonalData | null) {
     const [isEditing, setIsEditing] = useState(false);
 

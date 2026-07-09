@@ -17,11 +17,13 @@ export interface DiscountType {
 
 export type DiscountSortKey = 'code' | 'name' | 'discount_type' | 'value' | 'status';
 
+/** Format a discount type's value as a percentage string or a Philippine peso amount. */
 export function formatDiscountValue(discount: DiscountType): string {
     if (discount.discount_type === 'percentage') return `${discount.value}%`;
     return `₱${parseFloat(discount.value).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 }
 
+/** Filter, sort, and paginate the discount types list, and delete a discount type via Inertia. */
 export function useDiscountTypes(discountTypes: DiscountType[]) {
     const { delete: destroy, processing } = useForm();
 

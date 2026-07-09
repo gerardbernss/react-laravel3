@@ -123,6 +123,7 @@ function UserTableRow({ user, visibleColumns, isSelected, processing, onSelect, 
     );
 }
 
+/** Admin users list with search, sort, and delete actions. */
 export default function Index() {
     const { flash, users } = usePage().props as unknown as PageProps;
     const { hasPermission } = usePermissions();
@@ -162,10 +163,7 @@ export default function Index() {
 
             <div className={`space-y-6 ${PAGE_PADDING}`}>
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className={PAGE_TITLE}>Users</h1>
-                        <p className={`mt-1 ${BODY_TEXT}`}>Manage system users and their roles</p>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Users</h1>
                     {hasPermission('create-users') && (
                         <Link href="/admin/users/create">
                             <Button>
@@ -187,7 +185,7 @@ export default function Index() {
                     </Alert>
                 )}
 
-                <div className={`${CARD} p-6`}>
+                <div>
                     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
                         <div className="flex-1 md:max-w-sm">
                             <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>

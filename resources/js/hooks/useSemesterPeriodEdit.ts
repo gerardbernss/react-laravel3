@@ -6,6 +6,7 @@ interface Params {
     onCancel: () => void;
 }
 
+/** Manage the inline semester period edit form, PUTting to /admin/semester-periods/:id and calling onCancel on success. */
 export function useSemesterPeriodEdit({ period, onCancel }: Params) {
     const { data, setData, put, processing, errors } = useForm({
         start_month: period.start_month,

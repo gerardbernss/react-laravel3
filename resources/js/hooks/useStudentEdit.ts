@@ -52,6 +52,10 @@ interface Params {
     initialSiblings: Sibling[];
 }
 
+/**
+ * Manage the student edit form — personal data, cascading PSGC address dropdowns, health conditions,
+ * document uploads, and dynamic sibling entries — POSTing with _method PUT to /admin/students/:id.
+ */
 export function useStudentEdit({ student, personalData, initialSiblings }: Params) {
     const initHC = parseHealthConditions(personalData?.health_conditions ?? null);
 

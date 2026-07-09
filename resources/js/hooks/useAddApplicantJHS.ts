@@ -168,6 +168,11 @@ export type ApplicantFormValues = z.infer<typeof applicantFormSchema>;
 
 type PsgcItem = { code: string; name: string };
 
+/**
+ * Manage the JHS/SHS/LES applicant intake form using react-hook-form with Zod validation,
+ * including cascading PSGC address dropdowns for present and permanent addresses, same-address sync,
+ * guardian auto-fill from father/mother, email verification OTP flow, and multipart FormData submission to /applications/apply-les.
+ */
 export function useAddApplicantJHS() {
     const currentSemester = usePage().props.currentSemester as { name: string | null; school_year: string | null } | null;
 

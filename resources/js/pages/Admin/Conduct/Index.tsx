@@ -206,6 +206,7 @@ function CategoryCard({
     );
 }
 
+/** Admin conduct categories and criteria management page for configuring the grade book conduct rubric. */
 export default function ConductIndex({ categories }: Props) {
     const {
         expanded,

@@ -26,6 +26,7 @@ export interface ExamSchedule {
 
 export type ExamScheduleSortKey = 'name' | 'exam_date' | 'room' | 'assigned_count' | 'status';
 
+/** Filter, sort, and paginate the exam schedules list, and delete a schedule via Inertia. */
 export function useExamSchedules(schedules: ExamSchedule[]) {
     const { delete: destroy, processing } = useForm();
 

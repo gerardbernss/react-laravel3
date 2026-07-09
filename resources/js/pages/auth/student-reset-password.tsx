@@ -12,6 +12,7 @@ interface StudentResetPasswordProps {
     email: string;
 }
 
+/** Student portal password reset page; accepts a new password using the token from the reset email. */
 export default function StudentResetPassword({ token, email }: StudentResetPasswordProps) {
     const { data, setData, processing, errors, submit } = useStudentResetPassword({ token, email });
 

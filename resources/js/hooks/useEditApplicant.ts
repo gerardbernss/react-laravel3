@@ -263,6 +263,10 @@ interface Params {
     applicant: any;
 }
 
+/**
+ * Manage the SHS admissions applicant edit form using react-hook-form with Zod validation,
+ * with confirm, discard, and reset dialogs before PUTting to /admin/applicants/:id.
+ */
 export function useEditApplicant({ applicant }: Params) {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState<ApplicantFormValues | null>(null);

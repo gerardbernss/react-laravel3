@@ -17,6 +17,10 @@ const DEFAULT_VISIBLE: PermissionColumnKey[] = [
     'id', 'name', 'slug', 'description', 'roles_count', 'created_at', 'actions',
 ];
 
+/**
+ * Manage the permissions index table with search, sort, pagination, column visibility,
+ * row selection, bulk delete, and CSV export.
+ */
 export function usePermissionTable(permissions: Permission[]) {
     const { processing, delete: destroy } = useForm();
 

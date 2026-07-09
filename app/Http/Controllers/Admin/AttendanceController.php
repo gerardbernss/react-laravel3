@@ -15,6 +15,9 @@ class AttendanceController extends Controller
     {
     }
 
+    /**
+     * List sections for attendance — faculty see only their assigned sections while admins see all sections filterable by search, school year, and semester.
+     */
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -26,6 +29,9 @@ class AttendanceController extends Controller
         return Inertia::render('Admin/Attendance/Index', $data);
     }
 
+    /**
+     * Show all sections for a specific grade level, filterable by school year and semester.
+     */
     public function showGrade(Request $request, string $gradeLevel)
     {
         $data = $this->attendanceService->showGradeData($gradeLevel, $request->input('school_year'), $request->input('semester'));
@@ -33,6 +39,9 @@ class AttendanceController extends Controller
         return Inertia::render('Admin/Attendance/GradeSections', $data);
     }
 
+    /**
+     * Show the attendance entry sheet for a section on a given date, optionally filtered by subject.
+     */
     public function show(BlockSection $blockSection, Request $request)
     {
         $date = $request->input('date', now()->format('Y-m-d'));
@@ -43,6 +52,9 @@ class AttendanceController extends Controller
         return Inertia::render('Admin/Attendance/Sheet', $data);
     }
 
+    /**
+     * Show the attendance history for a section, filterable by subject and date range.
+     */
     public function history(BlockSection $blockSection, Request $request)
     {
         $subjectId = $request->input('subject_id');
@@ -58,9 +70,12 @@ class AttendanceController extends Controller
         return Inertia::render('Admin/Attendance/History', $data);
     }
 
+    /**
+     * Save attendance records for a section on the submitted date.
+     */
     public function store(StoreAttendanceRequest $request, BlockSection $blockSection)
     {
-        $this->attendanceService->store($blockSection, $request->validated());
+        $this->attendanceService->store($blockSection, $request->validated(), auth()->user());
 
         return back()->with('success', 'Attendance saved successfully.');
     }

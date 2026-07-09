@@ -11,6 +11,7 @@ interface UserMenuContentProps {
     user: User;
 }
 
+/** Dropdown menu body showing the user's info, a Settings link, and a Log out link; cleans up mobile navigation state before navigating. */
 export function UserMenuContent({ user }: UserMenuContentProps) {
     const cleanup = useMobileNavigation();
 

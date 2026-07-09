@@ -110,6 +110,10 @@ interface Params {
     applicant: any;
 }
 
+/**
+ * Manage the college applicant edit form using react-hook-form with Zod validation,
+ * with confirm, discard, and reset dialogs before PUTting to /admin/applicants/:id.
+ */
 export function useApplicantEdit({ applicant }: Params) {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingFormData, setPendingFormData] = useState<ApplicantFormValues | null>(null);

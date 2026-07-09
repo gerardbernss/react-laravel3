@@ -31,7 +31,7 @@ class BlockSection extends Model
     ];
 
     /**
-     * Relationships
+     * Get the subjects assigned to this section (via block_section_subject pivot).
      */
     public function subjects()
     {
@@ -39,34 +39,49 @@ class BlockSection extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get all student enrollments in this section.
+     */
     public function enrollments()
     {
         return $this->hasMany(StudentEnrollment::class);
     }
 
+    /**
+     * Get all subject schedules assigned to this section.
+     */
     public function schedules()
     {
         return $this->hasMany(Schedule::class);
     }
 
     /**
-     * Scopes
+     * Scope to active sections only.
      */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope to sections for a specific grade level.
+     */
     public function scopeByGradeLevel($query, $gradeLevel)
     {
         return $query->where('grade_level', $gradeLevel);
     }
 
+    /**
+     * Scope to sections for a specific school year.
+     */
     public function scopeBySchoolYear($query, $schoolYear)
     {
         return $query->where('school_year', $schoolYear);
     }
 
+    /**
+     * Scope to sections for a strand or sections with no strand restriction.
+     */
     public function scopeByStrand($query, $strand)
     {
         return $query->where(function ($q) use ($strand) {
@@ -75,6 +90,9 @@ class BlockSection extends Model
         });
     }
 
+    /**
+     * Scope to active sections that still have open enrollment slots.
+     */
     public function scopeAvailable($query)
     {
         return $query->where('is_active', true)
@@ -82,23 +100,32 @@ class BlockSection extends Model
     }
 
     /**
-     * Helpers
+     * Return true if the section has not yet reached its enrollment capacity.
      */
     public function hasAvailableSlots(): bool
     {
         return $this->current_enrollment < $this->capacity;
     }
 
+    /**
+     * Return the number of remaining open enrollment slots.
+     */
     public function availableSlots(): int
     {
         return $this->capacity - $this->current_enrollment;
     }
 
+    /**
+     * Increment the current enrollment count by one.
+     */
     public function incrementEnrollment(): void
     {
         $this->increment('current_enrollment');
     }
 
+    /**
+     * Decrement the current enrollment count by one, guarding against going below zero.
+     */
     public function decrementEnrollment(): void
     {
         if ($this->current_enrollment > 0) {

@@ -7,6 +7,7 @@ export interface Option {
     code: string;
 }
 
+/** Fetch provinces for a region from the PSGC API; NCR returns a synthetic Metro Manila entry instead of calling the API. */
 export function useProvinces(regionCode?: string) {
     const [provinces, setProvinces] = useState<Option[]>([]);
     const [loading, setLoading] = useState(false);

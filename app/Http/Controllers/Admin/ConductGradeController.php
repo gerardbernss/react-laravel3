@@ -16,6 +16,9 @@ class ConductGradeController extends Controller
     {
     }
 
+    /**
+     * Show the conduct grade entry sheet for a section and quarter — returns 404 for invalid quarter values.
+     */
     public function index(BlockSection $blockSection, string $quarter)
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);
@@ -36,6 +39,9 @@ class ConductGradeController extends Controller
         ]);
     }
 
+    /**
+     * Save conduct grades for all students in a section for the given quarter.
+     */
     public function save(SaveConductGradesRequest $request, BlockSection $blockSection, string $quarter)
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);

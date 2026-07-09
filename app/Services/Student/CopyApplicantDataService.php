@@ -34,7 +34,10 @@ class CopyApplicantDataService
     public function __construct(private StudentRepository $studentRepository) {}
 
     /**
-     * @param Student $studentRecord The newly enrolled student whose data should be mirrored.
+     * Copies the applicant's personal data, family background, siblings, and documents into the student-side mirror tables.
+     * Safe to run multiple times on the same student — all writes use upsert strategies.
+     *
+     * @param Student $studentRecord The newly enrolled student whose applicant data should be mirrored
      */
     public function execute(Student $studentRecord): void
     {

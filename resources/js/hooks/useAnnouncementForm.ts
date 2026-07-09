@@ -30,6 +30,10 @@ function deriveMode(publishStart: string | null): PublishMode {
     return 'now';
 }
 
+/**
+ * Manage the create/edit announcement form, translating the publish mode (now/schedule/draft)
+ * into the correct timestamps before posting to /admin/announcements.
+ */
 export function useAnnouncementForm(announcement?: AnnouncementData) {
     const isEdit = !!announcement;
 

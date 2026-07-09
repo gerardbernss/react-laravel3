@@ -16,7 +16,10 @@ class StudentLoginService
     }
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * Authenticates a student portal login: verifies the username exists, checks account status,
+     * validates the password (tracking failed attempts), records the login, and regenerates the session.
+     *
+     * @throws ValidationException if credentials are wrong, the account is suspended, or the account is inactive
      */
     public function attempt(Request $request): PortalCredential
     {
@@ -40,6 +43,9 @@ class StudentLoginService
         return $credential;
     }
 
+    /**
+     * Returns the appropriate dashboard route for the credential: student dashboard if a student record exists, otherwise the applicant dashboard.
+     */
     public function dashboardRouteFor(PortalCredential $credential): string
     {
         return $credential->personalData?->student ? 'student.dashboard' : 'applicant.dashboard';
@@ -57,6 +63,9 @@ class StudentLoginService
         return $this->dashboardRouteFor(Auth::guard('student')->user());
     }
 
+    /**
+     * Logs the student out and invalidates the session.
+     */
     public function logout(Request $request): void
     {
         Auth::guard('student')->logout();
@@ -66,7 +75,9 @@ class StudentLoginService
     }
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * Throws if the account is suspended or inactive, preventing login before the password is checked.
+     *
+     * @throws ValidationException
      */
     private function ensureAccountIsActive(PortalCredential $credential): void
     {
@@ -84,7 +95,10 @@ class StudentLoginService
     }
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * Checks the password against the stored hash and increments the failed-attempt counter on mismatch.
+     * Shows a remaining-attempts warning when 3 or fewer tries are left before the account is locked.
+     *
+     * @throws ValidationException if the password does not match
      */
     private function verifyPassword(PortalCredential $credential, string $password): void
     {

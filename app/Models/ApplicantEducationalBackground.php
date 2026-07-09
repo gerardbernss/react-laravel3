@@ -37,6 +37,9 @@ class ApplicantEducationalBackground extends Model
         'class_size',
     ];
 
+    /**
+     * Get the applicant record this educational background belongs to.
+     */
     public function application()
     {
         return $this->belongsTo(Applicant::class, 'applicant_id');

@@ -39,16 +39,25 @@ class DiscountType extends Model
         'miscellaneous_only' => 'Miscellaneous Only',
     ];
 
+    /**
+     * Get the assessment discounts that were applied using this discount type.
+     */
     public function assessmentDiscounts()
     {
         return $this->hasMany(AssessmentDiscount::class);
     }
 
+    /**
+     * Scope to active discount types only.
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope to discount types that can be combined with other discounts.
+     */
     public function scopeStackable($query)
     {
         return $query->where('is_stackable', true);

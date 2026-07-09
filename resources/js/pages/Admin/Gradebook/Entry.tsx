@@ -19,6 +19,7 @@ interface Props {
     canFinalize: boolean;
 }
 
+/** Admin gradebook grade entry page for recording student component scores for a subject and quarter, with submit and finalize actions. */
 export default function GradebookEntry({ blockSection, subject, quarter, components, students, weightTotal, validationStatus, validationId, canSubmit, canFinalize }: Props) {
     const {
         breadcrumbs,
@@ -47,7 +48,7 @@ export default function GradebookEntry({ blockSection, subject, quarter, compone
                 <div className="sticky top-0 z-10 border-b bg-white px-6 py-3 shadow-sm">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <Link href={`/teacher/gradebook/${blockSection.id}`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                            <Link href={`/teacher/gradebook/${blockSection.id}`} className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                                 <ArrowLeft className="mr-1 h-4 w-4" />
                                 Back
                             </Link>

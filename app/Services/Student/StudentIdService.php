@@ -18,6 +18,10 @@ class StudentIdService
     ) {
     }
 
+    /**
+     * Returns a flat array of enrolled applicants (for the current enrollment period) with their assigned student ID numbers.
+     * Used to populate the Student ID assignment index table.
+     */
     public function indexData(): array
     {
         $applications = $this->applicantRepository->enrolledForIdAssignment($this->enrollmentPeriodRepository->currentOrLatest());
@@ -37,6 +41,10 @@ class StudentIdService
         ])->all();
     }
 
+    /**
+     * Saves a manually entered student ID number to the applicant's student record.
+     * Creates the student row if one doesn't exist yet, then returns success/failure status.
+     */
     public function assignStudentId(array $data): array
     {
         try {
@@ -62,6 +70,11 @@ class StudentIdService
         }
     }
 
+    /**
+     * Auto-generates student ID numbers for every enrolled applicant in the current period that doesn't have one yet.
+     * IDs follow the format PREFIX + 2-digit year + 4-digit sequence (e.g. S250001 for SHS 2025).
+     * Returns the count of IDs generated.
+     */
     public function bulkGenerate(): int
     {
         $applicants = $this->applicantRepository->enrolledWithYearLevelForPeriod($this->enrollmentPeriodRepository->currentOrLatest())
@@ -93,6 +106,10 @@ class StudentIdService
         return $generated;
     }
 
+    /**
+     * Sends an email to the applicant containing their assigned student ID number.
+     * Returns a status/message array — 200 on success, 400 if the email or student record is missing, 500 on mail failure.
+     */
     public function emailStudentId(int $id): array
     {
         try {
@@ -125,6 +142,10 @@ class StudentIdService
         }
     }
 
+    /**
+     * Finds the highest existing ID matching the given prefix+year pattern and returns the next one in sequence.
+     * Starts at 0001 if no existing IDs are found.
+     */
     private function nextStudentId(string $prefix, string $year): string
     {
         $existing = $this->studentRepository->maxIdNumberLike("{$prefix}{$year}%");
@@ -133,6 +154,10 @@ class StudentIdService
         return sprintf('%s%s%04d', $prefix, $year, $next);
     }
 
+    /**
+     * Maps a year level string to its ID prefix: "L" for Kinder/Grade 1–6, "J" for Grade 7–10, "S" for Grade 11+.
+     * Returns null for unrecognised year levels, which causes bulkGenerate() to skip that applicant.
+     */
     private function getStudentIdPrefix(string $yearLevel): ?string
     {
         if (str_contains(strtolower($yearLevel), 'kinder')) {

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, FILTER_CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { BODY_TEXT, CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { useExaminationRooms, type ExaminationRoom, type RoomSortKey } from '@/hooks/useExaminationRooms';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -73,6 +73,7 @@ function RoomRow({ room, processing, onDelete }: RoomRowProps) {
     );
 }
 
+/** Admin examination rooms list with search and delete actions. */
 export default function Index({ rooms }: Props) {
     const {
         processing,
@@ -101,10 +102,7 @@ export default function Index({ rooms }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <Building2 className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Examination Rooms</h1>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Examination Rooms</h1>
                     <Link href="/admin/examination-rooms/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -113,10 +111,10 @@ export default function Index({ rooms }: Props) {
                     </Link>
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
-                    <div className="mb-3">
+                <div className="mb-6 flex flex-wrap items-end gap-3">
+                    <div>
                         <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>
-                        <div className="relative w-full md:w-[400px]">
+                        <div className="relative w-full sm:w-[300px]">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 placeholder="Search by name or building..."
@@ -126,17 +124,15 @@ export default function Index({ rooms }: Props) {
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
-                    </div>
+                    <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                 </div>
 
                 <div className={`overflow-hidden ${CARD}`}>

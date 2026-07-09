@@ -28,6 +28,7 @@ const variantStyles = {
     default: '',
 };
 
+/** Reusable confirmation alert dialog with destructive/warning/default colour variants, a loading spinner during processing, and customisable title, description, and button labels. */
 export function ConfirmDialog({
     open,
     onClose,

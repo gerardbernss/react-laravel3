@@ -15,6 +15,9 @@ class StudentIDController extends Controller
     {
     }
 
+    /**
+     * List enrolled applicants pending student ID assignment.
+     */
     public function index()
     {
         return Inertia::render('StudentIdAssignment/Index', [
@@ -43,6 +46,9 @@ class StudentIDController extends Controller
     {
     }
 
+    /**
+     * Assign a student ID number to a specific applicant.
+     */
     public function assignStudentId(AssignStudentIdRequest $request)
     {
         $result = $this->studentIdService->assignStudentId($request->validated());
@@ -54,6 +60,9 @@ class StudentIDController extends Controller
         return back()->with('success', 'Student ID assigned successfully!');
     }
 
+    /**
+     * Auto-generate and assign student IDs for all enrolled applicants that don't have one yet.
+     */
     public function bulkGenerate(): RedirectResponse
     {
         $generated = $this->studentIdService->bulkGenerate();
@@ -61,6 +70,9 @@ class StudentIDController extends Controller
         return redirect()->back()->with('success', "Generated {$generated} student ID(s).");
     }
 
+    /**
+     * Send the assigned student ID to the applicant via email.
+     */
     public function emailStudentID($id)
     {
         $result = $this->studentIdService->emailStudentId((int) $id);

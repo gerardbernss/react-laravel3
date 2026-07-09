@@ -41,11 +41,17 @@ class StudentPortalService
         private readonly StudentRepository $studentRepository,
     ) {}
 
+    /**
+     * Returns true if the portal credential is linked to an enrolled student record (as opposed to a pure applicant).
+     */
     public function hasStudentRecord(PortalCredential $student): bool
     {
         return (bool) $student->personalData?->student;
     }
 
+    /**
+     * Builds the props array for the applicant dashboard: announcements, personal data summary, application status, and exam schedule.
+     */
     public function applicantDashboardData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -89,6 +95,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Builds the props array for the enrolled student dashboard: announcements, login timestamps, personal data summary, and student record basics.
+     */
     public function dashboardData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -124,6 +133,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns a minimal name/email subset of personal data — just enough for dashboard headers.
+     */
     private function formatPersonalDataSummary(?ApplicantPersonalData $personalData): ?array
     {
         if (! $personalData) {
@@ -140,6 +152,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns the full personal info payload for the applicant's profile page: personal data, family background, siblings, educational background, and documents.
+     */
     public function applicantPersonalInfoData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -258,6 +273,10 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Saves edits to the applicant's personal data, family background, siblings, educational history, and uploaded documents in a single transaction.
+     * Returns `['ok' => true]` on success or `['ok' => false, 'errors' => [...]]` on failure.
+     */
     public function updateApplicantPersonalInfo(PortalCredential $student, array $data): array
     {
         $personalData = $student->personalData;
@@ -338,6 +357,9 @@ class StudentPortalService
         return ['ok' => true];
     }
 
+    /**
+     * Returns the props for the applicant's enrollment page: personal data, application details, applicable fees, available discounts, and any pre-generated assessment subjects.
+     */
     public function applicantEnrollmentData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -368,6 +390,10 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Generates a fee assessment for an applicant who has passed the exam, computing totals by category and attaching the matching subjects.
+     * Idempotent — returns early if an assessment already exists.
+     */
     public function generateApplicantAssessment(PortalCredential $student): array
     {
         $application = $student->application;
@@ -425,6 +451,9 @@ class StudentPortalService
         return ['ok' => true, 'message' => 'Assessment generated.'];
     }
 
+    /**
+     * Returns the full enrollment wizard props for an enrolled student: assessment totals, payment status, applicable fees, prior balance, and enrollment period open/closed flag.
+     */
     public function enrollmentData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -500,6 +529,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns the student's current block section and its subject list, using the latest enrollment record regardless of school year.
+     */
     public function mySectionData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -544,6 +576,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns the student's full statement of account: all assessments with their payment history, plus running totals for billed, paid, and current balance.
+     */
     public function statementOfAccountData(PortalCredential $student): array
     {
         $studentRecord = $student->personalData?->student;
@@ -594,6 +629,10 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns the active fees for the given grade level and school year, with per-unit fees already multiplied by the program's credit-unit load.
+     * Falls back to the latest available school year's fees if none exist for the requested year.
+     */
     private function getApplicableFees(string $gradeLevel, ?string $schoolYear, string $strand = ''): array
     {
         $schoolLevel = $this->getStudentCategory($gradeLevel);
@@ -624,6 +663,9 @@ class StudentPortalService
         ])->toArray();
     }
 
+    /**
+     * Returns all active discount types, filtering out the SIBLING discount for students who have no enrolled sibling.
+     */
     private function getAvailableDiscounts(PortalCredential $student): array
     {
         return $this->discountTypeRepository->allActive()
@@ -645,6 +687,9 @@ class StudentPortalService
             ])->toArray();
     }
 
+    /**
+     * Returns the unpaid balance carried forward from the student's most recent prior-semester assessment, or 0 if there is none.
+     */
     private function getStudentPriorBalance(int $studentId, string $targetYear, string $targetSem): float
     {
         $previous = $this->studentAssessmentRepository->latestExcludingPeriod($studentId, $targetYear, $targetSem);
@@ -652,6 +697,10 @@ class StudentPortalService
         return $previous?->remaining_balance ?? 0.0;
     }
 
+    /**
+     * Returns true if any of the student's listed siblings is currently enrolled (checked by student ID number first, then by full name).
+     * Uses at most 2 queries regardless of how many siblings are listed.
+     */
     private function hasEnrolledSibling(PortalCredential $student): bool
     {
         $siblings = $student->personalData?->siblings ?? collect();
@@ -676,6 +725,9 @@ class StudentPortalService
         return false;
     }
 
+    /**
+     * Returns the minimal portal credential fields (id, username) needed by frontend pages.
+     */
     private function formatStudentResponse(PortalCredential $student): array
     {
         return [
@@ -684,6 +736,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns personal data fields needed for enrollment/info pages — more complete than the summary but excludes family and education data.
+     */
     private function formatPersonalDataResponse(?ApplicantPersonalData $personalData): ?array
     {
         if (! $personalData) {
@@ -705,6 +760,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns the application fields used across enrollment and dashboard pages, including the resolved student category (LES/JHS/SHS).
+     */
     private function formatApplicationResponse(?Applicant $application): ?array
     {
         if (! $application) {
@@ -728,6 +786,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Returns the key student record fields (ID number, enrollment status, year level) needed by portal pages.
+     */
     private function formatStudentRecordResponse(?Student $studentRecord): ?array
     {
         if (! $studentRecord) {
@@ -744,6 +805,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Maps a grade level string to its school category code: LES (Grades 1–6), JHS (Grades 7–10), SHS (Grades 11–12), or 'all' for unrecognised values.
+     */
     private function getStudentCategory(string $gradeLevel): string
     {
         if (str_contains($gradeLevel, 'Grade 1') || str_contains($gradeLevel, 'Grade 2') ||
@@ -788,6 +852,10 @@ class StudentPortalService
         return $this->programRepository->findActiveByCode($application->student_category);
     }
 
+    /**
+     * Confirms a student's self-enrollment: creates or updates the student record, marks the application as Enrolled, and mirrors applicant data into student tables — all in a single transaction.
+     * Used for the "confirm enrollment" flow where payment has already been handled separately.
+     */
     public function confirmEnrollment(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -840,6 +908,10 @@ class StudentPortalService
         return ['ok' => true, 'message' => 'Congratulations! Your enrollment has been confirmed successfully.'];
     }
 
+    /**
+     * Processes the online enrollment wizard submission: creates the student record, generates a fee assessment with prior-balance carry-over, sets the application to Pending, and mirrors applicant data — all in one transaction.
+     * Used when the student submits their enrollment form and will pay at the Finance Office.
+     */
     public function processEnrollment(PortalCredential $student, array $data): array
     {
         $personalData = $student->personalData;
@@ -947,6 +1019,9 @@ class StudentPortalService
         return ['ok' => true, 'message' => 'Enrollment confirmed! Please proceed to the Finance Office to complete your payment.'];
     }
 
+    /**
+     * Updates the payment mode on the student's latest assessment, provided it hasn't been fully paid yet.
+     */
     public function changePaymentMode(PortalCredential $student, array $data): array
     {
         $studentRecord = $student->personalData?->student;
@@ -966,6 +1041,9 @@ class StudentPortalService
         return ['ok' => true];
     }
 
+    /**
+     * Returns the personal info and family background fields shown on the enrolled student's profile page (a narrower view than the applicant version).
+     */
     public function personalInfoData(PortalCredential $student): array
     {
         $personalData = $student->personalData;
@@ -1022,6 +1100,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Saves contact and address edits for an enrolled student, and updates emergency contact details in the family background record.
+     */
     public function updatePersonalInfo(PortalCredential $student, array $data): array
     {
         $personalData = $student->personalData;
@@ -1046,6 +1127,9 @@ class StudentPortalService
         return ['ok' => true];
     }
 
+    /**
+     * Returns the portal credential fields needed to render the change-password form, including whether the default password has been changed yet.
+     */
     public function changePasswordFormData(PortalCredential $student): array
     {
         return [
@@ -1057,6 +1141,9 @@ class StudentPortalService
         ];
     }
 
+    /**
+     * Verifies the current password then saves a new hashed password and marks the credential as password-changed.
+     */
     public function changePassword(PortalCredential $student, array $data): array
     {
         if (! Hash::check($data['current_password'], $student->temporary_password)) {
@@ -1071,6 +1158,9 @@ class StudentPortalService
         return ['ok' => true];
     }
 
+    /**
+     * Returns the student's enrolled subjects with their schedule, room, teacher, and grade status for the current semester.
+     */
     public function scheduleData(PortalCredential $student): array
     {
         $studentRecord = $student->personalData?->student;
@@ -1156,6 +1246,9 @@ class StudentPortalService
         return $enrollment !== null && $attendance->student_enrollment_id === $enrollment->id;
     }
 
+    /**
+     * Saves the student's written reason for an absence or late mark on their attendance record.
+     */
     public function updateAttendanceReason(Attendance $attendance, ?string $reason): void
     {
         $this->studentPortalRepository->updateAttendance($attendance, ['reason' => $reason]);

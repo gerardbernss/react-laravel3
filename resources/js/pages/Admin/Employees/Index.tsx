@@ -4,12 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FILTER_CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { EMPLOYMENT_TYPE_LABELS, useEmployees, type Employee, type EmployeeFilters } from '@/hooks/useEmployees';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Building2, Pencil, Plus, PowerOff, Search, X } from 'lucide-react';
+import { Pencil, Plus, PowerOff, Search, X } from 'lucide-react';
 
 interface PaginatedEmployees {
     data: Employee[];
@@ -81,6 +81,7 @@ function EmployeeRow({ employee: emp, onDeactivate }: EmployeeRowProps) {
     );
 }
 
+/** Admin employees list with search and delete actions. */
 export default function EmployeesIndex() {
     const { employees, departments, filters, flash } = usePage().props as unknown as PageProps;
     const {
@@ -105,15 +106,7 @@ export default function EmployeesIndex() {
 
             <div className={`flex flex-col gap-6 ${PAGE_PADDING}`}>
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className={`flex items-center gap-2 ${PAGE_TITLE}`}>
-                            <Building2 className="h-7 w-7 text-primary" />
-                            Employees
-                        </h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {employees.total} employee{employees.total !== 1 ? 's' : ''} on record
-                        </p>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Employees</h1>
                     <Link href="/admin/employees/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -128,7 +121,7 @@ export default function EmployeesIndex() {
                     </div>
                 )}
 
-                <div className={FILTER_CARD}>
+                <div>
                     <div className="flex flex-wrap gap-3">
                         <div className="relative min-w-[200px] flex-1">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

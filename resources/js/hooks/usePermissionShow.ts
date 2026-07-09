@@ -6,6 +6,7 @@ interface Params {
     permission: Permission;
 }
 
+/** Manage the permission detail page, including delete confirmation dialog. */
 export function usePermissionShow({ permission }: Params) {
     const { delete: destroy, processing } = useForm();
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);

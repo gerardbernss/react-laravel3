@@ -60,23 +60,32 @@ class StudentEnrollment extends Model
     const STATUS_INCOMPLETE = 'Incomplete';
 
     /**
-     * Relationships
+     * Get the student this enrollment belongs to.
      */
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
     }
 
+    /**
+     * Get the block section the student was enrolled in.
+     */
     public function blockSection(): BelongsTo
     {
         return $this->belongsTo(BlockSection::class);
     }
 
+    /**
+     * Get the individual subject enrollment entries with grade details.
+     */
     public function enrollmentSubjects(): HasMany
     {
         return $this->hasMany(StudentEnrollmentSubject::class);
     }
 
+    /**
+     * Get enrolled subjects with grade, status, schedule, room, and teacher pivot data.
+     */
     public function subjects(): BelongsToMany
     {
         return $this->belongsToMany(Subject::class, 'student_enrollment_subjects')
@@ -85,28 +94,40 @@ class StudentEnrollment extends Model
     }
 
     /**
-     * Scopes
+     * Scope to enrollments for a specific school year.
      */
     public function scopeForSchoolYear($query, string $schoolYear)
     {
         return $query->where('school_year', $schoolYear);
     }
 
+    /**
+     * Scope to enrollments for a specific semester.
+     */
     public function scopeForSemester($query, string $semester)
     {
         return $query->where('semester', $semester);
     }
 
+    /**
+     * Scope to completed enrollments.
+     */
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_COMPLETED);
     }
 
+    /**
+     * Scope to currently enrolled (active) enrollments.
+     */
     public function scopeActive($query)
     {
         return $query->where('status', self::STATUS_ENROLLED);
     }
 
+    /**
+     * Scope to enrollments for a specific student category (e.g. LES, JHS, SHS).
+     */
     public function scopeForCategory($query, string $category)
     {
         return $query->where('student_category', $category);

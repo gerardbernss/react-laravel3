@@ -14,6 +14,10 @@ export interface Announcement {
     creator: { id: number; name: string } | null;
 }
 
+/**
+ * Filter and paginate the announcement list by search query, status, and target audience,
+ * and delete an announcement via Inertia.
+ */
 export function useAnnouncementList(announcements: Announcement[]) {
     const { delete: destroy, processing } = useForm();
 

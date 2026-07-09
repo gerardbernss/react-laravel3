@@ -41,6 +41,9 @@ class StudentService
     {
     }
 
+    /**
+     * Returns all students with their personal data formatted as index page rows.
+     */
     public function indexData(): array
     {
         $students = $this->studentRepository->allWithPersonalDataOrderedByCreated()->map(fn ($s) => $this->studentRow($s));
@@ -48,6 +51,9 @@ class StudentService
         return ['students' => $students];
     }
 
+    /**
+     * Creates a new student record along with their personal data, family background, and siblings in a single transaction.
+     */
     public function store(array $data): Student
     {
         return DB::transaction(function () use ($data) {
@@ -85,6 +91,10 @@ class StudentService
         });
     }
 
+    /**
+     * Returns the full student profile for the detail view: personal data, family background, siblings, documents,
+     * educational background, enrollment history, and withdrawal info if applicable.
+     */
     public function showData(Student $student): array
     {
         $this->studentRepository->loadShowRelations($student);
@@ -114,6 +124,9 @@ class StudentService
         ];
     }
 
+    /**
+     * Returns the student data needed to pre-fill the edit form: enrollment details, personal data, family background, siblings, and documents.
+     */
     public function editData(Student $student): array
     {
         $this->studentRepository->loadEditRelations($student);
@@ -135,6 +148,10 @@ class StudentService
         ];
     }
 
+    /**
+     * Updates a student's personal data, enrollment details, siblings (replaced wholesale), and uploaded documents.
+     * Returns an error array if the student has no personal data record, or an empty array on success.
+     */
     public function update(Student $student, array $data): array
     {
         $spd = $student->studentPersonalData;
@@ -170,6 +187,11 @@ class StudentService
         return [];
     }
 
+    /**
+     * Processes a student withdrawal: marks the student as Withdrawn, creates a withdrawal record,
+     * and cancels their latest assessment if one exists.
+     * Returns an error array if the student is already withdrawn.
+     */
     public function withdraw(Student $student, array $data): array
     {
         if ($student->enrollment_status === 'Withdrawn') {
@@ -198,12 +220,19 @@ class StudentService
         return [];
     }
 
+    /**
+     * Uploads a doctor's note file to public storage and saves its path on the student's personal data record.
+     */
     private function storeDoctorsNote($spd, UploadedFile $file): void
     {
         $path = $file->storeAs('documents/doctors_notes', "{$spd->id}_{$spd->last_name}_DOCTORS_NOTE." . $file->getClientOriginalExtension(), 'public');
         $this->studentRepository->updatePersonalData($spd, ['doctors_note_file' => $path]);
     }
 
+    /**
+     * Uploads any provided document files (COE, birth certificate, report cards) to public storage
+     * using a standardised filename pattern and saves their paths to the student's documents record.
+     */
     private function storeDocumentUploads(Student $student, $spd, array $data): void
     {
         $prefix = $student->student_id_number ?? $spd->id;
@@ -226,6 +255,9 @@ class StudentService
         }
     }
 
+    /**
+     * Formats a student as a flat array suitable for a table row on the index page.
+     */
     private function studentRow(Student $s): array
     {
         $spd = $s->studentPersonalData ?? $s->personalData;
@@ -249,6 +281,9 @@ class StudentService
         ];
     }
 
+    /**
+     * Returns a concise snapshot of a student's enrollment state, used as the 'student' key in the show page payload.
+     */
     private function studentSummary(Student $student): array
     {
         return [

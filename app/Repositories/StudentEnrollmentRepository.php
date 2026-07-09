@@ -8,6 +8,9 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class StudentEnrollmentRepository
 {
+    /**
+     * Returns all completed enrollments for the given school year and semester, with their block section eager-loaded.
+     */
     public function completedForPeriod(string $schoolYear, string $semester): Collection
     {
         return StudentEnrollment::with('blockSection')
@@ -17,6 +20,9 @@ class StudentEnrollmentRepository
             ->get();
     }
 
+    /**
+     * Returns the student IDs of all enrollments for the given school year and semester — used to check who is already enrolled before re-enrolling.
+     */
     public function enrolledStudentIdsForPeriod(string $schoolYear, string $semester): SupportCollection
     {
         return StudentEnrollment::where('school_year', $schoolYear)
@@ -24,6 +30,9 @@ class StudentEnrollmentRepository
             ->pluck('student_id');
     }
 
+    /**
+     * Creates and returns a new student enrollment record.
+     */
     public function create(array $data): StudentEnrollment
     {
         return StudentEnrollment::create($data);

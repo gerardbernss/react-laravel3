@@ -54,26 +54,41 @@ class StudentAssessment extends Model
         'cancelled' => 'Cancelled',
     ];
 
+    /**
+     * Get the student this assessment was generated for.
+     */
     public function student()
     {
         return $this->belongsTo(Student::class);
     }
 
+    /**
+     * Get the fee line items that make up this assessment's gross total.
+     */
     public function lineItems()
     {
         return $this->hasMany(AssessmentLineItem::class, 'assessment_id');
     }
 
+    /**
+     * Get the discounts applied to this assessment.
+     */
     public function discounts()
     {
         return $this->hasMany(AssessmentDiscount::class, 'assessment_id');
     }
 
+    /**
+     * Get the admin user who finalized this assessment.
+     */
     public function finalizedBy()
     {
         return $this->belongsTo(User::class, 'finalized_by');
     }
 
+    /**
+     * Get the payments recorded against this assessment.
+     */
     public function payments()
     {
         return $this->hasMany(StudentPayment::class, 'assessment_id');

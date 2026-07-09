@@ -118,6 +118,7 @@ const footerNavItems: NavItem[] = [
     },
 ];
 
+/** Student portal sidebar bottom user menu showing initials, name, and email with links to personal info, change password, and logout. */
 function StudentNavUser() {
     const { auth } = usePage<{
         auth: { student: { name: string; email: string; personal_data?: { first_name: string; last_name: string } } | null };
@@ -173,6 +174,7 @@ function StudentNavUser() {
     );
 }
 
+/** Student portal sidebar — shows applicant, exam-passed, or enrolled nav items depending on the student's status; hides enrollment links when the enrollment period is closed. */
 export function StudentSidebar() {
     const { auth, studentEnrollmentOpen, applicantEnrollmentOpen } = usePage<{
         auth: { student: { is_applicant: boolean; application_status: string | null } | null };

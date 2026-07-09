@@ -17,6 +17,7 @@ interface LoginProps {
     canResetPassword: boolean;
 }
 
+/** Admin/staff login page with email and password fields, a remember-me checkbox, and an optional Google sign-in button. */
 export default function Login({ status, canResetPassword }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
 

@@ -17,7 +17,10 @@ class StudentPasswordResetService
     }
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * Validates the reset token for a student portal credential and saves the new password.
+     * Throws if the credential is not found, the token doesn't match, or it has expired (older than 60 minutes).
+     *
+     * @throws ValidationException
      */
     public function execute(string $emailOrUsername, string $token, string $password): void
     {

@@ -17,6 +17,9 @@ class SemesterPeriodController extends Controller
     ) {
     }
 
+    /**
+     * List all semester periods ordered by start month.
+     */
     public function index()
     {
         return Inertia::render('Admin/SemesterPeriods/Index', [
@@ -24,6 +27,9 @@ class SemesterPeriodController extends Controller
         ]);
     }
 
+    /**
+     * Update a semester period's start and end month configuration.
+     */
     public function update(UpdateSemesterPeriodRequest $request, SemesterPeriod $semesterPeriod)
     {
         $this->semesterPeriodService->update($semesterPeriod, $request->validated());

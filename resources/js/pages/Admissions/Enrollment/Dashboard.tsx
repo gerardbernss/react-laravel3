@@ -61,6 +61,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Enrollment Management', href: '/admin/enrollment/dashboard' },
 ];
 
+/** Admissions enrollment dashboard — filterable applicant list with status and category filters and summary statistics. */
 export default function EnrollmentDashboard({ applicants, filters = {}, statistics, currentPeriod }: Props) {
     const { search, setSearch, statusFilter, setStatusFilter, categoryFilter, setCategoryFilter, handleSearch } =
         useEnrollmentDashboard({ filters });
@@ -130,7 +131,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                 </div>
 
                 {/* Filters */}
-                <div className={`${CARD} p-6`}>
+                <div>
                     <form onSubmit={handleSearch} className="grid grid-cols-1 gap-4 md:grid-cols-5">
                         <div className="md:col-span-2">
                             <label className={`mb-1 block ${LABEL_TEXT}`}>Search Applicant</label>

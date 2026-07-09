@@ -10,16 +10,25 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ApplicationRepository
 {
+    /**
+     * Returns all applicants with their personal data eager-loaded.
+     */
     public function allWithPersonalData(): Collection
     {
         return Applicant::with(['personalData'])->get();
     }
 
+    /**
+     * Returns true if a staff/admin user account already uses this email address.
+     */
     public function userEmailExists(string $email): bool
     {
         return User::where('email', $email)->exists();
     }
 
+    /**
+     * Returns true if the email matches any applicant's primary or alternate email — used to prevent duplicate registrations.
+     */
     public function personalDataEmailExists(string $email): bool
     {
         return ApplicantPersonalData::where('email', $email)
@@ -27,6 +36,10 @@ class ApplicationRepository
             ->exists();
     }
 
+    /**
+     * Returns true if another applicant with the same name and birthdate already has an application for the same school year.
+     * The name comparison is case-insensitive.
+     */
     public function isDuplicateApplication(string $firstName, string $lastName, ?string $middleName, ?string $birthDate, ?string $schoolYear): bool
     {
         return ApplicantPersonalData::whereRaw('LOWER(first_name) = ?', [$firstName])
@@ -45,27 +58,42 @@ class ApplicationRepository
             ->exists();
     }
 
+    /**
+     * Finds an applicant's personal data record by their primary email, or returns null if not found.
+     */
     public function findPersonalDataByEmail(?string $email): ?ApplicantPersonalData
     {
         return ApplicantPersonalData::where('email', $email)->first();
     }
 
+    /**
+     * Creates and returns a new applicant personal data record.
+     */
     public function createPersonalData(array $data): ApplicantPersonalData
     {
         return ApplicantPersonalData::create($data);
     }
 
+    /**
+     * Updates an applicant's personal data record with the given fields.
+     */
     public function updatePersonalData(ApplicantPersonalData $personalData, array $data): void
     {
         $personalData->update($data);
     }
 
+    /**
+     * Saves the storage path of an uploaded doctor's note to the personal data record.
+     */
     public function saveDoctorsNotePath(ApplicantPersonalData $personalData, string $path): void
     {
         $personalData->doctors_note_file = $path;
         $personalData->save();
     }
 
+    /**
+     * Creates or updates the family background record linked to the given personal data.
+     */
     public function updateOrCreateFamilyBackground(ApplicantPersonalData $personalData, array $data): void
     {
         $personalData->familyBackground()->updateOrCreate(
@@ -74,6 +102,10 @@ class ApplicationRepository
         );
     }
 
+    /**
+     * Deletes all existing sibling records for the applicant and re-inserts the supplied list.
+     * Skips entries that have no sibling_full_name.
+     */
     public function replaceSiblings(ApplicantPersonalData $personalData, array $siblings): void
     {
         $personalData->siblings()->delete();
@@ -89,6 +121,9 @@ class ApplicationRepository
         }
     }
 
+    /**
+     * Returns the applicant with the highest application number starting with the given letter prefix — used to generate the next sequential number.
+     */
     public function lastApplicationNumberWithPrefix(string $letter): ?Applicant
     {
         return Applicant::where('application_number', 'like', $letter . '%')
@@ -96,16 +131,25 @@ class ApplicationRepository
             ->first();
     }
 
+    /**
+     * Returns true if an application with the given number already exists — used as a uniqueness check before inserting.
+     */
     public function applicationNumberExists(string $number): bool
     {
         return Applicant::where('application_number', $number)->exists();
     }
 
+    /**
+     * Creates and returns a new applicant record, bypassing mass-assignment guards via forceCreate.
+     */
     public function createApplicant(array $data): Applicant
     {
         return Applicant::forceCreate($data);
     }
 
+    /**
+     * Adds a single school record to the applicant's educational background history.
+     */
     public function createEducationalBackground(Applicant $application, array $school): void
     {
         $application->educationalBackground()->create([
@@ -122,16 +166,26 @@ class ApplicationRepository
         ]);
     }
 
+    /**
+     * Creates the document record for an application with the given file paths.
+     */
     public function createDocuments(Applicant $application, array $uploads): void
     {
         $application->documents()->create($uploads);
     }
 
+    /**
+     * Updates specific fields on an existing family background record.
+     */
     public function updateFamilyBackgroundFields(ApplicantFamilyBackground $familyBackground, array $data): void
     {
         $familyBackground->update($data);
     }
 
+    /**
+     * Deletes all existing educational background rows for the application and re-inserts the supplied list.
+     * Skips entries that have no school_name.
+     */
     public function replaceEducationalBackground(Applicant $application, array $schools): void
     {
         $application->educationalBackground()->delete();
@@ -143,6 +197,9 @@ class ApplicationRepository
         }
     }
 
+    /**
+     * Creates or updates the document record for the application with the given file path data.
+     */
     public function updateOrCreateDocuments(Applicant $application, array $data): void
     {
         $application->documents()->updateOrCreate(['applicant_id' => $application->id], $data);

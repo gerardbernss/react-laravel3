@@ -44,6 +44,10 @@ interface Params {
     schedules: Schedule[];
 }
 
+/**
+ * Manage the exam assignment wizard — debounced applicant search, multi-select applicants,
+ * schedule selection (with over-capacity guard), and bulk assignment submission.
+ */
 export function useExamAssignmentCreate({ applicants, schedules }: Params) {
     const [selectedApplicants, setSelectedApplicants] = useState<number[]>([]);
     const [selectedSchedule, setSelectedSchedule] = useState<string>('');

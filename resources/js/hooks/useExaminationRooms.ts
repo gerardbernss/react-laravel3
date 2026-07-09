@@ -15,6 +15,7 @@ export interface ExaminationRoom {
 
 export type RoomSortKey = 'name' | 'building' | 'floor' | 'capacity' | 'status';
 
+/** Filter, sort, and paginate the examination rooms list, and delete a room via Inertia. */
 export function useExaminationRooms(rooms: ExaminationRoom[]) {
     const { delete: destroy, processing } = useForm();
 

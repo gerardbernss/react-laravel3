@@ -17,6 +17,12 @@ class ReportService
     {
     }
 
+    /**
+     * Builds the header and rows for a class record report.
+     * Each row contains a student's raw scores per grade component, their weighted percentage score, equivalent grade, and pass/fail status.
+     *
+     * @param  string  $quarter  e.g. 'Q1', 'Q2', 'Q3', 'Q4'
+     */
     public function classRecordData(BlockSection $blockSection, Subject $subject, string $quarter): array
     {
         $components = $this->reportRepository->gradeComponents($subject->id, $blockSection->id, $quarter);
@@ -39,6 +45,10 @@ class ReportService
         return ['header' => $header, 'rows' => $rows];
     }
 
+    /**
+     * Builds the header and rows for a grading sheet covering all subjects in a section.
+     * Each row contains a student's per-quarter and final grade for every subject, plus their GWA.
+     */
     public function gradingSheetData(BlockSection $blockSection): array
     {
         $subjects = $this->reportRepository->sortedSubjectsForSection($blockSection);
@@ -60,6 +70,10 @@ class ReportService
         return ['header' => $header, 'rows' => $rows];
     }
 
+    /**
+     * Builds the full report card data for a single student enrollment, including subject grades, GWA, and conduct scores.
+     * Returns a 'view' payload ready for the Blade/PDF template and a suggested PDF filename.
+     */
     public function reportCardData(StudentEnrollment $studentEnrollment): array
     {
         $this->reportRepository->loadReportCardRelations($studentEnrollment);
@@ -94,6 +108,10 @@ class ReportService
         ];
     }
 
+    /**
+     * Builds the attendance summary for all students in a section for a given subject.
+     * Each row shows total absences, tardies, excused absences, and present counts.
+     */
     public function attendanceSummaryData(BlockSection $blockSection, Subject $subject): array
     {
         $enrollments = $this->reportRepository->attendanceEnrollments($blockSection->id);
@@ -108,6 +126,10 @@ class ReportService
         return ['header' => $header, 'rows' => $rows];
     }
 
+    /**
+     * Builds one student's data row for the class record.
+     * Computes the weighted percentage score (PS%) across all components, then converts it to an equivalent grade using PS% × 0.5 + 50, clamped to 60–100.
+     */
     private function classRecordRow($enrollment, $components, $componentIds, float $weightTotal): array
     {
         $es = $enrollment->enrollmentSubjects->first();
@@ -152,6 +174,9 @@ class ReportService
         return $row;
     }
 
+    /**
+     * Builds one student's data row for the grading sheet, with per-quarter grades and a final grade for each subject, plus their GWA.
+     */
     private function gradingSheetRow($enrollment, $subjects, int $blockSectionId): array
     {
         $personalData = $enrollment->student?->personalData;
@@ -180,6 +205,9 @@ class ReportService
         return $row;
     }
 
+    /**
+     * Builds a subject row for the report card, including per-quarter grades, the final grade, and pass/fail status.
+     */
     private function reportCardSubjectRow($subject, $esBySubject, $blockSection): array
     {
         $es = $esBySubject->get($subject->id);
@@ -197,6 +225,10 @@ class ReportService
         ];
     }
 
+    /**
+     * Returns conduct scores grouped by category and criterion for all four quarters.
+     * Each entry maps a category name to its list of criteria and their per-quarter scores.
+     */
     private function reportCardConductData(StudentEnrollment $studentEnrollment): array
     {
         $conductCategories = $this->reportRepository->activeConductCategoriesOrdered();
@@ -227,6 +259,9 @@ class ReportService
         return $conductData;
     }
 
+    /**
+     * Builds one student's attendance summary row with counts for each attendance status.
+     */
     private function attendanceRow($enrollment, $byEnrollment): array
     {
         $personalData = $enrollment->student?->personalData;
@@ -243,6 +278,9 @@ class ReportService
         ];
     }
 
+    /**
+     * Formats a student's full name as "Last, First Middle Suffix".
+     */
     private function formatStudentName(?object $personalData): string
     {
         $lastName = $personalData?->last_name ?? '';
@@ -253,6 +291,10 @@ class ReportService
         return "{$lastName}, {$firstName}{$middleName}{$suffix}";
     }
 
+    /**
+     * Calculates a student's equivalent grade for one quarter using the formula: EG = PS% × 0.5 + 50, clamped to 60–100.
+     * Returns null if there are no grade components, no raw scores, or if the enrollment subject is missing.
+     */
     private function computeQuarterGrade(?StudentEnrollmentSubject $es, int $subjectId, int $blockSectionId, string $quarter): ?float
     {
         if (! $es) {

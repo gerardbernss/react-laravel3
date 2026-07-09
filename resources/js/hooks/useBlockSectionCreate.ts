@@ -20,6 +20,10 @@ interface Params {
     subjects: Subject[];
 }
 
+/**
+ * Manage the block section create form with dynamic subject assignment —
+ * filters incompatible-semester subjects and posts to /admin/block-sections.
+ */
 export function useBlockSectionCreate({ subjects }: Params) {
     const [assignedSubjects, setAssignedSubjects] = useState<SubjectAssignment[]>([]);
     const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');

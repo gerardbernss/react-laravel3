@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 
+/** Admin/staff forgot-password page that sends a password reset link to the provided email address. */
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
         <AuthLayout title="Forgot password" description="Enter your email to receive a password reset link">

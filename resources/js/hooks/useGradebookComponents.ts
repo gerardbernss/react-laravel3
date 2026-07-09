@@ -29,6 +29,10 @@ interface Params {
     weightTotal: number;
 }
 
+/**
+ * Manage the gradebook component setup page — add new grade components and delete existing ones,
+ * with weight validation to ensure the total reaches exactly 100%.
+ */
 export function useGradebookComponents({ blockSection, subject, quarter, weightTotal }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

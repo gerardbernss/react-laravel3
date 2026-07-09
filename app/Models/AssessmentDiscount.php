@@ -25,26 +25,41 @@ class AssessmentDiscount extends Model
         'verified_at' => 'datetime',
     ];
 
+    /**
+     * Get the student assessment this discount belongs to.
+     */
     public function assessment()
     {
         return $this->belongsTo(StudentAssessment::class, 'assessment_id');
     }
 
+    /**
+     * Get the discount type definition that was applied.
+     */
     public function discountType()
     {
         return $this->belongsTo(DiscountType::class);
     }
 
+    /**
+     * Get the user who verified this discount.
+     */
     public function verifiedBy()
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
 
+    /**
+     * Scope to discounts that have been verified (verified_at is set).
+     */
     public function scopeVerified($query)
     {
         return $query->whereNotNull('verified_at');
     }
 
+    /**
+     * Scope to discounts awaiting verification.
+     */
     public function scopePending($query)
     {
         return $query->whereNull('verified_at');

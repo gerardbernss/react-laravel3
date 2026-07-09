@@ -26,11 +26,17 @@ class ExamResultsController extends Controller
     {
     }
 
+    /**
+     * List all imported exam results with rankings and current applicant statuses.
+     */
     public function index()
     {
         return Inertia::render('Admissions/ExamResults/Index', $this->examResultService->indexData());
     }
 
+    /**
+     * Show the CSV upload form, restoring any pending conflict session data from a previous upload.
+     */
     public function create()
     {
         return Inertia::render('Admissions/ExamResults/Upload', [
@@ -40,6 +46,9 @@ class ExamResultsController extends Controller
         ]);
     }
 
+    /**
+     * Parse the uploaded CSV and either import clean rows immediately or pause for conflict resolution.
+     */
     public function store(UploadExamResultsRequest $request)
     {
         $result = $this->examResultService->importCsv($request->file('file'));
@@ -59,6 +68,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', $result['message']);
     }
 
+    /**
+     * Commit the pending rows from session after the user resolves conflicts, optionally overwriting existing scores.
+     */
     public function confirmStore(ConfirmExamResultsImportRequest $request): RedirectResponse
     {
         $pendingRows = session('exam_import_pending', []);
@@ -74,6 +86,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
+    /**
+     * Recalculate and persist the rank ordering for all current exam results.
+     */
     public function updateRankings(): RedirectResponse
     {
         $count = $this->examResultService->updateRankings();
@@ -81,6 +96,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', "Rankings updated for {$count} record(s).");
     }
 
+    /**
+     * Update the passing percentage threshold used to determine pass/fail status.
+     */
     public function updateSettings(UpdateExamPassingThresholdRequest $request): RedirectResponse
     {
         $this->examResultService->updatePassingThreshold((float) $request->validated('passing_percentage'));
@@ -88,6 +106,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', 'Passing threshold updated.');
     }
 
+    /**
+     * Send the exam result email notification to a single applicant.
+     */
     public function sendResult(ApplicantExamResult $result): RedirectResponse
     {
         $outcome = $this->examResultService->sendResult($result);
@@ -95,6 +116,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with($outcome['success'] ? 'success' : 'error', $outcome['message']);
     }
 
+    /**
+     * Send exam result emails to all applicants matching the given scope (e.g. passed, failed, or all).
+     */
     public function sendAllResults(SendAllExamResultsRequest $request): RedirectResponse
     {
         $message = $this->examResultService->sendAllResults($request->validated('scope'));
@@ -102,6 +126,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
+    /**
+     * Recalculate rankings and sync applicant statuses for all results in one operation.
+     */
     public function updateAll(): RedirectResponse
     {
         $message = $this->examResultService->updateAllRankingsAndStatuses();
@@ -109,6 +136,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
+    /**
+     * Sync applicant application statuses based on pass/fail outcomes for all exam results.
+     */
     public function updateApplicantStatuses(): RedirectResponse
     {
         $message = $this->examResultService->updateApplicantStatuses();
@@ -116,6 +146,9 @@ class ExamResultsController extends Controller
         return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
+    /**
+     * Sync the applicant status for a single exam result record.
+     */
     public function updateApplicantStatus(ApplicantExamResult $result): RedirectResponse
     {
         $outcome = $this->examResultService->updateApplicantStatus($result);

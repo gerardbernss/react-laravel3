@@ -16,6 +16,7 @@ interface Params {
     schedule: Schedule;
 }
 
+/** Manage the exam schedule edit form, PUTting to /admin/exam-schedules/:id. */
 export function useExamScheduleEdit({ schedule }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

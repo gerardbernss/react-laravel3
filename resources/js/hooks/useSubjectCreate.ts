@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the subject create form, posting to /admin/subjects. */
 export function useSubjectCreate() {
     const { data, setData, post, processing, errors } = useForm({
         code: '',
@@ -10,9 +11,6 @@ export function useSubjectCreate() {
         type: 'Core',
         grade_level: '',
         semester: '',
-        days: '',
-        time: '',
-        room: '',
         user_id: null as number | null,
         is_active: true,
     });

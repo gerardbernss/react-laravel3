@@ -66,27 +66,41 @@ class ApplicantPersonalData extends Model
 
     protected $casts = ['health_conditions' => 'array', 'date_of_birth' => 'date'];
 
+    /**
+     * Get the enrolled student record created from this person's personal data.
+     */
     public function student()
     {
         return $this->hasOne(Student::class, 'applicant_personal_data_id');
     }
 
-    //1 student -> many applications
+    /**
+     * Get all application records for this person — one per school year they applied.
+     */
     public function applications()
     {
         return $this->hasMany(Applicant::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the family background record for this person.
+     */
     public function familyBackground()
     {
         return $this->hasOne(ApplicantFamilyBackground::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the sibling records for this person.
+     */
     public function siblings()
     {
         return $this->hasMany(ApplicantSiblings::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the student portal credential tied to this person's identity.
+     */
     public function portalCredential()
     {
         return $this->hasOne(PortalCredential::class, 'applicant_personal_data_id');

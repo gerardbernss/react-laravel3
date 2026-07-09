@@ -4,6 +4,7 @@ import { type ComponentProps } from 'react';
 
 type AppButtonProps = ComponentProps<typeof Button>;
 
+/** Thin wrapper around the ui/Button with named sub-components (Primary, Secondary, Danger, Ghost) for semantic intent at call sites. */
 export function AppButton({ className, ...props }: AppButtonProps) {
     return <Button className={cn(className)} {...props} />;
 }

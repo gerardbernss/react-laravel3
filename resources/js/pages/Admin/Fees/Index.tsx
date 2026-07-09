@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, FILTER_CARD, HELPER_TEXT, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { BODY_TEXT, CARD, HELPER_TEXT, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { getSchoolYearOptions } from '@/lib/school-year';
 import { useFees, type Fee, type FeeFilters } from '@/hooks/useFees';
 import AppLayout from '@/layouts/app-layout';
@@ -164,6 +164,7 @@ function CopyFeeDialog({ open, onClose, schoolYears, copySource, setCopySource, 
     );
 }
 
+/** Admin fees list — filterable by school year, level, semester, and category with create and delete actions. */
 export default function FeesIndex({ fees, schoolYears, categories, schoolLevels, semesters, filters }: Props) {
     const {
         processing,
@@ -207,10 +208,7 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <DollarSign className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Fee Management</h1>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Fee Management</h1>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => setCopyModal(true)}>
                             <Copy className="mr-2 h-4 w-4" />
@@ -225,7 +223,7 @@ export default function FeesIndex({ fees, schoolYears, categories, schoolLevels,
                     </div>
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
+                <div className="mb-6">
                     <div className="grid gap-3 md:grid-cols-6">
                         <div className="relative md:col-span-2">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

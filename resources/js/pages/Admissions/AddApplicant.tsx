@@ -124,6 +124,7 @@ const FormNavigation = () => {
     );
 };
 
+/** Add new college applicant form for admissions staff — cascading PSGC address dropdowns, confirm/discard/reset dialogs, posting to /admin/applicants. */
 export default function AddApplicant() {
     const {
         form,

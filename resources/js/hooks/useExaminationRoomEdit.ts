@@ -14,6 +14,7 @@ interface Params {
     room: Room;
 }
 
+/** Manage the examination room edit form, PUTting to /admin/examination-rooms/:id. */
 export function useExaminationRoomEdit({ room }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

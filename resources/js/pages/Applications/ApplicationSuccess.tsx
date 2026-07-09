@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Head } from '@inertiajs/react';
 import { CheckCircle, FileText, LogIn, Mail } from 'lucide-react';
 
+/** Success screen shown after a student submits their application, with next-step guidance and portal login link. */
 export default function ApplicationSuccess() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

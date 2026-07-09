@@ -56,6 +56,7 @@ export interface BlockSection {
     subjects: Subject[];
 }
 
+/** Format a personal-data object as "LastName, FirstName, MiddleName" or "—" when null. */
 export function studentFullName(
     pd: { first_name: string | null; last_name: string | null; middle_name?: string | null } | null,
 ) {
@@ -69,6 +70,10 @@ interface Params {
     availableStudents: AvailableStudent[];
 }
 
+/**
+ * Manage the block section detail page — tabs, paginated enrolled students with search,
+ * add/remove student dialogs, and section delete confirmation.
+ */
 export function useBlockSectionShow({ blockSection, enrolledStudents, availableStudents }: Params) {
     const { delete: destroy, processing } = useForm();
 

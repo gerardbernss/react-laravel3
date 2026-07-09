@@ -16,8 +16,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create Permission', href: '/admin/permissions/create' },
 ];
 
+/** Admin permission create form for defining a new named permission. */
 export default function Create() {
-    const { data, setData, processing, errors, handleSubmit } = usePermissionCreate();
+    const { data, setData, processing, errors, handleSubmit, handleNameChange } = usePermissionCreate();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -25,11 +26,9 @@ export default function Create() {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/permissions">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Permissions
-                        </Button>
+                    <Link href="/admin/permissions" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Permissions
                     </Link>
                     <div className="flex items-center gap-2">
                         <Key className="h-5 w-5" />
@@ -50,10 +49,20 @@ export default function Create() {
                                     label="Permission Name *"
                                     type="text"
                                     value={data.name}
-                                    onChange={(e) => setData('name', e.target.value)}
+                                    onChange={(e) => handleNameChange(e.target.value)}
                                     placeholder="e.g., Manage Users"
                                     error={errors.name}
-                                    hint="The slug will be automatically generated from the name."
+                                />
+
+                                <AppInput
+                                    id="slug"
+                                    label="Slug"
+                                    type="text"
+                                    value={data.slug}
+                                    onChange={(e) => setData('slug', e.target.value)}
+                                    placeholder="e.g., manage-users"
+                                    error={errors.slug}
+                                    hint="Auto-generated from the name. Edit to override."
                                 />
 
                                 <div className="space-y-2">

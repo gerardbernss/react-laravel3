@@ -53,6 +53,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** Student portal dashboard showing enrollment status, announcements, and quick links for the enrolled student. */
 export default function Dashboard({ student, personalData, application, studentRecord, announcements }: Props) {
     const { currentSemester } = usePage().props as { currentSemester?: { name: string | null; school_year: string | null } };
     const { openIds, toggleAnnouncement, formatDate } = useDashboard();

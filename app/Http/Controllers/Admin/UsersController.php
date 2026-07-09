@@ -23,6 +23,9 @@ class UsersController extends Controller
     ) {
     }
 
+    /**
+     * List all users with their assigned roles.
+     */
     public function index()
     {
         Gate::authorize('viewAny', User::class);
@@ -33,6 +36,9 @@ class UsersController extends Controller
         ]);
     }
 
+    /**
+     * Show the create user form with all active roles available for selection.
+     */
     public function create()
     {
         Gate::authorize('create', User::class);
@@ -42,6 +48,9 @@ class UsersController extends Controller
         ]);
     }
 
+    /**
+     * Save a new user account.
+     */
     public function store(StoreUserRequest $request)
     {
         $this->userService->create($request->validated());
@@ -49,6 +58,9 @@ class UsersController extends Controller
         return redirect()->route('admin.users.index')->with('message', 'User created successfully!');
     }
 
+    /**
+     * Show the edit form for an existing user with their current roles pre-selected.
+     */
     public function edit(User $user)
     {
         Gate::authorize('view', $user);
@@ -59,6 +71,9 @@ class UsersController extends Controller
         ]);
     }
 
+    /**
+     * Update a user's account details.
+     */
     public function update(UpdateUserRequest $request, User $user)
     {
         $this->userService->update($user, $request->validated());
@@ -66,6 +81,9 @@ class UsersController extends Controller
         return redirect()->route('admin.users.index')->with('message', 'User updated successfully!');
     }
 
+    /**
+     * Delete a user account.
+     */
     public function destroy(User $user)
     {
         Gate::authorize('delete', $user);
@@ -75,6 +93,9 @@ class UsersController extends Controller
         return redirect()->route('admin.users.index')->with('message', 'User deleted successfully!');
     }
 
+    /**
+     * Assign a single role to a user.
+     */
     public function assignRole(AssignRoleRequest $request, User $user)
     {
         $this->userService->assignRole($user, $request->validated('role_id'));
@@ -82,6 +103,9 @@ class UsersController extends Controller
         return redirect()->back()->with('message', 'Role assigned successfully!');
     }
 
+    /**
+     * Remove a single role from a user.
+     */
     public function removeRole(RemoveRoleRequest $request, User $user)
     {
         $this->userService->removeRole($user, $request->validated('role_id'));

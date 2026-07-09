@@ -43,6 +43,7 @@ function isPast(dateStr: string) {
     return new Date(dateStr) < new Date(new Date().toDateString());
 }
 
+/** Admin exam assignment create page — select a schedule and bulk-assign applicants from the filtered list. */
 export default function Create({ applicants, schedules, filters }: Props) {
     const {
         selectedApplicants,

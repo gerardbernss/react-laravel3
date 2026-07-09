@@ -27,6 +27,7 @@ export const APPLICANT_COLUMNS: { key: keyof Applicant; label: string }[] = [
     { key: 'application_status', label: 'Application Status' },
 ];
 
+/** Return the badge variant and label for a given application status string. */
 export function getStatusBadgeProps(status: string | undefined): { variant: 'outline' | 'default' | 'success' | 'secondary'; label: string } {
     const s = status?.toLowerCase() ?? '';
     if (s === 'pending')                       return { variant: 'outline',  label: 'Pending' };
@@ -35,11 +36,16 @@ export function getStatusBadgeProps(status: string | undefined): { variant: 'out
     return { variant: 'outline', label: status || 'Pending' };
 }
 
+/** Adapt a calendar selection value into a synthetic ChangeEvent for select-style onChange handlers. */
 export function handleCalendarChange(value: string | number, onChange: ChangeEventHandler<HTMLSelectElement>) {
     const event = { target: { value: String(value) } } as React.ChangeEvent<HTMLSelectElement>;
     onChange(event);
 }
 
+/**
+ * Filter, sort, paginate, and export the admissions applicant list; also handles
+ * single delete and bulk delete with confirmation dialogs.
+ */
 export function useAdmissionsIndex(applications: Applicant[]) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGender, setSelectedGender] = useState('all');

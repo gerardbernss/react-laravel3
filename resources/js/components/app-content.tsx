@@ -5,6 +5,7 @@ interface AppContentProps extends React.ComponentProps<'main'> {
     variant?: 'header' | 'sidebar';
 }
 
+/** Main content area wrapper — uses SidebarInset for sidebar layouts or a centred max-width container for header layouts. */
 export function AppContent({ variant = 'header', children, ...props }: AppContentProps) {
     if (variant === 'sidebar') {
         return <SidebarInset className="min-w-0 overflow-x-hidden" {...props}>{children}</SidebarInset>;

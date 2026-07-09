@@ -21,6 +21,9 @@ class ExamSchedulesController extends Controller
     ) {
     }
 
+    /**
+     * List all exam schedules with room details and assigned applicant counts.
+     */
     public function index()
     {
         return Inertia::render('Admin/ExamSchedules/Index', [
@@ -29,6 +32,9 @@ class ExamSchedulesController extends Controller
         ]);
     }
 
+    /**
+     * Show the create exam schedule form with active rooms for selection.
+     */
     public function create()
     {
         return Inertia::render('Admin/ExamSchedules/Create', [
@@ -36,6 +42,9 @@ class ExamSchedulesController extends Controller
         ]);
     }
 
+    /**
+     * Save a new exam schedule.
+     */
     public function store(StoreExamScheduleRequest $request)
     {
         $this->examScheduleService->create($request->validated());
@@ -44,6 +53,9 @@ class ExamSchedulesController extends Controller
             ->with('success', 'Exam schedule created successfully.');
     }
 
+    /**
+     * Show an exam schedule's details with its assigned applicants and the list of applicants still available to assign.
+     */
     public function show(ExamSchedule $examSchedule)
     {
         $this->examScheduleRepository->loadShowRelations($examSchedule);
@@ -54,6 +66,9 @@ class ExamSchedulesController extends Controller
         ]);
     }
 
+    /**
+     * Show the edit form for an existing exam schedule.
+     */
     public function edit(ExamSchedule $examSchedule)
     {
         return Inertia::render('Admin/ExamSchedules/Edit', [
@@ -62,6 +77,9 @@ class ExamSchedulesController extends Controller
         ]);
     }
 
+    /**
+     * Update an existing exam schedule's details.
+     */
     public function update(UpdateExamScheduleRequest $request, ExamSchedule $examSchedule)
     {
         $this->examScheduleService->update($examSchedule, $request->validated());
@@ -70,6 +88,9 @@ class ExamSchedulesController extends Controller
             ->with('success', 'Exam schedule updated successfully.');
     }
 
+    /**
+     * Delete an exam schedule — blocked if it has applicants already assigned to it.
+     */
     public function destroy(ExamSchedule $examSchedule)
     {
         if (! $this->examScheduleService->delete($examSchedule)) {

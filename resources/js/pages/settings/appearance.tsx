@@ -15,6 +15,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** User settings page for choosing between light, dark, and system appearance modes. */
 export default function Appearance() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

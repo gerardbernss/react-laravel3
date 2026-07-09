@@ -4,6 +4,7 @@ import { ComponentProps } from 'react';
 
 type LinkProps = ComponentProps<typeof Link>;
 
+/** Inertia Link styled as an underlined text link with a hover colour transition. */
 export default function TextLink({ className = '', children, ...props }: LinkProps) {
     return (
         <Link

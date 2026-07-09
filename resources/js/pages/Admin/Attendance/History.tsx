@@ -38,6 +38,7 @@ function rateColor(rate: number | null) {
     return 'text-red-600';
 }
 
+/** Admin attendance history page for a block section — shows per-subject attendance records within a selected date range. */
 export default function History({ blockSection, subjects, selectedSubjectId, dateFrom, dateTo, records }: Props) {
     const {
         fromVal,
@@ -66,7 +67,7 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
                     <div className="mb-4 flex items-center gap-4">
                         <Link
                             href={blockSection.grade_level ? `/teacher/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/teacher/attendance'}
-                            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
                         >
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Back
@@ -117,25 +118,17 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
 
                         <div className="flex flex-col gap-1">
                             <label className="text-xs font-medium text-gray-500">From</label>
-                            <Input
-                                type="date"
-                                value={fromVal}
-                                onChange={(e) => setFromVal(e.target.value)}
-                                className="w-[160px]"
-                            />
+                            <Input type="date" value={fromVal} onChange={(e) => setFromVal(e.target.value)} className="w-[160px]" />
                         </div>
 
                         <div className="flex flex-col gap-1">
                             <label className="text-xs font-medium text-gray-500">To</label>
-                            <Input
-                                type="date"
-                                value={toVal}
-                                onChange={(e) => setToVal(e.target.value)}
-                                className="w-[160px]"
-                            />
+                            <Input type="date" value={toVal} onChange={(e) => setToVal(e.target.value)} className="w-[160px]" />
                         </div>
 
-                        <Button onClick={applyFilters} size="sm">Apply</Button>
+                        <Button onClick={applyFilters} size="sm">
+                            Apply
+                        </Button>
 
                         {hasDateFilter && (
                             <Button onClick={clearFilters} variant="ghost" size="sm" className="text-gray-500">
@@ -159,17 +152,28 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
                                 pageSize={pageSize}
                                 currentPage={currentPage}
                                 onPageChange={setCurrentPage}
-                                onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                                onPageSizeChange={(s) => {
+                                    setPageSize(s);
+                                    setCurrentPage(1);
+                                }}
                             />
                         }
                     >
                         <AppTable.Head>
                             <AppTable.Th>Date</AppTable.Th>
                             <AppTable.Th center>Marked</AppTable.Th>
-                            <AppTable.Th center className="text-green-600">Present</AppTable.Th>
-                            <AppTable.Th center className="text-red-600">Absent</AppTable.Th>
-                            <AppTable.Th center className="text-yellow-600">Late</AppTable.Th>
-                            <AppTable.Th center className="text-blue-600">Excused</AppTable.Th>
+                            <AppTable.Th center className="text-green-600">
+                                Present
+                            </AppTable.Th>
+                            <AppTable.Th center className="text-red-600">
+                                Absent
+                            </AppTable.Th>
+                            <AppTable.Th center className="text-yellow-600">
+                                Late
+                            </AppTable.Th>
+                            <AppTable.Th center className="text-blue-600">
+                                Excused
+                            </AppTable.Th>
                             <AppTable.Th center>Rate</AppTable.Th>
                             <AppTable.Th center>Actions</AppTable.Th>
                         </AppTable.Head>
@@ -184,24 +188,32 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
                                         <Badge variant="outline">{record.total_marked}</Badge>
                                     </AppTable.Td>
                                     <AppTable.Td className="text-center">
-                                        {record.present > 0
-                                            ? <span className={`${BADGE_BASE} ${BADGE_GREEN}`}>{record.present}</span>
-                                            : <span className="text-gray-300">—</span>}
+                                        {record.present > 0 ? (
+                                            <span className={`${BADGE_BASE} ${BADGE_GREEN}`}>{record.present}</span>
+                                        ) : (
+                                            <span className="text-gray-300">—</span>
+                                        )}
                                     </AppTable.Td>
                                     <AppTable.Td className="text-center">
-                                        {record.absent > 0
-                                            ? <span className={`${BADGE_BASE} ${BADGE_RED}`}>{record.absent}</span>
-                                            : <span className="text-gray-300">—</span>}
+                                        {record.absent > 0 ? (
+                                            <span className={`${BADGE_BASE} ${BADGE_RED}`}>{record.absent}</span>
+                                        ) : (
+                                            <span className="text-gray-300">—</span>
+                                        )}
                                     </AppTable.Td>
                                     <AppTable.Td className="text-center">
-                                        {record.late > 0
-                                            ? <span className={`${BADGE_BASE} ${BADGE_YELLOW}`}>{record.late}</span>
-                                            : <span className="text-gray-300">—</span>}
+                                        {record.late > 0 ? (
+                                            <span className={`${BADGE_BASE} ${BADGE_YELLOW}`}>{record.late}</span>
+                                        ) : (
+                                            <span className="text-gray-300">—</span>
+                                        )}
                                     </AppTable.Td>
                                     <AppTable.Td className="text-center">
-                                        {record.excused > 0
-                                            ? <span className={`${BADGE_BASE} ${BADGE_BLUE}`}>{record.excused}</span>
-                                            : <span className="text-gray-300">—</span>}
+                                        {record.excused > 0 ? (
+                                            <span className={`${BADGE_BASE} ${BADGE_BLUE}`}>{record.excused}</span>
+                                        ) : (
+                                            <span className="text-gray-300">—</span>
+                                        )}
                                     </AppTable.Td>
                                     <AppTable.Td className={`text-center font-semibold ${rateColor(record.attendance_rate)}`}>
                                         {record.attendance_rate !== null ? `${record.attendance_rate}%` : '—'}

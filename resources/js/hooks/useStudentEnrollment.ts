@@ -32,10 +32,15 @@ export interface Fee {
     amount: number;
 }
 
+/** Format a number as Philippine Peso currency (e.g. ₱1,234.00). */
 export function formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 }
 
+/**
+ * Manage the student self-enrollment wizard — contact info updates with PSGC address cascades,
+ * fee summary, payment plan selection, and final enrollment form submission.
+ */
 export function useStudentEnrollment(
     personalData: EnrollmentPersonalData | null,
     familyBackground: EnrollmentFamilyBackground | null,

@@ -14,6 +14,9 @@ class DashboardController extends Controller
     {
     }
 
+    /**
+     * Render the dashboard — faculty users see their assigned sections and subjects while admins see school-wide stats.
+     */
     public function index(): Response
     {
         /** @var \App\Models\User|null $user */

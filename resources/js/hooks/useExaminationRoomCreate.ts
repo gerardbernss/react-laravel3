@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the examination room create form, posting to /admin/examination-rooms. */
 export function useExaminationRoomCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',

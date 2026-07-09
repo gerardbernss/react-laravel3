@@ -13,6 +13,7 @@ interface ResetPasswordProps {
     email: string;
 }
 
+/** Admin/staff password reset page; accepts a new password using the token from the reset email. */
 export default function ResetPassword({ token, email }: ResetPasswordProps) {
     return (
         <AuthLayout title="Reset password" description="Please enter your new password below">

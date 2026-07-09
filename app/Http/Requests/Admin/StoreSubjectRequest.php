@@ -24,9 +24,6 @@ class StoreSubjectRequest extends FormRequest
             'type' => ['required', 'in:Core,Major,Minor,Elective,Specialized'],
             'grade_level' => ['nullable', 'string'],
             'semester' => ['nullable', 'in:First Semester,Second Semester,Summer,Full Year'],
-            'days' => ['nullable', 'string', 'max:10'],
-            'time' => ['nullable', 'string', 'max:20'],
-            'room' => ['nullable', 'string', 'max:100'],
             'user_id' => ['nullable', 'exists:users,id'],
             'is_active' => ['boolean'],
         ];

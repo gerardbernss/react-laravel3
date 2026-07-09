@@ -19,6 +19,9 @@ class EmployeeController extends Controller
     ) {
     }
 
+    /**
+     * List employees filterable by name search, department, and status.
+     */
     public function index(Request $request)
     {
         return Inertia::render('Admin/Employees/Index', [
@@ -28,6 +31,9 @@ class EmployeeController extends Controller
         ]);
     }
 
+    /**
+     * Show the create employee form with available user accounts and employment type options.
+     */
     public function create()
     {
         return Inertia::render('Admin/Employees/Create', [
@@ -36,6 +42,9 @@ class EmployeeController extends Controller
         ]);
     }
 
+    /**
+     * Save a new employee record linked to a user account.
+     */
     public function store(StoreEmployeeRequest $request)
     {
         $this->employeeService->create($request->validated());
@@ -43,6 +52,9 @@ class EmployeeController extends Controller
         return redirect()->route('admin.employees.index')->with('success', 'Employee created successfully.');
     }
 
+    /**
+     * Show an employee's profile with their linked user account.
+     */
     public function show(Employee $employee)
     {
         return Inertia::render('Admin/Employees/Show', [
@@ -50,6 +62,9 @@ class EmployeeController extends Controller
         ]);
     }
 
+    /**
+     * Show the edit form for an existing employee.
+     */
     public function edit(Employee $employee)
     {
         return Inertia::render('Admin/Employees/Create', [
@@ -59,6 +74,9 @@ class EmployeeController extends Controller
         ]);
     }
 
+    /**
+     * Update an existing employee record.
+     */
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
         $this->employeeService->update($employee, $request->validated());
@@ -66,6 +84,9 @@ class EmployeeController extends Controller
         return redirect()->route('admin.employees.index')->with('success', 'Employee updated successfully.');
     }
 
+    /**
+     * Deactivate an employee rather than deleting them to preserve historical records.
+     */
     public function destroy(Employee $employee)
     {
         $this->employeeService->deactivate($employee);

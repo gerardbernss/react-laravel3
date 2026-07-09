@@ -25,7 +25,10 @@ class PasswordResetLinkService
     }
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * Sends a password reset link to the given email.
+     * Checks staff users first, then student portal accounts.
+     *
+     * @throws ValidationException if no account is found for the email
      */
     public function execute(string $email): void
     {
@@ -48,6 +51,11 @@ class PasswordResetLinkService
         ]);
     }
 
+    /**
+     * Sends a standard Laravel password reset email to a staff user.
+     *
+     * @throws ValidationException if the mail broker fails to send
+     */
     private function sendUserResetLink(string $email): void
     {
         $status = Password::sendResetLink(['email' => $email]);
@@ -57,6 +65,9 @@ class PasswordResetLinkService
         }
     }
 
+    /**
+     * Creates a reset token and emails it to the student's portal account.
+     */
     private function sendStudentResetLink(PortalCredential $credential): void
     {
         $token = Str::random(64);

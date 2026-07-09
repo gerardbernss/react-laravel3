@@ -8,6 +8,7 @@ import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import AuthLayout from '@/layouts/auth-layout';
 
+/** Email verification prompt shown after registration; lets the user resend the verification link or log out. */
 export default function VerifyEmail({ status }: { status?: string }) {
     return (
         <AuthLayout title="Verify email" description="Please verify your email address by clicking on the link we just emailed to you.">

@@ -32,6 +32,7 @@ function formatDate(dateStr: string) {
     });
 }
 
+/** Student portal attendance record page showing present, absent, and late entries per enrolled subject. */
 export default function Attendance({ isEnrolled, enrollment, attendance }: Props) {
     const { editingId, editValue, setEditValue, saving, startEdit, cancelEdit, saveReason } = useStudentAttendance();
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { FILTER_CARD, PAGE_PADDING, TABLE_HEADER_CELL } from '@/constants/ui';
+import { PAGE_PADDING, TABLE_HEADER_CELL, TABLE_ROW_ACTION } from '@/constants/ui';
 import {
     useFinanceAssessments,
     type Assessment,
@@ -14,7 +14,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Banknote, ChevronDown, ChevronUp, ClipboardList, Eye, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, ClipboardList, Eye, Search, UserCheck } from 'lucide-react';
 
 interface Props {
     assessments: Assessment[];
@@ -87,16 +87,17 @@ function AssessmentRow({ assessment: a }: AssessmentRowProps) {
                             : `/admin/fee-assessments/${a.id}`
                     }
                 >
-                    <Button size="sm" variant="outline">
-                        <Eye className="mr-1 h-3 w-3" />
+                    <button className={TABLE_ROW_ACTION}>
+                        {a.type === 'applicant' ? <UserCheck className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                         {a.type === 'applicant' ? 'Enroll' : 'View'}
-                    </Button>
+                    </button>
                 </Link>
             </td>
         </tr>
     );
 }
 
+/** Admin finance assessment list — filterable, sortable table of student fee assessments grouped by school year and enrollment period. */
 export default function AssessmentsIndex({ assessments, schoolYears, openStudentPeriod }: Props) {
     const {
         searchQuery, setSearchQuery,
@@ -122,10 +123,7 @@ export default function AssessmentsIndex({ assessments, schoolYears, openStudent
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Banknote className="h-7 w-7 text-primary" />
-                        <h1 className="text-3xl font-bold text-gray-900">Student Assessments</h1>
-                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900">Assessments</h1>
                     {openStudentPeriod && (
                         <Button onClick={() => setShowGenerateDialog(true)} className="gap-2 bg-blue-600 hover:bg-blue-700">
                             <ClipboardList className="h-4 w-4" />
@@ -134,10 +132,10 @@ export default function AssessmentsIndex({ assessments, schoolYears, openStudent
                     )}
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
-                    <div className="mb-3">
+                <div className="mb-6 flex flex-wrap items-end gap-3">
+                    <div>
                         <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                        <div className="relative w-full md:w-[400px]">
+                        <div className="relative w-full sm:w-[300px]">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 placeholder="Search by name or assessment no."
@@ -147,36 +145,34 @@ export default function AssessmentsIndex({ assessments, schoolYears, openStudent
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Statuses</SelectItem>
-                                <SelectItem value="for_enrollment">For Enrollment</SelectItem>
-                                <SelectItem value="finalized">Pending</SelectItem>
-                                <SelectItem value="partial">Partial</SelectItem>
-                                <SelectItem value="paid">Paid</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={selectedSchoolYear || 'all'} onValueChange={(v) => { setSelectedSchoolYear(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-40"><SelectValue placeholder="School year" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All School Years</SelectItem>
-                                {schoolYears.map((sy) => <SelectItem key={sy} value={sy}>{sy}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={selectedSemester || 'all'} onValueChange={(v) => { setSelectedSemester(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-44"><SelectValue placeholder="Semester" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Semesters</SelectItem>
-                                <SelectItem value="First Semester">First Semester</SelectItem>
-                                <SelectItem value="Second Semester">Second Semester</SelectItem>
-                                <SelectItem value="Summer">Summer</SelectItem>
-                                <SelectItem value="Full Year">Full Year</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
-                    </div>
+                    <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="for_enrollment">For Enrollment</SelectItem>
+                            <SelectItem value="finalized">Pending</SelectItem>
+                            <SelectItem value="partial">Partial</SelectItem>
+                            <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedSchoolYear || 'all'} onValueChange={(v) => { setSelectedSchoolYear(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-40"><SelectValue placeholder="School year" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All School Years</SelectItem>
+                            {schoolYears.map((sy) => <SelectItem key={sy} value={sy}>{sy}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedSemester || 'all'} onValueChange={(v) => { setSelectedSemester(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-44"><SelectValue placeholder="Semester" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Semesters</SelectItem>
+                            <SelectItem value="First Semester">First Semester</SelectItem>
+                            <SelectItem value="Second Semester">Second Semester</SelectItem>
+                            <SelectItem value="Summer">Summer</SelectItem>
+                            <SelectItem value="Full Year">Full Year</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                 </div>
 
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">

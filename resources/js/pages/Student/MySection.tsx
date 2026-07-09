@@ -25,6 +25,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'My Section', href: '/student/my-section' }];
 
+/** Student portal section page showing the student's assigned block section and enrolled subjects for the current term. */
 export default function MySection({ targetYear, targetSemester, blockSection, subjects }: Props) {
     const totalUnits = subjects.reduce((sum, s) => sum + s.units, 0);
 

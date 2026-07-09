@@ -59,6 +59,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Details', href: '#' },
 ];
 
+/** Portal credential detail page for admissions staff — send, resend, suspend, and reactivate applicant login access. */
 export default function Show({ credential }: Props) {
     const { handleResend, handleSuspend, handleReactivate, handleSend } = usePortalCredentialShow({ credentialId: credential.id });
 

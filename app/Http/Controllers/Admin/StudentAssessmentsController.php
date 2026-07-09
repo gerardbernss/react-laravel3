@@ -19,16 +19,25 @@ class StudentAssessmentsController extends Controller
     {
     }
 
+    /**
+     * List student assessments for the current enrollment period with summary totals.
+     */
     public function index()
     {
         return Inertia::render('Admin/Finance/Assessments/Index', $this->studentAssessmentService->indexData());
     }
 
+    /**
+     * Show an assessment's breakdown of fees, discounts, payments, and remaining balance.
+     */
     public function show(StudentAssessment $assessment)
     {
         return Inertia::render('Admin/Finance/Assessments/Show', $this->studentAssessmentService->showData($assessment));
     }
 
+    /**
+     * Record a new payment against an assessment and update its paid/remaining balance.
+     */
     public function processPayment(ProcessAssessmentPaymentRequest $request, StudentAssessment $assessment)
     {
         $result = $this->studentAssessmentService->processPayment($assessment, $request->validated());
@@ -40,6 +49,9 @@ class StudentAssessmentsController extends Controller
         return back()->with('success', $result['message']);
     }
 
+    /**
+     * Update an existing payment record and recalculate the assessment balance.
+     */
     public function updatePayment(UpdateAssessmentPaymentRequest $request, StudentAssessment $assessment, StudentPayment $payment)
     {
         $this->studentAssessmentService->updatePayment($assessment, $payment, $request->validated());
@@ -47,6 +59,9 @@ class StudentAssessmentsController extends Controller
         return back()->with('success', 'Payment updated successfully.');
     }
 
+    /**
+     * Delete a payment record and recalculate the assessment balance.
+     */
     public function deletePayment(StudentAssessment $assessment, StudentPayment $payment)
     {
         $this->studentAssessmentService->deletePayment($assessment, $payment);
@@ -54,6 +69,9 @@ class StudentAssessmentsController extends Controller
         return back()->with('success', 'Payment deleted.');
     }
 
+    /**
+     * Re-sync the student's enrollment status based on the current assessment payment state.
+     */
     public function syncStatus(StudentAssessment $assessment): RedirectResponse
     {
         $this->studentAssessmentService->syncStatus($assessment);
@@ -61,11 +79,17 @@ class StudentAssessmentsController extends Controller
         return back()->with('success', 'Enrollment status synced.');
     }
 
+    /**
+     * Return a JSON payload with the assessment's current status calculation details — for debugging payment sync issues.
+     */
     public function debugStatus(StudentAssessment $assessment): JsonResponse
     {
         return response()->json($this->studentAssessmentService->debugStatus($assessment));
     }
 
+    /**
+     * Update the minimum required payment amount on an assessment.
+     */
     public function updateMinimumAmount(UpdateAssessmentMinimumAmountRequest $request, StudentAssessment $assessment): RedirectResponse
     {
         $this->studentAssessmentService->updateMinimumAmount($assessment, $request->validated());

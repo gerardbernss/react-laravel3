@@ -8,6 +8,7 @@ interface AppCardProps {
     padding?: boolean;
 }
 
+/** Bordered card container with optional padding; includes an AppCard.Header sub-component for a title and optional action slot. */
 export function AppCard({ children, className, padding = true }: AppCardProps) {
     return (
         <div className={cn(CARD, padding && 'p-6', className)}>

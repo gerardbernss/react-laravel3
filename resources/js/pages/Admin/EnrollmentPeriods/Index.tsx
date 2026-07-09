@@ -221,6 +221,7 @@ function EditEnrollmentDialog({ period, onClose, form, onSubmit }: EditDialogPro
     );
 }
 
+/** Admin enrollment periods list — create, inline-edit, and delete enrollment windows per semester. */
 export default function Index({ periods, semesters }: Props) {
     const {
         showStartDialog, setShowStartDialog,
@@ -251,10 +252,7 @@ export default function Index({ periods, semesters }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <CalendarClock className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Enrollment Periods</h1>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Enrollment Periods</h1>
                     <Button onClick={() => setShowStartDialog(true)} className="gap-2 bg-green-600 hover:bg-green-700">
                         <Calendar className="h-4 w-4" />
                         Start Enrollment

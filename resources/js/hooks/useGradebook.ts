@@ -24,6 +24,7 @@ export interface SubjectEntry {
     semester: string | null;
 }
 
+/** Paginate the faculty gradebook's sections list and assigned subjects list independently. */
 export function useGradebook(mySubjects: SubjectEntry[], blockSections: BlockSection[]) {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);

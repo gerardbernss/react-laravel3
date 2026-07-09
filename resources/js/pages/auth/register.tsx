@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 
+/** Admin/staff user registration page for creating a new account with name, email, and password. */
 export default function Register() {
     return (
         <AuthLayout title="Create an account" description="Enter your details below to create your account">

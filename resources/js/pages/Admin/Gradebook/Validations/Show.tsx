@@ -32,6 +32,7 @@ function statusBadge(status: 'draft' | 'submitted' | 'finalized'): ReactNode {
     return <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-400">Draft</span>;
 }
 
+/** Admin gradebook validation detail page for reviewing and finalising a block section's grades per subject and quarter. */
 export default function ValidationsShow({ blockSection, subjects, quarters, isFaculty, canFinalize }: Props) {
     const { breadcrumbs } = useValidationsShow({ blockSection });
 
@@ -41,8 +42,8 @@ export default function ValidationsShow({ blockSection, subjects, quarters, isFa
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/teacher/gradebook/validations" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-                        <ArrowLeft className="h-4 w-4" />
+                    <Link href="/teacher/gradebook/validations" className="mb-3 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Validations
                     </Link>
                     <h1 className={PAGE_TITLE}>

@@ -17,6 +17,7 @@ interface Props {
     roles: UserRole[];
 }
 
+/** Admin user edit form with role checkbox assignment and breadcrumb trail. */
 export default function Edit({ user, roles }: Props) {
     const { breadcrumbs, hideAlert, setHideAlert, data, setData, processing, errors, handleUpdate, handleRoleChange } = useUserEdit({ user });
 
@@ -26,11 +27,9 @@ export default function Edit({ user, roles }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/users">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Users
-                        </Button>
+                    <Link href="/admin/users" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Users
                     </Link>
                     <div className="flex items-center gap-2">
                         <User className="h-5 w-5" />

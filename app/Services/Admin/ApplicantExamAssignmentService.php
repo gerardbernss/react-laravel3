@@ -18,6 +18,9 @@ class ApplicantExamAssignmentService
     ) {
     }
 
+    /**
+     * Returns pending exam assignments and the list of active schedules for the assignments index page.
+     */
     public function indexData(): array
     {
         return [
@@ -26,6 +29,9 @@ class ApplicantExamAssignmentService
         ];
     }
 
+    /**
+     * Returns the data needed for the assignment creation form: unassigned applicants (optionally filtered by search) and available schedules with slot counts.
+     */
     public function createData(?string $search): array
     {
         $schedules = $this->examScheduleRepository->activeWithAssignedCountOrderedByDateTime()
@@ -37,6 +43,11 @@ class ApplicantExamAssignmentService
         ];
     }
 
+    /**
+     * Assigns a single applicant to an exam schedule, checking for duplicates and available capacity first.
+     * Also updates the applicant's status to 'For Exam'.
+     * Returns an error array if blocked, or an empty array on success.
+     */
     public function store(array $data): array
     {
         if ($this->assignmentRepository->assignmentExists($data['applicant_id'], $data['exam_schedule_id'])) {
@@ -62,6 +73,12 @@ class ApplicantExamAssignmentService
         return [];
     }
 
+    /**
+     * Assigns multiple applicants to an exam schedule in one transaction.
+     * Rejects the entire batch if the number of applicants exceeds the remaining available slots.
+     * Skips any applicant already assigned to the same schedule.
+     * Returns the count of successfully assigned applicants.
+     */
     public function bulkStore(array $data): array
     {
         $schedule = $this->examScheduleRepository->findWithRoomOrFail($data['exam_schedule_id']);
@@ -97,6 +114,10 @@ class ApplicantExamAssignmentService
         return ['assigned' => $assigned];
     }
 
+    /**
+     * Updates an assignment's status and applies side effects:
+     * stamps confirmed_at when status is 'confirmed', and marks the applicant as 'Exam Taken' when status is 'attended'.
+     */
     public function updateStatus(ApplicantExamAssignment $assignment, array $data): void
     {
         DB::transaction(function () use ($assignment, $data) {
@@ -112,6 +133,9 @@ class ApplicantExamAssignmentService
         });
     }
 
+    /**
+     * Records the exam result (passed or failed) on the assignment and updates the applicant's application status accordingly.
+     */
     public function markResult(ApplicantExamAssignment $assignment, array $data): void
     {
         $applicationStatus = $data['result'] === 'passed' ? 'Exam Passed' : 'Exam Failed';
@@ -126,16 +150,25 @@ class ApplicantExamAssignmentService
         });
     }
 
+    /**
+     * Removes an applicant's exam assignment.
+     */
     public function delete(ApplicantExamAssignment $assignment): void
     {
         $this->assignmentRepository->delete($assignment);
     }
 
+    /**
+     * Sets the applicant's application status to 'For Exam'.
+     */
     private function markApplicantForExam(int $applicantId): void
     {
         $this->applicantRepository->update($this->applicantRepository->findOrFail($applicantId), ['application_status' => 'For Exam']);
     }
 
+    /**
+     * Formats a schedule record into an array with room details, capacity, assigned count, and remaining available slots.
+     */
     private function scheduleWithSlots($schedule): array
     {
         $effectiveCapacity = $schedule->capacity ?? $schedule->examinationRoom->capacity;

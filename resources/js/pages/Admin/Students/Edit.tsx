@@ -39,6 +39,7 @@ const GRADE_LEVELS = [
     'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
 ];
 
+/** Admin student edit form — personal data, cascading PSGC address dropdowns, health conditions, document uploads, and dynamic sibling entries. */
 export default function EditStudent({ student, personalData, siblings: initialSiblings, documents }: Props) {
     const {
         data, setData, processing, errors,

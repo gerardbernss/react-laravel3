@@ -18,6 +18,7 @@ interface Params {
     discountType: DiscountType;
 }
 
+/** Manage the discount type edit form, PUTting to /admin/discount-types/:id. */
 export function useDiscountTypeEdit({ discountType }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

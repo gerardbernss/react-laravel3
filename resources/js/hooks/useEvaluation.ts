@@ -27,6 +27,10 @@ export const EVALUATION_COLUMNS: { key: ApplicantColumnKey; label: string }[] = 
     { key: 'application_status', label: 'Application Status' },
 ];
 
+/**
+ * Filter, sort, paginate, and export the applicant evaluation list; also handles
+ * single delete and bulk delete with confirmation dialogs.
+ */
 export function useEvaluation(applications: Applicant[]) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGender, setSelectedGender] = useState('all');

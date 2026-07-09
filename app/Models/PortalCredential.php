@@ -91,18 +91,24 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
     ];
 
     /**
-     * Relationships
+     * Get the applicant personal data record that anchors this credential's identity.
      */
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the applicant record this credential was issued for.
+     */
     public function application()
     {
         return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
+    /**
+     * Get the enrolled student record linked through the shared applicant_personal_data_id.
+     */
     public function student()
     {
         return $this->hasOneThrough(
@@ -116,40 +122,55 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
     }
 
     /**
-     * Scopes
+     * Scope to active credentials only.
      */
     public function scopeActive($query)
     {
         return $query->where('access_status', 'Active');
     }
 
+    /**
+     * Scope to inactive credentials.
+     */
     public function scopeInactive($query)
     {
         return $query->where('access_status', 'Inactive');
     }
 
+    /**
+     * Scope to suspended credentials (auto-suspended after 5 failed login attempts or manually suspended).
+     */
     public function scopeSuspended($query)
     {
         return $query->where('access_status', 'Suspended');
     }
 
+    /**
+     * Scope to credentials where the login email has been sent to the applicant.
+     */
     public function scopeCredentialsSent($query)
     {
         return $query->whereNotNull('credentials_sent_at');
     }
 
+    /**
+     * Scope to credentials where the applicant has already changed their temporary password.
+     */
     public function scopePasswordChanged($query)
     {
         return $query->where('password_changed', true);
     }
 
+    /**
+     * Scope to credentials where the applicant has logged in at least once.
+     */
     public function scopeHasLogged($query)
     {
         return $query->whereNotNull('first_login_at');
     }
 
     /**
-     * Methods
+     * Generate a random temporary password using a mixed alphanumeric and symbol charset.
      */
     public function generateTemporaryPassword($length = 12)
     {
@@ -164,6 +185,9 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
         return $password;
     }
 
+    /**
+     * Record that credentials were sent and update the delivery channel.
+     */
     public function markCredentialsSent($via = 'Email')
     {
         $this->update([
@@ -172,6 +196,9 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
         ]);
     }
 
+    /**
+     * Record a successful login, updating timestamps and resetting the failed-attempt counter.
+     */
     public function recordLogin()
     {
         if (is_null($this->first_login_at)) {
@@ -182,6 +209,9 @@ class PortalCredential extends Authenticatable implements CanResetPasswordContra
         $this->save();
     }
 
+    /**
+     * Increment the failed login counter and auto-suspend the credential when it reaches 5 attempts.
+     */
     public function incrementLoginAttempts()
     {
         $this->increment('login_attempts');

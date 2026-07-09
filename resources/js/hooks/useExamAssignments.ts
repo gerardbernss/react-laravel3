@@ -37,9 +37,14 @@ export interface Assignment {
 
 export type AssignmentSortKey = 'application_number' | 'name' | 'schedule' | 'status';
 
+/** Format an ISO date string as a short human-readable date (e.g. "Jan 15, 2025"). */
 export const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+/**
+ * Filter, sort, and paginate the exam assignments list; also handles marking a result
+ * as passed/failed and deleting an assignment via Inertia.
+ */
 export function useExamAssignments(assignments: Assignment[]) {
     const { delete: destroy, processing } = useForm();
 

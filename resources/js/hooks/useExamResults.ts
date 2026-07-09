@@ -21,10 +21,15 @@ export interface ExamResult {
     application_status: string | null;
 }
 
+/** Format a nullable score string to two decimal places, returning "—" when null. */
 export function formatScore(v: string | null): string {
     return v != null ? parseFloat(v).toFixed(2) : '—';
 }
 
+/**
+ * Search and paginate the exam results list; handles sending individual or bulk
+ * result emails, syncing all result records, and updating the passing percentage threshold.
+ */
 export function useExamResults(results: ExamResult[], passingPercentage: number) {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);

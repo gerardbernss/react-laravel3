@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Option } from './use-provinces';
 
+/** Fetch barangays for a given city/municipality code from the PSGC API. */
 export function useBarangays(cityCode?: string) {
     const [barangays, setBarangays] = useState<Option[]>([]);
     const [loading, setLoading] = useState(false);

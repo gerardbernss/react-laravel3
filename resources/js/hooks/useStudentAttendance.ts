@@ -11,6 +11,7 @@ export interface AttendanceRecord {
     reason: string | null;
 }
 
+/** Manage inline editing of the attendance reason field for a student's absence or late record. */
 export function useStudentAttendance() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editValue, setEditValue] = useState('');

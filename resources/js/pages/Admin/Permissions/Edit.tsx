@@ -20,6 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Edit Permission', href: '/admin/permissions/edit' },
 ];
 
+/** Admin permission edit form for renaming an existing permission. */
 export default function Edit({ permission }: Props) {
     const { data, setData, processing, errors, handleSubmit } = usePermissionEdit({ permission });
 
@@ -29,11 +30,9 @@ export default function Edit({ permission }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/permissions">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Permissions
-                        </Button>
+                    <Link href="/admin/permissions" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Permissions
                     </Link>
                     <div className="flex items-center gap-2">
                         <Key className="h-5 w-5" />
@@ -45,7 +44,7 @@ export default function Edit({ permission }: Props) {
                     <Card>
                         <CardHeader>
                             <CardTitle>Permission Information</CardTitle>
-                            <CardDescription>Update the permission details. The slug will be automatically updated based on the name.</CardDescription>
+                            <CardDescription>Update the permission details. Edit the slug directly or leave it as-is.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleSubmit} className="space-y-6">
@@ -61,12 +60,13 @@ export default function Edit({ permission }: Props) {
 
                                 <AppInput
                                     id="slug"
-                                    label="Current Slug"
+                                    label="Slug"
                                     type="text"
-                                    value={permission.slug}
-                                    disabled
-                                    className="bg-gray-100 text-gray-600"
-                                    hint="This slug will be automatically updated when you change the name."
+                                    value={data.slug}
+                                    onChange={(e) => setData('slug', e.target.value)}
+                                    placeholder="e.g., manage-users"
+                                    error={errors.slug}
+                                    hint="Lowercase letters, numbers, and hyphens only."
                                 />
 
                                 <div className="space-y-2">

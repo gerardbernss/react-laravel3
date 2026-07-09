@@ -27,6 +27,7 @@ interface Params {
     blockSection: BlockSectionData;
 }
 
+/** Build the breadcrumb trail for the gradebook section overview page. */
 export function useGradebookShow({ blockSection }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

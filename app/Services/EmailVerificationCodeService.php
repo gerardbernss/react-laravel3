@@ -17,6 +17,9 @@ class EmailVerificationCodeService
 
     private const VERIFIED_TTL_HOURS = 24;
 
+    /**
+     * Returns true if enough time has passed since the last code was sent to this address (60-second cooldown).
+     */
     public function canSend(string $email): bool
     {
         $lastSent = Cache::get("email_verification_sent:{$email}");
@@ -24,6 +27,9 @@ class EmailVerificationCodeService
         return ! ($lastSent && now()->diffInSeconds($lastSent) < self::RATE_LIMIT_SECONDS);
     }
 
+    /**
+     * Generates a random 6-digit code, caches it for 10 minutes, records the send timestamp for rate-limiting, and emails the code to the given address.
+     */
     public function send(string $email): void
     {
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -39,6 +45,9 @@ class EmailVerificationCodeService
     }
 
     /**
+     * Checks the supplied code against the cached value for this email.
+     * On success, marks the address as verified in cache for 24 hours and clears the pending code.
+     *
      * @return array{success: bool, message?: string}
      */
     public function verify(string $email, string $code): array
@@ -60,11 +69,17 @@ class EmailVerificationCodeService
         return ['success' => true];
     }
 
+    /**
+     * Returns true if this email address has been verified within the last 24 hours.
+     */
     public function isVerified(string $email): bool
     {
         return Cache::get("email_verified:{$email}", false);
     }
 
+    /**
+     * Returns the HTML body for the verification email showing the 6-digit code.
+     */
     private function codeEmailHtml(string $code): string
     {
         return "

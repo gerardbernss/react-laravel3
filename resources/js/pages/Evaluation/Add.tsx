@@ -116,6 +116,7 @@ const FormNavigation = () => {
     );
 };
 
+/** Evaluation-mode applicant intake form used by admissions staff to directly enter a college applicant's data. */
 export default function AddApplicant() {
     const { form, hasAgreed, setHasAgreed, onSubmit } = useAddApplicantEvaluation();
 

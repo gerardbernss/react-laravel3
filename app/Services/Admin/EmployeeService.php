@@ -11,11 +11,17 @@ class EmployeeService
     {
     }
 
+    /**
+     * Creates a new employee record.
+     */
     public function create(array $data): Employee
     {
         return $this->employeeRepository->create($data);
     }
 
+    /**
+     * Updates an employee record with the given data.
+     */
     public function update(Employee $employee, array $data): void
     {
         $this->employeeRepository->update($employee, $data);

@@ -23,11 +23,17 @@ class SessionGuardService
         return null;
     }
 
+    /**
+     * Returns the dashboard route name for the given guard ('student' → student dashboard, anything else → admin dashboard).
+     */
     public function dashboardRouteName(string $guard): string
     {
         return $guard === 'student' ? 'student.dashboard' : 'dashboard';
     }
 
+    /**
+     * Logs out both the web and student guards, then destroys the session and rotates the CSRF token.
+     */
     public function logoutAllGuards(Request $request): void
     {
         Auth::guard('web')->logout();

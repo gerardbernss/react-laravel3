@@ -7,6 +7,7 @@ export interface Option {
     code: string;
 }
 
+/** Fetch all Philippine regions from the PSGC API. */
 export function useRegions() {
     const [regions, setRegions] = useState<Option[]>([]);
     const [loading, setLoading] = useState(true);

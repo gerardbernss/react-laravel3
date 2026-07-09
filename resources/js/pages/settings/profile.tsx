@@ -21,6 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** User settings page for editing profile name and email, with optional email-verification reminder when the address changes. */
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
 

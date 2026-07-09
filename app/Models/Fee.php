@@ -53,21 +53,33 @@ class Fee extends Model
         'Yearly'       => 'Yearly',
     ];
 
+    /**
+     * Get the assessment line items generated from this fee.
+     */
     public function lineItems()
     {
         return $this->hasMany(AssessmentLineItem::class);
     }
 
+    /**
+     * Scope to active fees only.
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope to fees for a specific school year.
+     */
     public function scopeForSchoolYear($query, string $schoolYear)
     {
         return $query->where('school_year', $schoolYear);
     }
 
+    /**
+     * Scope to fees that apply to a semester, including fees marked "Yearly" which apply to all semesters.
+     */
     public function scopeForSemester($query, string $semester)
     {
         return $query->where(function ($q) use ($semester) {
@@ -75,6 +87,9 @@ class Fee extends Model
         });
     }
 
+    /**
+     * Scope to fees that apply to a school level, including fees marked "all" which apply school-wide.
+     */
     public function scopeForSchoolLevel($query, string $schoolLevel)
     {
         return $query->where(function ($q) use ($schoolLevel) {

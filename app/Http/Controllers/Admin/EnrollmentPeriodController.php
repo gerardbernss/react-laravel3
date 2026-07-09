@@ -16,11 +16,17 @@ class EnrollmentPeriodController extends Controller
     {
     }
 
+    /**
+     * List all enrollment periods with their open/closed status.
+     */
     public function index()
     {
         return Inertia::render('Admin/EnrollmentPeriods/Index', $this->enrollmentPeriodService->indexData());
     }
 
+    /**
+     * Save a new enrollment period — blocked if an open period of the same type already exists.
+     */
     public function store(StoreEnrollmentPeriodRequest $request)
     {
         $result = $this->enrollmentPeriodService->store($request->validated());
@@ -32,6 +38,9 @@ class EnrollmentPeriodController extends Controller
         return back()->with('success', $result['message']);
     }
 
+    /**
+     * Open an enrollment period, transitioning Pending students to Not Enrolled if needed.
+     */
     public function open(OpenEnrollmentPeriodRequest $request, EnrollmentPeriod $period)
     {
         $result = $this->enrollmentPeriodService->open($period, $request->validated());
@@ -43,6 +52,9 @@ class EnrollmentPeriodController extends Controller
         return back()->with('success', $result['message']);
     }
 
+    /**
+     * Update an enrollment period's dates or settings.
+     */
     public function update(UpdateEnrollmentPeriodRequest $request, EnrollmentPeriod $period)
     {
         $this->enrollmentPeriodService->update($period, $request->validated());
@@ -50,6 +62,9 @@ class EnrollmentPeriodController extends Controller
         return back()->with('success', 'Enrollment period updated.');
     }
 
+    /**
+     * Close an enrollment period and mark all Active students as Pending for the next cycle.
+     */
     public function close(EnrollmentPeriod $period)
     {
         $this->enrollmentPeriodService->close($period);
@@ -57,6 +72,9 @@ class EnrollmentPeriodController extends Controller
         return back()->with('success', 'Enrollment has been closed.');
     }
 
+    /**
+     * Delete an enrollment period — blocked if it has associated student enrollments or assessments.
+     */
     public function destroy(EnrollmentPeriod $period)
     {
         $result = $this->enrollmentPeriodService->destroy($period);
@@ -68,6 +86,9 @@ class EnrollmentPeriodController extends Controller
         return back()->with('success', 'Enrollment period deleted.');
     }
 
+    /**
+     * Generate student assessment records for all enrolled students in the period who don't yet have one.
+     */
     public function generateAssessments(EnrollmentPeriod $period)
     {
         $result = $this->enrollmentPeriodService->generateAssessments($period);

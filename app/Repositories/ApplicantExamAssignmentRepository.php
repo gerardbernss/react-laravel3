@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ApplicantExamAssignmentRepository
 {
+    /**
+     * Returns exam assignments (with application info, personal data, and room) for applicants who are not yet enrolled in the current period, newest first.
+     */
     public function pendingAssignmentsForCurrentPeriod(?EnrollmentPeriod $currentPeriod): Collection
     {
         return ApplicantExamAssignment::with([
@@ -24,6 +27,9 @@ class ApplicantExamAssignmentRepository
             ->get();
     }
 
+    /**
+     * Returns a paginated list (20 per page) of "For Exam" applicants who have no exam assignment yet, optionally filtered by name or application number search.
+     */
     public function applicantsWithoutAssignment(?string $search): LengthAwarePaginator
     {
         return Applicant::with('personalData')
@@ -42,6 +48,9 @@ class ApplicantExamAssignmentRepository
             ->paginate(20);
     }
 
+    /**
+     * Returns true if the applicant is already assigned to the given exam schedule — used to prevent duplicate assignments.
+     */
     public function assignmentExists(int $applicantId, int $examScheduleId): bool
     {
         return ApplicantExamAssignment::where('applicant_id', $applicantId)
@@ -49,16 +58,25 @@ class ApplicantExamAssignmentRepository
             ->exists();
     }
 
+    /**
+     * Creates and returns a new exam assignment record.
+     */
     public function create(array $data): ApplicantExamAssignment
     {
         return ApplicantExamAssignment::create($data);
     }
 
+    /**
+     * Updates the given exam assignment with the supplied data.
+     */
     public function updateAssignment(ApplicantExamAssignment $assignment, array $data): void
     {
         $assignment->update($data);
     }
 
+    /**
+     * Deletes the given exam assignment record.
+     */
     public function delete(ApplicantExamAssignment $assignment): void
     {
         $assignment->delete();

@@ -63,6 +63,7 @@ function SectionRow({ section }: { section: BlockSection }) {
     );
 }
 
+/** Admin gradebook index showing block sections — faculty see only their assigned sections; admins see all. */
 export default function GradebookIndex({ isFaculty, mySubjects, blockSections }: Props) {
     const {
         currentPage, setCurrentPage,
@@ -79,17 +80,7 @@ export default function GradebookIndex({ isFaculty, mySubjects, blockSections }:
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-start justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <BookOpen className="h-7 w-7 text-primary" />
-                            <h1 className={PAGE_TITLE}>Gradebook</h1>
-                        </div>
-                        <p className={`mt-1 ${BODY_TEXT}`}>
-                            {isFaculty
-                                ? 'Manage grading components and enter student scores for your subjects.'
-                                : 'Select a section to manage its gradebook.'}
-                        </p>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Gradebook</h1>
                     <Link href="/teacher/gradebook/validations" className="shrink-0">
                         <Button variant="outline" size="sm">
                             <ClipboardCheck className="mr-1.5 h-4 w-4" />

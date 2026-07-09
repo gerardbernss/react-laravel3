@@ -9,6 +9,7 @@ interface FileUploadProps {
     description?: string;
 }
 
+/** Drag-and-drop / click-to-browse file upload area; displays the selected filename with a remove button, or a placeholder with accepted format hint. */
 export const FileUpload = ({ value, onChange, accept, description = 'PDF, JPG, JPEG, PNG' }: FileUploadProps) => {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);

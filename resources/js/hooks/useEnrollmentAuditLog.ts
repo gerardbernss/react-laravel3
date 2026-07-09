@@ -23,6 +23,7 @@ interface Params {
     auditLogs: AuditLog[];
 }
 
+/** Build the breadcrumb trail and paginate the enrollment audit log entries for a given applicant. */
 export function useEnrollmentAuditLog({ applicant, auditLogs }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },

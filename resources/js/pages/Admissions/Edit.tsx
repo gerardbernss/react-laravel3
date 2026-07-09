@@ -12,7 +12,7 @@ import { PAGE_TITLE } from '@/constants/ui';
 import { useEditApplicant } from '@/hooks/useEditApplicant';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, School, Trash2, User, UserPlus, Users } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner';
@@ -134,6 +134,7 @@ interface Props {
     applicant: any;
 }
 
+/** Edit SHS applicant form for admissions staff — cascading PSGC address dropdowns, confirm, discard, and reset dialogs before PUTting via useEditApplicant. */
 export default function EditApplicant({ applicant }: Props) {
     const {
         form,
@@ -186,18 +187,13 @@ export default function EditApplicant({ applicant }: Props) {
                         <div className="min-h-screen bg-[#f5f5f5]">
                             <div className="sticky top-0 z-50 bg-white shadow-sm">
                                 <div className="mx-auto max-w-[1500px] px-10 pt-8 pb-4">
+                                    <Link href="/admin/applicants" className="mb-3 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                                        <ArrowLeft className="mr-1 h-4 w-4" />
+                                        Back to Applicants
+                                    </Link>
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                type="button"
-                                                className="rounded-full p-2 transition-colors hover:bg-blue-100"
-                                                onClick={() => window.history.back()}
-                                            >
-                                                <ArrowLeft className="h-5 w-5" />
-                                            </button>
-                                            <div>
-                                                <h1 className={PAGE_TITLE}>Edit Applicant</h1>
-                                            </div>
+                                        <div>
+                                            <h1 className={PAGE_TITLE}>Edit Applicant</h1>
                                         </div>
                                         <div className="flex gap-2">
                                             <Button

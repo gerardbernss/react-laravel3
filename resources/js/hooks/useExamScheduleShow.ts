@@ -57,6 +57,11 @@ interface Params {
     availableApplicants: AvailableApplicant[];
 }
 
+/**
+ * Manage the exam schedule detail page — filter and paginate current assignments,
+ * bulk-assign available applicants (with conflict detection), remove assignments,
+ * and delete the schedule.
+ */
 export function useExamScheduleShow({ schedule, availableApplicants }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

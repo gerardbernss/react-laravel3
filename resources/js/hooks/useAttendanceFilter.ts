@@ -26,6 +26,10 @@ export interface SectionGroup {
     sections: { id: number; [key: string]: unknown }[];
 }
 
+/**
+ * Apply attendance index filters via Inertia navigation and compute daily attendance
+ * summary statistics (rate, sections taken today, students present).
+ */
 export function useAttendanceFilter(
     filters: AttendanceFilters,
     groupedSections: SectionGroup[],

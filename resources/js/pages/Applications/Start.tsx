@@ -1,6 +1,7 @@
 import { useApplicationStart } from '@/hooks/useApplicationStart';
 import { BookOpen, Facebook, GraduationCap, Mail, MapPin, Phone, Users } from 'lucide-react';
 
+/** Application type selector page where prospective students choose their program level and proceed to the appropriate intake form. */
 export default function Start() {
     const { applicationPeriodOpen, selectedType, setSelectedType, handleProceed } = useApplicationStart();
 

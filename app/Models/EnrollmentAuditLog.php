@@ -25,38 +25,47 @@ class EnrollmentAuditLog extends Model
     ];
 
     /**
-     * Relationships
+     * Get the student this log entry belongs to.
      */
     public function student()
     {
         return $this->belongsTo(Student::class);
     }
 
+    /**
+     * Get the applicant record associated with this log entry, if any.
+     */
     public function application()
     {
         return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
     /**
-     * Scopes
+     * Scope to entries for a specific action type (e.g. "enrolled", "withdrawn").
      */
     public function scopeByAction($query, $action)
     {
         return $query->where('action', $action);
     }
 
+    /**
+     * Scope to entries for a specific student ID.
+     */
     public function scopeByStudent($query, $studentId)
     {
         return $query->where('student_id', $studentId);
     }
 
+    /**
+     * Scope to entries created within the last N days (default 30).
+     */
     public function scopeRecent($query, $days = 30)
     {
         return $query->where('created_at', '>=', now()->subDays($days));
     }
 
     /**
-     * Static method to log an action
+     * Create an audit log entry for a student enrollment action.
      */
     public static function logAction(
         Student $student,

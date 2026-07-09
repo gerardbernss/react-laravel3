@@ -14,6 +14,9 @@ class MyStudentsController extends Controller
     {
     }
 
+    /**
+     * Show the student roster for a section, optionally filtered by subject — faculty see only their assigned subjects.
+     */
     public function show(BlockSection $blockSection, Request $request)
     {
         $subjectId = $request->input('subject_id');

@@ -3,13 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, HELPER_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_ROW_ACTION } from '@/constants/ui';
+import { CARD, HELPER_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_ROW_ACTION } from '@/constants/ui';
 import { useSemesterPeriodEdit } from '@/hooks/useSemesterPeriodEdit';
 import { MONTHS, monthName, useSemesterPeriods, type SemesterPeriod } from '@/hooks/useSemesterPeriods';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { CalendarDays, Check, Pencil, X } from 'lucide-react';
+import { Check, Pencil, X } from 'lucide-react';
 
 interface Props {
     periods: SemesterPeriod[];
@@ -91,6 +91,7 @@ function EditRow({ period, onCancel }: { period: SemesterPeriod; onCancel: () =>
     );
 }
 
+/** Admin semester periods list — create, inline-edit, and delete semester date windows. */
 export default function Index({ periods }: Props) {
     const {
         currentSemester,
@@ -110,13 +111,7 @@ export default function Index({ periods }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                        <CalendarDays className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Semester Periods</h1>
-                    </div>
-                    <p className={BODY_TEXT}>
-                        Configure which months belong to each semester. The system uses these ranges to auto-detect the current semester.
-                    </p>
+                    <h1 className={PAGE_TITLE}>Semester Periods</h1>
                     {currentSemester?.name && (
                         <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-sm font-medium text-green-800">
                             <span className="h-2 w-2 rounded-full bg-green-500" />

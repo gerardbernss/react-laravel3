@@ -23,6 +23,7 @@ interface Params {
     blockSection: BlockSectionData;
 }
 
+/** Build the breadcrumb trail for the grade validation detail page of a block section. */
 export function useValidationsShow({ blockSection }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

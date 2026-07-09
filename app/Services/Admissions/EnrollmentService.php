@@ -42,6 +42,10 @@ class EnrollmentService
     ) {
     }
 
+    /**
+     * Returns the enrollment dashboard payload: a paginated list of applicants for the current period,
+     * status counts, the active period details, and the current filter values.
+     */
     public function dashboardData(array $filters): array
     {
         $currentPeriod = EnrollmentPeriod::current();
@@ -69,6 +73,10 @@ class EnrollmentService
         ];
     }
 
+    /**
+     * Returns the onsite enrollment form data for an applicant: applicable fees, unit count,
+     * eligible discounts (auto-applied and manual), and any existing assessment for this period.
+     */
     public function showData(Applicant $applicant): array
     {
         $this->applicantRepository->loadEnrollmentShowRelations($applicant);
@@ -96,6 +104,11 @@ class EnrollmentService
         ];
     }
 
+    /**
+     * Runs the full onsite enrollment flow: validates discount rules, creates the student record,
+     * generates a fee assessment with discounts applied, and logs the action.
+     * Returns an error array if validation fails, or null on success.
+     */
     public function processOnsiteEnrollment(Applicant $applicant, array $validated): ?array
     {
         $discountIds = $validated['discount_ids'] ?? [];
@@ -121,6 +134,10 @@ class EnrollmentService
         return null;
     }
 
+    /**
+     * Executes all database writes for onsite enrollment inside the calling transaction:
+     * creates/updates the student record, calculates fees and discounts, creates the assessment, and writes the audit log entry.
+     */
     private function runOnsiteEnrollment(Applicant $applicant, $personalData, array $validated, string $semester, array $discountIds): void
     {
         $studentRecord = $this->saveOnsiteStudentRecord($applicant, $personalData, $semester);
@@ -196,6 +213,9 @@ class EnrollmentService
         ]);
     }
 
+    /**
+     * Creates a new student record for the applicant or updates the existing one with the current enrollment details.
+     */
     private function saveOnsiteStudentRecord(Applicant $applicant, $personalData, string $semester)
     {
         $studentRecord = $personalData->student;
@@ -219,6 +239,10 @@ class EnrollmentService
         return $studentRecord;
     }
 
+    /**
+     * Calculates the total discount amount for the given discount type IDs based on the appropriate fee base (tuition, miscellaneous, or gross).
+     * Returns [totalDiscount, appliedDiscounts] where appliedDiscounts contains the type, base, and computed amount for each entry.
+     */
     private function applyDiscounts(array $discountIds, float $tuitionTotal, float $miscTotal, float $grossAmount): array
     {
         $totalDiscount = 0;
@@ -240,6 +264,9 @@ class EnrollmentService
         return [$totalDiscount, $appliedDiscounts];
     }
 
+    /**
+     * Marks an applicant as Enrolled, assigns their student ID number, and writes an audit log entry.
+     */
     public function markEnrolled(Applicant $applicant, array $validated, string $ip): void
     {
         DB::transaction(function () use ($applicant, $validated, $ip) {
@@ -265,6 +292,9 @@ class EnrollmentService
         });
     }
 
+    /**
+     * Reverts an applicant's status back to Pending, clears their student ID number, and logs the reason.
+     */
     public function revertToPending(Applicant $applicant, string $reason, string $ip): void
     {
         DB::transaction(function () use ($applicant, $reason, $ip) {
@@ -290,6 +320,11 @@ class EnrollmentService
         });
     }
 
+    /**
+     * Withdraws an applicant: marks them and their linked student record as Withdrawn,
+     * creates a withdrawal record, cancels the latest assessment, and logs the action.
+     * Returns an error message string if already withdrawn, or null on success.
+     */
     public function withdraw(Applicant $applicant, array $validated, string $ip): ?string
     {
         if ($applicant->application_status === 'Withdrawn') {
@@ -340,6 +375,9 @@ class EnrollmentService
         return null;
     }
 
+    /**
+     * Returns the applicant and their full audit log history for the audit trail page.
+     */
     public function auditLogData(Applicant $applicant): array
     {
         $applicant->load('personalData');
@@ -350,6 +388,10 @@ class EnrollmentService
         ];
     }
 
+    /**
+     * Returns enrollment report data with applicant statistics broken down by category and year level,
+     * along with the active filter values and dropdown options.
+     */
     public function reportData(array $filters): array
     {
         $applicants = $this->applicantRepository->forReport($filters);
@@ -380,6 +422,9 @@ class EnrollmentService
         ];
     }
 
+    /**
+     * Returns the remaining balance from the student's most recent assessment outside the current period, or 0 if none exists.
+     */
     private function getStudentPriorBalance(int $studentId, string $schoolYear, string $semester): float
     {
         $previous = $this->studentAssessmentRepository->latestExcludingPeriod($studentId, $schoolYear, $semester);
@@ -387,6 +432,10 @@ class EnrollmentService
         return $previous ? $previous->remaining_balance : 0.0;
     }
 
+    /**
+     * Returns all discount types eligible for this applicant, with auto-applied flags for employee-dependent and sibling discounts.
+     * Employee discount is auto-applied if a parent/guardian is an active employee; sibling discount if a sibling is an active student.
+     */
     private function getEligibleDiscounts(Applicant $applicant): array
     {
         $eligible = [];
@@ -427,6 +476,9 @@ class EnrollmentService
         return array_merge($eligible, $manual);
     }
 
+    /**
+     * Returns active fees for the given school year that apply to the student's school level category.
+     */
     private function getApplicableFees(string $gradeLevel, string $schoolYear): array
     {
         $schoolLevel = $this->getStudentCategory($gradeLevel);
@@ -443,6 +495,9 @@ class EnrollmentService
             ->toArray();
     }
 
+    /**
+     * Maps a grade level to its school level category code: 'LES' (Grades 1–6), 'JHS' (Grades 7–10), 'SHS' (Grades 11–12), or 'all'.
+     */
     private function getStudentCategory(string $gradeLevel): string
     {
         if (in_array($gradeLevel, ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])) {
@@ -460,6 +515,10 @@ class EnrollmentService
         return 'all';
     }
 
+    /**
+     * Resolves the number of units for fee calculation from the applicant's strand program code first,
+     * then falls back to the school-level category program.
+     */
     private function resolveUnits(Applicant $applicant): int
     {
         $strand = $applicant->strand ?? null;

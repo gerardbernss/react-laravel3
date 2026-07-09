@@ -25,6 +25,10 @@ class StudentAssessmentService
     ) {
     }
 
+    /**
+     * Returns all assessments for the current enrollment period: both student assessments and pending applicant assessments,
+     * merged and sorted newest first, along with available school years and the currently open student enrollment period.
+     */
     public function indexData(): array
     {
         $period = $this->enrollmentPeriodRepository->currentOrLatest();
@@ -49,6 +53,9 @@ class StudentAssessmentService
         ];
     }
 
+    /**
+     * Returns the full assessment detail including fee breakdown, discount totals, payment history, and student info.
+     */
     public function showData(StudentAssessment $assessment): array
     {
         $this->studentAssessmentRepository->loadDetailRelations($assessment);
@@ -56,6 +63,10 @@ class StudentAssessmentService
         return ['assessment' => $this->assessmentDetail($assessment)];
     }
 
+    /**
+     * Records a new payment against an assessment and recalculates its status (finalized → partial → paid).
+     * Returns an error if the assessment is already fully paid, or a success message indicating full or partial payment.
+     */
     public function processPayment(StudentAssessment $assessment, array $data): array
     {
         if ($assessment->status === 'paid') {
@@ -80,6 +91,9 @@ class StudentAssessmentService
             : 'Partial payment recorded successfully.'];
     }
 
+    /**
+     * Updates an existing payment record and recalculates the assessment's payment status.
+     */
     public function updatePayment(StudentAssessment $assessment, StudentPayment $payment, array $data): void
     {
         $this->studentPaymentRepository->update($payment, $data);
@@ -87,23 +101,37 @@ class StudentAssessmentService
         $assessment->refresh();
     }
 
+    /**
+     * Removes a payment record and recalculates the assessment's payment status.
+     */
     public function deletePayment(StudentAssessment $assessment, StudentPayment $payment): void
     {
         $this->studentPaymentRepository->delete($payment);
         $this->recalculateAssessmentStatus($assessment);
     }
 
+    /**
+     * Recalculates and saves the assessment's payment status without making any payment changes.
+     * Useful for fixing assessments whose status has drifted out of sync.
+     */
     public function syncStatus(StudentAssessment $assessment): void
     {
         $this->recalculateAssessmentStatus($assessment);
     }
 
+    /**
+     * Updates the minimum required payment amount for an assessment and recalculates its status.
+     */
     public function updateMinimumAmount(StudentAssessment $assessment, array $data): void
     {
         $this->studentAssessmentRepository->updateAssessment($assessment, $data);
         $this->recalculateAssessmentStatus($assessment);
     }
 
+    /**
+     * Returns a diagnostic snapshot of an assessment and its linked student/application records.
+     * Used to troubleshoot enrollment status mismatches in development or support contexts.
+     */
     public function debugStatus(StudentAssessment $assessment): array
     {
         $assessment->refresh();
@@ -135,6 +163,11 @@ class StudentAssessmentService
         ];
     }
 
+    /**
+     * Recalculates the assessment status (finalized / partial / paid) based on total paid vs net amount.
+     * Also updates the linked student's enrollment status and application status to match:
+     * Active + Enrolled when the minimum is met, Pending + Pending when it is not.
+     */
     private function recalculateAssessmentStatus(StudentAssessment $assessment): void
     {
         $assessment->refresh();
@@ -172,6 +205,9 @@ class StudentAssessmentService
         }
     }
 
+    /**
+     * Finds the applicant record linked to a student, trying direct relation, portal credential, and personal data ID in that order.
+     */
     private function resolveApplication($student): ?Applicant
     {
         return $student->application
@@ -179,6 +215,9 @@ class StudentAssessmentService
             ?? $this->applicantRepository->findByPersonalDataId($student->applicant_personal_data_id);
     }
 
+    /**
+     * Formats a student assessment as a flat index row with amounts, status, and student identity fields.
+     */
     private function studentAssessmentRow(StudentAssessment $a): array
     {
         return [
@@ -202,6 +241,9 @@ class StudentAssessmentService
         ];
     }
 
+    /**
+     * Formats a pending applicant assessment as an index row, marking it as 'for_enrollment' status with zero payments.
+     */
     private function applicantAssessmentRow($a): array
     {
         return [
@@ -225,6 +267,9 @@ class StudentAssessmentService
         ];
     }
 
+    /**
+     * Builds the full assessment detail payload including fee category totals, discount/balance figures, payment history, and linked student info.
+     */
     private function assessmentDetail(StudentAssessment $assessment): array
     {
         return [

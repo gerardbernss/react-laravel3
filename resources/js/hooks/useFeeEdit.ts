@@ -22,6 +22,7 @@ interface Params {
     fee: Fee;
 }
 
+/** Manage the fee edit form, PUTting to /admin/fees/:id, with school-year options that include the fee's existing year. */
 export function useFeeEdit({ fee }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

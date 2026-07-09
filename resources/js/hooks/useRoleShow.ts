@@ -6,6 +6,7 @@ interface Params {
     role: Role;
 }
 
+/** Manage the role detail page — confirm and execute removal of a user from the role via DELETE /admin/users/:id/remove-role. */
 export function useRoleShow({ role }: Params) {
     const { delete: destroy, processing } = useForm();
     const [removeDialog, setRemoveDialog] = useState<{ open: boolean; userId: number; userName: string }>({

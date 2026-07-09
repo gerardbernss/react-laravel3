@@ -68,6 +68,7 @@ const statusLabels: Record<string, string> = {
     cancelled: 'Cancelled',
 };
 
+/** Student portal statement of account page showing itemised billing, total paid, and current outstanding balance. */
 export default function StatementOfAccount({ statement, totalBilled, totalPaid, currentBalance }: Props) {
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>

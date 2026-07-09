@@ -3,6 +3,7 @@ import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, Side
 import { type NavItem } from '@/types';
 import { type ComponentPropsWithoutRef } from 'react';
 
+/** Sidebar footer group rendering a list of external links (opens in a new tab) as sidebar menu buttons. */
 export function NavFooter({
     items,
     className,

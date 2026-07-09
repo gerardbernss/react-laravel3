@@ -18,6 +18,9 @@ class ReportController extends Controller
     {
     }
 
+    /**
+     * Download a CSV class record for a subject and quarter — returns 404 for invalid quarter values.
+     */
     public function classRecord(BlockSection $blockSection, Subject $subject, string $quarter): Response
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);
@@ -27,6 +30,9 @@ class ReportController extends Controller
         return $this->toCsvResponse($data['header'], $data['rows'], "class-record-{$blockSection->code}-{$subject->code}-{$quarter}.csv");
     }
 
+    /**
+     * Download a CSV grading sheet for all subjects in a section across all quarters.
+     */
     public function gradingSheet(BlockSection $blockSection): Response
     {
         $data = $this->reportService->gradingSheetData($blockSection);
@@ -34,6 +40,9 @@ class ReportController extends Controller
         return $this->toCsvResponse($data['header'], $data['rows'], "grading-sheet-{$blockSection->code}.csv");
     }
 
+    /**
+     * Download a PDF report card for a student's enrollment.
+     */
     public function reportCard(StudentEnrollment $studentEnrollment)
     {
         $data = $this->reportService->reportCardData($studentEnrollment);
@@ -43,6 +52,9 @@ class ReportController extends Controller
         return $pdf->download($data['filename']);
     }
 
+    /**
+     * Download a CSV attendance summary for a subject in a section.
+     */
     public function attendanceSummary(BlockSection $blockSection, Subject $subject): Response
     {
         $data = $this->reportService->attendanceSummaryData($blockSection, $subject);
@@ -50,6 +62,9 @@ class ReportController extends Controller
         return $this->toCsvResponse($data['header'], $data['rows'], "attendance-{$blockSection->code}-{$subject->code}.csv");
     }
 
+    /**
+     * Build a CSV download response from a header row and data rows, writing via an in-memory temp stream.
+     */
     private function toCsvResponse(array $header, array $rows, string $filename): Response
     {
         $output = fopen('php://temp', 'r+');

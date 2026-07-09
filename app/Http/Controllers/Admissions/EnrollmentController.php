@@ -29,6 +29,9 @@ class EnrollmentController extends Controller
     {
     }
 
+    /**
+     * Show the enrollment dashboard listing applicants filterable by status, category, and search term.
+     */
     public function dashboard(Request $request)
     {
         return Inertia::render('Admissions/Enrollment/Dashboard', $this->enrollmentService->dashboardData(
@@ -36,11 +39,17 @@ class EnrollmentController extends Controller
         ));
     }
 
+    /**
+     * Show an applicant's enrollment detail page including fee breakdown and discount eligibility.
+     */
     public function show(Applicant $applicant)
     {
         return Inertia::render('Admissions/Enrollment/Show', $this->enrollmentService->showData($applicant));
     }
 
+    /**
+     * Process a walk-in onsite enrollment including payment recording and student record creation.
+     */
     public function processOnsiteEnrollment(ProcessOnsiteEnrollmentRequest $request, Applicant $applicant)
     {
         $errors = $this->enrollmentService->processOnsiteEnrollment($applicant, $request->validated());
@@ -52,6 +61,9 @@ class EnrollmentController extends Controller
         return back()->with('success', 'Onsite enrollment processed successfully.');
     }
 
+    /**
+     * Mark an applicant as officially enrolled and log the action with the requester's IP.
+     */
     public function enroll(EnrollApplicantStatusRequest $request, Applicant $applicant)
     {
         $this->enrollmentService->markEnrolled($applicant, $request->validated(), $request->ip());
@@ -59,6 +71,9 @@ class EnrollmentController extends Controller
         return back()->with('success', 'Applicant has been enrolled successfully.');
     }
 
+    /**
+     * Revert an enrolled applicant back to Pending status with an audit trail reason.
+     */
     public function revertToPending(Request $request, Applicant $applicant)
     {
         $this->enrollmentService->revertToPending($applicant, $request->input('reason', 'No reason provided'), $request->ip());
@@ -66,6 +81,9 @@ class EnrollmentController extends Controller
         return back()->with('success', 'Applicant status reverted to Pending.');
     }
 
+    /**
+     * Withdraw an applicant from the current period and record the reason in the audit log.
+     */
     public function withdraw(WithdrawApplicantRequest $request, Applicant $applicant)
     {
         $error = $this->enrollmentService->withdraw($applicant, $request->validated(), $request->ip());
@@ -77,11 +95,17 @@ class EnrollmentController extends Controller
         return back()->with('success', 'Application has been withdrawn.');
     }
 
+    /**
+     * Show the full status-change audit log for an applicant's enrollment history.
+     */
     public function auditLog(Applicant $applicant)
     {
         return Inertia::render('Admissions/Enrollment/AuditLog', $this->enrollmentService->auditLogData($applicant));
     }
 
+    /**
+     * Show the enrollment report filterable by status, student category, and school year.
+     */
     public function report(Request $request)
     {
         return Inertia::render('Admissions/Enrollment/Report', $this->enrollmentService->reportData(

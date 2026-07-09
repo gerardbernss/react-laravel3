@@ -21,6 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Role Details', href: '/admin/roles/show' },
 ];
 
+/** Admin role detail page listing assigned users with a remove-user action. */
 export default function Show({ role }: Props) {
     const { hasPermission } = usePermissions();
     const { isSuperAdmin, processing, removeDialog, setRemoveDialog, handleRemoveRole, confirmRemoveRole } = useRoleShow({ role });
@@ -31,11 +32,9 @@ export default function Show({ role }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/roles">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Roles
-                        </Button>
+                    <Link href="/admin/roles" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Roles
                     </Link>
                     <div className="flex items-center gap-2">
                         <Shield className="h-5 w-5" />

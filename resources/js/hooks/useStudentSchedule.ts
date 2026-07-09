@@ -54,6 +54,7 @@ export const PALETTE = [
     'bg-teal-100 border-teal-400 text-teal-900',
 ] as const;
 
+/** Parse a schedule string like "MWF 07:30-08:30" into structured day indices and minute offsets. */
 export function parseSchedule(raw: string | null): ParsedSchedule | null {
     if (!raw) return null;
     const spaceIdx = raw.indexOf(' ');
@@ -98,6 +99,7 @@ export function parseSchedule(raw: string | null): ParsedSchedule | null {
     return { days, start, end, startLabel: timeParts[0].trim(), endLabel: timeParts[1].trim() };
 }
 
+/** Convert a 24-hour hour integer to a 12-hour AM/PM label (e.g. 13 → "1 PM"). */
 export function hourLabel(h: number): string {
     if (h === 0)  return '12 AM';
     if (h < 12)   return `${h} AM`;
@@ -105,6 +107,7 @@ export function hourLabel(h: number): string {
     return `${h - 12} PM`;
 }
 
+/** Parse the student's enrolled subjects into calendar-grid entries and toggle between table and calendar view. */
 export function useStudentSchedule(subjects: Subject[]) {
     const [view, setView] = useState<'table' | 'calendar'>('table');
 

@@ -12,6 +12,9 @@ class UserRegistrationService
 {
     public function __construct(private UserRepository $userRepository) {}
 
+    /**
+     * Creates a new user account, fires the Registered event (which triggers email verification), and logs the user in.
+     */
     public function execute(array $data): User
     {
         $user = $this->userRepository->create([

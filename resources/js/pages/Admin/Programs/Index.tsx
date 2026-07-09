@@ -1,10 +1,10 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { AppBadge } from '@/components/app-badge';
+import { AppBadge } from '@/components/AppBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, FILTER_CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { usePrograms, type Program, type ProgramSortKey } from '@/hooks/usePrograms';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -64,6 +64,7 @@ function ProgramRow({ program, processing, onDelete }: ProgramRowProps) {
     );
 }
 
+/** Admin programs list with search, filter by school, and delete actions. */
 export default function Index({ programs, schools }: Props) {
     const {
         processing,
@@ -94,10 +95,7 @@ export default function Index({ programs, schools }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <GraduationCap className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Programs</h1>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Programs</h1>
                     <Link href="/admin/programs/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
@@ -106,10 +104,10 @@ export default function Index({ programs, schools }: Props) {
                     </Link>
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
-                    <div className="mb-3">
+                <div className="mb-6 flex flex-wrap items-end gap-3">
+                    <div>
                         <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                        <div className="relative w-full md:w-[400px]">
+                        <div className="relative w-full sm:w-[300px]">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 placeholder="Search by code or description..."
@@ -119,26 +117,24 @@ export default function Index({ programs, schools }: Props) {
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <Select value={selectedSchool || 'all'} onValueChange={(v) => { setSelectedSchool(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-56"><SelectValue placeholder="School" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Schools</SelectItem>
-                                {Object.entries(schools).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
-                    </div>
+                    <Select value={selectedSchool || 'all'} onValueChange={(v) => { setSelectedSchool(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-56"><SelectValue placeholder="School" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Schools</SelectItem>
+                            {Object.entries(schools).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                 </div>
 
                 <div className={`overflow-hidden ${CARD}`}>

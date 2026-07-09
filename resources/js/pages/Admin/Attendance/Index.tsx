@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BODY_TEXT, CARD, FILTER_CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_ROW_ACTION } from '@/constants/ui';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING, TABLE_ROW_ACTION } from '@/constants/ui';
 import {
     useAttendanceFilter,
     type AttendanceFilters,
@@ -44,6 +44,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Attendance', href: '/teacher/attendance' },
 ];
 
+/** Admin attendance index showing subject-sections for the current faculty member or all sections for admin, with school year and semester filters. */
 export default function Index({ isFaculty, mySubjectSections, groupedSections, filters, schoolYears, semesters }: Props) {
     const {
         handleSearch,
@@ -62,10 +63,7 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="My Attendance" />
                 <div className={PAGE_PADDING}>
-                    <div className="mb-6 flex items-center gap-3">
-                        <CalendarCheck className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>My Attendance</h1>
-                    </div>
+                    <h1 className={`mb-6 ${PAGE_TITLE}`}>My Attendance</h1>
 
                     <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                         <div className={`${CARD} p-4`}>
@@ -171,12 +169,9 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
             <Head title="Attendance" />
 
             <div className={PAGE_PADDING}>
-                <div className="mb-6 flex items-center gap-3">
-                    <CalendarCheck className="h-7 w-7 text-primary" />
-                    <h1 className={PAGE_TITLE}>Attendance</h1>
-                </div>
+                <h1 className={`mb-6 ${PAGE_TITLE}`}>Attendance</h1>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
+                <div className="mb-6">
                     <div className="grid gap-4 md:grid-cols-4">
                         <div className="relative md:col-span-2">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

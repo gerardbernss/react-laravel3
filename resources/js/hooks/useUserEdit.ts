@@ -20,6 +20,7 @@ interface Params {
     user: EditUser;
 }
 
+/** Manage the user edit form with role checkbox assignment and breadcrumb trail, PUTting to the users update route. */
 export function useUserEdit({ user }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Users', href: '/admin/users' },

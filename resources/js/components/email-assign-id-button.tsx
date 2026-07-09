@@ -1,8 +1,9 @@
-import { Button } from '@/components/ui/button';
+import { TABLE_ROW_ACTION } from '@/constants/ui';
 import { Loader, SendIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+/** Button that POSTs to /admin/student-id-assignment/:id/email-admission and shows a toast confirming the student ID email was sent. */
 function EmailAssignIdButton({ applicationId }: { applicationId: number }) {
     const [isSending, setIsSending] = useState(false);
 
@@ -36,16 +37,10 @@ function EmailAssignIdButton({ applicationId }: { applicationId: number }) {
     };
 
     return (
-        <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEmailAssignId}
-            disabled={isSending}
-            className="whitespace-nowrap"
-        >
-            {isSending ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
+        <button onClick={handleEmailAssignId} disabled={isSending} className={TABLE_ROW_ACTION}>
+            {isSending ? <Loader className="h-3 w-3 animate-spin" /> : <SendIcon className="h-3 w-3" />}
             {isSending ? 'Sending...' : 'Email Student ID'}
-        </Button>
+        </button>
     );
 }
 

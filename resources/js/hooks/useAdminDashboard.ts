@@ -7,6 +7,7 @@ interface CategoryBreakdown {
     count: number;
 }
 
+/** Track the left-column height via ResizeObserver for layout sync and compute the total applicant category count. */
 export function useAdminDashboard(categoryBreakdown: CategoryBreakdown[]) {
     const { currentSemester } = usePage<SharedData>().props;
 

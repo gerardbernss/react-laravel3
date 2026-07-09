@@ -2,6 +2,7 @@ import users from '@/routes/admin/users';
 import { useForm } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
 
+/** Manage the user create form with role checkbox assignment, posting to the users store route. */
 export function useUserCreate() {
     const [hideAlert, setHideAlert] = useState(false);
 

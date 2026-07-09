@@ -45,21 +45,33 @@ class StudentFamilyBackground extends Model
         'guardian_slu_employee' => 'boolean',
     ];
 
+    /**
+     * Get the student personal data record this family background belongs to.
+     */
     public function studentPersonalData(): BelongsTo
     {
         return $this->belongsTo(StudentPersonalData::class, 'student_personal_data_id');
     }
 
+    /**
+     * Get the employee record for the father, used to verify school-employee discount eligibility.
+     */
     public function fatherEmployee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'father_employee_id');
     }
 
+    /**
+     * Get the employee record for the mother, used to verify school-employee discount eligibility.
+     */
     public function motherEmployee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'mother_employee_id');
     }
 
+    /**
+     * Get the employee record for the guardian, used to verify school-employee discount eligibility.
+     */
     public function guardianEmployee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'guardian_employee_id');

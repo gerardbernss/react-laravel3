@@ -7,6 +7,10 @@ interface Params {
     applicant: any;
 }
 
+/**
+ * Manage the admissions applicant detail page — breadcrumb trail and the evaluate dialog
+ * (approve/revise/reject with remarks) that posts to /admin/applicants/:id/evaluate.
+ */
 export function useApplicantShow({ applicant }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Applicant List', href: '/admin/applicants' },

@@ -44,6 +44,10 @@ interface Params {
     selectedSubjectId: number;
 }
 
+/**
+ * Manage the per-section attendance entry sheet — track unsaved status/remarks changes,
+ * compute live attendance stats, and batch-save via Inertia router.
+ */
 export function useAttendanceSheet({ blockSection, students, selectedDate, selectedSubjectId }: Params) {
     const [changes, setChanges] = useState<Map<number, AttendanceChange>>(new Map());
     const [saving, setSaving] = useState(false);

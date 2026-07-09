@@ -59,6 +59,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** Applicant portal dashboard showing application status, exam schedule, and collapsible announcements. */
 export default function ApplicantDashboard({ student, personalData, application, announcements, examSchedule }: Props) {
     const {
         currentSemester,

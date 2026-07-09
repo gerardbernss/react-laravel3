@@ -9,6 +9,7 @@ interface AppTableProps {
     scrollable?: boolean;
 }
 
+/** Scrollable data table shell with sticky-header support; composed via AppTable.Head, Th, Body, Row, Td, and Empty sub-components. */
 export function AppTable({ children, footer, className, scrollable = true }: AppTableProps) {
     return (
         <div className={cn('overflow-hidden rounded-lg border bg-white shadow-sm', className)}>

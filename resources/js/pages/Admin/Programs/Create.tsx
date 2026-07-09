@@ -20,6 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create', href: '/admin/programs/create' },
 ];
 
+/** Admin program create form for defining a new academic program under a school. */
 export default function Create({ schools }: Props) {
     const { data, setData, processing, errors, handleSubmit } = useProgramCreate();
 

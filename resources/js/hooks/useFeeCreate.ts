@@ -2,6 +2,7 @@ import { getSchoolYearOptions } from '@/lib/school-year';
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the fee create form, posting to /admin/fees. */
 export function useFeeCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',

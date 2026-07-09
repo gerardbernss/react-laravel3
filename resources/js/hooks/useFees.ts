@@ -23,6 +23,10 @@ export interface FeeFilters {
     category?: string;
 }
 
+/**
+ * Filter and paginate the fees list; also handle single delete, active/inactive toggle,
+ * and bulk copy-from-year with optional percentage adjustment.
+ */
 export function useFees(fees: Fee[], filters: FeeFilters) {
     const { delete: destroy, processing } = useForm();
 

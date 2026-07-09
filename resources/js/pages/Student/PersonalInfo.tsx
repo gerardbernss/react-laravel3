@@ -55,6 +55,7 @@ const InfoRow = ({ label, value, editable, editComponent }: InfoRowProps) => (
     </div>
 );
 
+/** Student portal personal information view page showing the student's personal and family background data. */
 export default function PersonalInfo({ personalData, familyBackground }: Props) {
     const { isEditing, setIsEditing, data, setData, processing, errors, handleSubmit, handleCancel } =
         useStudentPersonalInfo(personalData);

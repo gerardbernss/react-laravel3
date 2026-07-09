@@ -35,6 +35,10 @@ export type AssessmentSortKey =
     | 'balance'
     | 'status';
 
+/**
+ * Filter, sort, and paginate the student assessments list; also handles bulk
+ * assessment generation for the currently open enrollment period.
+ */
 export function useFinanceAssessments(
     assessments: Assessment[],
     openStudentPeriod: OpenStudentPeriod | null,

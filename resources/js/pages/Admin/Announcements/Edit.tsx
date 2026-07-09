@@ -26,6 +26,7 @@ interface Props {
     announcement: Announcement;
 }
 
+/** Admin announcement edit form for updating an existing announcement's title, body, and visibility. */
 export default function Edit({ announcement }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },

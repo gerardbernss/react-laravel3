@@ -21,6 +21,7 @@ const validationBadge = (status: 'draft' | 'submitted' | 'finalized'): ReactNode
     return <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-500">Draft</span>;
 };
 
+/** Admin gradebook overview for a block section showing final grades per subject and quarter with conduct links. */
 export default function GradebookShow({ blockSection, subjects, quarters, totalStudents, isFaculty, canManageConduct }: Props) {
     const { breadcrumbs } = useGradebookShow({ blockSection });
 
@@ -30,7 +31,7 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/teacher/gradebook" className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/teacher/gradebook" className="mb-4 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Gradebook
                     </Link>

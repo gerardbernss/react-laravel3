@@ -11,6 +11,7 @@ interface Props {
     room: Room;
 }
 
+/** Admin examination room detail page showing room info and assigned exam schedules. */
 export default function Show({ room }: Props) {
     const { breadcrumbs, processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = useExaminationRoomShow({ room });
 

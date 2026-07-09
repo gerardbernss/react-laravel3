@@ -10,6 +10,9 @@ class AccountDeletionService
 {
     public function __construct(private UserRepository $userRepository) {}
 
+    /**
+     * Logs the user out, deletes their account, then invalidates the session and rotates the CSRF token.
+     */
     public function execute(Request $request): void
     {
         $user = $request->user();

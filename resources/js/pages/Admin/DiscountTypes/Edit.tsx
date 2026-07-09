@@ -16,6 +16,7 @@ interface Props {
     appliesToOptions: Record<string, string>;
 }
 
+/** Admin discount type edit form for updating an existing discount's name, type, value, and applicable fee categories. */
 export default function Edit({ discountType, discountTypeOptions, appliesToOptions }: Props) {
     const { data, setData, processing, errors, handleSubmit, breadcrumbs } = useDiscountTypeEdit({ discountType });
 

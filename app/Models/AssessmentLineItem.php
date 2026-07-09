@@ -24,18 +24,24 @@ class AssessmentLineItem extends Model
         'amount' => 'decimal:2',
     ];
 
+    /**
+     * Get the student assessment this line item belongs to.
+     */
     public function assessment()
     {
         return $this->belongsTo(StudentAssessment::class, 'assessment_id');
     }
 
+    /**
+     * Get the fee definition this line item was generated from.
+     */
     public function fee()
     {
         return $this->belongsTo(Fee::class);
     }
 
     /**
-     * Calculate amount before saving
+     * Auto-compute amount = quantity × unit_price before every save.
      */
     protected static function boot()
     {

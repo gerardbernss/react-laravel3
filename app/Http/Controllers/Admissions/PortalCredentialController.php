@@ -26,6 +26,9 @@ class PortalCredentialController extends Controller
     ) {
     }
 
+    /**
+     * List all portal credentials with their linked applicant and personal data.
+     */
     public function index()
     {
         return Inertia::render('Admissions/PortalCredentials/Index', [
@@ -33,6 +36,9 @@ class PortalCredentialController extends Controller
         ]);
     }
 
+    /**
+     * Show the create form with a list of applicants who do not yet have credentials.
+     */
     public function create()
     {
         return Inertia::render('Admissions/PortalCredentials/Create', [
@@ -40,6 +46,9 @@ class PortalCredentialController extends Controller
         ]);
     }
 
+    /**
+     * Generate portal credentials for an applicant and send them via email.
+     */
     public function store(StorePortalCredentialRequest $request)
     {
         $result = $this->portalCredentialService->store($request->validated(), Auth::id());
@@ -52,6 +61,9 @@ class PortalCredentialController extends Controller
             ->with('success', 'Portal credentials generated and sent to applicant successfully.');
     }
 
+    /**
+     * Show the credential detail page including login history and current status.
+     */
     public function show(PortalCredential $credential)
     {
         return Inertia::render('Admissions/PortalCredentials/Show', [
@@ -59,6 +71,9 @@ class PortalCredentialController extends Controller
         ]);
     }
 
+    /**
+     * Send the portal credentials email to the applicant for the first time.
+     */
     public function send(PortalCredential $credential)
     {
         $result = $this->portalCredentialService->send($credential);
@@ -66,6 +81,9 @@ class PortalCredentialController extends Controller
         return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
+    /**
+     * Re-send the portal credentials email to the applicant.
+     */
     public function resend(PortalCredential $credential)
     {
         $result = $this->portalCredentialService->resend($credential);
@@ -73,6 +91,9 @@ class PortalCredentialController extends Controller
         return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
+    /**
+     * Suspend an applicant's portal access, preventing further logins.
+     */
     public function suspend(PortalCredential $credential)
     {
         $this->portalCredentialService->suspend($credential);
@@ -80,6 +101,9 @@ class PortalCredentialController extends Controller
         return back()->with('success', 'Portal access suspended.');
     }
 
+    /**
+     * Reactivate a previously suspended portal credential.
+     */
     public function reactivate(PortalCredential $credential)
     {
         $this->portalCredentialService->reactivate($credential);
@@ -87,10 +111,4 @@ class PortalCredentialController extends Controller
         return back()->with('success', 'Portal access reactivated.');
     }
 
-    public function statistics()
-    {
-        return Inertia::render('Admissions/PortalCredentials/Statistics', [
-            'statistics' => $this->portalCredentialService->statistics(),
-        ]);
-    }
 }

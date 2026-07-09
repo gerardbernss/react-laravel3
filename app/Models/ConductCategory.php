@@ -14,6 +14,9 @@ class ConductCategory extends Model
         'order' => 'integer',
     ];
 
+    /**
+     * Get the conduct criteria for this category, ordered by display order.
+     */
     public function criteria(): HasMany
     {
         return $this->hasMany(ConductCriteria::class)->orderBy('order');

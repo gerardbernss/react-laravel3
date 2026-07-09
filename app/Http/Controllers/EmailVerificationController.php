@@ -39,6 +39,9 @@ class EmailVerificationController extends Controller
         ]);
     }
 
+    /**
+     * Send a verification code to the applicant's alternate email address.
+     */
     public function sendAltCode(SendAltEmailVerificationCodeRequest $request): JsonResponse
     {
         $altEmail = $request->validated('alt_email');
@@ -78,6 +81,9 @@ class EmailVerificationController extends Controller
         ]);
     }
 
+    /**
+     * Verify the code submitted for the applicant's alternate email address.
+     */
     public function verifyAltCode(VerifyAltEmailCodeRequest $request): JsonResponse
     {
         $altEmail = $request->validated('alt_email');
@@ -109,6 +115,9 @@ class EmailVerificationController extends Controller
         ]);
     }
 
+    /**
+     * Returns whether the alternate email address has been verified within the current TTL window.
+     */
     public function checkAltVerification(CheckAltEmailVerificationRequest $request): JsonResponse
     {
         $altEmail = $request->validated('alt_email');

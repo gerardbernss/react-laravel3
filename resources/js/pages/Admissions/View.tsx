@@ -15,6 +15,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { HiArrowLeft, HiPencil, HiTrash } from 'react-icons/hi';
 
+/** Admissions college applicant view page for staff — shows the full applicant profile with enrollment dialog. */
 export default function Show({ applicant }: { applicant: any }) {
     const { breadcrumbs, open, setOpen } = useApplicantView({ applicant });
 

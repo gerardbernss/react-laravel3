@@ -28,16 +28,25 @@ class ApplicationController extends Controller
     {
     }
 
+    /**
+     * Render the public application landing page where prospective students choose their school level.
+     */
     public function start()
     {
         return Inertia::render('Applications/Start');
     }
 
+    /**
+     * List open application periods and related school information for the public start page.
+     */
     public function index()
     {
         return Inertia::render('Applications/Index', $this->applicationService->indexData());
     }
 
+    /**
+     * Show the LES online application form, redirecting away if applications are closed.
+     */
     public function createLES()
     {
         if (! $this->applicationService->canAcceptApplications()) {
@@ -47,6 +56,9 @@ class ApplicationController extends Controller
         return Inertia::render('Applications/AddLES');
     }
 
+    /**
+     * Show the JHS online application form, redirecting away if applications are closed.
+     */
     public function createJHS()
     {
         if (! $this->applicationService->canAcceptApplications()) {
@@ -56,6 +68,9 @@ class ApplicationController extends Controller
         return Inertia::render('Applications/AddJHS');
     }
 
+    /**
+     * Show the SHS online application form, redirecting away if applications are closed.
+     */
     public function createSHS()
     {
         if (! $this->applicationService->canAcceptApplications()) {
@@ -65,26 +80,41 @@ class ApplicationController extends Controller
         return Inertia::render('Applications/AddSHS');
     }
 
+    /**
+     * Check whether an email address already has a submitted application for the current period.
+     */
     public function checkEmail(CheckApplicantEmailRequest $request)
     {
         return response()->json($this->applicationService->checkEmail($request->validated()['email']));
     }
 
+    /**
+     * Submit a new LES application from the public form.
+     */
     public function storeLES(Request $request)
     {
         return $this->submit($request, 'submitLES');
     }
 
+    /**
+     * Submit a new JHS application from the public form.
+     */
     public function storeJHS(Request $request)
     {
         return $this->submit($request, 'submitJHS');
     }
 
+    /**
+     * Submit a new SHS application from the public form.
+     */
     public function storeSHS(Request $request)
     {
         return $this->submit($request, 'submitSHS');
     }
 
+    /**
+     * Render the success page shown after a public application is submitted.
+     */
     public function success()
     {
         return Inertia::render('Applications/ApplicationSuccess');
@@ -102,6 +132,9 @@ class ApplicationController extends Controller
     {
     }
 
+    /**
+     * Delegate a form submission to the named service method, guarding against closed periods and duplicate applications.
+     */
     private function submit(Request $request, string $method)
     {
         if (! $this->applicationService->canAcceptApplications()) {

@@ -14,6 +14,7 @@ use App\Repositories\EnrollmentPeriodRepository;
 use App\Repositories\ExamResultRepository;
 use App\Repositories\PortalCredentialRepository;
 use App\Repositories\StudentAssessmentRepository;
+use App\Repositories\StudentPaymentRepository;
 use App\Repositories\StudentRepository;
 use App\Services\Student\CopyApplicantDataService;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,7 @@ class ApplicantService
         private ExamResultRepository $examResultRepository,
         private StudentRepository $studentRepository,
         private StudentAssessmentRepository $studentAssessmentRepository,
+        private StudentPaymentRepository $studentPaymentRepository,
         private ApplicantAssessmentRepository $applicantAssessmentRepository,
     ) {
     }
@@ -257,7 +259,7 @@ class ApplicantService
                 'finalized_by' => Auth::id(),
             ]);
 
-            $this->studentAssessmentRepository->createPayment([
+            $this->studentPaymentRepository->create([
                 'assessment_id' => $studentAssessment->id,
                 'amount_paid' => $data['amount_paid'],
                 'payment_method' => 'cash',

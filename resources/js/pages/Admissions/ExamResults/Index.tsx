@@ -1,4 +1,4 @@
-import { AppBadge } from '@/components/app-badge';
+import { AppBadge } from '@/components/AppBadge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -86,6 +86,7 @@ function ExamResultRow({ result: r, sendingId, onSendResult }: ExamResultRowProp
     );
 }
 
+/** Exam results list page showing uploaded exam scores with a configurable passing percentage indicator. */
 export default function Index({ results, passingPercentage }: Props) {
     const {
         search, setSearch,

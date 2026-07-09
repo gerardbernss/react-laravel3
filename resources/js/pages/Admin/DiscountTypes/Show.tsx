@@ -21,6 +21,7 @@ function formatValue(discountType: DiscountType): string {
     return `₱${parseFloat(discountType.value).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 }
 
+/** Admin discount type detail page showing the discount configuration and applicable fee categories. */
 export default function Show({ discountType, discountTypeOptions, appliesToOptions }: Props) {
     const { breadcrumbs, processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = useDiscountTypeShow({
         discountType,

@@ -5,6 +5,7 @@ interface Params {
     applicantId: number;
 }
 
+/** Manage the applicant enrollment form, posting initial payment amount and notes to /admin/applicants/:id/enroll. */
 export function useApplicantEnroll({ applicantId }: Params) {
     const { data, setData, post, processing, errors } = useForm({
         amount_paid: '',

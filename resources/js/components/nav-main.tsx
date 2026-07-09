@@ -10,6 +10,7 @@ import {
 import { ChevronRight } from 'lucide-react';
 import { type NavItem } from '@/types';
 
+/** Sidebar main navigation group rendering a list of nav items; items with children show a hover-triggered flyout sub-menu. */
 export function NavMain({ items = [] }: { items: NavItem[] }) {
   const page = usePage();
 

@@ -39,6 +39,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reports', href: '/admin/enrollment/report' },
 ];
 
+/** Enrollment report page showing aggregated statistics with school year, semester, status, and category filters. */
 export default function EnrollmentReport({ statistics, filters = {}, schoolYears = [], semesters = [] }: Props) {
     const { statusFilter, setStatusFilter, categoryFilter, setCategoryFilter, schoolYear, setSchoolYear, handleFilter } =
         useEnrollmentReport({ filters });
@@ -53,11 +54,9 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                     <div>
                         <h1 className={PAGE_TITLE}>Enrollment Reports</h1>
                     </div>
-                    <Link href="/admin/enrollment/dashboard">
-                        <Button variant="outline">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Dashboard
-                        </Button>
+                    <Link href="/admin/enrollment/dashboard" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Dashboard
                     </Link>
                 </div>
 

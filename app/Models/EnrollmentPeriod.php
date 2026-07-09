@@ -144,12 +144,21 @@ class EnrollmentPeriod extends Model
      * A "Full Year" period covers every semester, so applicant/student
      * records (which only ever carry an actual semester like "First
      * Semester") are matched on school year alone in that case.
+     *
+     * School year/semester alone cannot distinguish this period from an
+     * earlier, already-closed period for the same school year (e.g. a
+     * second application round opened later in the same year). Pass
+     * $dateColumn to additionally require the record's date to fall
+     * within this period's own start_date/close_date window.
      */
-    public function applyTo(Builder|QueryBuilder $query, string $schoolYearColumn = 'school_year', string $semesterColumn = 'semester'): Builder|QueryBuilder
+    public function applyTo(Builder|QueryBuilder $query, string $schoolYearColumn = 'school_year', string $semesterColumn = 'semester', ?string $dateColumn = null): Builder|QueryBuilder
     {
         return $query
             ->where($schoolYearColumn, $this->school_year)
-            ->when($this->semester !== 'Full Year', fn (Builder|QueryBuilder $q) => $q->where($semesterColumn, $this->semester));
+            ->when($this->semester !== 'Full Year', fn (Builder|QueryBuilder $q) => $q->where($semesterColumn, $this->semester))
+            ->when($dateColumn, fn (Builder|QueryBuilder $q) => $q
+                ->when($this->start_date, fn (Builder|QueryBuilder $q) => $q->where($dateColumn, '>=', $this->start_date->format('Y-m-d')))
+                ->when($this->close_date, fn (Builder|QueryBuilder $q) => $q->where($dateColumn, '<=', $this->close_date->format('Y-m-d').' 23:59:59')));
     }
 
     /**

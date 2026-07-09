@@ -19,6 +19,10 @@ class GoogleAuthService
     ) {
     }
 
+    /**
+     * Redirects the user to Google's login page.
+     * If only one allowed domain is configured, it pre-fills the domain hint on the Google login screen.
+     */
     public function buildAuthRedirect(): RedirectResponse
     {
         $allowedDomains = config('services.google.allowed_domains');
@@ -33,7 +37,9 @@ class GoogleAuthService
     }
 
     /**
-     * @throws GoogleDomainNotAllowedException
+     * Handles the Google OAuth callback: finds or creates the matching local user, syncs their Google info, and logs them in.
+     *
+     * @throws GoogleDomainNotAllowedException if the Google account's email domain is not allowed
      */
     public function authenticate(): User
     {
@@ -61,6 +67,12 @@ class GoogleAuthService
         return $user;
     }
 
+    /**
+     * Checks that the email's domain is in the configured allowlist.
+     * Does nothing if no domain restriction is set.
+     *
+     * @throws GoogleDomainNotAllowedException if the domain is not permitted
+     */
     private function ensureDomainAllowed(string $email): void
     {
         $allowedDomains = config('services.google.allowed_domains');
@@ -76,6 +88,9 @@ class GoogleAuthService
         }
     }
 
+    /**
+     * Creates a new local user from the Google profile and assigns them the default 'base' role.
+     */
     private function createUserFromGoogle(SocialiteUser $googleUser): User
     {
         $newUser = $this->userRepository->createFromGoogle($googleUser);

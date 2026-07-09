@@ -14,6 +14,7 @@ interface Props {
     schools: Record<string, string>;
 }
 
+/** Admin program edit form for updating a program's name, code, and school assignment. */
 export default function Edit({ program, schools }: Props) {
     const { breadcrumbs, data, setData, processing, errors, handleSubmit } = useProgramEdit({ program });
 

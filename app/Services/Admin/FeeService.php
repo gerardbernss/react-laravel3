@@ -12,6 +12,10 @@ class FeeService
     {
     }
 
+    /**
+     * Creates a new fee, but only if the fee code is not already used for the same school year, semester, and school level.
+     * Returns null if a duplicate is detected.
+     */
     public function create(array $data): ?Fee
     {
         if ($this->feeRepository->codeExistsForPeriod($data['code'], $data['school_year'], $data['semester'], $data['school_level'])) {
@@ -21,6 +25,10 @@ class FeeService
         return $this->feeRepository->create($data);
     }
 
+    /**
+     * Updates a fee, skipping the duplicate check against the fee's own record.
+     * Returns false if another fee already uses the same code for the same period and level.
+     */
     public function update(Fee $fee, array $data): bool
     {
         if ($this->feeRepository->codeExistsForPeriod($data['code'], $data['school_year'], $data['semester'], $data['school_level'], $fee->id)) {
@@ -32,6 +40,10 @@ class FeeService
         return true;
     }
 
+    /**
+     * Deletes a fee, but blocks deletion if it has already been applied to any assessment line items.
+     * Returns false if blocked, true on success.
+     */
     public function delete(Fee $fee): bool
     {
         if ($this->feeRepository->hasLineItems($fee)) {
@@ -43,11 +55,21 @@ class FeeService
         return true;
     }
 
+    /**
+     * Flips a fee between active and inactive.
+     */
     public function toggleStatus(Fee $fee): void
     {
         $this->feeRepository->update($fee, ['is_active' => ! $fee->is_active]);
     }
 
+    /**
+     * Copies all fees from one school year to another, optionally adjusting amounts by a percentage.
+     * Skips any fee whose code already exists in the target year to avoid duplicates.
+     * Returns the number of fees copied, or false if no source fees were found.
+     *
+     * @param  float|null  $adjustPercentage  e.g. 10 increases all amounts by 10%, -5 decreases by 5%
+     */
     public function copyFromYear(string $sourceYear, string $targetYear, ?float $adjustPercentage): int|false
     {
         $sourceFees = $this->feeRepository->forSchoolYear($sourceYear);

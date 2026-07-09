@@ -78,6 +78,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ['tuition', 'miscellaneous', 'laboratory', 'special', 'other'];
 
+/** Enrollment detail page for an applicant — fee breakdown, discount selection, net amount, onsite enrollment, and withdrawal actions. */
 export default function ShowEnrollment({ applicant, fees, units, discountTypes, existingAssessment }: Props) {
     const {
         breadcrumbs,
@@ -114,8 +115,8 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
             <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div>
-                    <Link href="/admin/enrollment/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-                        <ArrowLeft className="h-4 w-4" />
+                    <Link href="/admin/enrollment/dashboard" className="mb-3 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Dashboard
                     </Link>
                     <h1 className={PAGE_TITLE}>Applicant Enrollment Details</h1>

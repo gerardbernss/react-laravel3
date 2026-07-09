@@ -13,6 +13,7 @@ export interface Program {
 
 export type ProgramSortKey = 'code' | 'description' | 'school' | 'max_load' | 'status';
 
+/** Filter, sort, and paginate the programs list, and delete a program via Inertia. */
 export function usePrograms(programs: Program[]) {
     const { delete: destroy, processing } = useForm();
 

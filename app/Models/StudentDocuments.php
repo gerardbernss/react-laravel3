@@ -20,6 +20,9 @@ class StudentDocuments extends Model
         'latest_report_card_back',
     ];
 
+    /**
+     * Get the student personal data record these documents belong to.
+     */
     public function studentPersonalData(): BelongsTo
     {
         return $this->belongsTo(StudentPersonalData::class, 'student_personal_data_id');

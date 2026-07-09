@@ -79,6 +79,7 @@ function FileLink({ path, label }: { path: string | null; label: string }) {
 const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 
+/** Admin student detail page showing personal data, family background, documents, enrollment history, and withdrawal dialog. */
 export default function ShowStudent({ student, personalData, familyBackground, siblings, educationalBackground, documents, enrollments, withdrawal }: Props) {
     const { showWithdrawDialog, setShowWithdrawDialog, withdrawForm, handleWithdraw, fullName } = useStudentShow({ student, personalData });
 

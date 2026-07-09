@@ -24,6 +24,7 @@ interface Props {
     sections: BlockSection[];
 }
 
+/** Admin attendance grade-sections list showing all block sections for a given grade level with links to their attendance sheets. */
 export default function GradeSections({ gradeLevel, sections }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -39,8 +40,8 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/teacher/attendance" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="h-4 w-4" />
+                    <Link href="/teacher/attendance" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Attendance
                     </Link>
                     <h1 className={`mt-2 ${PAGE_TITLE}`}>{gradeLevel}</h1>

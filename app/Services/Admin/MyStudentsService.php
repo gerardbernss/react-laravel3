@@ -16,6 +16,12 @@ class MyStudentsService
     ) {
     }
 
+    /**
+     * Returns the full student roster for a block section, optionally filtered to a specific subject.
+     * Each student row includes their grade and attendance counts for the given subject, plus section-wide statistics.
+     *
+     * @param  bool  $isFaculty  Whether the viewer is a faculty member (controls what actions are shown on the page)
+     */
     public function rosterData(BlockSection $blockSection, ?int $subjectId, bool $isFaculty): array
     {
         $subject = $this->subjectRepository->find($subjectId);
@@ -32,6 +38,10 @@ class MyStudentsService
         ];
     }
 
+    /**
+     * Builds a single student's roster row with their grade record and attendance breakdown for the given subject.
+     * Attendance rate is computed as (Present + Late) / total sessions. Returns null for the rate if no sessions exist.
+     */
     private function studentRow($enrollment, ?int $subjectId): array
     {
         $student = $enrollment->student;
@@ -65,6 +75,9 @@ class MyStudentsService
         ];
     }
 
+    /**
+     * Computes section-wide summary stats: total students, how many are graded, how many passed, and the average attendance rate.
+     */
     private function statistics($students): array
     {
         $gradedCount = $students->filter(fn ($s) => $s['grade'] !== null)->count();

@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the role create form with permission checkbox assignment, posting to /admin/roles. */
 export function useRoleCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',

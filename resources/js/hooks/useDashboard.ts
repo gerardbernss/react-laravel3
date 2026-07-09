@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+/** Manage the dashboard announcement accordion and format Philippine-locale dates. */
 export function useDashboard() {
     const [openIds, setOpenIds] = useState<Set<number>>(new Set());
 

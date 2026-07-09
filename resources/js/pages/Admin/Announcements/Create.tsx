@@ -17,6 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create', href: '/admin/announcements/create' },
 ];
 
+/** Admin announcement create form for publishing new announcements to the applicant portal. */
 export default function Create() {
     const { data, setData, processing, errors, publishMode, setPublishMode, handleSubmit, submitLabel, processingLabel } =
         useAnnouncementForm();

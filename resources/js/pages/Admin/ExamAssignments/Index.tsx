@@ -105,6 +105,7 @@ function AssignmentRow({ assignment, processing, onMarkResult, onDelete }: Assig
     );
 }
 
+/** Admin exam assignments list showing which applicants are assigned to which exam schedule, with search and filter. */
 export default function Index({ assignments, schedules }: Props) {
     const {
         processing,

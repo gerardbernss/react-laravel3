@@ -20,6 +20,9 @@ class ConductCategoryController extends Controller
     ) {
     }
 
+    /**
+     * List all conduct categories with their criteria.
+     */
     public function index()
     {
         return Inertia::render('Admin/Conduct/Index', [
@@ -27,6 +30,9 @@ class ConductCategoryController extends Controller
         ]);
     }
 
+    /**
+     * Save a new conduct category.
+     */
     public function store(StoreConductCategoryRequest $request)
     {
         $this->conductCategoryService->create($request->validated());
@@ -34,6 +40,9 @@ class ConductCategoryController extends Controller
         return back()->with('success', 'Category created.');
     }
 
+    /**
+     * Update an existing conduct category's name or details.
+     */
     public function update(UpdateConductCategoryRequest $request, ConductCategory $conductCategory)
     {
         $this->conductCategoryService->update($conductCategory, $request->validated());
@@ -41,6 +50,9 @@ class ConductCategoryController extends Controller
         return back()->with('success', 'Category updated.');
     }
 
+    /**
+     * Delete a conduct category — blocked if any of its criteria have grades recorded.
+     */
     public function destroy(ConductCategory $conductCategory)
     {
         if (! $this->conductCategoryService->delete($conductCategory)) {
@@ -50,6 +62,9 @@ class ConductCategoryController extends Controller
         return back()->with('success', 'Category deleted.');
     }
 
+    /**
+     * Add a new criterion under the given conduct category.
+     */
     public function storeCriteria(StoreConductCriteriaRequest $request, ConductCategory $conductCategory)
     {
         $this->conductCategoryService->addCriteria($conductCategory, $request->validated());
@@ -57,6 +72,9 @@ class ConductCategoryController extends Controller
         return back()->with('success', 'Criterion added.');
     }
 
+    /**
+     * Delete a conduct criterion — blocked if it has grades recorded.
+     */
     public function destroyCriteria(ConductCriteria $conductCriteria)
     {
         if (! $this->conductCategoryService->deleteCriteria($conductCriteria)) {

@@ -132,6 +132,7 @@ const FormNavigation = () => {
     );
 };
 
+/** JHS online application intake form for prospective Junior High School students, with PSGC address dropdowns and email verification. */
 export default function AddApplicant() {
     const {
         form,

@@ -24,6 +24,7 @@ interface Props {
 
 const examTypes = ['Entrance Exam', 'Placement Test', 'Qualifying Exam', 'Other'];
 
+/** Admin exam schedule edit form for updating the exam date, time, and room assignment. */
 export default function Edit({ schedule, rooms }: Props) {
     const { breadcrumbs, data, setData, processing, errors, handleSubmit } = useExamScheduleEdit({ schedule });
 

@@ -2,6 +2,7 @@ import { dashboard, login, register } from '@/routes';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 
+/** Public landing page showing login and registration links (or a dashboard link for authenticated users). */
 export default function Welcome() {
     const { auth } = usePage<SharedData>().props;
 

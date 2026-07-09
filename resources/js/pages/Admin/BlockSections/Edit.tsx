@@ -23,6 +23,7 @@ const gradeLevels = [
 
 const semesters = ['First Semester', 'Second Semester', 'Summer', 'Full Year'];
 
+/** Admin block section edit form for updating the section name and subject assignments. */
 export default function Edit({ blockSection, subjects }: Props) {
     const {
         data,

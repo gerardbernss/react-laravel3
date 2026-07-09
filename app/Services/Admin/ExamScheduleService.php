@@ -12,16 +12,26 @@ class ExamScheduleService
     {
     }
 
+    /**
+     * Creates a new exam schedule record.
+     */
     public function create(array $data): ExamSchedule
     {
         return $this->examScheduleRepository->create($data);
     }
 
+    /**
+     * Updates an exam schedule record with the given data.
+     */
     public function update(ExamSchedule $examSchedule, array $data): void
     {
         $this->examScheduleRepository->update($examSchedule, $data);
     }
 
+    /**
+     * Deletes an exam schedule, but blocks deletion if applicants are already assigned to it.
+     * Returns false if blocked, true on success.
+     */
     public function delete(ExamSchedule $examSchedule): bool
     {
         if ($this->examScheduleRepository->hasAssignments($examSchedule)) {
@@ -33,6 +43,11 @@ class ExamScheduleService
         return true;
     }
 
+    /**
+     * Returns all applicants eligible to be assigned to this exam schedule.
+     * Each entry includes the applicant's name, application number, status,
+     * and the name of any other schedule they are already assigned to (if any).
+     */
     public function availableApplicantsFor(ExamSchedule $examSchedule): Collection
     {
         $assignedToThisSchedule = $this->examScheduleRepository->assignedApplicantIds($examSchedule);
@@ -50,6 +65,10 @@ class ExamScheduleService
             ]);
     }
 
+    /**
+     * Returns all upcoming active exam schedules with their room details, capacity, and remaining available slots.
+     * Used to populate the schedule picker when assigning applicants to an exam.
+     */
     public function availableSchedulesPayload(): Collection
     {
         return $this->examScheduleRepository->upcomingActiveWithAssignedCount()

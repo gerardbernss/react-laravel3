@@ -23,7 +23,7 @@ class SubjectsController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Subjects/Index', [
-            'subjects' => $this->subjectRepository->allWithDefaultSchedule(),
+            'subjects' => $this->subjectRepository->allOrdered(),
         ]);
     }
 
@@ -44,15 +44,13 @@ class SubjectsController extends Controller
 
     public function show(Subject $subject)
     {
-        return Inertia::render('Admin/Subjects/Show', [
-            'subject' => $this->subjectRepository->loadBlockSectionsAndSchedule($subject),
-        ]);
+        return Inertia::render('Admin/Subjects/Show', $this->subjectService->showData($subject));
     }
 
     public function edit(Subject $subject)
     {
         return Inertia::render('Admin/Subjects/Edit', [
-            'subject' => $this->subjectRepository->loadDefaultSchedule($subject),
+            'subject' => $subject,
             'facultyUsers' => $this->userRepository->getFacultyUsers(),
         ]);
     }

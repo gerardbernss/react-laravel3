@@ -24,6 +24,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** Student portal change-password page for updating the student account password. */
 export default function ChangePassword({ student }: Props) {
     const { data, setData, processing, errors, recentlySuccessful, submit } = useStudentChangePassword();
 

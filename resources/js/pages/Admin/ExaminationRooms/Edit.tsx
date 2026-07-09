@@ -12,6 +12,7 @@ interface Props {
     room: Room;
 }
 
+/** Admin examination room edit form for updating a room's name and capacity. */
 export default function Edit({ room }: Props) {
     const { breadcrumbs, data, setData, processing, errors, handleSubmit } = useExaminationRoomEdit({ room });
 

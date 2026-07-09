@@ -19,6 +19,7 @@ export interface Student {
     personal_data: StudentPersonalData | null;
 }
 
+/** Search and paginate the students index list by name or student ID number. */
 export function useStudentsIndex(students: Student[]) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');

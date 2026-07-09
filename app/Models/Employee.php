@@ -27,11 +27,17 @@ class Employee extends Model
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Get the admin user account linked to this employee record.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Build the employee's full name, including middle name only when present.
+     */
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} " . ($this->middle_name ? "{$this->middle_name} " : '') . $this->last_name);

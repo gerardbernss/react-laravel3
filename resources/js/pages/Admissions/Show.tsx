@@ -45,6 +45,7 @@ interface ExamResult {
     ranking: string | null;
 }
 
+/** Admissions applicant profile page for staff — shows full applicant data and exam result with an evaluate dialog. */
 export default function ViewProfile({ applicant, examResult }: { applicant: any; examResult: ExamResult | null }) {
     const {
         breadcrumbs,
@@ -177,17 +178,16 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                 {/* Header */}
                 <div className="sticky top-0 z-50 bg-white shadow-sm">
                     <div className="mx-auto max-w-[1500px] px-10 pt-8 pb-4">
+                        <Link href="/admin/applicants" className="mb-3 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Back to Applicants
+                        </Link>
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <button className="rounded-full p-2 transition-colors hover:bg-blue-100" onClick={() => window.history.back()}>
-                                    <ArrowLeft className="h-5 w-5" />
-                                </button>
-                                <div>
-                                    <h1 className={PAGE_TITLE}>
-                                        {applicant.personal_data.first_name} {applicant.personal_data.last_name}
-                                    </h1>
-                                    <p className="mt-1 text-sm text-gray-500">Application No: {applicant.application_number}</p>
-                                </div>
+                            <div>
+                                <h1 className={PAGE_TITLE}>
+                                    {applicant.personal_data.first_name} {applicant.personal_data.last_name}
+                                </h1>
+                                <p className="mt-1 text-sm text-gray-500">Application No: {applicant.application_number}</p>
                             </div>
                             <div className="flex gap-2">
                                 <button

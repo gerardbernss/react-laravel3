@@ -53,33 +53,48 @@ class StudentPersonalData extends Model
         'has_doctors_note'  => 'boolean',
     ];
 
+    /**
+     * Get the original applicant personal data this student record was copied from.
+     */
     public function applicantPersonalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the student record linked to this personal data.
+     */
     public function student(): HasOne
     {
         return $this->hasOne(Student::class, 'student_personal_data_id');
     }
 
+    /**
+     * Get the family background record for this student.
+     */
     public function familyBackground(): HasOne
     {
         return $this->hasOne(StudentFamilyBackground::class, 'student_personal_data_id');
     }
 
+    /**
+     * Get all sibling records for this student.
+     */
     public function siblings(): HasMany
     {
         return $this->hasMany(StudentSiblings::class, 'student_personal_data_id');
     }
 
+    /**
+     * Get the uploaded documents record for this student.
+     */
     public function documents(): HasOne
     {
         return $this->hasOne(StudentDocuments::class, 'student_personal_data_id');
     }
 
     /**
-     * Full name accessor.
+     * Build the student's full name including suffix when present.
      */
     public function getFullNameAttribute(): string
     {

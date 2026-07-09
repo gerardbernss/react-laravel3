@@ -97,6 +97,7 @@ interface Props {
     applications: Applicant[];
 }
 
+/** Admissions evaluation and assessment list for staff — sortable, filterable table of college applicants with bulk delete and export. */
 export default function Index({ applications }: Props) {
     const {
         searchQuery, setSearchQuery,

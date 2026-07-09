@@ -115,6 +115,7 @@ const getCategoryChip = (category: string) => {
     }
 };
 
+/** Admin/staff dashboard showing applicant statistics, today's class schedule for faculty, and recent activity. */
 export default function Dashboard({
     isFaculty = false,
     myClasses = [],

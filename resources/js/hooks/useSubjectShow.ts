@@ -8,9 +8,6 @@ export interface BlockSection {
     code: string;
     grade_level: string;
     school_year: string;
-    pivot: {
-        teacher: string | null;
-    };
 }
 
 export interface Subject {
@@ -22,7 +19,6 @@ export interface Subject {
     type: string;
     grade_level: string | null;
     semester: string | null;
-    default_schedule: { display: string; room: string | null } | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -33,6 +29,7 @@ interface Params {
     subject: Subject;
 }
 
+/** Manage the subject detail page with breadcrumb trail, including delete confirmation dialog. */
 export function useSubjectShow({ subject }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },

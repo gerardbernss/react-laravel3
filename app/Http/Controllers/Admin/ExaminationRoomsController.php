@@ -19,6 +19,9 @@ class ExaminationRoomsController extends Controller
     ) {
     }
 
+    /**
+     * List all examination rooms ordered by building and name.
+     */
     public function index()
     {
         return Inertia::render('Admin/ExaminationRooms/Index', [
@@ -26,11 +29,17 @@ class ExaminationRoomsController extends Controller
         ]);
     }
 
+    /**
+     * Show the create examination room form.
+     */
     public function create()
     {
         return Inertia::render('Admin/ExaminationRooms/Create');
     }
 
+    /**
+     * Save a new examination room.
+     */
     public function store(StoreExaminationRoomRequest $request)
     {
         $this->examinationRoomService->create($request->validated());
@@ -39,6 +48,9 @@ class ExaminationRoomsController extends Controller
             ->with('success', 'Examination room created successfully.');
     }
 
+    /**
+     * Show an examination room's details with its 10 most recent exam schedules.
+     */
     public function show(ExaminationRoom $examinationRoom)
     {
         return Inertia::render('Admin/ExaminationRooms/Show', [
@@ -46,6 +58,9 @@ class ExaminationRoomsController extends Controller
         ]);
     }
 
+    /**
+     * Show the edit form for an existing examination room.
+     */
     public function edit(ExaminationRoom $examinationRoom)
     {
         return Inertia::render('Admin/ExaminationRooms/Edit', [
@@ -53,6 +68,9 @@ class ExaminationRoomsController extends Controller
         ]);
     }
 
+    /**
+     * Update an existing examination room's details.
+     */
     public function update(UpdateExaminationRoomRequest $request, ExaminationRoom $examinationRoom)
     {
         $this->examinationRoomService->update($examinationRoom, $request->validated());
@@ -61,6 +79,9 @@ class ExaminationRoomsController extends Controller
             ->with('success', 'Examination room updated successfully.');
     }
 
+    /**
+     * Delete an examination room — blocked if it has associated exam schedules.
+     */
     public function destroy(ExaminationRoom $examinationRoom)
     {
         if (! $this->examinationRoomService->delete($examinationRoom)) {

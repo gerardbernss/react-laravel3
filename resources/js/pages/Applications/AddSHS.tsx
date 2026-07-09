@@ -132,6 +132,7 @@ const FormNavigation = () => {
     );
 };
 
+/** SHS online application intake form for prospective Senior High School students, with PSGC address dropdowns and email verification. */
 export default function AddApplicant() {
     const {
         form,

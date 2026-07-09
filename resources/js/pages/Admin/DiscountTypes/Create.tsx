@@ -22,6 +22,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create', href: '/admin/discount-types/create' },
 ];
 
+/** Admin discount type create form for defining a new discount with type, value, and applicable fee categories. */
 export default function Create({ discountTypeOptions, appliesToOptions }: Props) {
     const { data, setData, processing, errors, handleSubmit } = useDiscountTypeCreate();
 

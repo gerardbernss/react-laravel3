@@ -30,6 +30,9 @@ class ApplicantSiblings extends Model
         'sibling_id_number',
     ];
 
+    /**
+     * Get the applicant personal data record this sibling entry belongs to.
+     */
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class);

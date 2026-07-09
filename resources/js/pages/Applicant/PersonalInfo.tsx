@@ -85,6 +85,7 @@ const ReadValue = ({ value }: { value?: string | number | null }) => (
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+/** Applicant portal personal information editor with sectioned navigation, document uploads, and submission to /applicant/profile. */
 export default function ApplicantPersonalInfo({
     personalData: pd,
     familyBackground: fb,

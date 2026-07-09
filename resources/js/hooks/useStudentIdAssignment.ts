@@ -32,6 +32,10 @@ export const STUDENT_ID_COLUMNS: { key: ColumnKey; label: string }[] = [
     { key: 'actions',            label: 'Actions' },
 ];
 
+/**
+ * Filter, sort, and paginate the student ID assignment list; handles assigning a new
+ * student ID number (with re-assign confirmation) and bulk auto-generation.
+ */
 export function useStudentIdAssignment(applications: Applicant[]) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGender, setSelectedGender] = useState('all');

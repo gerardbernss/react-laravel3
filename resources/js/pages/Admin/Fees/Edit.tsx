@@ -16,6 +16,7 @@ interface Props {
     semesters: Record<string, string>;
 }
 
+/** Admin fee edit form for updating an existing fee's category, school level, semester, and amount. */
 export default function EditFee({ fee, categories, schoolLevels, semesters }: Props) {
     const { breadcrumbs, data, setData, processing, errors, handleSubmit, schoolYearOptions } = useFeeEdit({ fee });
 
@@ -25,10 +26,8 @@ export default function EditFee({ fee, categories, schoolLevels, semesters }: Pr
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/fees">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                        </Button>
+                    <Link href="/admin/fees" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" /> Back
                     </Link>
                     <div className="flex items-center gap-3">
                         <DollarSign className="h-6 w-6 text-primary" />

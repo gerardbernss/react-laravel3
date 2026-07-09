@@ -21,6 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create Role', href: '/admin/roles/create' },
 ];
 
+/** Admin role create form with permission checkbox assignment. */
 export default function Create({ permissions }: Props) {
     const { data, setData, processing, errors, handleSubmit, handlePermissionChange } = useRoleCreate();
 
@@ -30,11 +31,9 @@ export default function Create({ permissions }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/roles">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Roles
-                        </Button>
+                    <Link href="/admin/roles" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Roles
                     </Link>
                     <div className="flex items-center gap-2">
                         <Shield className="h-5 w-5" />

@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
 
+/** Manage the student portal login form with password visibility toggle, posting to /student/login. */
 export function useStudentLogin() {
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({

@@ -34,6 +34,9 @@ class ExamResultService
     ) {
     }
 
+    /**
+     * Returns all exam results for the current enrollment period, formatted for the index table, along with the configured passing percentage.
+     */
     public function indexData(): array
     {
         $results = $this->examResultRepository->forIndex(EnrollmentPeriod::current())->map(fn ($r) => [
@@ -62,6 +65,11 @@ class ExamResultService
         ];
     }
 
+    /**
+     * Parses and imports an exam results CSV file.
+     * Returns immediately with a conflicts payload if any applicants already have results, so the user can choose to overwrite or keep.
+     * Otherwise imports all rows and returns a summary message.
+     */
     public function importCsv(UploadedFile $file): array
     {
         $handle = fopen($file->getRealPath(), 'r');
@@ -107,6 +115,11 @@ class ExamResultService
         return ['status' => 'imported', 'message' => $message];
     }
 
+    /**
+     * Persists previously parsed CSV rows after the user has resolved any conflicts.
+     * If overwrite is true, existing records are replaced; otherwise they are left unchanged.
+     * Returns a summary message with import and kept counts.
+     */
     public function confirmImport(array $pendingRows, bool $overwrite): string
     {
         [$imported, $kept] = DB::transaction(function () use ($pendingRows, $overwrite) {
@@ -137,6 +150,10 @@ class ExamResultService
         return $message;
     }
 
+    /**
+     * Re-ranks all exam results for the current period by percentage score (highest first) and saves the ranking numbers.
+     * Returns the number of records ranked.
+     */
     public function updateRankings(): int
     {
         $results = $this->examResultRepository->rankableForPeriod(EnrollmentPeriod::current());
@@ -150,11 +167,18 @@ class ExamResultService
         return $results->count();
     }
 
+    /**
+     * Saves the minimum percentage score required to pass the entrance exam as a global app setting.
+     */
     public function updatePassingThreshold(float $percentage): void
     {
         AppSetting::set('exam_passing_percentage', $percentage);
     }
 
+    /**
+     * Emails an applicant their exam result and records the sent timestamp.
+     * Returns an error if no email address is on file.
+     */
     public function sendResult(ApplicantExamResult $result): array
     {
         $personalData = $result->personalData;
@@ -171,6 +195,11 @@ class ExamResultService
         return ['success' => true, 'message' => "Result sent to {$name} ({$personalData->email})."];
     }
 
+    /**
+     * Sends exam result emails to all applicants in the current period.
+     * If scope is 'new', only sends to those who have not yet received their result.
+     * Returns a summary message with sent and skipped counts.
+     */
     public function sendAllResults(string $scope): string
     {
         $results = $this->examResultRepository->forSendAll(EnrollmentPeriod::current(), onlyNew: $scope === 'new');
@@ -197,6 +226,9 @@ class ExamResultService
         return $message;
     }
 
+    /**
+     * Re-ranks all results for the current period and updates each linked applicant's status to 'Exam Passed' or 'Exam Failed'.
+     */
     public function updateAllRankingsAndStatuses(): string
     {
         $results = $this->examResultRepository->rankableForPeriod(EnrollmentPeriod::current());
@@ -221,6 +253,10 @@ class ExamResultService
         return "Rankings updated for {$results->count()} record(s) and {$updated} applicant status(es) updated.";
     }
 
+    /**
+     * Updates application statuses for all exam results in the current period that have a result recorded.
+     * Returns a summary of how many were updated and how many were skipped due to a missing applicant link.
+     */
     public function updateApplicantStatuses(): string
     {
         $results = $this->examResultRepository->withResultAndApplicantForPeriod(EnrollmentPeriod::current());
@@ -250,6 +286,10 @@ class ExamResultService
         return $message;
     }
 
+    /**
+     * Updates a single applicant's status based on their exam result ('Exam Passed' or 'Exam Failed').
+     * Returns an error if no applicant is linked or if scores have not been uploaded yet.
+     */
     public function updateApplicantStatus(ApplicantExamResult $result): array
     {
         $applicant = $result->applicant;
@@ -270,6 +310,10 @@ class ExamResultService
         return ['success' => true, 'message' => "Updated {$name}'s status to \"{$newStatus}\"."];
     }
 
+    /**
+     * Reads all data rows from an open CSV file handle and maps them to structured pending row arrays.
+     * Returns four values: the pending rows, any conflict records (applicants with existing results), in-batch duplicate count, and skipped count.
+     */
     private function parseRows($handle, array $headers): array
     {
         $threshold = (float) AppSetting::get('exam_passing_percentage', 75);
@@ -312,6 +356,10 @@ class ExamResultService
         return [$pendingRows, $conflicts, $inBatchDups, $skipped];
     }
 
+    /**
+     * Resolves an applicant ID and personal data ID from a CSV row, trying applicant number first then personal data ID.
+     * Returns [applicantId, personalDataId], either of which may be null if no match is found.
+     */
     private function resolveApplicant(array $record): array
     {
         $applicantId = null;
@@ -333,6 +381,11 @@ class ExamResultService
         return [$applicantId, $personalDataId];
     }
 
+    /**
+     * Converts a raw CSV record into a structured row ready for database insertion.
+     * Automatically determines pass/fail based on the percentage score vs. the passing threshold.
+     * Includes a temporary '_name' key for conflict display (stripped before persisting).
+     */
     private function buildRow(array $record, ?int $applicantId, ?int $personalDataId, float $threshold): array
     {
         $pct = is_numeric($record['percentage_score'] ?? null) ? (float) $record['percentage_score'] : null;
@@ -362,6 +415,10 @@ class ExamResultService
         ];
     }
 
+    /**
+     * Saves all pending rows to the database in a single transaction, upserting by personal data ID.
+     * Returns the number of rows written.
+     */
     private function persistRows(array $pendingRows): int
     {
         return DB::transaction(function () use ($pendingRows) {

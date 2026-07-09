@@ -46,6 +46,7 @@ function formatCurrency(amount: number) {
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 }
 
+/** Admissions applicant enrollment page for staff — initial payment amount and notes form posting to /admin/applicants/:id/enroll. */
 export default function ApplicantEnroll({ applicant, assessment }: Props) {
     const { data, setData, processing, errors, handleSubmit } = useApplicantEnroll({ applicantId: applicant.id });
 
@@ -60,11 +61,9 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
             <div className="p-6">
                 {/* Header */}
                 <div className="mb-6">
-                    <Link href="/admin/fee-assessments">
-                        <Button variant="ghost" size="sm" className="mb-2 -ml-2">
-                            <ArrowLeft className="mr-1 h-4 w-4" />
-                            Back to Assessments
-                        </Button>
+                    <Link href="/admin/fee-assessments" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Assessments
                     </Link>
                     <h1 className={PAGE_TITLE}>Enrollment Payment</h1>
                     <p className="mt-1 text-sm text-gray-500">
@@ -160,9 +159,8 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
                                 <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm">
                                     <div className="flex items-center gap-2">
                                         <GraduationCap className="h-4 w-4 text-blue-600" />
-                                        <span className="font-medium text-blue-900">Installment Plan</span>
                                         <span className="text-blue-600">
-                                            · Min. to enroll:{' '}
+                                            Min. to enroll:{' '}
                                             <span className="font-semibold">{formatCurrency(assessment.minimum_amount)}</span>
                                         </span>
                                     </div>

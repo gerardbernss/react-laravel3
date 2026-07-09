@@ -7,6 +7,7 @@ interface AppShellProps {
     variant?: 'header' | 'sidebar';
 }
 
+/** Wrap the page in either a full-screen flex column (header layout) or a SidebarProvider (sidebar layout), seeding the sidebar open state from Inertia shared props. */
 export function AppShell({ children, variant = 'header' }: AppShellProps) {
     const isOpen = usePage<SharedData>().props.sidebarOpen;
 

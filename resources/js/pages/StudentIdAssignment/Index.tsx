@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { FILTER_CARD, PAGE_PADDING, TABLE_HEADER_CELL } from '@/constants/ui';
+import { PAGE_PADDING, TABLE_HEADER_CELL, TABLE_ROW_ACTION } from '@/constants/ui';
 import { getStatusBadgeProps, handleCalendarChange } from '@/hooks/useAdmissionsIndex';
 import { STUDENT_ID_COLUMNS, useStudentIdAssignment, type Applicant, type ColumnKey } from '@/hooks/useStudentIdAssignment';
 import AppLayout from '@/layouts/app-layout';
@@ -77,10 +77,7 @@ function ApplicantRow({ row, visibleColumns, selectedRowId, onAssignId }: Applic
             {visibleColumns.includes('actions') && (
                 <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => onAssignId(row.id)}
-                            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted"
-                        >
+                        <button onClick={() => onAssignId(row.id)} className={TABLE_ROW_ACTION}>
                             <UserPlus className="h-3 w-3" /> Assign ID
                         </button>
                         <div className="group relative inline-block">
@@ -101,6 +98,7 @@ function ApplicantRow({ row, visibleColumns, selectedRowId, onAssignId }: Applic
     );
 }
 
+/** Student ID assignment list for admin — shows applicants awaiting ID assignment with an email-admission action per row. */
 export default function Index({ applications }: Props) {
     const {
         searchQuery, setSearchQuery,
@@ -131,20 +129,17 @@ export default function Index({ applications }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                        <IdCard className="h-7 w-7 text-primary" />
-                        <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
-                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900">Student ID Number Assignment</h1>
                     <Button variant="outline" className="gap-2" onClick={handleBulkGenerate}>
                         <IdCard className="h-4 w-4" />
                         Generate All IDs
                     </Button>
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
-                    <div className="mb-3">
+                <div className="mb-6 flex flex-wrap items-end gap-3">
+                    <div className="flex flex-col">
                         <label className="mb-1 block text-xs font-medium text-gray-600">Search</label>
-                        <div className="relative w-full md:w-[400px]">
+                        <div className="relative w-full sm:w-[300px]">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 placeholder="Search by Name, Email, or Application No."
@@ -154,94 +149,93 @@ export default function Index({ applications }: Props) {
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <div className="flex flex-col">
-                            <label className="mb-1 text-xs font-medium text-gray-600">Gender</label>
-                            <Select value={selectedGender} onValueChange={(v) => { setSelectedGender(v); setCurrentPage(1); }}>
-                                <SelectTrigger className="h-10 w-[150px]"><SelectValue placeholder="Select" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="male">Male</SelectItem>
-                                    <SelectItem value="female">Female</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
 
-                        <div className="flex flex-col">
-                            <label className="mb-1 text-xs font-medium text-gray-600">Application Date</label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="h-10 w-[300px] justify-start text-left text-sm font-normal">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dateRange?.from ? (
-                                            dateRange.to
-                                                ? <>{format(dateRange.from, 'LLL dd, y')} - {format(dateRange.to, 'LLL dd, y')}</>
-                                                : format(dateRange.from, 'LLL dd, y')
-                                        ) : (
-                                            <span>Pick a date range</span>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        initialFocus
-                                        mode="range"
-                                        defaultMonth={dateRange?.from}
-                                        selected={dateRange}
-                                        onSelect={(range) => { setDateRange(range); setCurrentPage(1); }}
-                                        numberOfMonths={2}
-                                        captionLayout="dropdown"
-                                        startMonth={new Date(1980, 0)}
-                                        endMonth={new Date()}
-                                        hideNavigation
-                                        classNames={{ month_caption: 'mx-0' }}
-                                        components={{
-                                            DropdownNav: (props: DropdownNavProps) => (
-                                                <div className="flex w-full items-center gap-2">{props.children}</div>
-                                            ),
-                                            Dropdown: (props: DropdownProps) => (
-                                                <Select
-                                                    value={String(props.value)}
-                                                    onValueChange={(value) => {
-                                                        if (props.onChange) handleCalendarChange(value, props.onChange);
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="h-8 w-fit font-medium first:grow">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="max-h-[min(26rem,var(--radix-select-content-available-height))]">
-                                                        {props.options?.map((option) => (
-                                                            <SelectItem key={option.value} value={String(option.value)} disabled={option.disabled}>
-                                                                {option.label}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            ),
-                                        }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        <div className="flex flex-col">
-                            <label className="mb-1 text-xs font-medium text-gray-600">Program/Strand</label>
-                            <Select value={selectedStrand} onValueChange={(v) => { setSelectedStrand(v); setCurrentPage(1); }}>
-                                <SelectTrigger className="h-10 w-[250px]"><SelectValue placeholder="Select" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="Laboratory Elementary School">Laboratory Elementary</SelectItem>
-                                    <SelectItem value="Junior High School">Junior High School</SelectItem>
-                                    <SelectItem value="Accountancy and Business Management">ABM</SelectItem>
-                                    <SelectItem value="Humanities and Social Sciences">HUMSS</SelectItem>
-                                    <SelectItem value="Science, Technology, Engineering, and Mathematics">STEM</SelectItem>
-                                    <SelectItem value="General Academics">General Academics</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <Button variant="ghost" className="h-10" onClick={clearFilters}>Clear</Button>
+                    <div className="flex flex-col">
+                        <label className="mb-1 text-xs font-medium text-gray-600">Gender</label>
+                        <Select value={selectedGender} onValueChange={(v) => { setSelectedGender(v); setCurrentPage(1); }}>
+                            <SelectTrigger className="h-10 w-[150px]"><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
+
+                    <div className="flex flex-col">
+                        <label className="mb-1 text-xs font-medium text-gray-600">Application Date</label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="h-10 w-[300px] justify-start text-left text-sm font-normal">
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dateRange?.from ? (
+                                        dateRange.to
+                                            ? <>{format(dateRange.from, 'LLL dd, y')} - {format(dateRange.to, 'LLL dd, y')}</>
+                                            : format(dateRange.from, 'LLL dd, y')
+                                    ) : (
+                                        <span>Pick a date range</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={dateRange?.from}
+                                    selected={dateRange}
+                                    onSelect={(range) => { setDateRange(range); setCurrentPage(1); }}
+                                    numberOfMonths={2}
+                                    captionLayout="dropdown"
+                                    startMonth={new Date(1980, 0)}
+                                    endMonth={new Date()}
+                                    hideNavigation
+                                    classNames={{ month_caption: 'mx-0' }}
+                                    components={{
+                                        DropdownNav: (props: DropdownNavProps) => (
+                                            <div className="flex w-full items-center gap-2">{props.children}</div>
+                                        ),
+                                        Dropdown: (props: DropdownProps) => (
+                                            <Select
+                                                value={String(props.value)}
+                                                onValueChange={(value) => {
+                                                    if (props.onChange) handleCalendarChange(value, props.onChange);
+                                                }}
+                                            >
+                                                <SelectTrigger className="h-8 w-fit font-medium first:grow">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="max-h-[min(26rem,var(--radix-select-content-available-height))]">
+                                                    {props.options?.map((option) => (
+                                                        <SelectItem key={option.value} value={String(option.value)} disabled={option.disabled}>
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        ),
+                                    }}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <label className="mb-1 text-xs font-medium text-gray-600">Program/Strand</label>
+                        <Select value={selectedStrand} onValueChange={(v) => { setSelectedStrand(v); setCurrentPage(1); }}>
+                            <SelectTrigger className="h-10 w-[250px]"><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="Laboratory Elementary School">Laboratory Elementary</SelectItem>
+                                <SelectItem value="Junior High School">Junior High School</SelectItem>
+                                <SelectItem value="Accountancy and Business Management">ABM</SelectItem>
+                                <SelectItem value="Humanities and Social Sciences">HUMSS</SelectItem>
+                                <SelectItem value="Science, Technology, Engineering, and Mathematics">STEM</SelectItem>
+                                <SelectItem value="General Academics">General Academics</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Button variant="ghost" className="h-10" onClick={clearFilters}>Clear</Button>
                 </div>
 
                 <div className="overflow-hidden rounded-lg border bg-white shadow-sm">

@@ -62,6 +62,10 @@ class RolePermissionSeeder extends Seeder
             // Admissions permissions
             ['name' => 'Manage Exam Results', 'slug' => 'manage-exam-results', 'description' => 'Can upload and view applicant exam results'],
             ['name' => 'Manage Applications', 'slug' => 'manage-applications', 'description' => 'Can manage applicant admissions records'],
+            ['name' => 'Manage Student ID Assignment', 'slug' => 'manage-student-id-assignment', 'description' => 'Can assign and email student IDs to enrolled applicants'],
+
+            // Employee permissions
+            ['name' => 'Manage Employees', 'slug' => 'manage-employees', 'description' => 'Can create and manage employee records'],
         ];
 
         foreach ($permissions as $permission) {
@@ -90,10 +94,10 @@ class RolePermissionSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $facultyRole = Role::firstOrCreate(['slug' => 'faculty'], [
-            'name' => 'Faculty',
+        $facultyRole = Role::updateOrCreate(['slug' => 'faculty'], [
+            'name' => 'Teacher',
             'slug' => 'faculty',
-            'description' => 'Faculty member - can manage grades and attendance',
+            'description' => 'Teacher - can manage grades and attendance',
             'is_active' => true,
         ]);
 
@@ -106,13 +110,13 @@ class RolePermissionSeeder extends Seeder
             'view-roles', 'create-roles', 'update-roles', 'delete-roles',
             'view-permissions', 'create-permissions', 'update-permissions', 'delete-permissions',
             'assign-roles', 'remove-roles', 'assign-permissions', 'remove-permissions',
-        ])->pluck('id')->toArray();
+        ], 'and', false)->pluck('id')->toArray();
         $adminRole->syncPermissions($adminPermissions);
 
         // Assign basic permissions to user role
         $userPermissions = Permission::whereIn('slug', [
             'view-users', 'view-roles', 'view-permissions',
-        ])->pluck('id')->toArray();
+        ], 'and', false)->pluck('id')->toArray();
         $userRole->syncPermissions($userPermissions);
 
         // Assign grade and attendance permissions to faculty role
@@ -121,10 +125,10 @@ class RolePermissionSeeder extends Seeder
             'view-grades', 'manage-grades',
             'view-attendance', 'manage-attendance',
             'submit-grades',
-        ])->pluck('id')->toArray();
+        ], 'and', false)->pluck('id')->toArray();
         $facultyRole->syncPermissions($facultyPermissions);
 
-        // Give admin finalize-grades, manage-conduct, manage-conduct-grades, manage-exam-results
+        // Give admin finalize-grades, manage-conduct, manage-conduct-grades, manage-exam-results, and admissions extras
         $adminExtraPermissions = Permission::whereIn('slug', [
             'view-grades', 'manage-grades',
             'view-attendance', 'manage-attendance',
@@ -133,7 +137,9 @@ class RolePermissionSeeder extends Seeder
             'manage-conduct-grades',
             'manage-exam-results',
             'manage-applications',
-        ])->pluck('id')->toArray();
+            'manage-student-id-assignment',
+            'manage-employees',
+        ], 'and', false)->pluck('id')->toArray();
         $adminRole->syncPermissions(array_unique(array_merge($adminPermissions, $adminExtraPermissions)));
 
         // Create a super admin user
@@ -175,9 +181,23 @@ class RolePermissionSeeder extends Seeder
             $user->assignRole($userRole);
         }
 
+        // Create a teacher user
+        $teacher = User::firstOrCreate(['email' => 'teacher@example.com'], [
+            'name' => 'Teacher User',
+            'email' => 'teacher@example.com',
+            'password' => Hash::make('password'),
+            'email_verified_at' => now(),
+        ]);
+
+        // Assign teacher (faculty) role to the user
+        if (! $teacher->hasRole('faculty')) {
+            $teacher->assignRole($facultyRole);
+        }
+
         $this->command->info('Roles, permissions, and users created successfully!');
         $this->command->info('Super Admin: admin@example.com / password');
         $this->command->info('Admin User: admin.user@example.com / password');
         $this->command->info('Regular User: user@example.com / password');
+        $this->command->info('Teacher: teacher@example.com / password');
     }
 }

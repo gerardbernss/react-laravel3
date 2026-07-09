@@ -17,11 +17,17 @@ class ConductCriteria extends Model
         'order' => 'integer',
     ];
 
+    /**
+     * Get the conduct category this criterion belongs to.
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ConductCategory::class, 'conduct_category_id');
     }
 
+    /**
+     * Get all conduct grades recorded against this criterion.
+     */
     public function grades(): HasMany
     {
         return $this->hasMany(ConductGrade::class);

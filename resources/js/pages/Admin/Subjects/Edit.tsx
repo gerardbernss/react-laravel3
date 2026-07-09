@@ -28,6 +28,7 @@ const gradeLevels = [
 const subjectTypes = ['Core', 'Major', 'Minor', 'Elective', 'Specialized'];
 const semesters = ['First Semester', 'Second Semester', 'Summer', 'Full Year'];
 
+/** Admin subject edit form for updating a subject's details and faculty assignment. */
 export default function Edit({ subject, facultyUsers }: Props) {
     const { breadcrumbs, data, setData, processing, errors, handleSubmit } = useSubjectEdit({ subject });
 
@@ -161,47 +162,6 @@ export default function Edit({ subject, facultyUsers }: Props) {
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.semester} className="mt-1" />
-                                </div>
-                            </div>
-
-                            {/* Schedule */}
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <div>
-                                    <Label htmlFor="days" className={LABEL_TEXT}>Days</Label>
-                                    <Select value={data.days} onValueChange={(v) => setData('days', v)}>
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue placeholder="Select days" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="MWF">MWF</SelectItem>
-                                            <SelectItem value="TTh">TTh</SelectItem>
-                                            <SelectItem value="Daily">Daily</SelectItem>
-                                            <SelectItem value="MTWTHF">MTWTHF</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={errors.days} className="mt-1" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="time" className={LABEL_TEXT}>Time</Label>
-                                    <Input
-                                        id="time"
-                                        value={data.time}
-                                        onChange={(e) => setData('time', e.target.value)}
-                                        placeholder="e.g., 07:30-08:30"
-                                        className="mt-1"
-                                    />
-                                    <InputError message={errors.time} className="mt-1" />
-                                </div>
-                                <div>
-                                    <Label htmlFor="room" className={LABEL_TEXT}>Room</Label>
-                                    <Input
-                                        id="room"
-                                        value={data.room}
-                                        onChange={(e) => setData('room', e.target.value)}
-                                        placeholder="e.g., Room 201"
-                                        className="mt-1"
-                                    />
-                                    <InputError message={errors.room} className="mt-1" />
                                 </div>
                             </div>
 

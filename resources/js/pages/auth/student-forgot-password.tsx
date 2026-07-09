@@ -12,6 +12,7 @@ interface StudentForgotPasswordProps {
     status?: string;
 }
 
+/** Student portal forgot-password page that sends a password reset link to the provided email address. */
 export default function StudentForgotPassword({ status }: StudentForgotPasswordProps) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',

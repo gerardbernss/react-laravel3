@@ -24,6 +24,7 @@ interface AppSelectProps {
     containerClassName?: string;
 }
 
+/** Labelled select field with optional options array or slot children, inline error display, and an auto-generated accessible id. */
 export function AppSelect({
     label,
     placeholder = 'Select...',

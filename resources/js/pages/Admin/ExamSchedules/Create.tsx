@@ -30,6 +30,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const examTypes = ['Entrance Exam', 'Placement Test', 'Qualifying Exam', 'Other'];
 
+/** Admin exam schedule create form for setting up an exam date, time, and room assignment. */
 export default function Create({ rooms }: Props) {
     const { data, setData, processing, errors, handleSubmit } = useExamScheduleCreate();
 

@@ -5,7 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, FILTER_CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import {
+    BODY_TEXT,
+    CARD,
+    LABEL_TEXT,
+    PAGE_PADDING,
+    PAGE_TITLE,
+    TABLE_HEADER_CELL,
+    TABLE_HEADER_CELL_CENTER,
+    TABLE_ROW,
+    TABLE_ROW_ACTION,
+    TABLE_ROW_ACTION_DANGER,
+} from '@/constants/ui';
 import { useExamSchedules, type ExamRoom, type ExamSchedule, type ExamScheduleSortKey } from '@/hooks/useExamSchedules';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -18,7 +29,7 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Dashboard', href: '/admin/dashboard' },
     { title: 'Exam Schedules', href: '/admin/exam-schedules' },
 ];
 
@@ -34,9 +45,7 @@ const formatTime = (time: string) => {
 
 function SortIcon({ col, sortConfig }: { col: ExamScheduleSortKey; sortConfig: { key: ExamScheduleSortKey | null; direction: 'asc' | 'desc' } }) {
     if (sortConfig.key !== col) return <ChevronUp className="ml-1 inline h-3 w-3 opacity-30" />;
-    return sortConfig.direction === 'asc'
-        ? <ChevronUp className="ml-1 inline h-3 w-3" />
-        : <ChevronDown className="ml-1 inline h-3 w-3" />;
+    return sortConfig.direction === 'asc' ? <ChevronUp className="ml-1 inline h-3 w-3" /> : <ChevronDown className="ml-1 inline h-3 w-3" />;
 }
 
 interface ScheduleRowProps {
@@ -53,7 +62,9 @@ function ScheduleRow({ schedule, processing, onDelete }: ScheduleRowProps) {
         <tr className={TABLE_ROW}>
             <td className="px-4 py-3">
                 <p className="font-medium text-gray-900">{schedule.name}</p>
-                <Badge variant="outline" className="mt-1">{schedule.exam_type}</Badge>
+                <Badge variant="outline" className="mt-1">
+                    {schedule.exam_type}
+                </Badge>
             </td>
             <td className="px-4 py-3">
                 <p className="font-medium text-gray-900">{formatDate(schedule.exam_date)}</p>
@@ -63,9 +74,7 @@ function ScheduleRow({ schedule, processing, onDelete }: ScheduleRowProps) {
             </td>
             <td className="px-4 py-3">
                 <p className="text-gray-900">{schedule.examination_room?.name}</p>
-                {schedule.examination_room?.building && (
-                    <p className="text-sm text-gray-500">{schedule.examination_room.building}</p>
-                )}
+                {schedule.examination_room?.building && <p className="text-sm text-gray-500">{schedule.examination_room.building}</p>}
             </td>
             <td className="px-4 py-3 text-center">
                 <div className="flex items-center justify-center gap-1">
@@ -74,12 +83,14 @@ function ScheduleRow({ schedule, processing, onDelete }: ScheduleRowProps) {
                         {schedule.assigned_count}/{effectiveCapacity}
                     </span>
                 </div>
-                {isFull && <Badge variant="destructive" className="mt-1">Full</Badge>}
+                {isFull && (
+                    <Badge variant="destructive" className="mt-1">
+                        Full
+                    </Badge>
+                )}
             </td>
             <td className="px-4 py-3 text-center">
-                <AppBadge status={schedule.is_active ? 'active' : 'inactive'}>
-                    {schedule.is_active ? 'Active' : 'Inactive'}
-                </AppBadge>
+                <AppBadge status={schedule.is_active ? 'active' : 'inactive'}>{schedule.is_active ? 'Active' : 'Inactive'}</AppBadge>
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
@@ -93,11 +104,7 @@ function ScheduleRow({ schedule, processing, onDelete }: ScheduleRowProps) {
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
                     </Link>
-                    <button
-                        onClick={() => onDelete(schedule.id, schedule.name)}
-                        disabled={processing}
-                        className={TABLE_ROW_ACTION_DANGER}
-                    >
+                    <button onClick={() => onDelete(schedule.id, schedule.name)} disabled={processing} className={TABLE_ROW_ACTION_DANGER}>
                         <Trash2 className="h-3 w-3" /> Delete
                     </button>
                 </div>
@@ -106,6 +113,7 @@ function ScheduleRow({ schedule, processing, onDelete }: ScheduleRowProps) {
     );
 }
 
+/** Admin exam schedules list with search, filter, and delete actions. */
 export default function Index({ schedules, rooms }: Props) {
     const {
         processing,
@@ -138,10 +146,7 @@ export default function Index({ schedules, rooms }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <Calendar className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Exam Schedules</h1>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Exam Schedules</h1>
                     <div className="flex gap-2">
                         <Link href="/admin/examination-rooms">
                             <Button variant="outline">
@@ -158,50 +163,75 @@ export default function Index({ schedules, rooms }: Props) {
                     </div>
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
-                    <div className="mb-3">
+                <div className="mb-6 flex flex-wrap items-end gap-3">
+                    <div>
                         <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>
-                        <div className="relative w-full md:w-[400px]">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <div className="relative w-full sm:w-[400px]">
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 placeholder="Search by name or type..."
                                 value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className="pl-10"
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <Select value={selectedRoomId || 'all'} onValueChange={(v) => { setSelectedRoomId(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-48"><SelectValue placeholder="Room" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Rooms</SelectItem>
-                                {rooms.map((room) => (
-                                    <SelectItem key={room.id} value={String(room.id)}>
-                                        {room.name}{room.building ? ` (${room.building})` : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <div>
-                            <label className={`mb-1 block ${LABEL_TEXT}`}>From Date</label>
-                            <Input
-                                type="date"
-                                value={dateFrom}
-                                onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
-                                className="h-10 w-40"
-                            />
-                        </div>
-                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
+                    <Select
+                        value={selectedRoomId || 'all'}
+                        onValueChange={(v) => {
+                            setSelectedRoomId(v === 'all' ? '' : v);
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Room" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Rooms</SelectItem>
+                            {rooms.map((room) => (
+                                <SelectItem key={room.id} value={String(room.id)}>
+                                    {room.name}
+                                    {room.building ? ` (${room.building})` : ''}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={selectedStatus || 'all'}
+                        onValueChange={(v) => {
+                            setSelectedStatus(v === 'all' ? '' : v);
+                            setCurrentPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-36">
+                            <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <div>
+                        <label className={`mb-1 block ${LABEL_TEXT}`}>From Date</label>
+                        <Input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => {
+                                setDateFrom(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="h-10 w-40"
+                        />
                     </div>
+                    {hasFilters && (
+                        <Button variant="ghost" onClick={clearFilters}>
+                            Clear
+                        </Button>
+                    )}
                 </div>
 
                 <div className={`overflow-hidden ${CARD}`}>
@@ -218,10 +248,16 @@ export default function Index({ schedules, rooms }: Props) {
                                     <th className={`${TABLE_HEADER_CELL} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('room')}>
                                         Room <SortIcon col="room" sortConfig={sortConfig} />
                                     </th>
-                                    <th className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('assigned_count')}>
+                                    <th
+                                        className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`}
+                                        onClick={() => toggleSort('assigned_count')}
+                                    >
                                         Assigned <SortIcon col="assigned_count" sortConfig={sortConfig} />
                                     </th>
-                                    <th className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`} onClick={() => toggleSort('status')}>
+                                    <th
+                                        className={`${TABLE_HEADER_CELL_CENTER} cursor-pointer hover:bg-gray-100`}
+                                        onClick={() => toggleSort('status')}
+                                    >
                                         Status <SortIcon col="status" sortConfig={sortConfig} />
                                     </th>
                                     <th className={TABLE_HEADER_CELL_CENTER}>Actions</th>
@@ -237,14 +273,16 @@ export default function Index({ schedules, rooms }: Props) {
                                             </p>
                                         </td>
                                     </tr>
-                                ) : paginatedItems.map((schedule) => (
-                                    <ScheduleRow
-                                        key={schedule.id}
-                                        schedule={schedule}
-                                        processing={processing}
-                                        onDelete={(id, name) => setDeleteDialog({ open: true, id, name })}
-                                    />
-                                ))}
+                                ) : (
+                                    paginatedItems.map((schedule) => (
+                                        <ScheduleRow
+                                            key={schedule.id}
+                                            schedule={schedule}
+                                            processing={processing}
+                                            onDelete={(id, name) => setDeleteDialog({ open: true, id, name })}
+                                        />
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -253,7 +291,10 @@ export default function Index({ schedules, rooms }: Props) {
                         pageSize={pageSize}
                         currentPage={currentPage}
                         onPageChange={setCurrentPage}
-                        onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                        onPageSizeChange={(s) => {
+                            setPageSize(s);
+                            setCurrentPage(1);
+                        }}
                     />
                 </div>
             </div>

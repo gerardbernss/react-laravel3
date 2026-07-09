@@ -5,25 +5,51 @@ namespace App\Services\Admin;
 use App\Models\BlockSection;
 use App\Models\User;
 use App\Repositories\AttendanceRepository;
+use App\Repositories\ScheduleRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceService
 {
-    public function __construct(private AttendanceRepository $attendanceRepository)
-    {
+    public function __construct(
+        private AttendanceRepository $attendanceRepository,
+        private ScheduleRepository $scheduleRepository,
+    ) {
     }
 
+    /**
+     * Returns the attendance index data for a faculty member: their assigned subject-section pairs with today's attendance snapshot.
+     */
     public function facultyIndexData(User $user): array
     {
         $today = now()->toDateString();
-        $subjects = $this->attendanceRepository->facultySubjectsWithSectionsAndSchedules($user->id);
 
-        $mySubjectSections = $subjects->flatMap(
-            fn ($subject) => $subject->blockSections->map(
-                fn ($section) => $this->subjectSectionRow($subject, $section, $today)
-            )
-        )->values();
+        $assignedSchedules = $this->scheduleRepository->forTeacher($user->id);
+        $assignedSectionSchedules = $assignedSchedules->filter(fn ($sched) => $sched->block_section_id !== null);
+
+        $assignedRows = $assignedSectionSchedules
+            ->map(fn ($sched) => $this->subjectSectionRow($sched->subject, $sched->blockSection, $today));
+
+        $overriddenSectionIdsBySubject = $assignedSectionSchedules
+            ->groupBy('subject_id')
+            ->map(fn ($rows) => $rows->pluck('block_section_id')->all());
+
+        $defaultTaughtSubjectIds = $assignedSchedules
+            ->filter(fn ($sched) => $sched->block_section_id === null)
+            ->pluck('subject_id')
+            ->all();
+
+        $ownedSubjects = $this->attendanceRepository->facultySubjectsWithSectionsAndSchedules($user->id, $defaultTaughtSubjectIds);
+
+        $ownedRows = $ownedSubjects->flatMap(function ($subject) use ($today, $overriddenSectionIdsBySubject) {
+            $overriddenSectionIds = $overriddenSectionIdsBySubject[$subject->id] ?? [];
+
+            return $subject->blockSections
+                ->reject(fn ($section) => in_array($section->id, $overriddenSectionIds, true))
+                ->map(fn ($section) => $this->subjectSectionRow($subject, $section, $today));
+        });
+
+        $mySubjectSections = $ownedRows->concat($assignedRows)->values();
 
         return [
             'isFaculty' => true,
@@ -35,6 +61,9 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Returns the attendance index data for admins: all sections grouped by grade level, with filter options for school year and semester.
+     */
     public function adminIndexData(?string $search, ?string $schoolYear, ?string $semester): array
     {
         $sections = $this->attendanceRepository->sectionsFiltered($search, $schoolYear, $semester);
@@ -53,6 +82,9 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Returns all sections for a given grade level, defaulting to the most recent school year and semester if none are specified.
+     */
     public function showGradeData(string $gradeLevel, ?string $schoolYear, ?string $semester): array
     {
         $latest = $this->attendanceRepository->latestPeriodForGrade($gradeLevel);
@@ -65,6 +97,10 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Returns the attendance sheet for a section on a specific date: the student list with existing attendance records,
+     * per-day statistics, available subjects (filtered by faculty ownership if applicable), and a list of missed weekdays in the past 30 days.
+     */
     public function sheetData(BlockSection $blockSection, ?User $user, string $date, ?int $subjectId): array
     {
         $blockSection->load('subjects');
@@ -91,6 +127,10 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Returns the attendance history for a section, grouped by date, optionally filtered by subject and date range.
+     * Faculty members only see subjects they are assigned to teach.
+     */
     public function historyData(BlockSection $blockSection, ?User $user, ?int $subjectId, ?string $dateFrom, ?string $dateTo): array
     {
         $blockSection->load('subjects');
@@ -115,8 +155,16 @@ class AttendanceService
         ];
     }
 
-    public function store(BlockSection $blockSection, array $data): void
+    /**
+     * Saves or updates attendance records for all students in a section for a given date and subject.
+     */
+    public function store(BlockSection $blockSection, array $data, ?User $user = null): void
     {
+        if ($user && $user->hasRole('faculty')) {
+            $visibleIds = $this->visibleSubjects($blockSection, $user)->pluck('id');
+            abort_if(! $visibleIds->contains((int) $data['subject_id']), 403, 'You are not assigned to teach this subject in this section.');
+        }
+
         DB::transaction(function () use ($data) {
             foreach ($data['attendance'] as $entry) {
                 $this->attendanceRepository->upsertAttendance(
@@ -130,6 +178,9 @@ class AttendanceService
         });
     }
 
+    /**
+     * Builds a summary row for one subject-section pair on the faculty index, including enrollment count, today's attendance status, and missed day count.
+     */
     private function subjectSectionRow($subject, $section, string $today): array
     {
         $enrolledCount = $this->attendanceRepository->countEnrolledForSubjectSection($subject->id, $section->id);
@@ -151,17 +202,28 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Returns the subjects for a section visible to the given user.
+     * Faculty members only see subjects they personally teach; admins see all subjects.
+     */
     private function visibleSubjects(BlockSection $blockSection, ?User $user)
     {
         $subjects = $blockSection->subjects;
 
         if ($user && $user->hasRole('faculty')) {
-            $subjects = $subjects->filter(fn ($s) => $s->user_id === $user->id)->values();
+            $subjects = $subjects->filter(function ($s) use ($blockSection, $user) {
+                $sched = $s->scheduleFor($blockSection->id) ?? $s->defaultSchedule;
+
+                return ($sched?->teacher_id ?? $s->user_id) === $user->id;
+            })->values();
         }
 
         return $subjects;
     }
 
+    /**
+     * Maps enrollments to attendance sheet rows, merging in each student's existing attendance record for the selected date if one exists.
+     */
     private function studentsForSheet($enrollments, $existingAttendance)
     {
         return $enrollments->map(function ($enrollment) use ($existingAttendance) {
@@ -183,6 +245,9 @@ class AttendanceService
         });
     }
 
+    /**
+     * Computes attendance statistics for the current sheet: total students, how many are marked, counts by status, and overall attendance rate.
+     */
     private function sheetStatistics($enrollments, $existingAttendance): array
     {
         $presentCount = $existingAttendance->where('status', 'Present')->count();
@@ -205,6 +270,9 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Summarises all attendance records for a single day into a history row with counts by status and an attendance rate.
+     */
     private function historyRecordRow(string $date, $dayRows): array
     {
         $present = $dayRows->where('status', 'Present')->count();
@@ -224,6 +292,10 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Returns a list of weekdays in the past N days (default 30) for which no attendance was recorded for the given subject and section.
+     * Results are returned newest-first so the most recent missed dates appear at the top.
+     */
     private function getMissedDates(int $subjectId, int $blockSectionId, int $daysBack = 30): array
     {
         $today = now()->toDateString();

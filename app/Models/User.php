@@ -162,7 +162,7 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
     }
 
     /**
-     * Check if the user has a Google account linked.
+     * Get the employee record linked to this user account.
      */
     public function employee(): HasOne
     {

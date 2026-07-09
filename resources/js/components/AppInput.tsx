@@ -12,6 +12,7 @@ interface AppInputProps extends ComponentProps<typeof Input> {
     containerClassName?: string;
 }
 
+/** Labelled text input with optional hint text and inline error display; generates an accessible id automatically when none is provided. */
 export function AppInput({ label, error, hint, id, containerClassName, className, ...props }: AppInputProps) {
     const generatedId = useId();
     const inputId = id ?? generatedId;

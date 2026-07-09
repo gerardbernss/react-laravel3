@@ -18,6 +18,7 @@ interface Props {
     students: StudentRow[];
 }
 
+/** Admin conduct grade entry page for recording student conduct scores by category and quarter for a block section. */
 export default function ConductEntry({ blockSection, quarter, quarters, categories, students }: Props) {
     const { breadcrumbs, allCriteria, grades, saving, isDirty, updateGrade, save } = useConductEntry({
         blockSection,
@@ -33,7 +34,7 @@ export default function ConductEntry({ blockSection, quarter, quarters, categori
                 <div className={PAGE_PADDING}>
                     <Link
                         href={`/teacher/gradebook/${blockSection.id}`}
-                        className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                        className="mb-4 inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
                     >
                         <ArrowLeft className="mr-1 h-4 w-4" /> Back
                     </Link>
@@ -56,7 +57,7 @@ export default function ConductEntry({ blockSection, quarter, quarters, categori
                 <div className="mb-6">
                     <Link
                         href={`/teacher/gradebook/${blockSection.id}`}
-                        className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                        className="mb-4 inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
                     >
                         <ArrowLeft className="mr-1 h-4 w-4" /> Back to {blockSection.code}
                     </Link>

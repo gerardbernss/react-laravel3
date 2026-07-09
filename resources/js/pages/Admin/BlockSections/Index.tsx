@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AppBadge } from '@/components/AppBadge';
-import { BODY_TEXT, CARD, FILTER_CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
+import { BODY_TEXT, CARD, LABEL_TEXT, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER, TABLE_ROW, TABLE_ROW_ACTION, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { GRADE_LEVELS, useBlockSections, type BlockSection, type BlockSectionSortKey } from '@/hooks/useBlockSections';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, Copy, Eye, LayoutGrid, Pencil, Plus, Search, SquareStack, Trash2, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Eye, LayoutGrid, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
 
 interface Props {
     blockSections: BlockSection[];
@@ -63,9 +63,7 @@ function BlockSectionRow({ section, processing, onDelete }: BlockSectionRowProps
                 </div>
             </td>
             <td className="px-4 py-3 text-center">
-                <AppBadge status={section.is_active ? 'active' : 'inactive'}>
-                    {section.is_active ? 'Active' : 'Inactive'}
-                </AppBadge>
+                <AppBadge status={section.is_active ? 'Active' : 'Inactive'} />
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
@@ -97,10 +95,11 @@ interface CopyDialogProps {
     onClose: () => void;
     schoolYears: string[];
     copyForm: ReturnType<typeof useBlockSections>['copyForm'];
+    setFromSchoolYear: (year: string) => void;
     onSubmit: (e: React.FormEvent) => void;
 }
 
-function CopyDialog({ open, onClose, schoolYears, copyForm, onSubmit }: CopyDialogProps) {
+function CopyDialog({ open, onClose, schoolYears, copyForm, setFromSchoolYear, onSubmit }: CopyDialogProps) {
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
             <DialogContent>
@@ -116,7 +115,7 @@ function CopyDialog({ open, onClose, schoolYears, copyForm, onSubmit }: CopyDial
                         <Label htmlFor="from_school_year" className={LABEL_TEXT}>From School Year *</Label>
                         <Select
                             value={copyForm.data.from_school_year}
-                            onValueChange={(v) => copyForm.setData('from_school_year', v)}
+                            onValueChange={setFromSchoolYear}
                         >
                             <SelectTrigger className="mt-1">
                                 <SelectValue placeholder="Select school year" />
@@ -140,7 +139,6 @@ function CopyDialog({ open, onClose, schoolYears, copyForm, onSubmit }: CopyDial
                         />
                         <InputError message={copyForm.errors.to_school_year} className="mt-1" />
                     </div>
-                    <InputError message={copyForm.errors.error} className="mt-1" />
                     <div className="flex justify-end gap-2 border-t pt-4">
                         <Button type="button" variant="outline" onClick={onClose} disabled={copyForm.processing}>
                             Cancel
@@ -158,6 +156,7 @@ function CopyDialog({ open, onClose, schoolYears, copyForm, onSubmit }: CopyDial
     );
 }
 
+/** Admin block sections list — filterable by school year with search, delete, and bulk-copy-to-next-year actions. */
 export default function Index({ blockSections, schoolYears }: Props) {
     const {
         processing,
@@ -185,6 +184,7 @@ export default function Index({ blockSections, schoolYears }: Props) {
         toggleSort,
         clearFilters,
         confirmDelete,
+        setFromSchoolYear,
         openCopyDialog,
         handleCopySubmit,
     } = useBlockSections(blockSections, schoolYears);
@@ -195,13 +195,7 @@ export default function Index({ blockSections, schoolYears }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <SquareStack className="h-7 w-7 text-primary" />
-                            <h1 className={PAGE_TITLE}>Block Sections</h1>
-                        </div>
-                        <p className={`mt-1 ${BODY_TEXT}`}>Manage block sections with assigned subjects</p>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Block Sections</h1>
                     <div className="flex gap-2">
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -221,10 +215,10 @@ export default function Index({ blockSections, schoolYears }: Props) {
                     </div>
                 </div>
 
-                <div className={`mb-6 ${FILTER_CARD}`}>
-                    <div className="mb-3">
+                <div className="mb-6 flex flex-wrap items-end gap-3">
+                    <div>
                         <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>
-                        <div className="relative w-full md:w-[400px]">
+                        <div className="relative w-full sm:w-[300px]">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <Input
                                 placeholder="Search by code or name..."
@@ -234,31 +228,29 @@ export default function Index({ blockSections, schoolYears }: Props) {
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                        <Select value={selectedGradeLevel || 'all'} onValueChange={(v) => { setSelectedGradeLevel(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-40"><SelectValue placeholder="Grade Level" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Grade Levels</SelectItem>
-                                {GRADE_LEVELS.map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={selectedSchoolYear || 'all'} onValueChange={(v) => { setSelectedSchoolYear(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-40"><SelectValue placeholder="School Year" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All School Years</SelectItem>
-                                {schoolYears.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
-                    </div>
+                    <Select value={selectedGradeLevel || 'all'} onValueChange={(v) => { setSelectedGradeLevel(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-40"><SelectValue placeholder="Grade Level" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Grade Levels</SelectItem>
+                            {GRADE_LEVELS.map((level) => <SelectItem key={level} value={level}>{level}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedSchoolYear || 'all'} onValueChange={(v) => { setSelectedSchoolYear(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-40"><SelectValue placeholder="School Year" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All School Years</SelectItem>
+                            {schoolYears.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedStatus || 'all'} onValueChange={(v) => { setSelectedStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {hasFilters && <Button variant="ghost" onClick={clearFilters}>Clear</Button>}
                 </div>
 
                 <div className={`overflow-hidden ${CARD}`}>
@@ -330,6 +322,7 @@ export default function Index({ blockSections, schoolYears }: Props) {
                 onClose={() => setShowCopyDialog(false)}
                 schoolYears={schoolYears}
                 copyForm={copyForm}
+                setFromSchoolYear={setFromSchoolYear}
                 onSubmit={handleCopySubmit}
             />
         </AppLayout>

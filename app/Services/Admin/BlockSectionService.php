@@ -21,6 +21,9 @@ class BlockSectionService
     ) {
     }
 
+    /**
+     * Returns all block sections with their subjects and the list of distinct school years for the index page.
+     */
     public function indexData(): array
     {
         return [
@@ -29,6 +32,11 @@ class BlockSectionService
         ];
     }
 
+    /**
+     * Copies all block sections (with their subjects and schedules) from one school year to another, resetting enrollment to 0.
+     * Sections whose generated code already exists in the target year are skipped.
+     * Returns a summary message with the number of sections copied and skipped.
+     */
     public function copyToNewYear(string $fromYear, string $toYear): array
     {
         $sourceSections = $this->blockSectionRepository->sectionsForYearWithSubjectsAndSchedules($fromYear);
@@ -66,11 +74,18 @@ class BlockSectionService
         return ['message' => $message];
     }
 
+    /**
+     * Returns the subject options needed to populate the create form.
+     */
     public function createData(): array
     {
         return ['subjects' => $this->subjectOptions($this->subjectRepository->activeOrdered())];
     }
 
+    /**
+     * Creates a new block section and attaches its subjects.
+     * Returns an error array if any selected subjects are incompatible with the section's semester.
+     */
     public function store(array $data): array
     {
         if ($error = $this->incompatibleSubjectsError($data['subjects'] ?? [], $data['semester'] ?? null)) {
@@ -88,9 +103,12 @@ class BlockSectionService
         return [];
     }
 
+    /**
+     * Returns the full detail page data for a block section: its subjects with schedules, currently enrolled students, and students available to be added.
+     */
     public function showData(BlockSection $blockSection): array
     {
-        $this->blockSectionRepository->loadSubjectsAndSchedules($blockSection);
+        $this->blockSectionRepository->loadFacultyAndSchedules($blockSection);
 
         $enrolledStudentIds = $this->blockSectionRepository->enrolledStudentIdsFor($blockSection->school_year, $blockSection->semester);
 
@@ -105,7 +123,7 @@ class BlockSectionService
                 'type' => $s->type,
                 'semester' => $s->semester,
                 'pivot' => [
-                    'teacher' => $s->pivot->teacher,
+                    'teacher' => $sched?->teacher?->name ?? $s->faculty?->name,
                     'schedule' => $sched?->display,
                     'room' => $sched?->room,
                 ],
@@ -119,6 +137,10 @@ class BlockSectionService
         ];
     }
 
+    /**
+     * Enrolls a student into a block section, creating enrollment subject records for each of the section's subjects.
+     * Blocks enrollment if the section is at full capacity or the student is already enrolled for the same school year and semester.
+     */
     public function addStudent(BlockSection $blockSection, int $studentId): array
     {
         if (! $blockSection->hasAvailableSlots()) {
@@ -153,7 +175,7 @@ class BlockSectionService
                     'units' => $subject->units,
                     'schedule' => $sched?->display,
                     'room' => $sched?->room,
-                    'teacher' => $subject->faculty?->name,
+                    'teacher' => $sched?->teacher?->name ?? $subject->faculty?->name,
                 ]);
             }
 
@@ -163,6 +185,10 @@ class BlockSectionService
         return [];
     }
 
+    /**
+     * Removes a student from a block section and decrements the section's enrollment count.
+     * Aborts with 403 if the enrollment record does not belong to the given section.
+     */
     public function removeStudent(BlockSection $blockSection, StudentEnrollment $studentEnrollment): void
     {
         abort_if(
@@ -177,6 +203,9 @@ class BlockSectionService
         });
     }
 
+    /**
+     * Returns the block section and subject options needed to pre-fill the edit form.
+     */
     public function editData(BlockSection $blockSection): array
     {
         $blockSection->load('subjects');
@@ -187,6 +216,10 @@ class BlockSectionService
         ];
     }
 
+    /**
+     * Updates a block section's details and re-syncs its subjects.
+     * Returns an error array if any subjects are incompatible with the section's semester.
+     */
     public function update(BlockSection $blockSection, array $data): array
     {
         $subjectIds = ! empty($data['subjects']) ? array_column($data['subjects'], 'subject_id') : [];
@@ -198,11 +231,15 @@ class BlockSectionService
         DB::transaction(function () use ($blockSection, $data, $subjectIds) {
             $this->blockSectionRepository->updateSection($blockSection, $this->sectionAttributes($data));
             $this->blockSectionRepository->syncSubjects($blockSection, $subjectIds);
+            $this->scheduleRepository->pruneForRemovedSubjects($blockSection, $subjectIds);
         });
 
         return [];
     }
 
+    /**
+     * Deletes a block section, but blocks deletion if any students are currently enrolled in it.
+     */
     public function destroy(BlockSection $blockSection): array
     {
         if ($blockSection->current_enrollment > 0) {
@@ -214,11 +251,17 @@ class BlockSectionService
         return [];
     }
 
+    /**
+     * Flips a block section between active and inactive.
+     */
     public function toggleStatus(BlockSection $blockSection): void
     {
         $this->blockSectionRepository->updateSection($blockSection, ['is_active' => ! $blockSection->is_active]);
     }
 
+    /**
+     * Clones a single block section into a new school year with a new code, copying its subjects and per-section schedules.
+     */
     private function copySection($section, string $newCode, string $toYear): void
     {
         $newSection = $this->blockSectionRepository->createSection([
@@ -246,10 +289,15 @@ class BlockSectionService
                 'time' => $sched->time,
                 'room' => $sched->room,
                 'code' => $sched->code,
+                'teacher_id' => $sched->teacher_id,
             ]);
         }
     }
 
+    /**
+     * Returns an error array if any of the given subjects are offered in a different semester than the section's.
+     * Returns null if there are no conflicts.
+     */
     private function incompatibleSubjectsError(array $subjects, ?string $semester): ?array
     {
         if (! $semester || empty($subjects)) {
@@ -266,6 +314,9 @@ class BlockSectionService
         return ['error_field' => 'subjects', 'error_message' => 'These subjects are not offered in ' . $semester . ': ' . $incompatible->join(', ')];
     }
 
+    /**
+     * Extracts the core block section fields from a validated form data array.
+     */
     private function sectionAttributes(array $data): array
     {
         return [
@@ -282,6 +333,9 @@ class BlockSectionService
         ];
     }
 
+    /**
+     * Maps a collection of subjects to a minimal array suitable for populating a subject picker.
+     */
     private function subjectOptions($subjects)
     {
         return $subjects->map(fn ($s) => [
@@ -293,6 +347,9 @@ class BlockSectionService
         ]);
     }
 
+    /**
+     * Returns the list of students currently enrolled in the section, formatted for the show page table.
+     */
     private function enrolledStudentRows(BlockSection $blockSection)
     {
         return $this->blockSectionRepository->enrolledStudentsForSection($blockSection->id)
@@ -312,6 +369,9 @@ class BlockSectionService
             ]);
     }
 
+    /**
+     * Returns students who match the section's grade level and strand but are not yet enrolled for this school year and semester.
+     */
     private function availableStudentRows(BlockSection $blockSection, $enrolledStudentIds)
     {
         return $this->studentRepository->notEnrolledForGradeLevel($enrolledStudentIds, $blockSection->grade_level, $blockSection->strand)

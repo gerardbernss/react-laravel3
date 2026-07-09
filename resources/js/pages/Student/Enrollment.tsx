@@ -133,6 +133,7 @@ function PaymentModeEditor({ currentMode, onCancel, onSaved }: { currentMode: st
     );
 }
 
+/** Student portal enrollment page — shows fee assessment, prior balance, and payment status; guides the student through the enrollment wizard. */
 export default function Enrollment({ personalData, familyBackground, application, studentRecord, isEnrolled, awaitingPayment, enrollmentOpen, targetYear, targetSemester, fees, priorBalance, assessment }: Props) {
     const {
         currentSemester,

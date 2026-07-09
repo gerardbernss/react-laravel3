@@ -14,6 +14,7 @@ interface Params {
     program: Program;
 }
 
+/** Manage the program edit form, PUTting to /admin/programs/:id. */
 export function useProgramEdit({ program }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

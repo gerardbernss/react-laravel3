@@ -12,6 +12,7 @@ interface DeleteUserProps {
     hasGoogleAccount?: boolean;
 }
 
+/** Danger-zone section with a confirmation dialog for permanent account deletion; skips the password field when the account is Google-linked. */
 export default function DeleteUser({ hasGoogleAccount = false }: DeleteUserProps) {
     const passwordInput = useRef<HTMLInputElement>(null);
 

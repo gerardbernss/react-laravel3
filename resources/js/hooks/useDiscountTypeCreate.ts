@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the discount type create form, posting to /admin/discount-types. */
 export function useDiscountTypeCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',

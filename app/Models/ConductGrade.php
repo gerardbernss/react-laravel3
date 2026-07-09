@@ -19,16 +19,25 @@ class ConductGrade extends Model
         'score' => 'float',
     ];
 
+    /**
+     * Get the student enrollment this conduct grade belongs to.
+     */
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(StudentEnrollment::class, 'student_enrollment_id');
     }
 
+    /**
+     * Get the conduct criteria this grade was scored against.
+     */
     public function criteria(): BelongsTo
     {
         return $this->belongsTo(ConductCriteria::class, 'conduct_criteria_id');
     }
 
+    /**
+     * Get the faculty user who recorded this conduct grade.
+     */
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');

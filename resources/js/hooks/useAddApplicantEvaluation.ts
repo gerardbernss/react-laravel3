@@ -134,6 +134,10 @@ export const applicantFormSchema = z.object({
 
 export type ApplicantFormValues = z.infer<typeof applicantFormSchema>;
 
+/**
+ * Manage the evaluation-mode applicant intake form using react-hook-form with Zod validation,
+ * including required document uploads and multipart FormData submission to /applications/applicants.
+ */
 export function useAddApplicantEvaluation() {
     const form = useForm<ApplicantFormValues>({
         resolver: zodResolver(applicantFormSchema) as any,

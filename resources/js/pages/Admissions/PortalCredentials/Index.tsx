@@ -112,6 +112,7 @@ function CredentialRow({ credential, onSend, onResend }: CredentialRowProps) {
     );
 }
 
+/** Portal credentials list for admissions staff — search, filter by status, and manage applicant login credentials. */
 export default function Index({ credentials }: Props) {
     const {
         sendDialogOpen, setSendDialogOpen,

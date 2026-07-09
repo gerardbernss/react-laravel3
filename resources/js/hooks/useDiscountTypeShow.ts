@@ -20,6 +20,7 @@ interface Params {
     discountType: DiscountType;
 }
 
+/** Manage the discount type detail page, including delete confirmation dialog. */
 export function useDiscountTypeShow({ discountType }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

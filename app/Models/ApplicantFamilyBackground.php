@@ -82,21 +82,33 @@ class ApplicantFamilyBackground extends Model
         'guardian_employee_id',
     ];
 
+    /**
+     * Get the applicant personal data record this family background belongs to.
+     */
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the employee record for the father, used to verify school-employee discount eligibility.
+     */
     public function fatherEmployee()
     {
         return $this->belongsTo(Employee::class, 'father_employee_id');
     }
 
+    /**
+     * Get the employee record for the mother, used to verify school-employee discount eligibility.
+     */
     public function motherEmployee()
     {
         return $this->belongsTo(Employee::class, 'mother_employee_id');
     }
 
+    /**
+     * Get the employee record for the guardian, used to verify school-employee discount eligibility.
+     */
     public function guardianEmployee()
     {
         return $this->belongsTo(Employee::class, 'guardian_employee_id');

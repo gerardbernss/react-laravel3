@@ -6,6 +6,7 @@ interface Params {
     email: string;
 }
 
+/** Manage the student portal password reset form, posting token and new password to /student/reset-password. */
 export function useStudentResetPassword({ token, email }: Params) {
     const { data, setData, post, processing, errors, reset } = useForm({
         token,

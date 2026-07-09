@@ -17,6 +17,10 @@ const DEFAULT_VISIBLE: UserColumnKey[] = [
     'id', 'name', 'email', 'roles', 'email_verified_at', 'created_at', 'actions',
 ];
 
+/**
+ * Manage the users index table with search, sort, pagination, column visibility,
+ * row selection, bulk delete, and CSV export.
+ */
 export function useUserTable(users: User[]) {
     const { processing, delete: destroy } = useForm();
 

@@ -20,6 +20,7 @@ interface SearchableSelectProps {
     emptyMessage?: string;
 }
 
+/** Generic searchable combobox backed by a provided options array, showing a checkmark next to the currently selected value. */
 export function SearchableSelect({
     value,
     onChange,

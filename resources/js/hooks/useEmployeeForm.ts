@@ -20,6 +20,7 @@ interface Params {
     employee?: Employee;
 }
 
+/** Manage the shared employee create/edit form, POSTing or PUTting to /admin/employees. */
 export function useEmployeeForm({ employee }: Params) {
     const isEdit = !!employee;
 

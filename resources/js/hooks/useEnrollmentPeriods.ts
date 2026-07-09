@@ -22,6 +22,10 @@ function todayString(): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * Manage all CRUD dialogs and form submissions for enrollment periods —
+ * start, open/reopen (with conflict check), edit, close, and delete.
+ */
 export function useEnrollmentPeriods(periods: EnrollmentPeriod[]) {
     const today = todayString();
 

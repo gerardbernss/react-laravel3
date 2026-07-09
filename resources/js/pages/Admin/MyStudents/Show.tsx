@@ -45,6 +45,7 @@ function attendanceColor(rate: number | null): string {
     return 'text-red-700 font-medium';
 }
 
+/** Admin my-students detail page showing enrolled students, their grades, and subject statistics for a block section. */
 export default function Show({ blockSection, subject, students, isFaculty, statistics }: Props) {
     const { currentPage, setCurrentPage, pageSize, setPageSize, paginated, sectionLabel } = useMyStudentsShow({ blockSection, students });
 
@@ -54,8 +55,8 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/grades" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-                        <ChevronLeft className="h-4 w-4" />
+                    <Link href="/grades" className="mb-3 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ChevronLeft className="mr-1 h-4 w-4" />
                         Back to Grades
                     </Link>
                     <h1 className={PAGE_TITLE}>{subject ? `${subject.name} (${subject.code})` : 'Class Roster'}</h1>

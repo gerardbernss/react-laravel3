@@ -44,6 +44,10 @@ interface Params {
     assessment: Assessment;
 }
 
+/**
+ * Manage the student assessment detail page — add, inline-edit, and delete payment records,
+ * and update the minimum required payment amount.
+ */
 export function useAssessmentShow({ assessment }: Params) {
     const { data, setData, post, processing, errors, reset } = useForm({
         amount_paid: '',
@@ -80,7 +84,7 @@ export function useAssessmentShow({ assessment }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post(`/admin/finance/assessments/${assessment.id}/payments`, {
+        post(`/admin/fee-assessments/${assessment.id}/payments`, {
             onSuccess: () => reset(),
         });
     };
@@ -101,7 +105,7 @@ export function useAssessmentShow({ assessment }: Params) {
 
     const handleUpdate = (e: FormEvent, paymentId: number) => {
         e.preventDefault();
-        put(`/admin/finance/assessments/${assessment.id}/payments/${paymentId}`, {
+        put(`/admin/fee-assessments/${assessment.id}/payments/${paymentId}`, {
             onSuccess: () => {
                 setEditingId(null);
                 resetEdit();
@@ -111,12 +115,12 @@ export function useAssessmentShow({ assessment }: Params) {
 
     const handleDelete = (paymentId: number) => {
         if (!confirm('Delete this payment record? This will update the assessment balance.')) return;
-        router.delete(`/admin/finance/assessments/${assessment.id}/payments/${paymentId}`);
+        router.delete(`/admin/fee-assessments/${assessment.id}/payments/${paymentId}`);
     };
 
     const handleSaveMinimum = (e: FormEvent) => {
         e.preventDefault();
-        patchMin(`/admin/finance/assessments/${assessment.id}/minimum-amount`, {
+        patchMin(`/admin/fee-assessments/${assessment.id}/minimum-amount`, {
             onSuccess: () => {
                 setEditingMinimum(false);
                 resetMin();

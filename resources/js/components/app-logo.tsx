@@ -1,3 +1,4 @@
+/** Render the SLU logo image beside the school name, used in sidebar and header brand slots. */
 export default function AppLogo() {
     return (
         <>

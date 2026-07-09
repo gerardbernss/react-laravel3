@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the exam schedule create form, posting to /admin/exam-schedules. */
 export function useExamScheduleCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',

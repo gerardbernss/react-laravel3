@@ -20,11 +20,17 @@ class GradebookController extends Controller
     {
     }
 
+    /**
+     * List sections available in the gradebook — faculty see only their assigned sections, admins see all.
+     */
     public function index()
     {
         return Inertia::render('Admin/Gradebook/Index', $this->gradebookService->indexData(Auth::user()));
     }
 
+    /**
+     * Show a section's gradebook overview with subjects, quarters, and per-subject grading progress.
+     */
     public function show(BlockSection $blockSection)
     {
         $data = $this->gradebookService->showData($blockSection, Auth::user());
@@ -46,6 +52,9 @@ class GradebookController extends Controller
         ]);
     }
 
+    /**
+     * Show the grade components (activities, quizzes, exams) for a subject and quarter — returns 404 for invalid quarter values.
+     */
     public function components(BlockSection $blockSection, Subject $subject, string $quarter)
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);
@@ -66,6 +75,9 @@ class GradebookController extends Controller
         ]);
     }
 
+    /**
+     * Add a new grade component (e.g. quiz, activity) to a subject and quarter.
+     */
     public function storeComponent(StoreGradeComponentRequest $request)
     {
         $this->gradebookService->storeComponent($request->validated(), Auth::user());
@@ -73,6 +85,9 @@ class GradebookController extends Controller
         return back()->with('success', 'Component added successfully.');
     }
 
+    /**
+     * Delete a grade component and its associated raw scores.
+     */
     public function deleteComponent(GradeComponent $component)
     {
         $this->gradebookService->deleteComponent($component, Auth::user());
@@ -80,6 +95,9 @@ class GradebookController extends Controller
         return back()->with('success', 'Component deleted.');
     }
 
+    /**
+     * Show the score entry sheet for a subject and quarter with all students and their current raw scores.
+     */
     public function entry(BlockSection $blockSection, Subject $subject, string $quarter)
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);
@@ -105,6 +123,9 @@ class GradebookController extends Controller
         ]);
     }
 
+    /**
+     * Save raw scores for all students in a subject and quarter batch.
+     */
     public function saveScores(SaveScoresRequest $request, BlockSection $blockSection, Subject $subject, string $quarter)
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);

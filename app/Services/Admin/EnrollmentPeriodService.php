@@ -26,6 +26,9 @@ class EnrollmentPeriodService
     ) {
     }
 
+    /**
+     * Returns all enrollment periods ordered by recency, along with the available semester options for the create form.
+     */
     public function indexData(): array
     {
         $periods = $this->enrollmentPeriodRepository->allOrdered()->map(fn ($p) => [
@@ -48,6 +51,11 @@ class EnrollmentPeriodService
         ];
     }
 
+    /**
+     * Creates and immediately opens a new enrollment period.
+     * Blocks creation if an active period of the same type already exists for the given school year/semester,
+     * or if another period of the same type is currently open.
+     */
     public function store(array $data): array
     {
         if ($this->enrollmentPeriodRepository->activePeriodExists($data['school_year'], $data['semester'], $data['type'])) {
@@ -74,6 +82,12 @@ class EnrollmentPeriodService
         return ['message' => $this->afterOpenMessage($period, 'Enrollment period started.')];
     }
 
+    /**
+     * Re-opens a previously closed enrollment period.
+     * For student periods, restores not-enrolled students with existing assessments.
+     * For applicant periods, moves exam-passed applicants back to enrollment processing.
+     * Blocks if another period of the same type is already open.
+     */
     public function open(EnrollmentPeriod $period, array $data): array
     {
         if ($this->enrollmentPeriodRepository->activeOpenPeriodExistsForType($period->type, $period->id)) {
@@ -110,6 +124,9 @@ class EnrollmentPeriodService
         return ['message' => $message];
     }
 
+    /**
+     * Updates the close date and notes for an enrollment period.
+     */
     public function update(EnrollmentPeriod $period, array $data): void
     {
         $this->enrollmentPeriodRepository->update($period, [
@@ -118,11 +135,17 @@ class EnrollmentPeriodService
         ]);
     }
 
+    /**
+     * Closes an enrollment period by marking it as not open and recording the close timestamp.
+     */
     public function close(EnrollmentPeriod $period): void
     {
         $this->enrollmentPeriodRepository->update($period, ['is_open' => false, 'closed_at' => now()]);
     }
 
+    /**
+     * Deletes an enrollment period. Blocks deletion if the period is still open or upcoming.
+     */
     public function destroy(EnrollmentPeriod $period): array
     {
         if (in_array($period->status, ['open', 'upcoming'])) {
@@ -134,6 +157,11 @@ class EnrollmentPeriodService
         return [];
     }
 
+    /**
+     * Generates fee assessments for all active/pending students in a student enrollment period.
+     * Skips students who already have an assessment, have no grade level, or have no applicable fees.
+     * Returns a summary message with counts for each outcome.
+     */
     public function generateAssessments(EnrollmentPeriod $period): array
     {
         if ($period->type !== 'student') {
@@ -166,6 +194,11 @@ class EnrollmentPeriodService
         return ['message' => implode(' ', $messages)];
     }
 
+    /**
+     * Runs side effects after a new enrollment period is opened and returns a human-readable summary message.
+     * For student periods: marks current students as pending and auto-promotes eligible ones to the next grade.
+     * For applicant periods: moves exam-passed applicants to enrollment processing.
+     */
     private function afterOpenMessage(EnrollmentPeriod $period, string $baseMessage): string
     {
         if ($period->type === 'student') {
@@ -194,6 +227,10 @@ class EnrollmentPeriodService
         return $baseMessage;
     }
 
+    /**
+     * Generates a single fee assessment for a student, setting the minimum amount to 30% of gross plus any prior balance.
+     * Increments the appropriate skip counter if the student is ineligible.
+     */
     private function generateAssessmentForStudent($student, string $schoolYear, string $semester, array &$counts): void
     {
         if ($this->studentAssessmentRepository->existsForStudentPeriod($student->id, $schoolYear, $semester)) {
@@ -245,6 +282,10 @@ class EnrollmentPeriodService
         $counts['created']++;
     }
 
+    /**
+     * Resolves the number of units for fee calculation by looking up the student's strand program code first,
+     * then falling back to the school-level category (LES/JHS/SHS).
+     */
     private function resolveUnits($student, string $gradeLevel): int
     {
         $strand = $student->application?->strand ?? '';
@@ -259,6 +300,9 @@ class EnrollmentPeriodService
         return $this->programRepository->activeMaxLoadForCode($this->getStudentCategory($gradeLevel));
     }
 
+    /**
+     * Calculates total amounts per fee category, multiplying per-unit fees by the student's unit count.
+     */
     private function feeAmounts($fees, int $units): array
     {
         $feesCol = $fees->map(fn ($fee) => [
@@ -274,11 +318,17 @@ class EnrollmentPeriodService
         ];
     }
 
+    /**
+     * Returns all active fees for the given school year that apply to the student's school level category.
+     */
     private function applicableFees(string $gradeLevel, string $schoolYear)
     {
         return $this->feeRepository->applicableActive($this->getStudentCategory($gradeLevel), $schoolYear);
     }
 
+    /**
+     * Maps a grade level string to its school level category code: 'LES' (Grades 1–6), 'JHS' (Grades 7–10), 'SHS' (Grades 11–12), or 'all'.
+     */
     private function getStudentCategory(string $gradeLevel): string
     {
         if (in_array($gradeLevel, ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])) {

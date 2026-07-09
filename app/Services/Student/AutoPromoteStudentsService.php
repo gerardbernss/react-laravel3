@@ -109,6 +109,11 @@ class AutoPromoteStudentsService
         return ['promoted' => $promoted, 'skipped' => $skipped];
     }
 
+    /**
+     * Returns the next grade level in the K–12 progression.
+     * Returns the same grade when the school year hasn't changed (same-year re-enrollment), or null when the student has reached
+     * the end of a cycle (Grade 10, Grade 12) so the caller can skip them.
+     */
     private function nextGrade(string $currentGrade, string $prevSchoolYear, string $newSchoolYear): ?string
     {
         if ($prevSchoolYear === $newSchoolYear) {
@@ -136,6 +141,9 @@ class AutoPromoteStudentsService
             : null;
     }
 
+    /**
+     * Maps a grade level to its student category: SHS (11–12), JHS (7–10), or LES (Kinder–6).
+     */
     private function getCategory(string $gradeLevel): string
     {
         if (in_array($gradeLevel, ['Grade 11', 'Grade 12'])) {

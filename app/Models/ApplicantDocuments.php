@@ -30,6 +30,9 @@ class ApplicantDocuments extends Model
         'latest_report_card_back',
     ];
 
+    /**
+     * Get the application this document set belongs to.
+     */
     public function application()
     {
         return $this->belongsTo(Applicant::class, 'applicant_id');

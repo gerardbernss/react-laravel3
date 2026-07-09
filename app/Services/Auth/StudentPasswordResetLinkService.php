@@ -18,7 +18,9 @@ class StudentPasswordResetLinkService
     }
 
     /**
-     * @throws \Illuminate\Validation\ValidationException
+     * Sends a password reset link to the student identified by the given email or username.
+     *
+     * @throws ValidationException if no matching student portal account is found
      */
     public function execute(string $emailOrUsername): void
     {

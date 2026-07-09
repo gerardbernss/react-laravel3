@@ -17,8 +17,8 @@ export const TABLE_HEADER_CELL = 'px-4 py-3 text-left text-xs font-medium upperc
 export const TABLE_HEADER_CELL_CENTER = 'px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500';
 export const TABLE_ROW = 'border-b border-gray-200 transition-all hover:bg-slate-50';
 export const TABLE_CELL = 'px-4 py-3';
-export const TABLE_ROW_ACTION = 'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted';
-export const TABLE_ROW_ACTION_DANGER = 'inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50';
+export const TABLE_ROW_ACTION = 'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs hover:bg-muted';
+export const TABLE_ROW_ACTION_DANGER = 'inline-flex items-center gap-1 rounded-full border border-red-200 px-3 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50';
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 export const BADGE_BASE = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium';

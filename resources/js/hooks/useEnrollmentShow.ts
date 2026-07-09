@@ -22,6 +22,7 @@ export interface DiscountType {
     auto_applied: boolean;
 }
 
+/** Calculate the peso discount amount for a discount type based on which fee categories it applies to. */
 export function calcDiscountAmount(dt: DiscountType, tuitionTotal: number, miscTotal: number, grossAmount: number): number {
     const base =
         dt.applies_to === 'tuition_only' ? tuitionTotal
@@ -44,6 +45,10 @@ interface Params {
     discountTypes: DiscountType[];
 }
 
+/**
+ * Manage the enrollment detail page — fee breakdown, discount selection (with stackability rules),
+ * net amount computation, onsite enrollment form, withdrawal dialog, and revert-to-pending action.
+ */
 export function useEnrollmentShow({ applicant, fees, units, discountTypes }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },

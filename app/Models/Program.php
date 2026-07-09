@@ -28,11 +28,17 @@ class Program extends Model
         'Senior High School'           => 'Senior High School',
     ];
 
+    /**
+     * Scope to active programs only.
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope to programs belonging to a specific school level.
+     */
     public function scopeBySchool($query, $school)
     {
         return $query->where('school', $school);

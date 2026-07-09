@@ -6,7 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { CARD, FILTER_CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_HEADER_CELL_CENTER } from '@/constants/ui';
+import {
+    CARD,
+    FILTER_CARD,
+    PAGE_PADDING,
+    PAGE_TITLE,
+    TABLE_HEADER_CELL,
+    TABLE_HEADER_CELL_CENTER,
+    TABLE_ROW_ACTION,
+    TABLE_ROW_ACTION_DANGER,
+} from '@/constants/ui';
 import {
     APPLICANT_COLUMNS,
     getStatusBadgeProps,
@@ -19,7 +28,7 @@ import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Briefcase, CalendarIcon, ChevronDown, ChevronUp, Columns, Download, Eye, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { CalendarIcon, ChevronDown, ChevronUp, Columns, Download, Eye, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
 import { type DropdownNavProps, type DropdownProps } from 'react-day-picker';
 
 interface Props {
@@ -94,32 +103,27 @@ function ApplicantTableRow({ row, visibleColumns, selectedRows, onSelect, onDele
                 </td>
             )}
             <td className="px-4 py-3">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center justify-center gap-1">
                     <Link href={`/admin/applicants/${row.id}/show`}>
-                        <Button variant="outline" size="sm" title="View">
-                            <Eye className="h-4 w-4" />
-                        </Button>
+                        <button className={TABLE_ROW_ACTION}>
+                            <Eye className="h-3 w-3" /> View
+                        </button>
                     </Link>
                     <Link href={`/admin/applicants/${row.id}/edit`}>
-                        <Button variant="outline" size="sm" title="Edit">
-                            <Pencil className="h-4 w-4" />
-                        </Button>
+                        <button className={TABLE_ROW_ACTION}>
+                            <Pencil className="h-3 w-3" /> Edit
+                        </button>
                     </Link>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onDelete(row.id)}
-                        className="text-red-600 hover:text-red-700"
-                        title="Delete"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <button onClick={() => onDelete(row.id)} className={TABLE_ROW_ACTION_DANGER}>
+                        <Trash2 className="h-3 w-3" /> Delete
+                    </button>
                 </div>
             </td>
         </tr>
     );
 }
 
+/** College admissions applicant list for staff — sortable, filterable table with search, date range, strand, and bulk actions. */
 export default function Index({ applications }: Props) {
     const {
         searchQuery, setSearchQuery,
@@ -155,10 +159,7 @@ export default function Index({ applications }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <Briefcase className="h-7 w-7 text-primary" />
-                        <h1 className={PAGE_TITLE}>Evaluation/Assessment</h1>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Evaluation/Assessment</h1>
                     <Link href="/admin/applicants/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />

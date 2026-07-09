@@ -17,16 +17,25 @@ class StudentRawScore extends Model
         'raw_score' => 'float',
     ];
 
+    /**
+     * Get the grade component this score was recorded against.
+     */
     public function gradeComponent(): BelongsTo
     {
         return $this->belongsTo(GradeComponent::class);
     }
 
+    /**
+     * Get the student enrollment subject entry this score belongs to.
+     */
     public function enrollmentSubject(): BelongsTo
     {
         return $this->belongsTo(StudentEnrollmentSubject::class, 'student_enrollment_subject_id');
     }
 
+    /**
+     * Compute the raw score as a percentage of the component's highest possible score, or null if the score is missing.
+     */
     public function getPercentageAttribute(): ?float
     {
         if ($this->raw_score === null || $this->gradeComponent->hps == 0) {

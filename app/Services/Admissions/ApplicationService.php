@@ -30,6 +30,9 @@ class ApplicationService
     ) {
     }
 
+    /**
+     * Returns all applications with their personal data, formatted as flat rows for the admin index table.
+     */
     public function indexData(): array
     {
         $applications = $this->applicationRepository->allWithPersonalData()->map(function (Applicant $application) {
@@ -50,11 +53,17 @@ class ApplicationService
         return ['applications' => $applications];
     }
 
+    /**
+     * Returns whether the system is currently accepting new applications (i.e. an applicant enrollment period is open).
+     */
     public function canAcceptApplications(): bool
     {
         return EnrollmentPeriod::hasOpenApplicationPeriod();
     }
 
+    /**
+     * Checks whether an email is already in use by an existing user account or applicant personal data record.
+     */
     public function checkEmail(string $email): array
     {
         $exists = $this->applicationRepository->userEmailExists($email)
@@ -66,6 +75,10 @@ class ApplicationService
         ];
     }
 
+    /**
+     * Checks whether an application with the same name, date of birth, and school year already exists.
+     * Used to prevent duplicate LES submissions before creating the record.
+     */
     public function isDuplicateApplication(array $data): bool
     {
         $firstName = Str::lower(trim((string) ($data['first_name'] ?? '')));
@@ -81,6 +94,10 @@ class ApplicationService
         );
     }
 
+    /**
+     * Submits a Lower Elementary School application, first checking for a duplicate before creating the record.
+     * Returns ['duplicate' => true] if a matching application exists, or ['duplicate' => false] on success.
+     */
     public function submitLES(array $data, Request $request): array
     {
         if ($this->isDuplicateApplication($data)) {
@@ -92,6 +109,9 @@ class ApplicationService
         return ['duplicate' => false];
     }
 
+    /**
+     * Submits a Junior High School application without a duplicate check.
+     */
     public function submitJHS(array $data, Request $request): array
     {
         $this->submitApplication($data, $request);
@@ -99,6 +119,9 @@ class ApplicationService
         return ['duplicate' => false];
     }
 
+    /**
+     * Submits a Senior High School application without a duplicate check.
+     */
     public function submitSHS(array $data, Request $request): array
     {
         $this->submitApplication($data, $request);
@@ -106,6 +129,11 @@ class ApplicationService
         return ['duplicate' => false];
     }
 
+    /**
+     * Shared six-step application write flow: saves personal data, family background, siblings,
+     * applicant record, educational background, and documents in a single transaction,
+     * then dispatches portal credentials outside the transaction so a mail failure cannot roll back the application.
+     */
     private function submitApplication(array $data, Request $request): void
     {
         $application = DB::transaction(function () use ($data, $request) {
@@ -133,6 +161,10 @@ class ApplicationService
         }
     }
 
+    /**
+     * Creates or updates the applicant's personal data record, deduplicating by email.
+     * Also uploads a doctor's note file if one was included in the request.
+     */
     private function saveApplicantPersonalData(array $data, Request $request): ApplicantPersonalData
     {
         $personalData = $this->applicationRepository->findPersonalDataByEmail($data['email'] ?? null);
@@ -155,6 +187,9 @@ class ApplicationService
         return $personalData;
     }
 
+    /**
+     * Uploads the doctor's note file to public storage using a standardised filename and saves the path on the personal data record.
+     */
     private function storeDoctorsNote(ApplicantPersonalData $personalData, Request $request): void
     {
         $lastName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->last_name));
@@ -166,6 +201,10 @@ class ApplicationService
         $this->applicationRepository->saveDoctorsNotePath($personalData, $path);
     }
 
+    /**
+     * Uploads any submitted document files (COE, birth certificate, report cards) to public storage
+     * using a standardised filename pattern and saves their paths to the application's documents record.
+     */
     private function storeApplicationDocuments(Applicant $application, ApplicantPersonalData $personalData, Request $request): void
     {
         $lastName = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $personalData->last_name));
@@ -193,6 +232,9 @@ class ApplicationService
         }
     }
 
+    /**
+     * Maps raw form data to the column payload for the applicant_personal_data table.
+     */
     private function buildPersonalDataPayload(array $data): array
     {
         return [
@@ -220,13 +262,16 @@ class ApplicationService
             'permanent_city' => $data['permanent_city'] ?? null,
             'permanent_province' => $data['permanent_province'] ?? null,
             'permanent_zip' => $data['permanent_zip'] ?? null,
-            'stopped_studying' => $data['stopped_studying'] ?: 'No',
-            'accelerated' => $data['accelerated'] ?: 'No',
+            'stopped_studying' => $data['stopped_studying'] ?? 'No',
+            'accelerated' => $data['accelerated'] ?? 'No',
             'health_conditions' => $this->formatHealthConditions($data['health_conditions'] ?? null),
             'has_doctors_note' => filter_var($data['has_doctors_note'] ?? null, FILTER_VALIDATE_BOOLEAN),
         ];
     }
 
+    /**
+     * Maps raw form data to the column payload for the applicant_family_backgrounds table.
+     */
     private function buildFamilyPayload(array $data): array
     {
         return [
@@ -283,6 +328,9 @@ class ApplicationService
         ];
     }
 
+    /**
+     * Builds the applicant (application info) row payload, resolving the application number and student category from the year level.
+     */
     private function buildApplicationPayload(array $data, ApplicantPersonalData $personalData): array
     {
         $yearLevel = $data['year_level'] ?? null;
@@ -304,6 +352,9 @@ class ApplicationService
         ];
     }
 
+    /**
+     * Returns a manually provided application number (after a uniqueness check) or auto-generates the next sequential one.
+     */
     private function resolveApplicationNumber(array $data, ?string $yearLevel): string
     {
         if (! empty($data['application_number'])) {
@@ -319,6 +370,9 @@ class ApplicationService
         return $this->generateApplicationNumber($yearLevel);
     }
 
+    /**
+     * Maps a year level string to its student category code: 'LES', 'JHS', 'SHS', or null if unrecognised.
+     */
     private function determineStudentCategory(?string $yearLevel): ?string
     {
         if (in_array($yearLevel, ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'])) {
@@ -336,6 +390,10 @@ class ApplicationService
         return null;
     }
 
+    /**
+     * Returns 'E' for elementary year levels (Grades 1–6, Kinder) or 'H' for high school (Grades 7–12).
+     * Used as the prefix letter in auto-generated application numbers.
+     */
     private function getApplicationPrefixLetter(?string $yearLevel): string
     {
         $normalized = Str::of((string) $yearLevel)->lower()->trim()->__toString();
@@ -365,6 +423,9 @@ class ApplicationService
         return 'E';
     }
 
+    /**
+     * Generates the next sequential application number for a given year level (e.g. E0001, H0042).
+     */
     private function generateApplicationNumber(?string $yearLevel): string
     {
         $letter = $this->getApplicationPrefixLetter($yearLevel);
@@ -376,6 +437,9 @@ class ApplicationService
         return $letter . $numberPart;
     }
 
+    /**
+     * Normalises health condition data for storage: filters empty values, JSON-encodes arrays, and stores 'None' when empty.
+     */
     private function formatHealthConditions($input)
     {
         if (is_array($input)) {
@@ -387,6 +451,9 @@ class ApplicationService
         return ($input === null || $input === '') ? 'None' : $input;
     }
 
+    /**
+     * Accepts either a JSON string or a plain PHP array and always returns an array.
+     */
     private function decodeJsonOrArray($value): array
     {
         $decoded = is_string($value) ? json_decode($value, true) : $value;
@@ -394,6 +461,10 @@ class ApplicationService
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * Creates portal login credentials for a newly submitted applicant and emails them the temporary password.
+     * Silently returns if the applicant has no email address.
+     */
     private function dispatchPortalCredentials(Applicant $applicant): void
     {
         $email = $applicant->personalData?->email;

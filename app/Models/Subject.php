@@ -30,7 +30,7 @@ class Subject extends Model
     ];
 
     /**
-     * Relationships
+     * Get the block sections this subject is assigned to (via block_section_subject pivot).
      */
     public function blockSections()
     {
@@ -38,49 +38,73 @@ class Subject extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get the faculty member assigned to teach this subject.
+     */
     public function faculty()
     {
         return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
 
+    /**
+     * Get all schedules for this subject across all sections.
+     */
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class);
     }
 
+    /**
+     * Get the subject's default schedule — the one not tied to any specific block section.
+     */
     public function defaultSchedule(): HasOne
     {
         return $this->hasOne(Schedule::class)->whereNull('block_section_id');
     }
 
+    /**
+     * Find the schedule entry for this subject in a specific block section, or null if none exists.
+     */
     public function scheduleFor(int $blockSectionId): ?Schedule
     {
         return $this->schedules()->where('block_section_id', $blockSectionId)->first();
     }
 
     /**
-     * Scopes
+     * Scope to active subjects only.
      */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope to subjects for a specific grade level.
+     */
     public function scopeByGradeLevel($query, $gradeLevel)
     {
         return $query->where('grade_level', $gradeLevel);
     }
 
+    /**
+     * Scope to subjects for a specific semester.
+     */
     public function scopeBySemester($query, $semester)
     {
         return $query->where('semester', $semester);
     }
 
+    /**
+     * Scope to subjects of a specific type (e.g. core, elective).
+     */
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
     }
 
+    /**
+     * Scope to subjects for a strand or subjects with no strand restriction (shared across strands).
+     */
     public function scopeByStrand($query, $strand)
     {
         return $query->where(function ($q) use ($strand) {

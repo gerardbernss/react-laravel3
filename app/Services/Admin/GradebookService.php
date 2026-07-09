@@ -12,6 +12,7 @@ use App\Repositories\GradebookRepository;
 use App\Repositories\GradeRepository;
 use App\Repositories\GradeValidationRepository;
 use App\Repositories\ReportRepository;
+use App\Repositories\ScheduleRepository;
 use App\Repositories\SubjectRepository;
 use Illuminate\Support\Facades\DB;
 
@@ -25,9 +26,14 @@ class GradebookService
         private GradeValidationRepository $gradeValidationRepository,
         private ReportRepository $reportRepository,
         private SubjectRepository $subjectRepository,
+        private ScheduleRepository $scheduleRepository,
     ) {
     }
 
+    /**
+     * Returns gradebook index data. Faculty see only their assigned subject-section pairs;
+     * admins see all sections with subject and enrollment counts.
+     */
     public function indexData(?User $user): array
     {
         if ($user && $user->hasRole('faculty')) {
@@ -45,11 +51,19 @@ class GradebookService
         ];
     }
 
+    /**
+     * Returns a per-subject, per-quarter summary for a section: component counts, scored student counts, and validation status.
+     * Faculty members only see their own subjects.
+     */
     public function showData(BlockSection $blockSection, ?User $user): array
     {
         $subjects = $this->gradeValidationRepository->subjectsForSection($blockSection);
         if ($user && $user->hasRole('faculty')) {
-            $subjects = $subjects->where('user_id', $user->id)->values();
+            $subjects = $subjects->filter(function ($subject) use ($blockSection, $user) {
+                $sched = $subject->scheduleFor($blockSection->id) ?? $subject->defaultSchedule;
+
+                return ($sched?->teacher_id ?? $subject->user_id) === $user->id;
+            })->values();
         }
 
         $totalStudents = $this->gradebookRepository->countEnrollmentsForSection($blockSection->id);
@@ -64,9 +78,13 @@ class GradebookService
         ];
     }
 
+    /**
+     * Returns the grade components and their combined weight total for a given subject, section, and quarter.
+     * Aborts with 403 if a faculty member tries to access a subject they are not assigned to.
+     */
     public function componentsData(BlockSection $blockSection, Subject $subject, string $quarter, ?User $user): array
     {
-        $this->authorizeSubjectAccess($subject, $user);
+        $this->authorizeSubjectAccess($subject, $user, $blockSection);
 
         $components = $this->reportRepository->gradeComponents($subject->id, $blockSection->id, $quarter);
 
@@ -76,11 +94,15 @@ class GradebookService
         ];
     }
 
+    /**
+     * Adds a new grade component to a subject-section-quarter, auto-assigning the next display order.
+     * Aborts if the user is not allowed to edit this subject or if the quarter's grades are already locked.
+     */
     public function storeComponent(array $data, ?User $user): void
     {
         $blockSection = $this->gradebookRepository->findBlockSectionOrFail($data['block_section_id']);
         $subject = $this->subjectRepository->findOrFail($data['subject_id']);
-        $this->authorizeSubjectAccess($subject, $user);
+        $this->authorizeSubjectAccess($subject, $user, $blockSection);
         $this->abortIfLocked($blockSection->id, $subject->id, $data['grading_quarter']);
 
         $maxOrder = $this->gradebookRepository->maxComponentOrder($subject->id, $blockSection->id, $data['grading_quarter']);
@@ -93,19 +115,27 @@ class GradebookService
         ]);
     }
 
+    /**
+     * Deletes a grade component.
+     * Aborts if the user is not allowed to edit the subject or if the quarter's grades are already locked.
+     */
     public function deleteComponent(GradeComponent $component, ?User $user): void
     {
         $blockSection = $this->gradebookRepository->findBlockSectionOrFail($component->block_section_id);
         $subject = $this->subjectRepository->findOrFail($component->subject_id);
-        $this->authorizeSubjectAccess($subject, $user);
+        $this->authorizeSubjectAccess($subject, $user, $blockSection);
         $this->abortIfLocked($blockSection->id, $subject->id, $component->grading_quarter);
 
         $this->gradebookRepository->deleteComponent($component);
     }
 
+    /**
+     * Returns the grade entry sheet for a subject-section-quarter: students with their raw scores per component,
+     * attendance counts, and the current validation status with the user's submit/finalize permissions.
+     */
     public function entryData(BlockSection $blockSection, Subject $subject, string $quarter, ?User $user): array
     {
-        $this->authorizeSubjectAccess($subject, $user);
+        $this->authorizeSubjectAccess($subject, $user, $blockSection);
 
         $components = $this->reportRepository->gradeComponents($subject->id, $blockSection->id, $quarter);
         $enrollments = $this->gradebookRepository->enrollmentsForSubjectEntry($blockSection->id, $subject->id);
@@ -130,9 +160,14 @@ class GradebookService
         ];
     }
 
+    /**
+     * Saves raw scores for all students in a subject-quarter, clamping each value to the component's HPS.
+     * After saving, recomputes each affected student's equivalent grade, GWA, and units earned.
+     * Aborts if the quarter is locked or the user lacks access to the subject.
+     */
     public function saveScores(array $scores, BlockSection $blockSection, Subject $subject, string $quarter, ?User $user): void
     {
-        $this->authorizeSubjectAccess($subject, $user);
+        $this->authorizeSubjectAccess($subject, $user, $blockSection);
         $this->abortIfLocked($blockSection->id, $subject->id, $quarter);
 
         $components = $this->gradebookRepository->componentsKeyedById($subject->id, $blockSection->id, $quarter);
@@ -171,25 +206,63 @@ class GradebookService
         });
     }
 
+    /**
+     * Returns all subject-section pairs assigned to a faculty member, formatted for the gradebook index.
+     * Includes subjects owned via subjects.user_id and subjects/sections assigned via schedule.teacher_id.
+     */
     private function mySubjects(int $userId): array
     {
-        $subjects = $this->subjectRepository->facultySubjectsWithSections($userId);
+        $assignedSchedules = $this->scheduleRepository->forTeacher($userId);
+        $assignedSectionSchedules = $assignedSchedules->filter(fn ($sched) => $sched->block_section_id !== null);
 
-        return $subjects->flatMap(function ($subject) {
-            return $subject->blockSections->map(fn ($section) => [
-                'subject_id' => $subject->id,
-                'subject_code' => $subject->code,
-                'subject_name' => $subject->name,
-                'block_section_id' => $section->id,
-                'section_code' => $section->code,
-                'section_name' => $section->name,
-                'grade_level' => $section->grade_level,
-                'school_year' => $section->school_year,
-                'semester' => $section->semester,
-            ]);
-        })->values()->all();
+        $assignedRows = $assignedSectionSchedules->map(fn ($sched) => [
+            'subject_id' => $sched->subject_id,
+            'subject_code' => $sched->subject->code,
+            'subject_name' => $sched->subject->name,
+            'block_section_id' => $sched->block_section_id,
+            'section_code' => $sched->blockSection->code,
+            'section_name' => $sched->blockSection->name,
+            'grade_level' => $sched->blockSection->grade_level,
+            'school_year' => $sched->blockSection->school_year,
+            'semester' => $sched->blockSection->semester,
+        ]);
+
+        $overriddenSectionIdsBySubject = $assignedSectionSchedules
+            ->groupBy('subject_id')
+            ->map(fn ($rows) => $rows->pluck('block_section_id')->all());
+
+        $defaultTaughtSubjectIds = $assignedSchedules
+            ->filter(fn ($sched) => $sched->block_section_id === null)
+            ->pluck('subject_id')
+            ->all();
+
+        $ownedSubjects = $this->subjectRepository->facultySubjectsWithSections($userId, $defaultTaughtSubjectIds);
+
+        $ownedRows = $ownedSubjects->flatMap(function ($subject) use ($overriddenSectionIdsBySubject) {
+            $overriddenSectionIds = $overriddenSectionIdsBySubject[$subject->id] ?? [];
+
+            return $subject->blockSections
+                ->reject(fn ($section) => in_array($section->id, $overriddenSectionIds, true))
+                ->map(fn ($section) => [
+                    'subject_id' => $subject->id,
+                    'subject_code' => $subject->code,
+                    'subject_name' => $subject->name,
+                    'block_section_id' => $section->id,
+                    'section_code' => $section->code,
+                    'section_name' => $section->name,
+                    'grade_level' => $section->grade_level,
+                    'school_year' => $section->school_year,
+                    'semester' => $section->semester,
+                ]);
+        });
+
+        return $ownedRows->concat($assignedRows)->values()->all();
     }
 
+    /**
+     * Builds a summary row for one subject showing, for each quarter, the number of grade components,
+     * how many students have scores, and the current validation status.
+     */
     private function subjectQuarterRow(Subject $subject, BlockSection $blockSection, int $totalStudents): array
     {
         $quarterData = collect(self::QUARTERS)->mapWithKeys(function ($quarter) use ($subject, $blockSection, $totalStudents) {
@@ -220,6 +293,9 @@ class GradebookService
         ];
     }
 
+    /**
+     * Builds one student's row for the grade entry sheet, including their existing raw scores per component and attendance counts.
+     */
     private function entryStudentRow($enrollment, $components, $componentIds, $attendanceRecords): array
     {
         $es = $enrollment->enrollmentSubjects->first();
@@ -250,6 +326,10 @@ class GradebookService
         ];
     }
 
+    /**
+     * Recalculates and saves the equivalent grade for a student's enrollment subject using the formula EG = PS% × 0.5 + 50, clamped to 60–100.
+     * Does nothing if there are no components, no scores, or if the total component weight is zero.
+     */
     private function recomputeEquivalentGrade(StudentEnrollmentSubject $es, int $subjectId, int $blockSectionId): void
     {
         $allComponents = $this->gradebookRepository->componentsWithRawScoresForEs($subjectId, $blockSectionId, $es->id);
@@ -287,13 +367,27 @@ class GradebookService
         $this->gradeRepository->setEnrollmentSubjectGrade($es, round($eg, 2));
     }
 
-    private function authorizeSubjectAccess(Subject $subject, ?User $user): void
+    /**
+     * Aborts with 403 if a faculty member tries to access a subject they are not assigned to teach.
+     * Resolution follows the section's own schedule (or the subject's default schedule) first,
+     * falling back to the subject's own owner (subjects.user_id) if no schedule teacher is set.
+     */
+    private function authorizeSubjectAccess(Subject $subject, ?User $user, ?BlockSection $blockSection = null): void
     {
-        if ($user && $user->hasRole('faculty') && $subject->user_id !== $user->id) {
+        if (! $user || ! $user->hasRole('faculty')) {
+            return;
+        }
+
+        $sched = $blockSection ? ($subject->scheduleFor($blockSection->id) ?? $subject->defaultSchedule) : $subject->defaultSchedule;
+
+        if (($sched?->teacher_id ?? $subject->user_id) !== $user->id) {
             abort(403, 'You are not assigned to this subject.');
         }
     }
 
+    /**
+     * Aborts with 403 if grades for the given subject-section-quarter have been finalized and are no longer editable.
+     */
     private function abortIfLocked(int $blockSectionId, int $subjectId, string $quarter): void
     {
         $validation = $this->gradebookRepository->findValidation($subjectId, $blockSectionId, $quarter);

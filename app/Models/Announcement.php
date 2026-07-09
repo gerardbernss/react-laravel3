@@ -27,11 +27,17 @@ class Announcement extends Model
         'publish_end'   => 'datetime',
     ];
 
+    /**
+     * Get the user who created this announcement.
+     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * Get the user who last updated this announcement.
+     */
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');

@@ -27,6 +27,7 @@ interface Params {
     mySubjects: SubjectEntry[];
 }
 
+/** Paginate the grade validations index for both the all-sections list and the faculty's own subjects list. */
 export function useValidationsIndex({ sections, mySubjects }: Params) {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);

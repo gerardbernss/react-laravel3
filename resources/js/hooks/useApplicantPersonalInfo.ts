@@ -50,6 +50,10 @@ const b = (v: boolean | null | undefined) => v ? 'true' : 'false';
 const blankSibling = (): Sibling => ({ sibling_full_name: '', sibling_grade_level: '', sibling_id_number: '' });
 const blankSchool  = (): School  => ({ school_name: '', school_address: '', from_grade: '', to_grade: '', from_year: '', to_year: '', honors_awards: '', general_average: '', class_rank: '', class_size: '' });
 
+/**
+ * Manage the applicant portal personal info edit form — sectioned navigation with scroll-spy, editable
+ * personal/family/sibling/educational fields, document file uploads, and submission to /applicant/profile.
+ */
 export function useApplicantPersonalInfo({ personalData: pd, familyBackground: fb, siblings: initSiblings, educationalBackground: initSchools }: Params) {
     const { errors, applicationPeriodOpen } = usePage<{ errors: Record<string, string>; applicationPeriodOpen: boolean }>().props;
 

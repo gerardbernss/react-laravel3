@@ -29,6 +29,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     );
 }
 
+/** Admin employee form for creating or updating an employee record with employment type and linked user account. */
 export default function EmployeeForm({ employee, users, employmentTypes }: Props) {
     const { isEdit, breadcrumbs, data, setData, processing, errors, submit } = useEmployeeForm({ employee });
 

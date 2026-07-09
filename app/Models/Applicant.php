@@ -69,59 +69,89 @@ class Applicant extends Model
     ];
     protected $casts = ['application_date' => 'date', 'examination_date' => 'date'];
 
+    /**
+     * Get the shared personal data record (identity) for this applicant.
+     */
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get all prior-school educational background entries for this application.
+     */
     public function educationalBackground()
     {
         return $this->hasMany(ApplicantEducationalBackground::class, 'applicant_id');
     }
 
+    /**
+     * Get the uploaded documents record for this application.
+     */
     public function documents()
     {
         return $this->hasOne(ApplicantDocuments::class, 'applicant_id');
     }
 
+    /**
+     * Get the portal credential issued for this applicant.
+     */
     public function portalCredential()
     {
         return $this->hasOne(PortalCredential::class, 'applicant_id');
     }
 
+    /**
+     * Get the student record created when this applicant was enrolled.
+     */
     public function student()
     {
         return $this->hasOne(Student::class, 'applicant_id');
     }
 
+    /**
+     * Get the fee assessment generated for this applicant.
+     */
     public function assessment()
     {
         return $this->hasOne(ApplicantAssessment::class);
     }
 
+    /**
+     * Get all enrollment audit log entries for this applicant.
+     */
     public function auditLogs()
     {
         return $this->hasMany(EnrollmentAuditLog::class, 'applicant_id');
     }
 
+    /**
+     * Get the exam schedule assignment for this applicant.
+     */
     public function examAssignment()
     {
         return $this->hasOne(ApplicantExamAssignment::class, 'applicant_id');
     }
 
     /**
-     * Scopes
+     * Scope to enrolled applicants.
      */
     public function scopeEnrolled($query)
     {
         return $query->where('application_status', 'Enrolled');
     }
 
+    /**
+     * Scope to applicants with a pending application status.
+     */
     public function scopePending($query)
     {
         return $query->where('application_status', 'Pending');
     }
 
+    /**
+     * Scope to applicants who have sat the entrance exam.
+     */
     public function scopeExamTaken($query)
     {
         return $query->where('application_status', 'Exam Taken');

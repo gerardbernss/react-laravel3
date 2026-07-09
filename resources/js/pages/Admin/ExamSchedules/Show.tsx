@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
+import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, TABLE_ROW_ACTION_DANGER } from '@/constants/ui';
 import { type AvailableApplicant, type Schedule, useExamScheduleShow } from '@/hooks/useExamScheduleShow';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
@@ -34,18 +34,27 @@ function formatTime(time: string) {
     return `${h % 12 || 12}:${minutes} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
+/** Admin exam schedule detail page showing assigned applicants with the ability to add more from the available pool. */
 export default function Show({ schedule, availableApplicants }: Props) {
     const {
         breadcrumbs,
         deleting,
-        showDeleteDialog, setShowDeleteDialog,
-        removeDialog, setRemoveDialog,
-        search, setSearch,
-        statusFilter, setStatusFilter,
-        currentPage, setCurrentPage,
-        pageSize, setPageSize,
-        assignOpen, setAssignOpen,
-        modalSearch, setModalSearch,
+        showDeleteDialog,
+        setShowDeleteDialog,
+        removeDialog,
+        setRemoveDialog,
+        search,
+        setSearch,
+        statusFilter,
+        setStatusFilter,
+        currentPage,
+        setCurrentPage,
+        pageSize,
+        setPageSize,
+        assignOpen,
+        setAssignOpen,
+        modalSearch,
+        setModalSearch,
         selected,
         submitting,
         assignError,
@@ -78,9 +87,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-3">
                         <h1 className={PAGE_TITLE}>{schedule.name}</h1>
-                        <AppBadge status={schedule.is_active ? 'active' : 'inactive'}>
-                            {schedule.is_active ? 'Active' : 'Inactive'}
-                        </AppBadge>
+                        <AppBadge status={schedule.is_active ? 'active' : 'inactive'}>{schedule.is_active ? 'Active' : 'Inactive'}</AppBadge>
                         <Badge variant="outline">{schedule.exam_type}</Badge>
                     </div>
                     <div className="flex shrink-0 gap-2">
@@ -104,7 +111,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                     </div>
                 </div>
 
-                <div className={`mt-4 ${CARD} px-4 py-3`}>
+                <div className="mt-4 px-4 py-3">
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                         <div className="flex items-center gap-1.5 text-gray-600">
                             <Calendar className="h-3.5 w-3.5 shrink-0 text-gray-400" />
@@ -117,9 +124,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                         <div className="flex items-center gap-1.5 text-gray-600">
                             <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" />
                             {schedule.examination_room?.name}
-                            {schedule.examination_room?.building && (
-                                <span className="text-gray-400"> · {schedule.examination_room.building}</span>
-                            )}
+                            {schedule.examination_room?.building && <span className="text-gray-400"> · {schedule.examination_room.building}</span>}
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-600">
                             <Users className="h-3.5 w-3.5 shrink-0 text-gray-400" />
@@ -138,58 +143,51 @@ export default function Show({ schedule, availableApplicants }: Props) {
                     </div>
                 </div>
 
-                <div className={`mt-6 overflow-hidden ${CARD}`}>
-                    <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <h2 className="flex items-center gap-2 font-semibold text-gray-900">
-                            <Users className="h-4 w-4" />
-                            Assigned Applicants
-                            <span className="text-sm font-normal text-gray-500">({assignedCount})</span>
-                        </h2>
-                        <div className="flex flex-wrap gap-2">
-                            <input
-                                type="text"
-                                placeholder="Search by name or app #…"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="h-9 rounded-lg border border-gray-300 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                            />
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="h-9 rounded-lg border border-gray-300 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                            >
-                                <option value="">All Statuses</option>
-                                <option value="assigned">Assigned</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="attended">Attended</option>
-                                <option value="absent">Absent</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                            {(search || statusFilter) && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearch('');
-                                        setStatusFilter('');
-                                    }}
-                                >
-                                    Clear
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                <div className="mt-4 mb-6 flex flex-wrap items-end gap-2">
+                    <input
+                        type="text"
+                        placeholder="Search by name or app #…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-9 rounded-lg border border-gray-300 px-3 text-sm focus:ring-1 focus:ring-primary focus:outline-none"
+                    />
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="h-9 rounded-lg border border-gray-300 px-3 text-sm focus:ring-1 focus:ring-primary focus:outline-none"
+                    >
+                        <option value="">All Statuses</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="attended">Attended</option>
+                        <option value="absent">Absent</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    {(search || statusFilter) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setSearch('');
+                                setStatusFilter('');
+                            }}
+                        >
+                            Clear
+                        </Button>
+                    )}
+                </div>
 
+                <div className={`overflow-hidden ${CARD}`}>
                     <div className="max-h-[70vh] overflow-x-auto overflow-y-auto">
                         <table className="w-full text-sm">
                             <thead className="sticky top-0 z-10 bg-gray-50">
                                 <tr>
-                                    <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
-                                    <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Application #</th>
-                                    <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                                    <th className="px-5 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                    <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Assigned At</th>
-                                    <th className="px-5 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">#</th>
+                                    <th className="px-5 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Application #</th>
+                                    <th className="px-5 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Name</th>
+                                    <th className="px-5 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Status</th>
+                                    <th className="px-5 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Assigned At</th>
+                                    <th className="px-5 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -215,10 +213,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                                 })}
                                             </td>
                                             <td className="px-5 py-3 text-center">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                <button
                                                     onClick={() =>
                                                         setRemoveDialog({
                                                             open: true,
@@ -226,9 +221,10 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                                             name: `${assignment.application_info?.personal_data?.last_name}, ${assignment.application_info?.personal_data?.first_name}`,
                                                         })
                                                     }
+                                                    className={TABLE_ROW_ACTION_DANGER}
                                                 >
-                                                    <UserMinus className="h-4 w-4" />
-                                                </Button>
+                                                    <UserMinus className="h-3 w-3" /> Remove
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
@@ -237,7 +233,9 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                         <td colSpan={6} className="px-5 py-14 text-center">
                                             <Users className="mx-auto h-10 w-10 text-gray-300" />
                                             <p className={`mt-2 ${BODY_TEXT}`}>
-                                                {search || statusFilter ? 'No applicants match your filters.' : 'No applicants assigned to this schedule yet.'}
+                                                {search || statusFilter
+                                                    ? 'No applicants match your filters.'
+                                                    : 'No applicants assigned to this schedule yet.'}
                                             </p>
                                             {!search && !statusFilter && (
                                                 <Button size="sm" className="mt-4" onClick={openAssign} disabled={availableApplicants.length === 0}>
@@ -277,13 +275,13 @@ export default function Show({ schedule, availableApplicants }: Props) {
 
                     <div className="border-b px-6 py-3">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
                                 placeholder="Search by name or application #…"
                                 value={modalSearch}
                                 onChange={(e) => setModalSearch(e.target.value)}
-                                className="h-9 w-full rounded-lg border border-gray-300 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                className="h-9 w-full rounded-lg border border-gray-300 pr-3 pl-9 text-sm focus:ring-1 focus:ring-primary focus:outline-none"
                                 autoFocus
                             />
                         </div>
@@ -308,9 +306,11 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                             className="h-4 w-4 rounded border-gray-300 accent-primary"
                                         />
                                     </th>
-                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Application #</th>
-                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                                    <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                                        Application #
+                                    </th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Name</th>
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">

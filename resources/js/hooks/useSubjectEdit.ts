@@ -13,13 +13,13 @@ export interface Subject {
     semester: string | null;
     user_id: number | null;
     is_active: boolean;
-    default_schedule: { days: string; time: string; room: string | null } | null;
 }
 
 interface Params {
     subject: Subject;
 }
 
+/** Manage the subject edit form with breadcrumb trail, PUTting to /admin/subjects/:id. */
 export function useSubjectEdit({ subject }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -36,9 +36,6 @@ export function useSubjectEdit({ subject }: Params) {
         type: subject.type,
         grade_level: subject.grade_level ?? '',
         semester: subject.semester ?? '',
-        days: subject.default_schedule?.days ?? '',
-        time: subject.default_schedule?.time ?? '',
-        room: subject.default_schedule?.room ?? '',
         user_id: subject.user_id as number | null,
         is_active: subject.is_active,
     });

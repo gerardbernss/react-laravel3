@@ -32,6 +32,7 @@ interface Props {
     auditLogs: AuditLog[];
 }
 
+/** Enrollment audit log page for a single applicant showing a paginated history of status and payment changes. */
 export default function AuditLog({ applicant, auditLogs }: Props) {
     const { breadcrumbs, currentPage, setCurrentPage, pageSize, paginatedLogs, handlePageSizeChange } =
         useEnrollmentAuditLog({ applicant, auditLogs });
@@ -61,11 +62,9 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
                         </p>
                         <p className="text-sm text-gray-500">Application #: {applicant.application_number}</p>
                     </div>
-                    <Link href={`/admin/enrollment/${applicant.id}`}>
-                        <Button variant="outline">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Details
-                        </Button>
+                    <Link href={`/admin/enrollment/${applicant.id}`} className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Details
                     </Link>
                 </div>
 

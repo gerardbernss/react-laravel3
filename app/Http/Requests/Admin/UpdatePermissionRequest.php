@@ -19,6 +19,7 @@ class UpdatePermissionRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255', 'unique:permissions,name,'.$this->route('permission')->id],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:permissions,slug,'.$this->route('permission')->id, 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'description' => ['nullable', 'string'],
         ];
     }

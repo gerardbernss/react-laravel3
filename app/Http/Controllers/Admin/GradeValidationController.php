@@ -18,6 +18,9 @@ class GradeValidationController extends Controller
     {
     }
 
+    /**
+     * List sections pending grade validation — faculty see only their sections, admins see all.
+     */
     public function index()
     {
         $data = $this->gradeValidationService->indexData(auth()->user());
@@ -25,6 +28,9 @@ class GradeValidationController extends Controller
         return Inertia::render('Admin/Gradebook/Validations/Index', $data);
     }
 
+    /**
+     * Show the validation status of each subject and quarter for a section.
+     */
     public function show(BlockSection $blockSection)
     {
         $data = $this->gradeValidationService->showData($blockSection, auth()->user());
@@ -44,6 +50,9 @@ class GradeValidationController extends Controller
         ]);
     }
 
+    /**
+     * Submit grades for a subject and quarter for admin validation — returns 404 for invalid quarter values.
+     */
     public function submit(BlockSection $blockSection, Subject $subject, string $quarter)
     {
         abort_unless(in_array($quarter, self::QUARTERS), 404);
@@ -53,6 +62,9 @@ class GradeValidationController extends Controller
         return back()->with('success', 'Grades submitted for validation.');
     }
 
+    /**
+     * Finalize a submitted grade validation, locking the grades from further edits.
+     */
     public function finalize(GradeValidation $gradeValidation)
     {
         $this->gradeValidationService->finalize($gradeValidation, auth()->user());
@@ -60,6 +72,9 @@ class GradeValidationController extends Controller
         return back()->with('success', 'Grades finalized.');
     }
 
+    /**
+     * Reject a submitted grade validation and return it to the faculty with a reason for revision.
+     */
     public function reject(RejectGradeValidationRequest $request, GradeValidation $gradeValidation)
     {
         $this->gradeValidationService->reject($gradeValidation, $request->validated('rejection_reason'));

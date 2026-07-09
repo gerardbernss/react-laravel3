@@ -42,6 +42,7 @@ interface Params {
     students: Student[];
 }
 
+/** Paginate the student roster for a faculty's block section and compose the section label. */
 export function useMyStudentsShow({ blockSection, students }: Params) {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);

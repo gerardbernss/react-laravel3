@@ -24,6 +24,7 @@ interface Props {
     availableStudents: AvailableStudent[];
 }
 
+/** Admin block section detail page showing enrolled students and allowing student enrolment or removal. */
 export default function Show({ blockSection, enrolledStudents, availableStudents }: Props) {
     const {
         processing,

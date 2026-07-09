@@ -32,11 +32,17 @@ class StudentPayment extends Model
         'maya'          => 'Maya',
     ];
 
+    /**
+     * Get the assessment this payment was applied to.
+     */
     public function assessment()
     {
         return $this->belongsTo(StudentAssessment::class, 'assessment_id');
     }
 
+    /**
+     * Get the admin user who recorded this payment.
+     */
     public function processedBy()
     {
         return $this->belongsTo(User::class, 'processed_by');

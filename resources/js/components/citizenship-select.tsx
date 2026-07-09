@@ -14,6 +14,7 @@ interface CitizenshipSelectProps {
     disabled?: boolean;
 }
 
+/** Searchable combobox for selecting a citizenship value; falls back to allowing free-text entry when the typed value does not match any option. */
 export function CitizenshipSelect({ value, onChange, placeholder = 'Select citizenship', disabled }: CitizenshipSelectProps) {
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');

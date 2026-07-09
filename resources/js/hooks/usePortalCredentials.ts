@@ -20,6 +20,10 @@ export interface Credential {
 
 export type CredentialSortKey = 'name' | 'username' | 'status' | 'last_login_at' | 'credentials_sent_at';
 
+/**
+ * Filter, sort, and paginate the portal credentials list; handles sending initial
+ * credentials and resending them via Inertia router.
+ */
 export function usePortalCredentials(credentials: Credential[]) {
     const [sendDialogOpen, setSendDialogOpen] = useState(false);
     const [resendDialogOpen, setResendDialogOpen] = useState(false);

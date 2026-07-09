@@ -126,6 +126,7 @@ function PermissionTableRow({ permission, visibleColumns, isSelected, processing
     );
 }
 
+/** Admin permissions list with search, sort, and delete actions. */
 export default function Index() {
     const { flash, permissions } = usePage().props as unknown as PageProps;
     const { hasPermission } = usePermissions();
@@ -190,7 +191,7 @@ export default function Index() {
                     </Alert>
                 )}
 
-                <div className={`${CARD} p-6`}>
+                <div>
                     <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
                         <div className="flex-1 md:max-w-sm">
                             <label className={`mb-1 block ${LABEL_TEXT}`}>Search</label>

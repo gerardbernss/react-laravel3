@@ -1,3 +1,4 @@
+/** Small section heading with an optional muted description line. */
 export default function HeadingSmall({ title, description }: { title: string; description?: string }) {
     return (
         <header>

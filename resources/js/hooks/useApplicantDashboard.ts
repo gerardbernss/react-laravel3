@@ -15,6 +15,10 @@ interface Params {
     examSchedule: ExamSchedule | null;
 }
 
+/**
+ * Drive the applicant portal dashboard — derive application status flags and compose a human-readable
+ * status label, and manage accordion open state for announcements.
+ */
 export function useApplicantDashboard({ application, examSchedule }: Params) {
     const { currentSemester } = usePage<{
         currentSemester?: { name: string | null; school_year: string | null };

@@ -8,6 +8,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Repositories\AttendanceRepository;
 use App\Repositories\DashboardRepository;
+use App\Repositories\ScheduleRepository;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -27,19 +28,45 @@ class DashboardService
     public function __construct(
         private DashboardRepository $dashboardRepository,
         private AttendanceRepository $attendanceRepository,
+        private ScheduleRepository $scheduleRepository,
     ) {
     }
 
+    /**
+     * Returns dashboard data for a faculty member: today's classes with enrollment and attendance stats.
+     * Admin-only fields (stats, charts, announcements) are returned as empty placeholders.
+     * Includes subjects owned via subjects.user_id and subjects/sections assigned via schedule.teacher_id.
+     */
     public function facultyDashboardData(User $user): array
     {
         $today = now()->toDateString();
-        $subjects = $this->dashboardRepository->facultySubjectsWithSections($user->id);
 
-        $myClasses = $subjects
-            ->flatMap(fn ($subject) => $subject->blockSections->map(
-                fn ($section) => $this->buildClassCard($subject, $section, $today)
-            ))
-            ->values();
+        $assignedSchedules = $this->scheduleRepository->forTeacher($user->id);
+        $assignedSectionSchedules = $assignedSchedules->filter(fn ($sched) => $sched->block_section_id !== null);
+
+        $assignedClasses = $assignedSectionSchedules
+            ->map(fn ($sched) => $this->buildClassCard($sched->subject, $sched->blockSection, $today));
+
+        $overriddenSectionIdsBySubject = $assignedSectionSchedules
+            ->groupBy('subject_id')
+            ->map(fn ($rows) => $rows->pluck('block_section_id')->all());
+
+        $defaultTaughtSubjectIds = $assignedSchedules
+            ->filter(fn ($sched) => $sched->block_section_id === null)
+            ->pluck('subject_id')
+            ->all();
+
+        $subjects = $this->dashboardRepository->facultySubjectsWithSections($user->id, $defaultTaughtSubjectIds);
+
+        $ownedClasses = $subjects->flatMap(function ($subject) use ($today, $overriddenSectionIdsBySubject) {
+            $overriddenSectionIds = $overriddenSectionIdsBySubject[$subject->id] ?? [];
+
+            return $subject->blockSections
+                ->reject(fn ($section) => in_array($section->id, $overriddenSectionIds, true))
+                ->map(fn ($section) => $this->buildClassCard($subject, $section, $today));
+        });
+
+        $myClasses = $ownedClasses->concat($assignedClasses)->values();
 
         return [
             'isFaculty' => true,
@@ -55,6 +82,11 @@ class DashboardService
         ];
     }
 
+    /**
+     * Returns the full admin dashboard payload: applicant stats, status/category breakdowns,
+     * monthly application and enrollment charts, enrollment by grade level, and recent announcements.
+     * All data is scoped to the currently active enrollment period.
+     */
     public function adminDashboardData(): array
     {
         $currentPeriod = EnrollmentPeriod::current();
@@ -77,17 +109,22 @@ class DashboardService
         ];
     }
 
+    /**
+     * Builds a summary card for one of a faculty member's classes, including enrollment count,
+     * graded count, and today's attendance snapshot.
+     */
     private function buildClassCard(Subject $subject, BlockSection $section, string $today): array
     {
         $enrolledCount = $this->dashboardRepository->countEnrollmentSubjects($subject->id, $section->id);
         $gradedCount = $this->dashboardRepository->countEnrollmentSubjects($subject->id, $section->id, true);
         $todayStats = $this->attendanceRepository->todayAttendanceStats($subject->id, $section->id, $today);
+        $sched = $subject->scheduleFor($section->id) ?? $subject->defaultSchedule;
 
         return [
             'subject_id' => $subject->id,
             'subject_code' => $subject->code,
             'subject_name' => $subject->name,
-            'subject_schedule' => $subject->schedule,
+            'subject_schedule' => $sched?->display,
             'block_section_id' => $section->id,
             'section_code' => $section->code,
             'section_name' => $section->name,
@@ -99,6 +136,9 @@ class DashboardService
         ];
     }
 
+    /**
+     * Returns applicant and student counts for the current enrollment period.
+     */
     private function buildStats(callable $periodScope): array
     {
         return [
@@ -112,6 +152,9 @@ class DashboardService
         ];
     }
 
+    /**
+     * Returns applicant counts grouped by application status (e.g. Pending, For Exam, Enrolled).
+     */
     private function buildStatusBreakdown(callable $periodScope): array
     {
         return $this->dashboardRepository->statusBreakdownRows($periodScope)
@@ -119,6 +162,9 @@ class DashboardService
             ->toArray();
     }
 
+    /**
+     * Returns applicant counts grouped by student category (e.g. New, Transferee, Returnee).
+     */
     private function buildCategoryBreakdown(callable $periodScope): array
     {
         return $this->dashboardRepository->categoryBreakdownRows($periodScope)
@@ -126,6 +172,9 @@ class DashboardService
             ->toArray();
     }
 
+    /**
+     * Returns new application counts for each of the last 6 months, for the monthly applications chart.
+     */
     private function buildMonthlyApplications(callable $periodScope): array
     {
         $rows = [];
@@ -140,6 +189,9 @@ class DashboardService
         return $rows;
     }
 
+    /**
+     * Returns enrollment counts for each of the last 6 months, for the monthly enrollments chart.
+     */
     private function buildMonthlyEnrollments(callable $periodScope): array
     {
         $rows = [];
@@ -154,6 +206,12 @@ class DashboardService
         return $rows;
     }
 
+    /**
+     * Returns enrollment vs. capacity data for every grade level and strand combination.
+     * Rows from block sections are merged with a fixed list of expected combos so all grades always appear,
+     * even if no sections have been configured yet for that school year.
+     * Strands like 'Laboratory Elementary School' are treated as no-strand (elementary/JHS) rows.
+     */
     private function buildEnrollmentByGrade(?string $schoolYear = null): array
     {
         $normalizeStrand = fn (?string $strand) => in_array($strand, self::NO_STRAND_LABELS) ? null : $strand;
@@ -201,6 +259,10 @@ class DashboardService
             ->toArray();
     }
 
+    /**
+     * Returns the full list of expected grade/strand combinations used to fill gaps in the enrollment chart.
+     * Covers Grades 1–10 (no strand) and Grades 11–12 (one row per SHS strand).
+     */
     private function expectedGradeStrandCombos()
     {
         $expected = collect();
@@ -220,6 +282,9 @@ class DashboardService
         return $expected;
     }
 
+    /**
+     * Returns the 5 most recently active announcements for the dashboard notice board.
+     */
     private function buildAnnouncements(): array
     {
         return $this->dashboardRepository->activeAnnouncements(5)

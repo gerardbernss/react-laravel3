@@ -70,6 +70,11 @@ function computeGrade(scores: Record<number, string>, components: GradeComponent
     return { ps: Math.round(ps * 100) / 100, eg: Math.round(eg * 100) / 100 };
 }
 
+/**
+ * Manage the grade score entry grid — track unsaved score edits, auto-compute percentage
+ * score and equivalent grade, and handle save, submit-for-validation, finalize, and reject
+ * workflows for a subject/quarter/section.
+ */
 export function useGradebookEntry({ blockSection, subject, quarter, components, students, weightTotal, validationStatus, validationId }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

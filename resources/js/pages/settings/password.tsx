@@ -20,6 +20,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+/** User settings page for updating the account password. */
 export default function Password() {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);

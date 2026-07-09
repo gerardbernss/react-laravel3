@@ -7,6 +7,7 @@ import { type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { ChevronsUpDown } from 'lucide-react';
 
+/** Sidebar bottom-area user menu button showing the authenticated user's avatar and name, opening a dropdown with settings and logout links. */
 export function NavUser() {
     const { auth } = usePage<SharedData>().props;
     const { state } = useSidebar();

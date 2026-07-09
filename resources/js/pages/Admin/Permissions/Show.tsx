@@ -21,6 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Permission Details', href: '/admin/permissions/show' },
 ];
 
+/** Admin permission detail page showing the permission name and the roles it is assigned to. */
 export default function Show({ permission }: Props) {
     const { hasPermission } = usePermissions();
     const { processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = usePermissionShow({ permission });
@@ -31,11 +32,9 @@ export default function Show({ permission }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/permissions">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Permissions
-                        </Button>
+                    <Link href="/admin/permissions" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Permissions
                     </Link>
                     <div className="flex items-center gap-2">
                         <Key className="h-5 w-5" />

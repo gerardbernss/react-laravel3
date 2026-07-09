@@ -23,6 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create New User', href: users.create.url() },
 ];
 
+/** Admin user create form with role checkbox assignment. */
 export default function Create({ roles }: Props) {
     const { hideAlert, setHideAlert, data, setData, processing, errors, handleSubmit, handleRoleChange } = useUserCreate();
 
@@ -32,11 +33,9 @@ export default function Create({ roles }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/users">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Users
-                        </Button>
+                    <Link href="/admin/users" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Users
                     </Link>
                     <div className="flex items-center gap-2">
                         <UserPlus className="h-5 w-5" />

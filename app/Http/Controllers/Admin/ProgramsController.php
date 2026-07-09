@@ -18,6 +18,9 @@ class ProgramsController extends Controller
     ) {
     }
 
+    /**
+     * List all programs ordered by code.
+     */
     public function index()
     {
         return Inertia::render('Admin/Programs/Index', [
@@ -26,6 +29,9 @@ class ProgramsController extends Controller
         ]);
     }
 
+    /**
+     * Show the create program form.
+     */
     public function create()
     {
         return Inertia::render('Admin/Programs/Create', [
@@ -33,6 +39,9 @@ class ProgramsController extends Controller
         ]);
     }
 
+    /**
+     * Save a new program.
+     */
     public function store(StoreProgramRequest $request)
     {
         $this->programService->create($request->validated());
@@ -41,6 +50,9 @@ class ProgramsController extends Controller
             ->with('success', 'Program created successfully.');
     }
 
+    /**
+     * Show the edit form for an existing program.
+     */
     public function edit(Program $program)
     {
         return Inertia::render('Admin/Programs/Edit', [
@@ -49,6 +61,9 @@ class ProgramsController extends Controller
         ]);
     }
 
+    /**
+     * Update an existing program's details.
+     */
     public function update(UpdateProgramRequest $request, Program $program)
     {
         $this->programService->update($program, $request->validated());
@@ -57,6 +72,9 @@ class ProgramsController extends Controller
             ->with('success', 'Program updated successfully.');
     }
 
+    /**
+     * Delete a program.
+     */
     public function destroy(Program $program)
     {
         $this->programRepository->delete($program);
@@ -65,6 +83,9 @@ class ProgramsController extends Controller
             ->with('success', 'Program deleted successfully.');
     }
 
+    /**
+     * Toggle the active/inactive status of a program.
+     */
     public function toggleStatus(Program $program)
     {
         $this->programService->toggleStatus($program);

@@ -16,6 +16,11 @@ class PortalCredentialService
     {
     }
 
+    /**
+     * Creates portal credentials for an applicant using their email as the username,
+     * generates a random temporary password, and emails the credentials to them.
+     * Returns an error array if the applicant has no email or credentials already exist.
+     */
     public function store(array $validated, ?int $userId): array
     {
         $personalData = $this->portalCredentialRepository->findPersonalDataOrFail($validated['applicant_personal_data_id']);
@@ -46,6 +51,10 @@ class PortalCredentialService
         return ['credential' => $credential];
     }
 
+    /**
+     * Generates a new temporary password for an existing credential and emails it to the applicant.
+     * Returns a success/failure result array.
+     */
     public function send(PortalCredential $credential): array
     {
         if (! $credential->personalData || ! $credential->personalData->email) {
@@ -72,6 +81,9 @@ class PortalCredentialService
         }
     }
 
+    /**
+     * Generates a fresh temporary password, increments the resend counter, and re-emails the credentials to the applicant.
+     */
     public function resend(PortalCredential $credential): array
     {
         try {
@@ -97,21 +109,26 @@ class PortalCredentialService
         }
     }
 
+    /**
+     * Suspends portal access for a credential and resets the login attempt counter.
+     */
     public function suspend(PortalCredential $credential): void
     {
         $this->portalCredentialRepository->update($credential, ['access_status' => 'Suspended', 'login_attempts' => 0]);
     }
 
+    /**
+     * Restores portal access for a suspended credential and resets the login attempt counter.
+     */
     public function reactivate(PortalCredential $credential): void
     {
         $this->portalCredentialRepository->update($credential, ['access_status' => 'Active', 'login_attempts' => 0]);
     }
 
-    public function statistics(): array
-    {
-        return $this->portalCredentialRepository->statistics();
-    }
-
+    /**
+     * Emails the initial portal login credentials to the applicant and records the sent timestamp.
+     * Silently logs and swallows any mail failure so the credential creation itself is not rolled back.
+     */
     private function sendInitialCredentials(PortalCredential $credential, string $temporaryPassword): void
     {
         try {

@@ -8,6 +8,11 @@ use Illuminate\Validation\ValidationException;
 
 class PasswordConfirmationService
 {
+    /**
+     * Checks that the logged-in user's password is correct, then marks the session as password-confirmed.
+     *
+     * @throws ValidationException if the password is wrong
+     */
     public function execute(Request $request): void
     {
         if (! Auth::guard('web')->validate([

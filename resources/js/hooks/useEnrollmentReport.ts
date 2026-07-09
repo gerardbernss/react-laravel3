@@ -11,6 +11,7 @@ interface Params {
     filters: Filters;
 }
 
+/** Apply enrollment report filters (status, category, school year) via Inertia navigation to /admin/enrollment/report. */
 export function useEnrollmentReport({ filters }: Params) {
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
     const [categoryFilter, setCategoryFilter] = useState(filters.category ?? 'all');

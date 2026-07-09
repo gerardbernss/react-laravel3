@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Option } from './use-provinces';
 
+/** Fetch cities and municipalities for a province from the PSGC API; NCR uses the region endpoint directly. */
 export function useCities(provinceCode?: string) {
     const [cities, setCities] = useState<Option[]>([]);
     const [loading, setLoading] = useState(false);

@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
+/** Manage the program create form, posting to /admin/programs. */
 export function useProgramCreate() {
     const { data, setData, post, processing, errors } = useForm({
         code: '',

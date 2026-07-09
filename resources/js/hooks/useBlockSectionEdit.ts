@@ -36,6 +36,10 @@ interface Params {
     subjects: Subject[];
 }
 
+/**
+ * Manage the block section edit form with dynamic subject assignment —
+ * filters incompatible-semester subjects and PUTs to /admin/block-sections/:id.
+ */
 export function useBlockSectionEdit({ blockSection, subjects }: Params) {
     const initialAssigned: SubjectAssignment[] = blockSection.subjects.map((s) => ({ subject_id: s.id }));
 

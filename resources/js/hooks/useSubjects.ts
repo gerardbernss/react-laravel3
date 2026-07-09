@@ -10,13 +10,13 @@ export interface Subject {
     type: string;
     grade_level: string | null;
     semester: string | null;
-    default_schedule: { display: string; room: string | null } | null;
     is_active: boolean;
     created_at: string;
 }
 
 export type SubjectSortKey = 'code' | 'name' | 'type' | 'units' | 'grade_level' | 'status';
 
+/** Filter, sort, and paginate the subjects list, and delete a subject via Inertia. */
 export function useSubjects(subjects: Subject[]) {
     const { delete: destroy, processing } = useForm();
 

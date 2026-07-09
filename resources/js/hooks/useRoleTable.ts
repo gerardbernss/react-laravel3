@@ -18,6 +18,10 @@ const DEFAULT_VISIBLE: ColumnKey[] = [
     'id', 'name', 'description', 'is_active', 'permissions', 'users', 'created_at', 'actions',
 ];
 
+/**
+ * Manage the roles index table with search, sort, pagination, column visibility,
+ * row selection, bulk delete, and CSV export.
+ */
 export function useRoleTable(roles: Role[]) {
     const { processing, delete: destroy } = useForm();
 

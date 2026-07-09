@@ -44,6 +44,7 @@ function formatDate(dateStr: string): string {
     });
 }
 
+/** Admin attendance sheet for a block section — records daily present/absent/late status per student for a selected subject and date. */
 export default function Sheet({ blockSection, students, selectedDate, selectedSubjectId, subjects, missedDates }: Props) {
     const {
         changes,
@@ -72,7 +73,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                     <div className="mb-4 flex items-center gap-4">
                         <Link
                             href={blockSection.grade_level ? `/teacher/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/teacher/attendance'}
-                            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+                            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
                         >
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Back

@@ -16,6 +16,9 @@ class RoleService
     ) {
     }
 
+    /**
+     * Creates a new role with an auto-generated slug and optionally assigns the given permissions to it.
+     */
     public function create(array $data): Role
     {
         return DB::transaction(function () use ($data) {
@@ -34,6 +37,9 @@ class RoleService
         });
     }
 
+    /**
+     * Updates a role's details and re-syncs its permissions in a single transaction.
+     */
     public function update(Role $role, array $data): void
     {
         DB::transaction(function () use ($role, $data) {
@@ -50,11 +56,17 @@ class RoleService
         });
     }
 
+    /**
+     * Grants a single permission to a role.
+     */
     public function assignPermission(Role $role, int $permissionId): void
     {
         $this->roleRepository->givePermissionTo($role, $this->permissionRepository->findOrFail($permissionId));
     }
 
+    /**
+     * Revokes a single permission from a role.
+     */
     public function removePermission(Role $role, int $permissionId): void
     {
         $this->roleRepository->revokePermissionTo($role, $this->permissionRepository->findOrFail($permissionId));

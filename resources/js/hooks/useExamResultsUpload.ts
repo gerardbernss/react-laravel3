@@ -10,6 +10,10 @@ interface Params {
     importConflicts?: Conflict[] | null;
 }
 
+/**
+ * Manage exam results CSV upload — initial file submission to /admin/exam-results/upload and conflict
+ * resolution (overwrite or skip) via /admin/exam-results/upload/confirm.
+ */
 export function useExamResultsUpload({ importConflicts }: Params) {
     const { data, setData, post, processing, errors } = useForm<{ file: File | null }>({ file: null });
     const inputRef = useRef<HTMLInputElement>(null);

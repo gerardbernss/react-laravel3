@@ -13,6 +13,7 @@ interface StudentLoginProps {
     status?: string;
 }
 
+/** Student portal login page with email and password fields and a password visibility toggle. */
 export default function StudentLogin({ status }: StudentLoginProps) {
     const { showPassword, setShowPassword, data, setData, processing, errors, submit } = useStudentLogin();
 

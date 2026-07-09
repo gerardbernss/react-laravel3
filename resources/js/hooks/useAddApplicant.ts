@@ -8,6 +8,11 @@ import { toast } from 'sonner';
 
 type PsgcItem = { code: string; name: string };
 
+/**
+ * Manage the full add-applicant form using react-hook-form with Zod validation,
+ * including cascading PSGC address dropdowns for both present and permanent addresses,
+ * same-address sync, and multipart FormData submission to /admin/applicants.
+ */
 export function useAddApplicant() {
     const currentSemester = usePage().props.currentSemester as { name: string | null; school_year: string | null } | null;
 

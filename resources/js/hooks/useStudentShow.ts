@@ -73,6 +73,7 @@ interface Params {
     personalData: PersonalData | null;
 }
 
+/** Manage the student detail page — withdrawal dialog with type and refund amount, posting to /admin/students/:id/withdraw. */
 export function useStudentShow({ student, personalData }: Params) {
     const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
 

@@ -17,6 +17,7 @@ const forms = [
     { title: 'Data Privacy Consent Form', file: '/forms/data-privacy-consent-form.pdf' },
 ];
 
+/** Student portal downloadable forms page listing available PDF forms the student can download. */
 export default function DownloadableForms() {
     return (
         <StudentLayout breadcrumbs={breadcrumbs}>

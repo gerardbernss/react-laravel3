@@ -54,38 +54,56 @@ class Student extends Model
     ];
 
     /**
-     * Relationships
+     * Get the original applicant personal data that anchors this student's identity.
      */
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the application record this student was created from.
+     */
     public function application()
     {
         return $this->belongsTo(Applicant::class, 'applicant_id');
     }
 
+    /**
+     * Get the student-specific personal data record copied from the applicant at enrollment.
+     */
     public function studentPersonalData()
     {
         return $this->belongsTo(StudentPersonalData::class, 'student_personal_data_id');
     }
 
+    /**
+     * Get the portal credential linked to this student through the shared applicant_personal_data_id.
+     */
     public function portalCredential()
     {
         return $this->hasOne(PortalCredential::class, 'applicant_personal_data_id', 'applicant_personal_data_id');
     }
 
+    /**
+     * Get all enrollment audit log entries for this student.
+     */
     public function auditLogs()
     {
         return $this->hasMany(EnrollmentAuditLog::class);
     }
 
+    /**
+     * Get all semester enrollment records for this student.
+     */
     public function enrollments()
     {
         return $this->hasMany(StudentEnrollment::class);
     }
 
+    /**
+     * Get the withdrawal record if this student has withdrawn.
+     */
     public function withdrawal()
     {
         return $this->hasOne(StudentWithdrawal::class);
@@ -161,23 +179,32 @@ class Student extends Model
     }
 
     /**
-     * Scopes
+     * Scope to active students only.
      */
     public function scopeActive($query)
     {
         return $query->where('enrollment_status', 'Active');
     }
 
+    /**
+     * Scope to students with a pending enrollment status (minimum payment not yet met).
+     */
     public function scopePending($query)
     {
         return $query->where('enrollment_status', 'Pending');
     }
 
+    /**
+     * Scope to inactive students.
+     */
     public function scopeInactive($query)
     {
         return $query->where('enrollment_status', 'Inactive');
     }
 
+    /**
+     * Mark the student as fully enrolled (Active) after minimum payment is confirmed.
+     */
     public function completeEnrollment()
     {
         $this->update([

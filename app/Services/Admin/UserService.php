@@ -16,6 +16,9 @@ class UserService
     ) {
     }
 
+    /**
+     * Creates a new user and syncs their roles in a single transaction.
+     */
     public function create(array $data): User
     {
         return DB::transaction(function () use ($data) {
@@ -32,6 +35,9 @@ class UserService
         });
     }
 
+    /**
+     * Updates a user's details and re-syncs their roles. Only updates the password if a new one is provided.
+     */
     public function update(User $user, array $data): void
     {
         DB::transaction(function () use ($user, $data) {
@@ -51,16 +57,26 @@ class UserService
         });
     }
 
+    /**
+     * Adds a single role to a user without affecting their other roles.
+     */
     public function assignRole(User $user, int $roleId): void
     {
         $this->userRepository->assignRole($user, $this->roleRepository->findOrFail($roleId));
     }
 
+    /**
+     * Removes a single role from a user without affecting their other roles.
+     */
     public function removeRole(User $user, int $roleId): void
     {
         $this->userRepository->removeRole($user, $this->roleRepository->findOrFail($roleId));
     }
 
+    /**
+     * Merges the 'roles' array and the single 'role_id' field into one deduplicated list of role IDs.
+     * Handles the case where the form submits both a primary role and additional roles separately.
+     */
     private function resolveRoleIds(array $data): array
     {
         $roleIds = collect($data['roles'] ?? []);

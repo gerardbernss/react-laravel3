@@ -83,6 +83,7 @@ const formatCurrency = (amount: number) =>
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+/** Applicant portal self-enrollment wizard showing contact info, fee breakdown, and assessment generation steps. */
 export default function Enrollment({ personalData, application, fees, availableDiscounts, applicantEnrollmentOpen, assessmentNumber, assessmentSubjects }: Props) {
     const {
         errors,

@@ -2,12 +2,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TablePagination } from '@/components/ui/table-pagination';
-import { BODY_TEXT, CARD, FILTER_CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_ROW_ACTION } from '@/constants/ui';
+import { CARD, PAGE_PADDING, PAGE_TITLE, TABLE_HEADER_CELL, TABLE_ROW_ACTION } from '@/constants/ui';
 import { useStudentsIndex, type Student } from '@/hooks/useStudentsIndex';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Eye, Search, Users } from 'lucide-react';
+import { Eye, Search } from 'lucide-react';
 
 interface Props {
     students: Student[];
@@ -24,6 +24,7 @@ const statusVariant: Record<string, string> = {
     Inactive: 'bg-gray-100 text-gray-600',
 };
 
+/** Admin students list with search, sort, and delete actions. */
 export default function StudentsIndex({ students }: Props) {
     const {
         search, setSearch,
@@ -41,17 +42,11 @@ export default function StudentsIndex({ students }: Props) {
             <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Users className="h-7 w-7 text-primary" />
-                        <div>
-                            <h1 className={PAGE_TITLE}>Students</h1>
-                            <p className={BODY_TEXT}>{students.length} total students</p>
-                        </div>
-                    </div>
+                    <h1 className={PAGE_TITLE}>Students</h1>
                 </div>
 
                 {/* Filters */}
-                <div className={FILTER_CARD}>
+                <div>
                     <div className="flex flex-wrap gap-3">
                         <div className="relative min-w-[200px] flex-1">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

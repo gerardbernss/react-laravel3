@@ -15,6 +15,7 @@ interface Props {
     weightTotal: number;
 }
 
+/** Admin gradebook component setup page for configuring grade components and their weights for a subject-quarter. */
 export default function GradebookComponents({ blockSection, subject, quarter, components, weightTotal }: Props) {
     const { breadcrumbs, data, setData, processing, errors, weightOk, remainingWeight, submit, deleteComponent } = useGradebookComponents({
         blockSection,
@@ -29,7 +30,7 @@ export default function GradebookComponents({ blockSection, subject, quarter, co
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href={`/teacher/gradebook/${blockSection.id}`} className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <Link href={`/teacher/gradebook/${blockSection.id}`} className="mb-4 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Section
                     </Link>

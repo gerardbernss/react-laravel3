@@ -37,6 +37,10 @@ interface Params {
     students: StudentRow[];
 }
 
+/**
+ * Manage the conduct grade entry grid for a section and quarter — track unsaved score
+ * changes per student/criteria and PUT the batch to /teacher/gradebook/:id/conduct/:quarter.
+ */
 export function useConductEntry({ blockSection, quarter, categories, students }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },

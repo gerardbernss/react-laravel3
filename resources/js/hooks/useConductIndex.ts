@@ -18,6 +18,10 @@ export interface ConductCategory {
     criteria: ConductCriteria[];
 }
 
+/**
+ * Manage the conduct categories and criteria index — accordion expand/collapse,
+ * inline create forms, and delete confirmation dialogs for both categories and criteria.
+ */
 export function useConductIndex() {
     const [expanded, setExpanded] = useState<Record<number, boolean>>({});
     const [addingCategory, setAddingCategory] = useState(false);

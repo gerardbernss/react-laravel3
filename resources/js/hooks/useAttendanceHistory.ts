@@ -36,6 +36,10 @@ interface Params {
     records: AttendanceRecord[];
 }
 
+/**
+ * Manage the attendance history view for a block section — date range and subject filters,
+ * paginated daily records, and breadcrumb navigation.
+ */
 export function useAttendanceHistory({ blockSection, selectedSubjectId, dateFrom, dateTo, records }: Params) {
     const [fromVal, setFromVal] = useState(dateFrom ?? '');
     const [toVal, setToVal] = useState(dateTo ?? '');

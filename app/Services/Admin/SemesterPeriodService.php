@@ -6,6 +6,9 @@ use App\Models\SemesterPeriod;
 
 class SemesterPeriodService
 {
+    /**
+     * Saves changes to a semester period record.
+     */
     public function update(SemesterPeriod $semesterPeriod, array $data): void
     {
         $semesterPeriod->update($data);

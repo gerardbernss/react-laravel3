@@ -8,6 +8,10 @@ export interface SiblingEntry {
     sibling_id_number: string;
 }
 
+/**
+ * Manage the student create form — personal data, address, family background, and dynamic sibling
+ * entries — posting to /admin/students.
+ */
 export function useStudentCreate() {
     const { data, setData, post, processing, errors } = useForm<{
         last_name: string; first_name: string; middle_name: string; suffix: string;

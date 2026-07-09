@@ -13,7 +13,9 @@ class PasswordResetService
     public function __construct(private UserRepository $userRepository) {}
 
     /**
-     * @return string The Password broker status string (e.g. Password::PasswordReset).
+     * Validates the reset token, saves the new password, and fires the PasswordReset event.
+     *
+     * @return string Laravel's password broker status constant (e.g. Password::PASSWORD_RESET on success)
      */
     public function execute(Request $request): string
     {

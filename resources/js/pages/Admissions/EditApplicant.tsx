@@ -43,6 +43,7 @@ interface Props {
     applicant: any;
 }
 
+/** Edit college applicant form for admissions staff — confirm, discard, and reset dialogs before PUTting via useApplicantEdit. */
 export default function EditApplicant({ applicant }: Props) {
     const {
         form,

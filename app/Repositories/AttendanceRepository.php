@@ -13,13 +13,22 @@ use Illuminate\Support\Facades\DB;
 
 class AttendanceRepository
 {
-    public function facultySubjectsWithSectionsAndSchedules(int $userId): Collection
+    /**
+     * Returns all subjects the given faculty user is the default teacher for — either as the subject's own
+     * owner (subjects.user_id) or as the teacher on the subject's default schedule — with their block sections
+     * and schedules eager-loaded.
+     */
+    public function facultySubjectsWithSectionsAndSchedules(int $userId, array $defaultTaughtSubjectIds = []): Collection
     {
         return Subject::where('user_id', $userId)
+            ->orWhereIn('id', $defaultTaughtSubjectIds)
             ->with(['blockSections', 'schedules'])
             ->get();
     }
 
+    /**
+     * Returns the number of students enrolled in the given subject within the given section.
+     */
     public function countEnrolledForSubjectSection(int $subjectId, int $sectionId): int
     {
         return StudentEnrollmentSubject::whereHas(
@@ -28,6 +37,9 @@ class AttendanceRepository
         )->where('subject_id', $subjectId)->count();
     }
 
+    /**
+     * Returns whether attendance has been taken today for the given subject/section, and how many students were marked Present.
+     */
     public function todayAttendanceStats(int $subjectId, int $sectionId, string $today): array
     {
         $todayQuery = Attendance::where('subject_id', $subjectId)
@@ -40,6 +52,9 @@ class AttendanceRepository
         return ['taken' => $taken, 'present_count' => $presentCount];
     }
 
+    /**
+     * Returns block sections with subject count and enrolled student count, filtered by optional search, school year, and semester, sorted by grade level then strand then code.
+     */
     public function sectionsFiltered(?string $search, ?string $schoolYear, ?string $semester): Collection
     {
         return BlockSection::query()
@@ -62,6 +77,9 @@ class AttendanceRepository
             ->get();
     }
 
+    /**
+     * Returns the most recent school year and semester that has a section for the given grade level — used as the default filter when the page first loads.
+     */
     public function latestPeriodForGrade(string $gradeLevel): ?BlockSection
     {
         return BlockSection::where('grade_level', $gradeLevel)
@@ -70,6 +88,9 @@ class AttendanceRepository
             ->first(['school_year', 'semester']);
     }
 
+    /**
+     * Returns sections for a specific grade level with subject and enrollment counts, optionally filtered by school year and semester.
+     */
     public function sectionsForGrade(string $gradeLevel, ?string $schoolYear, ?string $semester): Collection
     {
         return BlockSection::query()
@@ -85,6 +106,9 @@ class AttendanceRepository
             ->get();
     }
 
+    /**
+     * Returns all enrollments for a section with student personal data eager-loaded, sorted alphabetically by last name via a correlated subquery.
+     */
     public function enrollmentsForSectionSortedByLastName(int $blockSectionId): Collection
     {
         return StudentEnrollment::where('block_section_id', $blockSectionId)
@@ -98,6 +122,9 @@ class AttendanceRepository
             ->get();
     }
 
+    /**
+     * Returns attendance records for the given subject and date, keyed by student_enrollment_id for O(1) lookup per student.
+     */
     public function attendanceForDateAndSubject(int $subjectId, string $date, iterable $enrollmentIds): Collection
     {
         return Attendance::where('subject_id', $subjectId)
@@ -107,6 +134,9 @@ class AttendanceRepository
             ->keyBy('student_enrollment_id');
     }
 
+    /**
+     * Returns attendance records for a subject/section within an optional date range, newest first — used for the attendance history view.
+     */
     public function attendanceRowsForHistory(int $subjectId, int $blockSectionId, ?string $dateFrom, ?string $dateTo): Collection
     {
         return Attendance::where('subject_id', $subjectId)
@@ -117,6 +147,10 @@ class AttendanceRepository
             ->get();
     }
 
+    /**
+     * Returns a flipped array (date string → true) of past dates where attendance was already taken for the subject/section.
+     * Used to mark calendar days as "taken" without an O(n) search per date.
+     */
     public function takenDatesSet(int $subjectId, int $blockSectionId, string $startDate, string $today): array
     {
         return Attendance::where('subject_id', $subjectId)
@@ -130,6 +164,9 @@ class AttendanceRepository
             ->all();
     }
 
+    /**
+     * Returns attendance counts keyed by status (Present, Absent, Late, etc.) for a student's enrollment in a specific subject.
+     */
     public function countsByStatusFor(int $enrollmentId, int $subjectId): array
     {
         return Attendance::where('student_enrollment_id', $enrollmentId)
@@ -141,6 +178,9 @@ class AttendanceRepository
             ->toArray();
     }
 
+    /**
+     * Creates or updates the attendance record for a student's enrollment on a specific date and subject.
+     */
     public function upsertAttendance(int $studentEnrollmentId, int $subjectId, string $date, string $status, ?string $remarks): void
     {
         Attendance::updateOrCreate(
@@ -156,11 +196,17 @@ class AttendanceRepository
         );
     }
 
+    /**
+     * Returns distinct school years from block sections, newest first, for use in filter dropdowns.
+     */
     public function distinctSchoolYearsDesc(): SupportCollection
     {
         return BlockSection::distinct()->orderBy('school_year', 'desc')->pluck('school_year')->filter()->values();
     }
 
+    /**
+     * Returns distinct semester values from block sections for use in filter dropdowns.
+     */
     public function distinctSemesters(): SupportCollection
     {
         return BlockSection::distinct()->pluck('semester')->filter()->values();

@@ -10,6 +10,9 @@ class PasswordUpdateService
 {
     public function __construct(private UserRepository $userRepository) {}
 
+    /**
+     * Hashes and saves a new password for the given user.
+     */
     public function execute(User $user, string $newPassword): void
     {
         $this->userRepository->update($user, [

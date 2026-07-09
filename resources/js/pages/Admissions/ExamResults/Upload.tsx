@@ -49,6 +49,7 @@ function downloadSample() {
     URL.revokeObjectURL(url);
 }
 
+/** Exam results CSV upload page — initial file submission and conflict resolution (overwrite or skip). */
 export default function UploadExamResults({ importConflicts, importWarning, hasPending }: Props) {
     const { data, setData, processing, errors, inputRef, conflictOpen, confirming, handleSubmit, handleConfirm, handleCancelConflict } =
         useExamResultsUpload({ importConflicts });

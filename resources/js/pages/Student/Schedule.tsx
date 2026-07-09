@@ -26,6 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Schedule', href: '/student/schedule' },
 ];
 
+/** Student portal class schedule page rendered as a weekly time-grid with colour-coded subject blocks. */
 export default function Schedule({ isEnrolled, enrollment, subjects }: Props) {
     const { view, setView, parsed, unscheduled } = useStudentSchedule(subjects);
 

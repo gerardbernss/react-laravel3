@@ -25,6 +25,10 @@ interface Params {
 
 const str = (v: string | null | undefined) => v ?? '';
 
+/**
+ * Manage the applicant self-enrollment wizard — contact info update (step 1), fee breakdown preview
+ * (step 2), and assessment generation (step 3); resumes from step 3 when an assessment already exists.
+ */
 export function useApplicantEnrollment({ personalData, fees, assessmentNumber }: Params) {
     const { errors } = usePage().props as { errors: Record<string, string> };
 

@@ -15,6 +15,10 @@ class ConductGradeService
     ) {
     }
 
+    /**
+     * Returns the conduct grade entry sheet for a section and quarter:
+     * all active categories with their criteria, and each student's existing scores per criterion.
+     */
     public function entryData(BlockSection $blockSection, string $quarter): array
     {
         $categories = $this->conductCategoryRepository->activeCategoriesWithCriteria();
@@ -33,6 +37,10 @@ class ConductGradeService
         ];
     }
 
+    /**
+     * Saves or updates conduct scores for all students in a section for the given quarter.
+     * Empty or null scores are stored as null (no score recorded).
+     */
     public function saveGrades(array $grades, string $quarter): void
     {
         DB::transaction(function () use ($grades, $quarter) {
@@ -48,6 +56,9 @@ class ConductGradeService
         });
     }
 
+    /**
+     * Maps enrollments to conduct grade entry rows, each containing the student's name and their existing score for every criterion.
+     */
     private function mapStudents($enrollments, $criteriaIds, $existingGrades)
     {
         return $enrollments->map(function ($enrollment) use ($criteriaIds, $existingGrades) {

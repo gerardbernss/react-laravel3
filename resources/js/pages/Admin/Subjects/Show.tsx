@@ -1,5 +1,5 @@
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { AppBadge } from '@/components/app-badge';
+import { AppBadge } from '@/components/AppBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BODY_TEXT, CARD, PAGE_PADDING, PAGE_TITLE, SECTION_HEADING } from '@/constants/ui';
@@ -12,6 +12,7 @@ interface Props {
     subject: Subject;
 }
 
+/** Admin subject detail page with breadcrumb trail and delete confirmation. */
 export default function Show({ subject }: Props) {
     const { breadcrumbs, processing, showDeleteDialog, setShowDeleteDialog, confirmDelete } = useSubjectShow({ subject });
 
@@ -84,14 +85,6 @@ export default function Show({ subject }: Props) {
                                 <dt className="text-sm text-gray-500">Semester</dt>
                                 <dd className="text-sm font-medium text-gray-900">{subject.semester || '—'}</dd>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <dt className="text-sm text-gray-500">Schedule</dt>
-                                <dd className="text-sm font-medium text-gray-900">{subject.default_schedule?.display ?? '—'}</dd>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <dt className="text-sm text-gray-500">Room</dt>
-                                <dd className="text-sm font-medium text-gray-900">{subject.default_schedule?.room ?? '—'}</dd>
-                            </div>
                             {subject.description && (
                                 <div className="border-t pt-4">
                                     <dt className="mb-2 text-sm text-gray-500">Description</dt>
@@ -109,25 +102,18 @@ export default function Show({ subject }: Props) {
                         {subject.block_sections && subject.block_sections.length > 0 ? (
                             <div className="space-y-3">
                                 {subject.block_sections.map((section) => (
-                                    <div key={section.id} className="rounded-lg border p-3">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="font-medium text-gray-900">{section.name}</p>
-                                                <p className="text-sm text-gray-500">
-                                                    {section.grade_level} • {section.school_year}
-                                                </p>
-                                            </div>
-                                            <Link href={`/admin/block-sections/${section.id}`}>
-                                                <Button variant="ghost" size="sm">
-                                                    View
-                                                </Button>
-                                            </Link>
+                                    <div key={section.id} className="flex items-center justify-between rounded-lg border p-3">
+                                        <div>
+                                            <p className="font-medium text-gray-900">{section.name}</p>
+                                            <p className="text-sm text-gray-500">
+                                                {section.grade_level} • {section.school_year}
+                                            </p>
                                         </div>
-                                        {section.pivot.teacher && (
-                                            <div className="mt-2 border-t pt-2 text-xs text-gray-500">
-                                                <span>Teacher: {section.pivot.teacher}</span>
-                                            </div>
-                                        )}
+                                        <Link href={`/admin/block-sections/${section.id}`}>
+                                            <Button variant="ghost" size="sm">
+                                                View
+                                            </Button>
+                                        </Link>
                                     </div>
                                 ))}
                             </div>

@@ -14,6 +14,7 @@ export const MONTHS = [
     'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+/** Convert a 1-based month number to its full English name. */
 export function monthName(n: number): string {
     return MONTHS[n - 1] ?? '—';
 }
@@ -23,6 +24,7 @@ interface PageProps {
     [key: string]: unknown;
 }
 
+/** Paginate the semester periods list and expose the current active semester from shared Inertia props. */
 export function useSemesterPeriods(periods: SemesterPeriod[]) {
     const { currentSemester } = usePage<PageProps>().props;
     const [editingId, setEditingId] = useState<number | null>(null);

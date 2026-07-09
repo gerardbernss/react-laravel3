@@ -19,6 +19,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Validations', href: '/teacher/gradebook/validations' },
 ];
 
+/** Admin gradebook validations index — faculty see their sections pending validation; admins see all sections. */
 export default function ValidationsIndex({ isFaculty, mySubjects, sections }: Props) {
     const {
         currentPage, setCurrentPage,
@@ -35,8 +36,8 @@ export default function ValidationsIndex({ isFaculty, mySubjects, sections }: Pr
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/teacher/gradebook" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-                        <ArrowLeft className="h-4 w-4" />
+                    <Link href="/teacher/gradebook" className="mb-3 inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Gradebook
                     </Link>
                     <h1 className={PAGE_TITLE}>Grade Validations</h1>

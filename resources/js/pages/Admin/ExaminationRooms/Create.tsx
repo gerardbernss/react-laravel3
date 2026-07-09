@@ -15,6 +15,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Create', href: '/admin/examination-rooms/create' },
 ];
 
+/** Admin examination room create form for defining a new room name and capacity. */
 export default function Create() {
     const { data, setData, processing, errors, handleSubmit } = useExaminationRoomCreate();
 

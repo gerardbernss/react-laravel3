@@ -29,6 +29,7 @@ const gradeLevels = [
 
 const semesters = ['First Semester', 'Second Semester', 'Summer', 'Full Year'];
 
+/** Admin block section create form for defining a new section with subject assignments. */
 export default function Create({ subjects }: Props) {
     const {
         data,

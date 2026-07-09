@@ -6,6 +6,7 @@ interface Params {
     role: Role;
 }
 
+/** Manage the role edit form with permission checkbox assignment, PUTting to /admin/roles/:id; guards the super-admin role from modification. */
 export function useRoleEdit({ role }: Params) {
     const { data, setData, put, processing, errors } = useForm({
         name: role.name ?? '',

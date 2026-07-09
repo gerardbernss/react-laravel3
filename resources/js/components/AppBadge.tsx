@@ -1,5 +1,6 @@
 import { BADGE_BASE, BADGE_BLUE, BADGE_GRAY, BADGE_GREEN, BADGE_RED, BADGE_YELLOW } from '@/constants/ui';
 import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
 
 type BadgeColor = 'green' | 'yellow' | 'blue' | 'red' | 'gray';
 
@@ -41,13 +42,15 @@ interface AppBadgeProps {
     status: string;
     color?: BadgeColor;
     className?: string;
+    children?: ReactNode;
 }
 
-export function AppBadge({ status, color, className }: AppBadgeProps) {
+/** Status badge that auto-selects a colour (green/yellow/blue/red/gray) based on a known status string, falling back to gray for unknown values. */
+export function AppBadge({ status, color, className, children }: AppBadgeProps) {
     const resolvedColor = color ?? STATUS_COLOR_MAP[status.toLowerCase()] ?? 'gray';
     return (
         <span className={cn(BADGE_BASE, COLOR_MAP[resolvedColor], className)}>
-            {status}
+            {children ?? status}
         </span>
     );
 }

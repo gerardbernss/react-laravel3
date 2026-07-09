@@ -36,16 +36,25 @@ class ApplicantAssessment extends Model
         'minimum_amount'  => 'float',
     ];
 
+    /**
+     * Get the applicant this assessment was generated for.
+     */
     public function applicant()
     {
         return $this->belongsTo(Applicant::class);
     }
 
+    /**
+     * Get the subject line items included in this assessment.
+     */
     public function subjects()
     {
         return $this->hasMany(ApplicantAssessmentSubject::class);
     }
 
+    /**
+     * Generate the next sequential assessment number in the format APP-YYYYYYY-00001.
+     */
     public static function generateAssessmentNumber(string $schoolYear): string
     {
         $year = str_replace('-', '', $schoolYear);

@@ -131,6 +131,7 @@ const FormNavigation = () => {
     );
 };
 
+/** LES online application intake form for prospective Laboratory Elementary School students, with PSGC address dropdowns and email verification. */
 export default function AddApplicant() {
     const {
         form,

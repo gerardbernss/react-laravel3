@@ -36,6 +36,7 @@ function formatCurrency(amount: number) {
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 }
 
+/** Admin finance assessment detail page showing the full fee breakdown, applied discounts, and payment status for a single student enrollment. */
 export default function AssessmentShow({ assessment }: Props) {
     const {
         data, setData, processing, errors,
@@ -62,11 +63,9 @@ export default function AssessmentShow({ assessment }: Props) {
             <div className="p-6">
                 <div className="mb-6 flex items-start justify-between">
                     <div>
-                        <Link href="/admin/fee-assessments">
-                            <Button variant="ghost" size="sm" className="mb-2 -ml-2">
-                                <ArrowLeft className="mr-1 h-4 w-4" />
-                                Back to Assessments
-                            </Button>
+                        <Link href="/admin/fee-assessments" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Back to Assessments
                         </Link>
                         <h1 className="text-2xl font-bold text-gray-900">{assessment.assessment_number}</h1>
                         <p className="mt-1 text-sm text-gray-500">

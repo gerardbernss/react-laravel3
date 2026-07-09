@@ -11,6 +11,7 @@ interface Params {
     filters: Filters;
 }
 
+/** Apply enrollment dashboard filters (search, status, category) via Inertia navigation. */
 export function useEnrollmentDashboard({ filters }: Params) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');

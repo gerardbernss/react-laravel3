@@ -22,6 +22,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Edit Role', href: '/admin/roles/edit' },
 ];
 
+/** Admin role edit form with permission checkbox assignment; guards the super-admin role from modification. */
 export default function Edit({ role, permissions }: Props) {
     const { data, setData, processing, errors, isSuperAdmin, handleSubmit, handlePermissionChange } = useRoleEdit({ role });
 
@@ -31,11 +32,9 @@ export default function Edit({ role, permissions }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/roles">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Roles
-                        </Button>
+                    <Link href="/admin/roles" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Roles
                     </Link>
                     <div className="flex items-center gap-2">
                         <Shield className="h-5 w-5" />

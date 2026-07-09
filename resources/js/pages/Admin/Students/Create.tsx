@@ -19,6 +19,7 @@ const gradeLevels = [
     'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
 ];
 
+/** Admin student create form — personal data, address, family background, and dynamic sibling entries. */
 export default function CreateStudent() {
     const { data, setData, processing, errors, handleSubmit, addSibling, removeSibling, updateSibling } = useStudentCreate();
 

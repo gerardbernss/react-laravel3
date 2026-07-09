@@ -23,6 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Add Fee', href: '/admin/fees/create' },
 ];
 
+/** Admin fee create form for defining a new fee with category, school level, semester, and amount. */
 export default function CreateFee({ categories, schoolLevels, semesters }: Props) {
     const { data, setData, processing, errors, handleSubmit } = useFeeCreate();
 
@@ -32,10 +33,8 @@ export default function CreateFee({ categories, schoolLevels, semesters }: Props
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/admin/fees">
-                        <Button variant="outline" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                        </Button>
+                    <Link href="/admin/fees" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="mr-1 h-4 w-4" /> Back
                     </Link>
                     <div className="flex items-center gap-3">
                         <DollarSign className="h-6 w-6 text-primary" />

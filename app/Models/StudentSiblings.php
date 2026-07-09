@@ -19,6 +19,9 @@ class StudentSiblings extends Model
         'sibling_id_number',
     ];
 
+    /**
+     * Get the student personal data record this sibling belongs to.
+     */
     public function studentPersonalData(): BelongsTo
     {
         return $this->belongsTo(StudentPersonalData::class, 'student_personal_data_id');

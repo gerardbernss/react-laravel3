@@ -18,11 +18,17 @@ class ApplicantExamAssignmentController extends Controller
     {
     }
 
+    /**
+     * List all applicant exam assignments with their schedule and status details.
+     */
     public function index()
     {
         return Inertia::render('Admin/ExamAssignments/Index', $this->assignmentService->indexData());
     }
 
+    /**
+     * Show the assignment form with applicants filtered by the search term and available exam schedules.
+     */
     public function create(Request $request)
     {
         $data = $this->assignmentService->createData($request->search);
@@ -34,6 +40,9 @@ class ApplicantExamAssignmentController extends Controller
         ]);
     }
 
+    /**
+     * Assign a single applicant to an exam schedule.
+     */
     public function store(StoreApplicantExamAssignmentRequest $request)
     {
         $result = $this->assignmentService->store($request->validated());
@@ -46,6 +55,9 @@ class ApplicantExamAssignmentController extends Controller
             ->with('success', 'Applicant assigned to exam schedule successfully.');
     }
 
+    /**
+     * Assign multiple applicants to an exam schedule in one operation.
+     */
     public function bulkStore(BulkStoreApplicantExamAssignmentRequest $request)
     {
         $result = $this->assignmentService->bulkStore($request->validated());
@@ -58,6 +70,9 @@ class ApplicantExamAssignmentController extends Controller
             ->with('success', "{$result['assigned']} applicant(s) assigned to exam schedule successfully.");
     }
 
+    /**
+     * Update the attendance or completion status of an exam assignment.
+     */
     public function updateStatus(UpdateAssignmentStatusRequest $request, ApplicantExamAssignment $assignment)
     {
         $this->assignmentService->updateStatus($assignment, $request->validated());
@@ -65,6 +80,9 @@ class ApplicantExamAssignmentController extends Controller
         return back()->with('success', 'Assignment status updated successfully.');
     }
 
+    /**
+     * Record the pass/fail exam result for an applicant assignment.
+     */
     public function markResult(MarkExamResultRequest $request, ApplicantExamAssignment $assignment)
     {
         $this->assignmentService->markResult($assignment, $request->validated());
@@ -72,6 +90,9 @@ class ApplicantExamAssignmentController extends Controller
         return back()->with('success', 'Exam result recorded successfully.');
     }
 
+    /**
+     * Remove an applicant's exam assignment.
+     */
     public function destroy(ApplicantExamAssignment $assignment)
     {
         $this->assignmentService->delete($assignment);

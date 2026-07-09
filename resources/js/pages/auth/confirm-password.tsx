@@ -7,6 +7,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import { Form, Head } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 
+/** Password confirmation screen shown before sensitive actions; requires the authenticated user to re-enter their password. */
 export default function ConfirmPassword() {
     return (
         <AuthLayout

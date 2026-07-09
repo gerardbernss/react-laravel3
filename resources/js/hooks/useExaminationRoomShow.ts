@@ -25,6 +25,7 @@ interface Params {
     room: Room;
 }
 
+/** Manage the examination room detail page, including delete confirmation dialog. */
 export function useExaminationRoomShow({ room }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },

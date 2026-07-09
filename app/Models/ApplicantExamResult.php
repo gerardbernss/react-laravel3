@@ -34,16 +34,25 @@ class ApplicantExamResult extends Model
         'percentage_score' => 'decimal:2',
     ];
 
+    /**
+     * Get the applicant this exam result belongs to.
+     */
     public function applicant()
     {
         return $this->belongsTo(Applicant::class);
     }
 
+    /**
+     * Get the applicant's personal data record linked to this result.
+     */
     public function personalData()
     {
         return $this->belongsTo(ApplicantPersonalData::class, 'applicant_personal_data_id');
     }
 
+    /**
+     * Get the admin user who uploaded this exam result.
+     */
     public function uploadedBy()
     {
         return $this->belongsTo(User::class, 'uploaded_by');

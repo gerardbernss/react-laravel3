@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ConductGradeRepository
 {
+    /**
+     * Returns all enrollments for a section with student personal data eager-loaded, sorted alphabetically by last name.
+     */
     public function enrollmentsForSectionSortedByLastName(int $sectionId): Collection
     {
         return StudentEnrollment::where('block_section_id', $sectionId)
@@ -17,6 +20,9 @@ class ConductGradeRepository
             ->values();
     }
 
+    /**
+     * Returns conduct grades for the given enrollments, criteria, and quarter, grouped by student_enrollment_id for efficient per-student lookup.
+     */
     public function gradesGroupedByEnrollment(iterable $enrollmentIds, iterable $criteriaIds, string $quarter): Collection
     {
         return ConductGrade::whereIn('student_enrollment_id', $enrollmentIds)
@@ -26,6 +32,9 @@ class ConductGradeRepository
             ->groupBy('student_enrollment_id');
     }
 
+    /**
+     * Creates or updates the conduct grade for a student's enrollment on a specific criterion and quarter.
+     */
     public function upsertGrade(int $enrollmentId, int $criteriaId, string $quarter, ?float $score, ?int $recordedBy): void
     {
         ConductGrade::updateOrCreate(

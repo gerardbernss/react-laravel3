@@ -24,11 +24,23 @@ export interface BlockSection {
 
 export type BlockSectionSortKey = 'name' | 'grade_level' | 'school_year' | 'status';
 
+function nextSchoolYear(year: string): string {
+    const match = year.match(/^(\d{4})-(\d{4})$/);
+    if (!match) return '';
+    const start = Number(match[1]) + 1;
+    const end = Number(match[2]) + 1;
+    return `${start}-${end}`;
+}
+
 export const GRADE_LEVELS = [
     'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
     'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
 ];
 
+/**
+ * Filter, sort, and paginate the block sections list; also handles single delete and bulk copy-to-next-year
+ * (auto-advancing the school year) via Inertia router.
+ */
 export function useBlockSections(blockSections: BlockSection[], schoolYears: string[]) {
     const { delete: destroy, processing } = useForm();
 
@@ -107,9 +119,14 @@ export function useBlockSections(blockSections: BlockSection[], schoolYears: str
         });
     };
 
+    const setFromSchoolYear = (year: string) => {
+        copyForm.setData('from_school_year', year);
+        copyForm.setData('to_school_year', nextSchoolYear(year));
+    };
+
     const openCopyDialog = () => {
         copyForm.reset();
-        copyForm.setData('from_school_year', schoolYears[schoolYears.length - 1] ?? '');
+        setFromSchoolYear(schoolYears[schoolYears.length - 1] ?? '');
         setShowCopyDialog(true);
     };
 
@@ -146,6 +163,7 @@ export function useBlockSections(blockSections: BlockSection[], schoolYears: str
         toggleSort,
         clearFilters,
         confirmDelete,
+        setFromSchoolYear,
         openCopyDialog,
         handleCopySubmit,
     };
