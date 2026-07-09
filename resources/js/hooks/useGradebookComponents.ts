@@ -32,9 +32,9 @@ interface Params {
 export function useGradebookComponents({ blockSection, subject, quarter, weightTotal }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
-        { title: `${subject.code} ${quarter}`, href: `/gradebook/${blockSection.id}/${subject.id}/${quarter}/components` },
+        { title: 'Gradebook', href: '/teacher/gradebook' },
+        { title: blockSection.code, href: `/teacher/gradebook/${blockSection.id}` },
+        { title: `${subject.code} ${quarter}`, href: `/teacher/gradebook/${blockSection.id}/${subject.id}/${quarter}/components` },
     ];
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -51,14 +51,14 @@ export function useGradebookComponents({ blockSection, subject, quarter, weightT
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        post('/gradebook/components', {
+        post('/teacher/gradebook/components', {
             onSuccess: () => reset('name', 'hps', 'weight'),
         });
     };
 
     const deleteComponent = (id: number) => {
         if (!confirm('Delete this component? All scores for it will be lost.')) return;
-        router.delete(`/gradebook/components/${id}`);
+        router.delete(`/teacher/gradebook/components/${id}`);
     };
 
     return { breadcrumbs, data, setData, processing, errors, weightOk, remainingWeight, submit, deleteComponent };

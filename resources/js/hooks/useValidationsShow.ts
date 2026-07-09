@@ -26,8 +26,8 @@ interface Params {
 export function useValidationsShow({ blockSection }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: 'Validations', href: '/gradebook/validations' },
+        { title: 'Gradebook', href: '/teacher/gradebook' },
+        { title: 'Validations', href: '/teacher/gradebook/validations' },
         { title: blockSection.code, href: '' },
     ];
 

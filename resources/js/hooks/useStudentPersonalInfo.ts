@@ -47,7 +47,7 @@ export function useStudentPersonalInfo(personalData: PersonalData | null) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put('/student/personal-info', {
+        put('/student/profile', {
             onSuccess: () => setIsEditing(false),
         });
     };

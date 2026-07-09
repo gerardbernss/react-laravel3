@@ -33,7 +33,7 @@ export default function Edit({ schedule, rooms }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/exam-schedules" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/exam-schedules" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Schedules
                     </Link>
@@ -156,7 +156,7 @@ export default function Edit({ schedule, rooms }: Props) {
                                     </>
                                 )}
                             </Button>
-                            <Link href="/exam-schedules">
+                            <Link href="/admin/exam-schedules">
                                 <Button type="button" variant="outline">
                                     Cancel
                                 </Button>

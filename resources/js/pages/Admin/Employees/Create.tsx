@@ -134,7 +134,7 @@ export default function EmployeeForm({ employee, users, employmentTypes }: Props
                         >
                             {processing ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Employee'}
                         </button>
-                        <a href="/employees" className="rounded-lg border px-5 py-2 text-sm font-medium hover:bg-muted">
+                        <a href="/admin/employees" className="rounded-lg border px-5 py-2 text-sm font-medium hover:bg-muted">
                             Cancel
                         </a>
                     </div>

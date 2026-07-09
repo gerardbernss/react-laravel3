@@ -41,7 +41,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Attendance', href: '/attendance' },
+    { title: 'Attendance', href: '/teacher/attendance' },
 ];
 
 export default function Index({ isFaculty, mySubjectSections, groupedSections, filters, schoolYears, semesters }: Props) {
@@ -143,7 +143,7 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
                                             )}
                                         </AppTable.Td>
                                         <AppTable.Td className="text-center">
-                                            <Link href={`/attendance/${row.block_section_id}?subject_id=${row.subject_id}`}>
+                                            <Link href={`/teacher/attendance/${row.block_section_id}?subject_id=${row.subject_id}`}>
                                                 <button className={TABLE_ROW_ACTION}>
                                                     <ClipboardCheck className="h-3 w-3" />
                                                     {row.today_taken ? 'View' : 'Take Attendance'}
@@ -251,7 +251,7 @@ export default function Index({ isFaculty, mySubjectSections, groupedSections, f
                                         </AppTable.Td>
                                         <AppTable.Td className="text-center">
                                             <Link
-                                                href={`/attendance/grade/${encodeURIComponent(group.label)}?${new URLSearchParams(
+                                                href={`/teacher/attendance/grade/${encodeURIComponent(group.label)}?${new URLSearchParams(
                                                     Object.fromEntries(
                                                         Object.entries({
                                                             school_year: filters.school_year,

@@ -53,7 +53,7 @@ export function useEvaluation(applications: Applicant[]) {
 
     const handleDeleteConfirm = () => {
         if (selectedApplicantId === null) return;
-        router.delete(`/admissions/applicants/${selectedApplicantId}`, {
+        router.delete(`/admin/applicants/${selectedApplicantId}`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Applicant deleted successfully!');

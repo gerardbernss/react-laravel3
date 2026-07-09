@@ -163,7 +163,7 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
                                                             {student.attendance_rate !== null ? `${student.attendance_rate}%` : '—'}
                                                         </td>
                                                         <td className="px-4 py-3 text-center">
-                                                            <a href={`/reports/report-card/${student.enrollment_id}`} target="_blank" rel="noreferrer">
+                                                            <a href={`/teacher/reports/report-card/${student.enrollment_id}`} target="_blank" rel="noreferrer">
                                                                 <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
                                                                     <Printer className="h-3 w-3" />
                                                                     Print
@@ -199,7 +199,7 @@ export default function Show({ blockSection, subject, students, isFaculty, stati
                                             Enter Grades
                                         </Button>
                                     </Link>
-                                    <Link href={`/attendance/${blockSection.id}?subject_id=${subject.id}`}>
+                                    <Link href={`/teacher/attendance/${blockSection.id}?subject_id=${subject.id}`}>
                                         <Button variant="outline" size="sm">
                                             <CalendarCheck className="mr-1 h-4 w-4" />
                                             Take Attendance

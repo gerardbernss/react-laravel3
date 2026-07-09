@@ -55,7 +55,7 @@ class StudentPortalController extends Controller
         $student = $this->getStudent();
 
         if ($this->portalService->hasStudentRecord($student)) {
-            return redirect()->route('student.personal-info');
+            return redirect()->route('student.profile.edit');
         }
 
         return Inertia::render('Applicant/PersonalInfo', $this->portalService->applicantPersonalInfoData($student));

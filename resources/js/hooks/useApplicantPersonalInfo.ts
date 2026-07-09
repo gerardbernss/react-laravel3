@@ -153,7 +153,7 @@ export function useApplicantPersonalInfo({ personalData: pd, familyBackground: f
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         setProcessing(true);
-        router.post('/applicant/personal-info', {
+        router.put('/applicant/profile', {
             ...form,
             siblings,
             schools,

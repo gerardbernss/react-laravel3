@@ -48,7 +48,7 @@ class BlockSectionsController extends Controller
             return back()->withErrors([$result['error_field'] => $result['error_message']]);
         }
 
-        return redirect()->route('block-sections.index')->with('success', 'Block section created successfully.');
+        return redirect()->route('admin.block-sections.index')->with('success', 'Block section created successfully.');
     }
 
     public function show(BlockSection $blockSection)
@@ -87,7 +87,7 @@ class BlockSectionsController extends Controller
             return back()->withErrors([$result['error_field'] => $result['error_message']]);
         }
 
-        return redirect()->route('block-sections.index')->with('success', 'Block section updated successfully.');
+        return redirect()->route('admin.block-sections.index')->with('success', 'Block section updated successfully.');
     }
 
     public function destroy(BlockSection $blockSection)
@@ -98,7 +98,7 @@ class BlockSectionsController extends Controller
             return back()->withErrors(['error' => $result['error']]);
         }
 
-        return redirect()->route('block-sections.index')->with('success', 'Block section deleted successfully.');
+        return redirect()->route('admin.block-sections.index')->with('success', 'Block section deleted successfully.');
     }
 
     public function toggleStatus(BlockSection $blockSection)

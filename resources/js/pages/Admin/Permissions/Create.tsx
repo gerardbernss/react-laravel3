@@ -12,8 +12,8 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Key } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Permissions', href: '/permissions' },
-    { title: 'Create Permission', href: '/permissions/create' },
+    { title: 'Permissions', href: '/admin/permissions' },
+    { title: 'Create Permission', href: '/admin/permissions/create' },
 ];
 
 export default function Create() {
@@ -25,7 +25,7 @@ export default function Create() {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/permissions">
+                    <Link href="/admin/permissions">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Permissions
@@ -70,7 +70,7 @@ export default function Create() {
                                 </div>
 
                                 <div className="flex justify-end gap-4">
-                                    <Link href="/permissions">
+                                    <Link href="/admin/permissions">
                                         <Button type="button" variant="outline">
                                             Cancel
                                         </Button>

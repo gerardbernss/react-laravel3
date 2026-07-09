@@ -129,7 +129,7 @@ export function useStudentIdAssignment(applications: Applicant[]) {
     const executeAssignment = () => {
         if (!selectedRowId) return;
         router.post(
-            '/studentidassignment',
+            '/admin/student-id-assignment',
             { applicant_id: selectedRowId, student_number: assignIdValue },
             {
                 onSuccess: () => { setAssignIdValue(''); setSelectedRowId(null); setConfirmDialogOpen(false); },
@@ -150,7 +150,7 @@ export function useStudentIdAssignment(applications: Applicant[]) {
     };
 
     const handleBulkGenerate = () => {
-        router.post('/studentidassignment/bulk-generate');
+        router.post('/admin/student-id-assignment/bulk-generate');
     };
 
     const toggleColumnVisibility = (key: ColumnKey) =>

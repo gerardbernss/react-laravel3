@@ -30,8 +30,8 @@ interface Params {
 export function useGradebookShow({ blockSection }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
+        { title: 'Gradebook', href: '/teacher/gradebook' },
+        { title: blockSection.code, href: `/teacher/gradebook/${blockSection.id}` },
     ];
 
     return { breadcrumbs };

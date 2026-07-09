@@ -95,12 +95,12 @@ function ApplicantTableRow({ row, visibleColumns, selectedRows, onSelect, onDele
             )}
             <td className="px-4 py-3">
                 <div className="flex items-center gap-1">
-                    <Link href={`/admissions/applicants/${row.id}/show`}>
+                    <Link href={`/admin/applicants/${row.id}/show`}>
                         <Button variant="outline" size="sm" title="View">
                             <Eye className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <Link href={`/admissions/applicants/${row.id}/edit`}>
+                    <Link href={`/admin/applicants/${row.id}/edit`}>
                         <Button variant="outline" size="sm" title="Edit">
                             <Pencil className="h-4 w-4" />
                         </Button>
@@ -159,7 +159,7 @@ export default function Index({ applications }: Props) {
                         <Briefcase className="h-7 w-7 text-primary" />
                         <h1 className={PAGE_TITLE}>Evaluation/Assessment</h1>
                     </div>
-                    <Link href="/admissions/applicants/create">
+                    <Link href="/admin/applicants/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Add New Applicant

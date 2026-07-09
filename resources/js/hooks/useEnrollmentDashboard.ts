@@ -19,7 +19,7 @@ export function useEnrollmentDashboard({ filters }: Params) {
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
         router.get(
-            '/enrollment/dashboard',
+            '/admin/enrollment/dashboard',
             {
                 search: search || undefined,
                 status: statusFilter !== 'all' ? statusFilter : undefined,

@@ -94,14 +94,14 @@ export function usePortalCredentials(credentials: Credential[]) {
 
     const handleSendCredentials = () => {
         if (!selectedCredential) return;
-        router.post(`/portal-credentials/${selectedCredential.id}/send`, {}, {
+        router.post(`/admin/portal-credentials/${selectedCredential.id}/send`, {}, {
             onSuccess: () => { setSendDialogOpen(false); setSelectedCredential(null); },
         });
     };
 
     const handleResend = () => {
         if (!selectedCredential) return;
-        router.post(`/portal-credentials/${selectedCredential.id}/resend`, {}, {
+        router.post(`/admin/portal-credentials/${selectedCredential.id}/resend`, {}, {
             onSuccess: () => { setResendDialogOpen(false); setSelectedCredential(null); },
         });
     };

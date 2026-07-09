@@ -57,7 +57,7 @@ export default function Show({ applicant }: { applicant: any }) {
 
                             <div className="flex gap-2">
                                 <Link
-                                    href={`/admissions/applicants/${applicant.id}/edit`}
+                                    href={`/admin/applicants/${applicant.id}/edit`}
                                     className="flex items-center justify-center rounded-lg bg-green-500 p-2 text-white transition hover:bg-green-600"
                                     title="Edit"
                                 >

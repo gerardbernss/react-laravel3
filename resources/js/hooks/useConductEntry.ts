@@ -40,9 +40,9 @@ interface Params {
 export function useConductEntry({ blockSection, quarter, categories, students }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
-        { title: `Conduct ${quarter}`, href: `/gradebook/${blockSection.id}/conduct/${quarter}` },
+        { title: 'Gradebook', href: '/teacher/gradebook' },
+        { title: blockSection.code, href: `/teacher/gradebook/${blockSection.id}` },
+        { title: `Conduct ${quarter}`, href: `/teacher/gradebook/${blockSection.id}/conduct/${quarter}` },
     ];
 
     const allCriteria = categories.flatMap((c) => c.criteria);
@@ -82,7 +82,7 @@ export function useConductEntry({ blockSection, quarter, categories, students }:
             });
         });
         router.put(
-            `/gradebook/${blockSection.id}/conduct/${quarter}`,
+            `/teacher/gradebook/${blockSection.id}/conduct/${quarter}`,
             { grades: payload },
             {
                 onSuccess: () => setIsDirty(false),

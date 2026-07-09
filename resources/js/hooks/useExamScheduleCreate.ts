@@ -14,7 +14,7 @@ export function useExamScheduleCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/exam-schedules');
+        post('/admin/exam-schedules');
     };
 
     return { data, setData, processing, errors, handleSubmit };

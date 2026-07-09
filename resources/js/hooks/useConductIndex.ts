@@ -36,26 +36,26 @@ export function useConductIndex() {
 
     const submitCategory = (e: React.FormEvent) => {
         e.preventDefault();
-        categoryForm.post('/conduct-categories', {
+        categoryForm.post('/teacher/conduct-categories', {
             onSuccess: () => { setAddingCategory(false); categoryForm.reset(); },
         });
     };
 
     const submitCriteria = (e: React.FormEvent, categoryId: number) => {
         e.preventDefault();
-        criteriaForm.post(`/conduct-categories/${categoryId}/criteria`, {
+        criteriaForm.post(`/teacher/conduct-categories/${categoryId}/criteria`, {
             onSuccess: () => { setAddingCriteriaFor(null); criteriaForm.reset(); },
         });
     };
 
     const confirmDeleteCategory = () => {
-        router.delete(`/conduct-categories/${deleteCategoryDialog.id}`, {
+        router.delete(`/teacher/conduct-categories/${deleteCategoryDialog.id}`, {
             onSuccess: () => setDeleteCategoryDialog({ open: false, id: 0, name: '' }),
         });
     };
 
     const confirmDeleteCriteria = () => {
-        router.delete(`/conduct-criteria/${deleteCriteriaDialog.id}`, {
+        router.delete(`/teacher/conduct-criteria/${deleteCriteriaDialog.id}`, {
             onSuccess: () => setDeleteCriteriaDialog({ open: false, id: 0, name: '' }),
         });
     };

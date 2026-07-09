@@ -38,7 +38,7 @@ class SubjectsController extends Controller
     {
         $this->subjectService->create($request->validated());
 
-        return redirect()->route('subjects.index')
+        return redirect()->route('admin.subjects.index')
             ->with('success', 'Subject created successfully.');
     }
 
@@ -61,7 +61,7 @@ class SubjectsController extends Controller
     {
         $this->subjectService->update($subject, $request->validated());
 
-        return redirect()->route('subjects.index')
+        return redirect()->route('admin.subjects.index')
             ->with('success', 'Subject updated successfully.');
     }
 
@@ -73,7 +73,7 @@ class SubjectsController extends Controller
             ]);
         }
 
-        return redirect()->route('subjects.index')
+        return redirect()->route('admin.subjects.index')
             ->with('success', 'Subject deleted successfully.');
     }
 

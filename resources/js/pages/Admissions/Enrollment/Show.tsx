@@ -114,7 +114,7 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
             <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div>
-                    <Link href="/enrollment/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/admin/enrollment/dashboard" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Dashboard
                     </Link>
@@ -567,7 +567,7 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
                         </div>
                         {applicant.audit_logs.length > 5 && (
                             <div className="mt-4 text-center">
-                                <Link href={`/enrollment/${applicant.id}/audit-log`}>
+                                <Link href={`/admin/enrollment/${applicant.id}/audit-log`}>
                                     <Button variant="outline" size="sm">View Full Audit Log</Button>
                                 </Link>
                             </div>
@@ -577,7 +577,7 @@ export default function ShowEnrollment({ applicant, fees, units, discountTypes, 
 
                 {/* Navigation */}
                 <div className="flex items-center justify-end pt-4">
-                    <Link href={`/enrollment/${applicant.id}/audit-log`}>
+                    <Link href={`/admin/enrollment/${applicant.id}/audit-log`}>
                         <Button variant="outline">
                             <History className="mr-2 h-4 w-4" />
                             View Full Audit Log

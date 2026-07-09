@@ -35,7 +35,7 @@ class ExaminationRoomsController extends Controller
     {
         $this->examinationRoomService->create($request->validated());
 
-        return redirect()->route('examination-rooms.index')
+        return redirect()->route('admin.examination-rooms.index')
             ->with('success', 'Examination room created successfully.');
     }
 
@@ -57,7 +57,7 @@ class ExaminationRoomsController extends Controller
     {
         $this->examinationRoomService->update($examinationRoom, $request->validated());
 
-        return redirect()->route('examination-rooms.index')
+        return redirect()->route('admin.examination-rooms.index')
             ->with('success', 'Examination room updated successfully.');
     }
 
@@ -69,7 +69,7 @@ class ExaminationRoomsController extends Controller
             ]);
         }
 
-        return redirect()->route('examination-rooms.index')
+        return redirect()->route('admin.examination-rooms.index')
             ->with('success', 'Examination room deleted successfully.');
     }
 

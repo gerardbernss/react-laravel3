@@ -136,7 +136,7 @@ export function useAdmissionsIndex(applications: Applicant[]) {
 
     const handleDeleteConfirm = () => {
         if (selectedApplicantId === null) return;
-        router.delete(`/admissions/applicants/${selectedApplicantId}`, {
+        router.delete(`/admin/applicants/${selectedApplicantId}`, {
             preserveScroll: true,
             onSuccess: () => { setDeleteDialogOpen(false); setSelectedApplicantId(null); },
             onError: () => { toast.error('Failed to delete applicant. Please try again.'); setDeleteDialogOpen(false); },

@@ -80,7 +80,7 @@ export function useBlockSectionCreate({ subjects }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/block-sections');
+        post('/admin/block-sections');
     };
 
     return {

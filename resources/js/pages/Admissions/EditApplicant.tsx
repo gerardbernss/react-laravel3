@@ -16,8 +16,8 @@ import { HiArrowLeft } from 'react-icons/hi';
 import { Toaster } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Applicant List', href: '/admissions/applicants' },
-    { title: 'Edit Applicant', href: '/admissions/applicants/${applicant.id}/edit' },
+    { title: 'Applicant List', href: '/admin/applicants' },
+    { title: 'Edit Applicant', href: '/admin/applicants/${applicant.id}/edit' },
 ];
 
 // ✅ Reusable tooltip label component

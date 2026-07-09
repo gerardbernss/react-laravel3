@@ -26,7 +26,7 @@ export default function Edit({ user, roles }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/users">
+                    <Link href="/admin/users">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Users

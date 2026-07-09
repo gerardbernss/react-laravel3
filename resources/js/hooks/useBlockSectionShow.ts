@@ -87,8 +87,8 @@ export function useBlockSectionShow({ blockSection, enrolledStudents, availableS
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Block Sections', href: '/block-sections' },
-        { title: blockSection.code, href: `/block-sections/${blockSection.id}` },
+        { title: 'Block Sections', href: '/admin/block-sections' },
+        { title: blockSection.code, href: `/admin/block-sections/${blockSection.id}` },
     ];
 
     const totalUnits = blockSection.subjects.reduce((sum, s) => sum + s.units, 0);
@@ -138,7 +138,7 @@ export function useBlockSectionShow({ blockSection, enrolledStudents, availableS
         if (!selectedStudentId) return;
         setAddProcessing(true);
         router.post(
-            `/block-sections/${blockSection.id}/add-student`,
+            `/admin/block-sections/${blockSection.id}/add-student`,
             { student_id: selectedStudentId },
             {
                 onSuccess: closeAddDialog,
@@ -148,14 +148,14 @@ export function useBlockSectionShow({ blockSection, enrolledStudents, availableS
     };
 
     const confirmDelete = () => {
-        destroy(`/block-sections/${blockSection.id}`, {
+        destroy(`/admin/block-sections/${blockSection.id}`, {
             onSuccess: () => setShowDeleteDialog(false),
         });
     };
 
     const confirmRemove = () => {
         if (!enrollmentToRemove) return;
-        router.delete(`/block-sections/${blockSection.id}/students/${enrollmentToRemove.id}`, {
+        router.delete(`/admin/block-sections/${blockSection.id}/students/${enrollmentToRemove.id}`, {
             onSuccess: () => setEnrollmentToRemove(null),
         });
     };

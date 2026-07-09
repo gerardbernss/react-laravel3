@@ -261,7 +261,7 @@ export default function Dashboard({
                                                     </td>
                                                     <td className="px-3 py-2 text-center">
                                                         <Link
-                                                            href={`/attendance/${c.block_section_id}?subject_id=${c.subject_id}`}
+                                                            href={`/teacher/attendance/${c.block_section_id}?subject_id=${c.subject_id}`}
                                                             className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
                                                         >
                                                             {c.today_taken ? 'View' : 'Take'}

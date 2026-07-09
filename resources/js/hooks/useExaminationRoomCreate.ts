@@ -12,7 +12,7 @@ export function useExaminationRoomCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/examination-rooms');
+        post('/admin/examination-rooms');
     };
 
     return { data, setData, processing, errors, handleSubmit };

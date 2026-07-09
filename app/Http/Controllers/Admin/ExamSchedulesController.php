@@ -40,7 +40,7 @@ class ExamSchedulesController extends Controller
     {
         $this->examScheduleService->create($request->validated());
 
-        return redirect()->route('exam-schedules.index')
+        return redirect()->route('admin.exam-schedules.index')
             ->with('success', 'Exam schedule created successfully.');
     }
 
@@ -66,7 +66,7 @@ class ExamSchedulesController extends Controller
     {
         $this->examScheduleService->update($examSchedule, $request->validated());
 
-        return redirect()->route('exam-schedules.index')
+        return redirect()->route('admin.exam-schedules.index')
             ->with('success', 'Exam schedule updated successfully.');
     }
 
@@ -78,7 +78,7 @@ class ExamSchedulesController extends Controller
             ]);
         }
 
-        return redirect()->route('exam-schedules.index')
+        return redirect()->route('admin.exam-schedules.index')
             ->with('success', 'Exam schedule deleted successfully.');
     }
 

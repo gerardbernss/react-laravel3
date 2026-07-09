@@ -12,7 +12,7 @@ export function useProgramCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/programs');
+        post('/admin/programs');
     };
 
     return { data, setData, processing, errors, handleSubmit };

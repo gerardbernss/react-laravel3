@@ -61,7 +61,7 @@ export default function AuditLog({ applicant, auditLogs }: Props) {
                         </p>
                         <p className="text-sm text-gray-500">Application #: {applicant.application_number}</p>
                     </div>
-                    <Link href={`/enrollment/${applicant.id}`}>
+                    <Link href={`/admin/enrollment/${applicant.id}`}>
                         <Button variant="outline">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Details

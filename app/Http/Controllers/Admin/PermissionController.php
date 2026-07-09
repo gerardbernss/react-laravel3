@@ -39,7 +39,7 @@ class PermissionController extends Controller
     {
         $this->permissionService->create($request->validated());
 
-        return redirect()->route('permissions.index')->with('message', 'Permission created successfully!');
+        return redirect()->route('admin.permissions.index')->with('message', 'Permission created successfully!');
     }
 
     public function show(Permission $permission)
@@ -62,7 +62,7 @@ class PermissionController extends Controller
     {
         $this->permissionService->update($permission, $request->validated());
 
-        return redirect()->route('permissions.index')->with('message', 'Permission updated successfully!');
+        return redirect()->route('admin.permissions.index')->with('message', 'Permission updated successfully!');
     }
 
     public function destroy(Permission $permission)
@@ -71,6 +71,6 @@ class PermissionController extends Controller
 
         $this->permissionRepository->delete($permission);
 
-        return redirect()->route('permissions.index')->with('message', 'Permission deleted successfully!');
+        return redirect()->route('admin.permissions.index')->with('message', 'Permission deleted successfully!');
     }
 }

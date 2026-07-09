@@ -336,7 +336,7 @@ export function useAddApplicant() {
                     formData.append(key, value.toString());
                 }
             });
-            router.post('/admissions/applicants', formData, {
+            router.post('/admin/applicants', formData, {
                 forceFormData: true,
                 onSuccess: () => router.visit('/applications/success', { replace: true }),
                 onError: (errors) => {

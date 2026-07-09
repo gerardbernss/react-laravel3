@@ -35,8 +35,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Enrollment Management', href: '/enrollment/dashboard' },
-    { title: 'Reports', href: '/enrollment/report' },
+    { title: 'Enrollment Management', href: '/admin/enrollment/dashboard' },
+    { title: 'Reports', href: '/admin/enrollment/report' },
 ];
 
 export default function EnrollmentReport({ statistics, filters = {}, schoolYears = [], semesters = [] }: Props) {
@@ -53,7 +53,7 @@ export default function EnrollmentReport({ statistics, filters = {}, schoolYears
                     <div>
                         <h1 className={PAGE_TITLE}>Enrollment Reports</h1>
                     </div>
-                    <Link href="/enrollment/dashboard">
+                    <Link href="/admin/enrollment/dashboard">
                         <Button variant="outline">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Dashboard

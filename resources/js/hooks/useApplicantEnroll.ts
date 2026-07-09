@@ -13,7 +13,7 @@ export function useApplicantEnroll({ applicantId }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post(`/admissions/applicants/${applicantId}/enroll`);
+        post(`/admin/applicants/${applicantId}/enroll`);
     };
 
     return { data, setData, processing, errors, handleSubmit };

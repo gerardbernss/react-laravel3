@@ -17,9 +17,9 @@ interface Params {
 export function useExaminationRoomEdit({ room }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Examination Rooms', href: '/examination-rooms' },
-        { title: room.name, href: `/examination-rooms/${room.id}` },
-        { title: 'Edit', href: `/examination-rooms/${room.id}/edit` },
+        { title: 'Examination Rooms', href: '/admin/examination-rooms' },
+        { title: room.name, href: `/admin/examination-rooms/${room.id}` },
+        { title: 'Edit', href: `/admin/examination-rooms/${room.id}/edit` },
     ];
 
     const { data, setData, put, processing, errors } = useForm({
@@ -32,7 +32,7 @@ export function useExaminationRoomEdit({ room }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/examination-rooms/${room.id}`);
+        put(`/admin/examination-rooms/${room.id}`);
     };
 
     return { breadcrumbs, data, setData, processing, errors, handleSubmit };

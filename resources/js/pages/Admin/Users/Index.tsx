@@ -33,7 +33,7 @@ interface PageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Users', href: '/users' },
+    { title: 'Users', href: '/admin/users' },
 ];
 
 interface UserTableRowProps {
@@ -101,7 +101,7 @@ function UserTableRow({ user, visibleColumns, isSelected, processing, onSelect, 
                 <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex justify-center gap-2">
                         {hasPermission('update-users') && (
-                            <Link href={`/users/${user.id}/edit`}>
+                            <Link href={`/admin/users/${user.id}/edit`}>
                                 <button className={TABLE_ROW_ACTION}>
                                     <Pencil className="h-3 w-3" /> Edit
                                 </button>
@@ -167,7 +167,7 @@ export default function Index() {
                         <p className={`mt-1 ${BODY_TEXT}`}>Manage system users and their roles</p>
                     </div>
                     {hasPermission('create-users') && (
-                        <Link href="/users/create">
+                        <Link href="/admin/users/create">
                             <Button>
                                 <UserPlus className="mr-2 h-4 w-4" />
                                 Create User

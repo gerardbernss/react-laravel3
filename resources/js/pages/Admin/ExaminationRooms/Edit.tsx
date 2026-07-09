@@ -21,7 +21,7 @@ export default function Edit({ room }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/examination-rooms" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/examination-rooms" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Rooms
                     </Link>
@@ -115,7 +115,7 @@ export default function Edit({ room }: Props) {
                                     </>
                                 )}
                             </Button>
-                            <Link href="/examination-rooms">
+                            <Link href="/admin/examination-rooms">
                                 <Button type="button" variant="outline">
                                     Cancel
                                 </Button>

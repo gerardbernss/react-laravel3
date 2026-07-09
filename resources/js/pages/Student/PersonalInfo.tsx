@@ -44,7 +44,7 @@ interface Props {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Personal Information',
-        href: '/student/personal-info',
+        href: '/student/profile',
     },
 ];
 

@@ -10,8 +10,8 @@ import { type ReactNode } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
-    { title: 'Add Student', href: '/students/create' },
+    { title: 'Students', href: '/admin/students' },
+    { title: 'Add Student', href: '/admin/students/create' },
 ];
 
 const gradeLevels = [

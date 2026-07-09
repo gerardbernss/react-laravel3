@@ -9,7 +9,7 @@ export function useStudentChangePassword() {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        put('/student/change-password', {
+        put('/student/password', {
             onSuccess: () => reset(),
         });
     };

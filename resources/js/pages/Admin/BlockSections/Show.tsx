@@ -69,7 +69,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Block Sections
                     </Link>
@@ -89,7 +89,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                         </div>
 
                         <div className="flex gap-2">
-                            <Link href={`/block-sections/${blockSection.id}/edit`}>
+                            <Link href={`/admin/block-sections/${blockSection.id}/edit`}>
                                 <Button variant="outline">
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
@@ -349,7 +349,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                                     <tr key={subject.id} className="hover:bg-gray-50">
                                                         <td className="px-4 py-3">
                                                             <Link
-                                                                href={`/subjects/${subject.id}`}
+                                                                href={`/admin/subjects/${subject.id}`}
                                                                 className="font-medium text-primary hover:underline"
                                                             >
                                                                 {subject.code}
@@ -392,7 +392,7 @@ export default function Show({ blockSection, enrolledStudents, availableStudents
                                 <div className="rounded-lg border border-dashed py-12 text-center">
                                     <BookOpen className="mx-auto h-10 w-10 text-gray-400" />
                                     <p className="mt-2 font-medium text-gray-700">No subjects assigned</p>
-                                    <Link href={`/block-sections/${blockSection.id}/edit`}>
+                                    <Link href={`/admin/block-sections/${blockSection.id}/edit`}>
                                         <Button variant="outline" className="mt-4">
                                             Assign Subjects
                                         </Button>

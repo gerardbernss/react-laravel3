@@ -18,7 +18,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Programs', href: '/programs' },
+    { title: 'Programs', href: '/admin/programs' },
 ];
 
 function SortIcon({ col, sortConfig }: { col: ProgramSortKey; sortConfig: { key: ProgramSortKey | null; direction: 'asc' | 'desc' } }) {
@@ -46,7 +46,7 @@ function ProgramRow({ program, processing, onDelete }: ProgramRowProps) {
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
-                    <Link href={`/programs/${program.id}/edit`}>
+                    <Link href={`/admin/programs/${program.id}/edit`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -98,7 +98,7 @@ export default function Index({ programs, schools }: Props) {
                         <GraduationCap className="h-7 w-7 text-primary" />
                         <h1 className={PAGE_TITLE}>Programs</h1>
                     </div>
-                    <Link href="/programs/create">
+                    <Link href="/admin/programs/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Program

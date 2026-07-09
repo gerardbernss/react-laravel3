@@ -77,7 +77,7 @@ export function usePrograms(programs: Program[]) {
     };
 
     const confirmDelete = () => {
-        destroy(`/programs/${deleteDialog.id}`, {
+        destroy(`/admin/programs/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

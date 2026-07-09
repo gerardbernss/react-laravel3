@@ -34,7 +34,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
+    { title: 'Students', href: '/admin/students' },
     { title: 'Student Profile', href: '#' },
 ];
 
@@ -87,7 +87,7 @@ export default function ShowStudent({ student, personalData, familyBackground, s
             <Head title={`Student — ${fullName}`} />
 
             <div className="space-y-6 p-4 md:p-6">
-                <Link href="/students" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/admin/students" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                     <ArrowLeft className="mr-1 h-4 w-4" />
                     Back to Students
                 </Link>
@@ -114,7 +114,7 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                                 <XCircle className="mr-2 h-4 w-4" /> Withdraw
                             </Button>
                         )}
-                        <Link href={`/students/${student.id}/edit`}>
+                        <Link href={`/admin/students/${student.id}/edit`}>
                             <Button variant="outline">
                                 <Edit className="mr-2 h-4 w-4" /> Edit
                             </Button>
@@ -300,7 +300,7 @@ export default function ShowStudent({ student, personalData, familyBackground, s
                                                 <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">{e.status}</span>
                                             </td>
                                             <td className="py-1.5">
-                                                <a href={`/reports/report-card/${e.id}`} target="_blank" rel="noreferrer">
+                                                <a href={`/teacher/reports/report-card/${e.id}`} target="_blank" rel="noreferrer">
                                                     <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
                                                         <Printer className="h-3 w-3" />
                                                         Print

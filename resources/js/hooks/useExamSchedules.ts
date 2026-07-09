@@ -93,7 +93,7 @@ export function useExamSchedules(schedules: ExamSchedule[]) {
     };
 
     const confirmDelete = () => {
-        destroy(`/exam-schedules/${deleteDialog.id}`, {
+        destroy(`/admin/exam-schedules/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

@@ -21,8 +21,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Exam Assignments', href: '/exam-assignments' },
-    { title: 'Assign Applicants', href: '/exam-assignments/create' },
+    { title: 'Exam Assignments', href: '/admin/exam-assignments' },
+    { title: 'Assign Applicants', href: '/admin/exam-assignments/create' },
 ];
 
 const EXAM_TYPE_COLORS: Record<string, string> = {
@@ -65,7 +65,7 @@ export default function Create({ applicants, schedules, filters }: Props) {
 
             <div className={`flex flex-col gap-6 ${PAGE_PADDING}`}>
                 <div>
-                    <Link href="/exam-assignments" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/exam-assignments" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Assignments
                     </Link>
@@ -175,7 +175,7 @@ export default function Create({ applicants, schedules, filters }: Props) {
                                 <div className="py-10 text-center">
                                     <Calendar className="mx-auto h-10 w-10 text-gray-300" />
                                     <p className={`mt-2 ${BODY_TEXT}`}>No exam schedules found.</p>
-                                    <Link href="/exam-schedules/create">
+                                    <Link href="/admin/exam-schedules/create">
                                         <Button variant="outline" size="sm" className="mt-3">
                                             Create a schedule
                                         </Button>
@@ -309,7 +309,7 @@ export default function Create({ applicants, schedules, filters }: Props) {
                                             variant="outline"
                                             size="sm"
                                             className="mt-3"
-                                            onClick={() => router.get('/exam-assignments/create', {}, { preserveState: true, replace: true })}
+                                            onClick={() => router.get('/admin/exam-assignments/create', {}, { preserveState: true, replace: true })}
                                         >
                                             Clear search
                                         </Button>
@@ -345,7 +345,7 @@ export default function Create({ applicants, schedules, filters }: Props) {
                         </div>
 
                         <div className="flex shrink-0 gap-3">
-                            <Link href="/exam-assignments">
+                            <Link href="/admin/exam-assignments">
                                 <Button variant="outline">Cancel</Button>
                             </Link>
                             <Button onClick={handleSubmit} disabled={submitting || selectedApplicants.length === 0 || !selectedSchedule || overCapacity}>

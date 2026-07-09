@@ -2,15 +2,22 @@
 
 /**
  * Admissions routes — portal credentials, exam results, and enrollment workflow.
+ * URL/name namespace: /admin/portal-credentials/*, /admin/exam-results/*, /admin/enrollment/*.
  *
  * All routes in this file require 'auth' + 'verified' middleware (admin/staff).
  * Individual route groups add a 'permission:X' middleware for finer-grained RBAC.
  *
  * Route groups:
- *   permission:manage-portal-credentials — generate, send, suspend, reactivate student portal logins
+ *   permission:manage-portal-credentials — generate, send, suspend, reactivate student portal logins.
+ *                                          NOTE: this permission slug is not present in
+ *                                          database/seeders/RolePermissionSeeder.php, so no role
+ *                                          currently has it — this group is effectively
+ *                                          inaccessible until the seeder is updated. Pre-existing,
+ *                                          left as-is (out of scope for a routing cleanup).
  *   permission:manage-exam-results       — upload CSV scores, rank results, send result emails,
  *                                          bulk-update applicant statuses (Exam Passed / Exam Failed)
  *   (no extra permission)                — enrollment dashboard, onsite enrollment wizard, audit log
+ *                                          TODO: no permission:X gate exists for this group yet.
  *
  * This file is included by routes/web.php via require __DIR__.'/admissions.php'.
  */
@@ -20,7 +27,7 @@ use App\Http\Controllers\Admissions\ExamResultsController;
 use App\Http\Controllers\Admissions\PortalCredentialController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
 
     // ===== PORTAL CREDENTIAL ROUTES =====
     Route::middleware(['permission:manage-portal-credentials'])->prefix('portal-credentials')->name('portal-credentials.')->group(function () {
@@ -32,13 +39,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{credential}/resend', [PortalCredentialController::class, 'resend'])->name('resend');
         Route::post('/{credential}/suspend', [PortalCredentialController::class, 'suspend'])->name('suspend');
         Route::post('/{credential}/reactivate', [PortalCredentialController::class, 'reactivate'])->name('reactivate');
-        Route::get('/statistics', [PortalCredentialController::class, 'statistics'])->name('statistics');
     });
 
     // ===== EXAM RESULTS ROUTES =====
     Route::middleware(['permission:manage-exam-results'])->prefix('exam-results')->name('exam-results.')->group(function () {
         Route::get('/', [ExamResultsController::class, 'index'])->name('index');
-        Route::get('/upload', [ExamResultsController::class, 'create'])->name('create');
+        Route::get('/upload', [ExamResultsController::class, 'create'])->name('upload');
         Route::post('/upload', [ExamResultsController::class, 'store'])->name('store');
         Route::post('/upload/confirm', [ExamResultsController::class, 'confirmStore'])->name('confirm');
         Route::post('/update-rankings', [ExamResultsController::class, 'updateRankings'])->name('update-rankings');

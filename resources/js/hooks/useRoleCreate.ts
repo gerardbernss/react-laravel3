@@ -11,7 +11,7 @@ export function useRoleCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/roles');
+        post('/admin/roles');
     };
 
     const handlePermissionChange = (permissionId: number, checked: boolean) => {

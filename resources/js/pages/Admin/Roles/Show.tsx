@@ -17,8 +17,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Roles', href: '/roles' },
-    { title: 'Role Details', href: '/roles/show' },
+    { title: 'Roles', href: '/admin/roles' },
+    { title: 'Role Details', href: '/admin/roles/show' },
 ];
 
 export default function Show({ role }: Props) {
@@ -31,7 +31,7 @@ export default function Show({ role }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/roles">
+                    <Link href="/admin/roles">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Roles
@@ -119,12 +119,12 @@ export default function Show({ role }: Props) {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {hasPermission('update-roles') && (
-                                    <Link href={`/roles/${role.id}/edit`} className="block">
+                                    <Link href={`/admin/roles/${role.id}/edit`} className="block">
                                         <Button className="w-full">Edit Role</Button>
                                     </Link>
                                 )}
                                 {hasPermission('view-roles') && (
-                                    <Link href="/roles" className="block">
+                                    <Link href="/admin/roles" className="block">
                                         <Button variant="outline" className="w-full">
                                             View All Roles
                                         </Button>
@@ -176,7 +176,7 @@ export default function Show({ role }: Props) {
                                     <CardDescription>Users currently assigned to this role ({role.users?.length || 0} total)</CardDescription>
                                 </div>
                                 {hasPermission('assign-roles') && (
-                                    <Link href={`/users?assign_role=${role.id}`}>
+                                    <Link href={`/admin/users?assign_role=${role.id}`}>
                                         <Button size="sm">
                                             <Users className="mr-2 h-4 w-4" />
                                             Assign User
@@ -211,7 +211,7 @@ export default function Show({ role }: Props) {
                                                 <TableCell>
                                                     <div className="flex gap-2">
                                                         {hasPermission('update-users') && (
-                                                            <Link href={`/users/${user.id}/edit`}>
+                                                            <Link href={`/admin/users/${user.id}/edit`}>
                                                                 <Button size="sm" variant="outline">
                                                                     Edit
                                                                 </Button>

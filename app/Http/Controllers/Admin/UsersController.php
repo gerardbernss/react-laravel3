@@ -46,7 +46,7 @@ class UsersController extends Controller
     {
         $this->userService->create($request->validated());
 
-        return redirect()->route('users.index')->with('message', 'User created successfully!');
+        return redirect()->route('admin.users.index')->with('message', 'User created successfully!');
     }
 
     public function edit(User $user)
@@ -63,7 +63,7 @@ class UsersController extends Controller
     {
         $this->userService->update($user, $request->validated());
 
-        return redirect()->route('users.index')->with('message', 'User updated successfully!');
+        return redirect()->route('admin.users.index')->with('message', 'User updated successfully!');
     }
 
     public function destroy(User $user)
@@ -72,7 +72,7 @@ class UsersController extends Controller
 
         $this->userRepository->delete($user);
 
-        return redirect()->route('users.index')->with('message', 'User deleted successfully!');
+        return redirect()->route('admin.users.index')->with('message', 'User deleted successfully!');
     }
 
     public function assignRole(AssignRoleRequest $request, User $user)

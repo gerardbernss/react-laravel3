@@ -9,10 +9,10 @@ interface Params {
 
 export function useApplicantShow({ applicant }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Applicant List', href: '/admissions/applicants' },
+        { title: 'Applicant List', href: '/admin/applicants' },
         {
             title: `${applicant.personal_data.first_name ?? ''} ${applicant.personal_data.last_name ?? ''}`,
-            href: `/admissions/applicants/${applicant.id}/show`,
+            href: `/admin/applicants/${applicant.id}/show`,
         },
     ];
 
@@ -33,7 +33,7 @@ export function useApplicantShow({ applicant }: Params) {
         setEvaluating(true);
         try {
             const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-            const response = await fetch(`/admissions/applicants/${applicant.id}/evaluate`, {
+            const response = await fetch(`/admin/applicants/${applicant.id}/evaluate`, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',

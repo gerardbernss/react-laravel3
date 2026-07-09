@@ -48,7 +48,7 @@ class PortalCredentialController extends Controller
             return back()->withErrors([$result['error_field'] => $result['error_message']]);
         }
 
-        return redirect()->route('portal-credentials.show', $result['credential']->id)
+        return redirect()->route('admin.portal-credentials.show', $result['credential']->id)
             ->with('success', 'Portal credentials generated and sent to applicant successfully.');
     }
 

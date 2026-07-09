@@ -47,10 +47,10 @@ interface Params {
 export function useEnrollmentShow({ applicant, fees, units, discountTypes }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Enrollment Management', href: '/enrollment/dashboard' },
+        { title: 'Enrollment Management', href: '/admin/enrollment/dashboard' },
         {
             title: `${applicant.personal_data?.last_name}, ${applicant.personal_data?.first_name}`,
-            href: `/enrollment/${applicant.id}`,
+            href: `/admin/enrollment/${applicant.id}`,
         },
     ];
 
@@ -62,7 +62,7 @@ export function useEnrollmentShow({ applicant, fees, units, discountTypes }: Par
 
     const handleWithdraw = (e: FormEvent) => {
         e.preventDefault();
-        withdrawForm.post(`/enrollment/${applicant.id}/withdraw`, {
+        withdrawForm.post(`/admin/enrollment/${applicant.id}/withdraw`, {
             onSuccess: () => {
                 setShowWithdrawDialog(false);
                 withdrawForm.reset();
@@ -74,7 +74,7 @@ export function useEnrollmentShow({ applicant, fees, units, discountTypes }: Par
 
     const handleEnroll = (e: FormEvent) => {
         e.preventDefault();
-        enrollForm.post(`/enrollment/${applicant.id}/enroll`, {
+        enrollForm.post(`/admin/enrollment/${applicant.id}/enroll`, {
             onSuccess: () => setShowEnrollForm(false),
         });
     };
@@ -139,11 +139,11 @@ export function useEnrollmentShow({ applicant, fees, units, discountTypes }: Par
 
     const handleOnsiteEnroll = (e: FormEvent) => {
         e.preventDefault();
-        onsiteForm.post(`/enrollment/${applicant.id}/process-onsite`);
+        onsiteForm.post(`/admin/enrollment/${applicant.id}/process-onsite`);
     };
 
     const confirmRevert = () => {
-        router.post(`/enrollment/${applicant.id}/revert-to-pending`, {}, {
+        router.post(`/admin/enrollment/${applicant.id}/revert-to-pending`, {}, {
             onSuccess: () => setShowRevertDialog(false),
         });
     };

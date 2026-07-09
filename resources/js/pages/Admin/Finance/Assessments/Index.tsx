@@ -24,8 +24,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Finance', href: '/admin/finance/assessments' },
-    { title: 'Assessments', href: '/admin/finance/assessments' },
+    { title: 'Finance', href: '/admin/fee-assessments' },
+    { title: 'Assessments', href: '/admin/fee-assessments' },
 ];
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -83,8 +83,8 @@ function AssessmentRow({ assessment: a }: AssessmentRowProps) {
                 <Link
                     href={
                         a.type === 'applicant' && a.applicant_id
-                            ? `/admissions/applicants/${a.applicant_id}/enroll`
-                            : `/admin/finance/assessments/${a.id}`
+                            ? `/admin/applicants/${a.applicant_id}/enroll`
+                            : `/admin/fee-assessments/${a.id}`
                     }
                 >
                     <Button size="sm" variant="outline">

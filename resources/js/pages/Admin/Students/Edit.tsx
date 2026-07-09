@@ -18,7 +18,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
+    { title: 'Students', href: '/admin/students' },
     { title: 'Edit Student', href: '#' },
 ];
 
@@ -213,7 +213,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                         )}
                     </div>
                     <div className="flex gap-2">
-                        <Link href={`/students/${student.id}`}>
+                        <Link href={`/admin/students/${student.id}`}>
                             <Button type="button" variant="outline">Cancel</Button>
                         </Link>
                         <Button type="submit" disabled={processing}>
@@ -385,7 +385,7 @@ export default function EditStudent({ student, personalData, siblings: initialSi
                 ))}
 
                 <div className="flex justify-end gap-2">
-                    <Link href={`/students/${student.id}`}>
+                    <Link href={`/admin/students/${student.id}`}>
                         <Button type="button" variant="outline">Cancel</Button>
                     </Link>
                     <Button type="submit" disabled={processing}>

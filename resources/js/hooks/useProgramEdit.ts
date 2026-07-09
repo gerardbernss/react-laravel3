@@ -17,9 +17,9 @@ interface Params {
 export function useProgramEdit({ program }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Programs', href: '/programs' },
-        { title: program.code, href: `/programs/${program.id}/edit` },
-        { title: 'Edit', href: `/programs/${program.id}/edit` },
+        { title: 'Programs', href: '/admin/programs' },
+        { title: program.code, href: `/admin/programs/${program.id}/edit` },
+        { title: 'Edit', href: `/admin/programs/${program.id}/edit` },
     ];
 
     const { data, setData, put, processing, errors } = useForm({
@@ -32,7 +32,7 @@ export function useProgramEdit({ program }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/programs/${program.id}`);
+        put(`/admin/programs/${program.id}`);
     };
 
     return { breadcrumbs, data, setData, processing, errors, handleSubmit };

@@ -109,11 +109,11 @@ export function useExamAssignments(assignments: Assignment[]) {
     };
 
     const markResult = (id: number, result: 'passed' | 'failed') => {
-        router.post(`/exam-assignments/${id}/mark-result`, { result }, { preserveScroll: true });
+        router.post(`/admin/exam-assignments/${id}/mark-result`, { result }, { preserveScroll: true });
     };
 
     const confirmDelete = () => {
-        destroy(`/exam-assignments/${deleteDialog.id}`, {
+        destroy(`/admin/exam-assignments/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0 }),
         });
     };

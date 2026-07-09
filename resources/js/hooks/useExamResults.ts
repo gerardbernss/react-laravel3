@@ -58,17 +58,17 @@ export function useExamResults(results: ExamResult[], passingPercentage: number)
 
     const handleUpdate = () => {
         setUpdating(true);
-        router.post('/exam-results/update-all', {}, { onFinish: () => setUpdating(false) });
+        router.post('/admin/exam-results/update-all', {}, { onFinish: () => setUpdating(false) });
     };
 
     const handleSendResult = (id: number) => {
         setSendingId(id);
-        router.post(`/exam-results/${id}/send`, {}, { onFinish: () => setSendingId(null) });
+        router.post(`/admin/exam-results/${id}/send`, {}, { onFinish: () => setSendingId(null) });
     };
 
     const handleSendAll = (scope: 'all' | 'new') => {
         setSendingAll(true);
-        router.post('/exam-results/send-all', { scope }, {
+        router.post('/admin/exam-results/send-all', { scope }, {
             onFinish: () => { setSendingAll(false); setSendAllOpen(false); },
         });
     };
@@ -83,7 +83,7 @@ export function useExamResults(results: ExamResult[], passingPercentage: number)
     };
 
     const handleSaveThreshold = () => {
-        thresholdForm.post('/exam-results/settings', {
+        thresholdForm.post('/admin/exam-results/settings', {
             onSuccess: () => setThresholdOpen(false),
         });
     };

@@ -19,7 +19,7 @@ export function useSubjectCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/subjects');
+        post('/admin/subjects');
     };
 
     return { data, setData, processing, errors, handleSubmit };

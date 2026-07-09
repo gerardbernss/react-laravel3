@@ -18,7 +18,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Subjects', href: '/subjects' },
+    { title: 'Subjects', href: '/admin/subjects' },
 ];
 
 const GRADE_LEVELS = [
@@ -68,12 +68,12 @@ function SubjectRow({ subject, processing, onDelete }: SubjectRowProps) {
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
-                    <Link href={`/subjects/${subject.id}`}>
+                    <Link href={`/admin/subjects/${subject.id}`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Eye className="h-3 w-3" /> View
                         </button>
                     </Link>
-                    <Link href={`/subjects/${subject.id}/edit`}>
+                    <Link href={`/admin/subjects/${subject.id}/edit`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -127,7 +127,7 @@ export default function Index({ subjects }: Props) {
                         <BookOpen className="h-7 w-7 text-primary" />
                         <h1 className={PAGE_TITLE}>Subjects</h1>
                     </div>
-                    <Link href="/subjects/create">
+                    <Link href="/admin/subjects/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Subject

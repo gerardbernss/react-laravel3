@@ -37,7 +37,7 @@ class ProgramsController extends Controller
     {
         $this->programService->create($request->validated());
 
-        return redirect()->route('programs.index')
+        return redirect()->route('admin.programs.index')
             ->with('success', 'Program created successfully.');
     }
 
@@ -53,7 +53,7 @@ class ProgramsController extends Controller
     {
         $this->programService->update($program, $request->validated());
 
-        return redirect()->route('programs.index')
+        return redirect()->route('admin.programs.index')
             ->with('success', 'Program updated successfully.');
     }
 
@@ -61,7 +61,7 @@ class ProgramsController extends Controller
     {
         $this->programRepository->delete($program);
 
-        return redirect()->route('programs.index')
+        return redirect()->route('admin.programs.index')
             ->with('success', 'Program deleted successfully.');
     }
 

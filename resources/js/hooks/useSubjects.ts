@@ -85,7 +85,7 @@ export function useSubjects(subjects: Subject[]) {
     };
 
     const confirmDelete = () => {
-        destroy(`/subjects/${deleteDialog.id}`, {
+        destroy(`/admin/subjects/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

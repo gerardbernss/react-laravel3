@@ -61,7 +61,7 @@ export function useEnrollmentPeriods(periods: EnrollmentPeriod[]) {
 
     const handleStart = (e: FormEvent) => {
         e.preventDefault();
-        startForm.post('/enrollment-periods', {
+        startForm.post('/admin/enrollment-periods', {
             onSuccess: () => { startForm.reset(); setShowStartDialog(false); },
         });
     };
@@ -69,7 +69,7 @@ export function useEnrollmentPeriods(periods: EnrollmentPeriod[]) {
     const handleOpenEnrollment = (e: FormEvent) => {
         e.preventDefault();
         if (!openDialog) return;
-        openForm.post(`/enrollment-periods/${openDialog.id}/open`, {
+        openForm.post(`/admin/enrollment-periods/${openDialog.id}/open`, {
             onSuccess: () => { openForm.reset(); setOpenDialog(null); },
         });
     };
@@ -95,21 +95,21 @@ export function useEnrollmentPeriods(periods: EnrollmentPeriod[]) {
     const handleUpdate = (e: FormEvent) => {
         e.preventDefault();
         if (!editDialog) return;
-        editForm.put(`/enrollment-periods/${editDialog.id}`, {
+        editForm.put(`/admin/enrollment-periods/${editDialog.id}`, {
             onSuccess: () => { editForm.reset(); setEditDialog(null); },
         });
     };
 
     const handleClose = () => {
         if (!closeDialog) return;
-        postClose(`/enrollment-periods/${closeDialog.id}/close`, {
+        postClose(`/admin/enrollment-periods/${closeDialog.id}/close`, {
             onSuccess: () => setCloseDialog(null),
         });
     };
 
     const handleDelete = () => {
         if (!deleteDialog) return;
-        destroyPeriod(`/enrollment-periods/${deleteDialog.id}`, {
+        destroyPeriod(`/admin/enrollment-periods/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog(null),
         });
     };

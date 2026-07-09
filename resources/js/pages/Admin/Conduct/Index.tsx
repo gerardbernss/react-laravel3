@@ -14,7 +14,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Conduct Categories', href: '/conduct-categories' },
+    { title: 'Conduct Categories', href: '/teacher/conduct-categories' },
 ];
 
 type Hook = ReturnType<typeof useConductIndex>;

@@ -18,8 +18,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Roles', href: '/roles' },
-    { title: 'Edit Role', href: '/roles/edit' },
+    { title: 'Roles', href: '/admin/roles' },
+    { title: 'Edit Role', href: '/admin/roles/edit' },
 ];
 
 export default function Edit({ role, permissions }: Props) {
@@ -31,7 +31,7 @@ export default function Edit({ role, permissions }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/roles">
+                    <Link href="/admin/roles">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Roles
@@ -122,7 +122,7 @@ export default function Edit({ role, permissions }: Props) {
                                 </div>
 
                                 <div className="flex justify-end gap-4">
-                                    <Link href="/roles">
+                                    <Link href="/admin/roles">
                                         <Button type="button" variant="outline">
                                             Cancel
                                         </Button>

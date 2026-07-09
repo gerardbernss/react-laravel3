@@ -20,7 +20,7 @@ interface Props {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Change Password',
-        href: '/student/change-password',
+        href: '/student/password',
     },
 ];
 

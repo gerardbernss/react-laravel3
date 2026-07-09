@@ -47,7 +47,7 @@ export default function Edit({ blockSection, subjects }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Block Sections
                     </Link>
@@ -286,7 +286,7 @@ export default function Edit({ blockSection, subjects }: Props) {
                                 </>
                             )}
                         </Button>
-                        <Link href="/block-sections">
+                        <Link href="/admin/block-sections">
                             <Button type="button" variant="outline">
                                 Cancel
                             </Button>

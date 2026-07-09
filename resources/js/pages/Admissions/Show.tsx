@@ -206,7 +206,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                     Download Form
                                 </button>
                                 <Link
-                                    href={`/admissions/applicants/${applicant.id}/edit`}
+                                    href={`/admin/applicants/${applicant.id}/edit`}
                                     className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                                 >
                                     <Edit className="h-4 w-4" />
@@ -513,7 +513,7 @@ export default function ViewProfile({ applicant, examResult }: { applicant: any;
                                                                         onClick={() => {
                                                                             // Encode the path to safely pass it in URL
                                                                             const encodedPath = btoa(doc[key]); // base64 encode
-                                                                            window.open(`/view-document/${encodedPath}`, '_blank');
+                                                                            window.open(`/admin/applicants/documents/${encodedPath}`, '_blank');
                                                                         }}
                                                                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                                                                     >

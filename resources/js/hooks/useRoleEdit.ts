@@ -18,7 +18,7 @@ export function useRoleEdit({ role }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/roles/${role.id}`);
+        put(`/admin/roles/${role.id}`);
     };
 
     const handlePermissionChange = (permissionId: number, checked: boolean) => {

@@ -49,7 +49,7 @@ class ApplicantController extends Controller
         try {
             $this->applicantService->createApplicant($request->validated(), $request);
 
-            return redirect()->route('applicants.index')->with('success', 'Applicant added successfully.');
+            return redirect()->route('admin.applicants.index')->with('success', 'Applicant added successfully.');
         } catch (\Exception $e) {
             Log::error('Application submission failed: ' . $e->getMessage());
 
@@ -68,7 +68,7 @@ class ApplicantController extends Controller
             $application = $this->applicantService->findForUpdate((int) $id);
             $this->applicantService->updateApplicant($application, $request->validated(), $request);
 
-            return redirect()->route('applicants.index')->with('success', 'Applicant updated successfully.');
+            return redirect()->route('admin.applicants.index')->with('success', 'Applicant updated successfully.');
         } catch (\Exception $e) {
             Log::error('Application update failed: ' . $e->getMessage());
 
@@ -81,7 +81,7 @@ class ApplicantController extends Controller
         try {
             $this->applicantService->destroyApplicant((int) $id);
 
-            return redirect()->route('applicants.index')->with('success', 'Applicant deleted successfully');
+            return redirect()->route('admin.applicants.index')->with('success', 'Applicant deleted successfully');
         } catch (\Exception $e) {
             Log::error('Application deletion failed: ' . $e->getMessage());
 
@@ -111,7 +111,7 @@ class ApplicantController extends Controller
     {
         $this->applicantService->enrollApplicant((int) $id, $request->validated());
 
-        return redirect()->route('applicants.show', $id)->with('success', 'Applicant enrolled and payment recorded successfully.');
+        return redirect()->route('admin.applicants.show', $id)->with('success', 'Applicant enrolled and payment recorded successfully.');
     }
 
     public function sendFinalResult($id)

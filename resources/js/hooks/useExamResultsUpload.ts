@@ -24,19 +24,19 @@ export function useExamResultsUpload({ importConflicts }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/exam-results/upload', { forceFormData: true });
+        post('/admin/exam-results/upload', { forceFormData: true });
     };
 
     const handleConfirm = (overwrite: boolean) => {
         setConfirming(true);
-        router.post('/exam-results/upload/confirm', { overwrite }, {
+        router.post('/admin/exam-results/upload/confirm', { overwrite }, {
             onFinish: () => setConfirming(false),
         });
     };
 
     const handleCancelConflict = () => {
         setConflictOpen(false);
-        router.get('/exam-results/upload');
+        router.get('/admin/exam-results/upload');
     };
 
     return { data, setData, processing, errors, inputRef, conflictOpen, confirming, handleSubmit, handleConfirm, handleCancelConflict };

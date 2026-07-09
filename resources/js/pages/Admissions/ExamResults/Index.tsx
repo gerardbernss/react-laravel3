@@ -19,7 +19,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Exam Results', href: '/exam-results' },
+    { title: 'Exam Results', href: '/admin/exam-results' },
 ];
 
 const TH_RIGHT = `${TABLE_HEADER_CELL.replace('text-left', 'text-right')}`;
@@ -141,7 +141,7 @@ export default function Index({ results, passingPercentage }: Props) {
                             <Mail className="h-4 w-4" />
                             {sendingAll ? 'Sending…' : 'Send All Results'}
                         </Button>
-                        <Link href="/exam-results/upload">
+                        <Link href="/admin/exam-results/upload">
                             <Button className="gap-2">
                                 <Upload className="h-4 w-4" />
                                 Upload Results

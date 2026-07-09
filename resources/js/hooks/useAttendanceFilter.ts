@@ -32,15 +32,15 @@ export function useAttendanceFilter(
     mySubjectSections: MySubjectSection[],
 ) {
     const handleSearch = (value: string) => {
-        router.get('/attendance', { ...filters, search: value || undefined }, { preserveState: true });
+        router.get('/teacher/attendance', { ...filters, search: value || undefined }, { preserveState: true });
     };
 
     const handleFilter = (key: string, value: string) => {
-        router.get('/attendance', { ...filters, [key]: value === 'all' ? undefined : value }, { preserveState: true });
+        router.get('/teacher/attendance', { ...filters, [key]: value === 'all' ? undefined : value }, { preserveState: true });
     };
 
     const clearFilters = () => {
-        router.get('/attendance');
+        router.get('/teacher/attendance');
     };
 
     const hasFilters = !!(filters.search || filters.school_year || filters.semester);

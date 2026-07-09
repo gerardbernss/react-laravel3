@@ -289,7 +289,7 @@ export function useEditApplicant({ applicant }: Params) {
     function handleConfirmedSubmit() {
         if (!pendingFormData) return;
 
-        router.put(`/admissions/applicants/${applicant.id}`, pendingFormData, {
+        router.put(`/admin/applicants/${applicant.id}`, pendingFormData, {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {

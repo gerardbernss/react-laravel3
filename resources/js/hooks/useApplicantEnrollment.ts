@@ -60,8 +60,8 @@ export function useApplicantEnrollment({ personalData, fees, assessmentNumber }:
             return;
         }
         setProcessing(true);
-        router.post(
-            '/applicant/personal-info',
+        router.put(
+            '/applicant/profile',
             { ...form },
             {
                 preserveScroll: true,

@@ -122,7 +122,7 @@ export function useStudentEnrollment(
 
     const handlePersonalInfoSave = () => {
         setIsSavingContact(true);
-        putContact('/student/personal-info', {
+        putContact('/student/profile', {
             onFinish: () => setIsSavingContact(false),
         });
     };
@@ -130,7 +130,7 @@ export function useStudentEnrollment(
     const handleEnrollStep1Next = () => {
         if (!contactDirty) { setEnrollStep(2); return; }
         setIsSavingContact(true);
-        putContact('/student/personal-info', {
+        putContact('/student/profile', {
             preserveScroll: true,
             onSuccess: () => { setEnrollStep(2); setIsSavingContact(false); },
             onError: () => setIsSavingContact(false),

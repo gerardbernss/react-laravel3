@@ -19,7 +19,7 @@ import { type BreadcrumbItem } from '@/types';
 import { ArrowLeft, ClipboardList, FileText, GraduationCap, HelpCircle, Trash2, User, UserPlus, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Add New Applicant', href: '/admissions/applicants/create' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Add New Applicant', href: '/admin/applicants/create' }];
 
 const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string }) => {
     return (

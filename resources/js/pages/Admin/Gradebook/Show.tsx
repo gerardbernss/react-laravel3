@@ -30,7 +30,7 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/gradebook" className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/teacher/gradebook" className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Gradebook
                     </Link>
@@ -50,7 +50,7 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                         </div>
                         <div className="flex shrink-0 gap-2 pt-1">
                             {canManageConduct && (
-                                <Link href={`/gradebook/${blockSection.id}/conduct/Q1`}>
+                                <Link href={`/teacher/gradebook/${blockSection.id}/conduct/Q1`}>
                                     <Button variant="outline" size="sm">
                                         <ClipboardList className="mr-1 h-4 w-4" />
                                         Conduct Grades
@@ -58,7 +58,7 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                                 </Link>
                             )}
                             {!isFaculty && (
-                                <a href={`/reports/grading-sheet/${blockSection.id}`}>
+                                <a href={`/teacher/reports/grading-sheet/${blockSection.id}`}>
                                     <Button variant="outline" size="sm">
                                         <Download className="mr-1 h-4 w-4" />
                                         Grading Sheet
@@ -124,14 +124,14 @@ export default function GradebookShow({ blockSection, subjects, quarters, totalS
                                                             )}
                                                             <div className="mt-1 flex gap-1">
                                                                 {qData.validation_status === 'draft' && (
-                                                                    <Link href={`/gradebook/${blockSection.id}/${subject.id}/${q}/components`}>
+                                                                    <Link href={`/teacher/gradebook/${blockSection.id}/${subject.id}/${q}/components`}>
                                                                         <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
                                                                             <Settings className="mr-1 h-3 w-3" />
                                                                             Setup
                                                                         </Button>
                                                                     </Link>
                                                                 )}
-                                                                <Link href={`/gradebook/${blockSection.id}/${subject.id}/${q}/entry`}>
+                                                                <Link href={`/teacher/gradebook/${blockSection.id}/${subject.id}/${q}/entry`}>
                                                                     <Button variant={hasComponents ? 'default' : 'outline'} size="sm" className="h-7 px-2 text-xs">
                                                                         <Table2 className="mr-1 h-3 w-3" />
                                                                         {qData.validation_status === 'draft' ? 'Entry' : 'View'}

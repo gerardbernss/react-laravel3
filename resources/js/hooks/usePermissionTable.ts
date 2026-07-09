@@ -87,7 +87,7 @@ export function usePermissionTable(permissions: Permission[]) {
 
     const confirmDelete = () => {
         setHideAlert(false);
-        destroy(`/permissions/${deleteDialog.id}`, {
+        destroy(`/admin/permissions/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

@@ -17,8 +17,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Permissions', href: '/permissions' },
-    { title: 'Permission Details', href: '/permissions/show' },
+    { title: 'Permissions', href: '/admin/permissions' },
+    { title: 'Permission Details', href: '/admin/permissions/show' },
 ];
 
 export default function Show({ permission }: Props) {
@@ -31,7 +31,7 @@ export default function Show({ permission }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/permissions">
+                    <Link href="/admin/permissions">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Permissions
@@ -108,7 +108,7 @@ export default function Show({ permission }: Props) {
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-1 space-y-1">
                                     {hasPermission('update-permissions') && (
-                                        <Link href={`/permissions/${permission.id}/edit`} className="w-full">
+                                        <Link href={`/admin/permissions/${permission.id}/edit`} className="w-full">
                                             <Button className="w-full">Edit Permission</Button>
                                         </Link>
                                     )}

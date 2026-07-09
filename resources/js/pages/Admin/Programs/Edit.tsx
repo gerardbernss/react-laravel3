@@ -23,7 +23,7 @@ export default function Edit({ program, schools }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/programs" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/programs" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Programs
                     </Link>
@@ -122,7 +122,7 @@ export default function Edit({ program, schools }: Props) {
                                     </>
                                 )}
                             </Button>
-                            <Link href="/programs">
+                            <Link href="/admin/programs">
                                 <Button type="button" variant="outline">
                                     Cancel
                                 </Button>

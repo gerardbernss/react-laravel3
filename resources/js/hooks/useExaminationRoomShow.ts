@@ -28,15 +28,15 @@ interface Params {
 export function useExaminationRoomShow({ room }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Examination Rooms', href: '/examination-rooms' },
-        { title: room.name, href: `/examination-rooms/${room.id}` },
+        { title: 'Examination Rooms', href: '/admin/examination-rooms' },
+        { title: room.name, href: `/admin/examination-rooms/${room.id}` },
     ];
 
     const { delete: destroy, processing } = useForm();
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const confirmDelete = () => {
-        destroy(`/examination-rooms/${room.id}`, {
+        destroy(`/admin/examination-rooms/${room.id}`, {
             onSuccess: () => setShowDeleteDialog(false),
         });
     };

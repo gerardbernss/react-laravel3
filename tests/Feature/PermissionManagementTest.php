@@ -16,7 +16,7 @@ it('can view permissions index with proper permission', function () {
     $admin = User::where('email', 'admin@example.com')->first();
     $this->actingAs($admin);
 
-    $response = $this->get('/permissions');
+    $response = $this->get('/admin/permissions');
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page->component('Permissions/Index'));
 });
@@ -30,9 +30,9 @@ it('can create a new permission', function () {
         'description' => 'A test permission for testing purposes',
     ];
 
-    $response = $this->post('/permissions', $permissionData);
-    $response->assertRedirect('/permissions');
-    
+    $response = $this->post('/admin/permissions', $permissionData);
+    $response->assertRedirect('/admin/permissions');
+
     $this->assertDatabaseHas('permissions', [
         'name' => 'Test Permission',
         'slug' => 'test-permission',
@@ -51,8 +51,8 @@ it('can update an existing permission', function () {
         'description' => 'Updated description',
     ];
 
-    $response = $this->put("/permissions/{$permission->id}", $updateData);
-    $response->assertRedirect('/permissions');
+    $response = $this->put("/admin/permissions/{$permission->id}", $updateData);
+    $response->assertRedirect('/admin/permissions');
     
     $this->assertDatabaseHas('permissions', [
         'id' => $permission->id,
@@ -68,8 +68,8 @@ it('can delete a permission', function () {
 
     $permission = Permission::first();
     
-    $response = $this->delete("/permissions/{$permission->id}");
-    $response->assertRedirect('/permissions');
+    $response = $this->delete("/admin/permissions/{$permission->id}");
+    $response->assertRedirect('/admin/permissions');
     
     $this->assertDatabaseMissing('permissions', [
         'id' => $permission->id,
@@ -94,7 +94,7 @@ it('validates permission creation data', function () {
     $admin = User::where('email', 'admin@example.com')->first();
     $this->actingAs($admin);
 
-    $response = $this->post('/permissions', []);
+    $response = $this->post('/admin/permissions', []);
     $response->assertSessionHasErrors(['name']);
 });
 
@@ -107,6 +107,6 @@ it('prevents duplicate permission names', function () {
         'description' => 'Test description',
     ];
 
-    $response = $this->post('/permissions', $permissionData);
+    $response = $this->post('/admin/permissions', $permissionData);
     $response->assertSessionHasErrors(['name']);
 });

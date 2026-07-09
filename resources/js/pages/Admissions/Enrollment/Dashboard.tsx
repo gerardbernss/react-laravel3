@@ -58,7 +58,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Enrollment Management', href: '/enrollment/dashboard' },
+    { title: 'Enrollment Management', href: '/admin/enrollment/dashboard' },
 ];
 
 export default function EnrollmentDashboard({ applicants, filters = {}, statistics, currentPeriod }: Props) {
@@ -236,7 +236,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                                             {applicant.student_id_number || <span className="text-gray-400">Not assigned</span>}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                            <Link href={`/enrollment/${applicant.id}`}>
+                                            <Link href={`/admin/enrollment/${applicant.id}`}>
                                                 <button className={TABLE_ROW_ACTION}>
                                                     <Eye className="h-3 w-3" /> View
                                                 </button>
@@ -262,7 +262,7 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                         <span className="text-sm text-gray-700">Rows per page:</span>
                         <select
                             value={applicants.per_page}
-                            onChange={(e) => router.get('/enrollment/dashboard', { ...filters, per_page: e.target.value, page: 1 }, { preserveState: true })}
+                            onChange={(e) => router.get('/admin/enrollment/dashboard', { ...filters, per_page: e.target.value, page: 1 }, { preserveState: true })}
                             className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             {[5, 10, 25, 50].map((s) => <option key={s} value={s}>{s}</option>)}
@@ -272,17 +272,17 @@ export default function EnrollmentDashboard({ applicants, filters = {}, statisti
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: 1 }, { preserveState: true })} disabled={applicants.current_page === 1} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                        <button onClick={() => router.get('/admin/enrollment/dashboard', { ...filters, page: 1 }, { preserveState: true })} disabled={applicants.current_page === 1} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
                             <ChevronsLeft className="h-5 w-5" />
                         </button>
-                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: applicants.current_page - 1 }, { preserveState: true })} disabled={applicants.current_page === 1} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                        <button onClick={() => router.get('/admin/enrollment/dashboard', { ...filters, page: applicants.current_page - 1 }, { preserveState: true })} disabled={applicants.current_page === 1} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
                             <ChevronLeft className="h-5 w-5" />
                         </button>
                         <span className="px-4 py-2 text-sm font-medium">Page {applicants.current_page} of {applicants.last_page}</span>
-                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: applicants.current_page + 1 }, { preserveState: true })} disabled={applicants.current_page === applicants.last_page} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                        <button onClick={() => router.get('/admin/enrollment/dashboard', { ...filters, page: applicants.current_page + 1 }, { preserveState: true })} disabled={applicants.current_page === applicants.last_page} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
                             <ChevronRight className="h-5 w-5" />
                         </button>
-                        <button onClick={() => router.get('/enrollment/dashboard', { ...filters, page: applicants.last_page }, { preserveState: true })} disabled={applicants.current_page === applicants.last_page} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                        <button onClick={() => router.get('/admin/enrollment/dashboard', { ...filters, page: applicants.last_page }, { preserveState: true })} disabled={applicants.current_page === applicants.last_page} className="rounded-lg p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
                             <ChevronsRight className="h-5 w-5" />
                         </button>
                     </div>

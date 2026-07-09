@@ -86,7 +86,7 @@ export function useUserTable(users: User[]) {
 
     const confirmDelete = () => {
         setHideAlert(false);
-        destroy(`/users/${deleteDialog.id}`, {
+        destroy(`/admin/users/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

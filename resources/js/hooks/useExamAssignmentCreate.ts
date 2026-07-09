@@ -53,7 +53,7 @@ export function useExamAssignmentCreate({ applicants, schedules }: Params) {
     const handleSearch = useCallback((value: string) => {
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
-            router.get('/exam-assignments/create', { search: value || undefined }, { preserveState: true, replace: true });
+            router.get('/admin/exam-assignments/create', { search: value || undefined }, { preserveState: true, replace: true });
         }, 300);
     }, []);
 
@@ -72,7 +72,7 @@ export function useExamAssignmentCreate({ applicants, schedules }: Params) {
         if (selectedApplicants.length === 0 || !selectedSchedule) return;
         setSubmitting(true);
         router.post(
-            '/exam-assignments/bulk',
+            '/admin/exam-assignments/bulk',
             { applicant_ids: selectedApplicants, exam_schedule_id: selectedSchedule },
             { onFinish: () => setSubmitting(false) },
         );

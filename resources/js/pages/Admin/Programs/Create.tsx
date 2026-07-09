@@ -16,8 +16,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Programs', href: '/programs' },
-    { title: 'Create', href: '/programs/create' },
+    { title: 'Programs', href: '/admin/programs' },
+    { title: 'Create', href: '/admin/programs/create' },
 ];
 
 export default function Create({ schools }: Props) {
@@ -29,7 +29,7 @@ export default function Create({ schools }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/programs" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/programs" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Programs
                     </Link>
@@ -126,7 +126,7 @@ export default function Create({ schools }: Props) {
                                     </>
                                 )}
                             </Button>
-                            <Link href="/programs">
+                            <Link href="/admin/programs">
                                 <Button type="button" variant="outline">
                                     Cancel
                                 </Button>

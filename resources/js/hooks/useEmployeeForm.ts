@@ -25,7 +25,7 @@ export function useEmployeeForm({ employee }: Params) {
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Employees', href: '/employees' },
+        { title: 'Employees', href: '/admin/employees' },
         { title: isEdit ? 'Edit Employee' : 'Add Employee', href: '#' },
     ];
 
@@ -46,9 +46,9 @@ export function useEmployeeForm({ employee }: Params) {
     const submit = (e: FormEvent) => {
         e.preventDefault();
         if (isEdit) {
-            put(`/employees/${employee!.id}`);
+            put(`/admin/employees/${employee!.id}`);
         } else {
-            post('/employees');
+            post('/admin/employees');
         }
     };
 

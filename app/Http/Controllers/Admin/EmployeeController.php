@@ -40,7 +40,7 @@ class EmployeeController extends Controller
     {
         $this->employeeService->create($request->validated());
 
-        return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
+        return redirect()->route('admin.employees.index')->with('success', 'Employee created successfully.');
     }
 
     public function show(Employee $employee)
@@ -63,13 +63,13 @@ class EmployeeController extends Controller
     {
         $this->employeeService->update($employee, $request->validated());
 
-        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
+        return redirect()->route('admin.employees.index')->with('success', 'Employee updated successfully.');
     }
 
     public function destroy(Employee $employee)
     {
         $this->employeeService->deactivate($employee);
 
-        return redirect()->route('employees.index')->with('success', 'Employee deactivated.');
+        return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated.');
     }
 }

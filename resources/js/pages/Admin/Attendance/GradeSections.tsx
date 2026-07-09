@@ -27,8 +27,8 @@ interface Props {
 export default function GradeSections({ gradeLevel, sections }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Attendance', href: '/attendance' },
-        { title: gradeLevel, href: `/attendance/grade/${encodeURIComponent(gradeLevel)}` },
+        { title: 'Attendance', href: '/teacher/attendance' },
+        { title: gradeLevel, href: `/teacher/attendance/grade/${encodeURIComponent(gradeLevel)}` },
     ];
 
     const totalEnrolled = sections.reduce((sum, s) => sum + Number(s.enrolled_count), 0);
@@ -39,7 +39,7 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/attendance" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                    <Link href="/teacher/attendance" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Attendance
                     </Link>
@@ -76,13 +76,13 @@ export default function GradeSections({ gradeLevel, sections }: Props) {
                                     </AppTable.Td>
                                     <AppTable.Td>
                                         <div className="flex justify-center gap-2">
-                                            <Link href={`/attendance/${section.id}`}>
+                                            <Link href={`/teacher/attendance/${section.id}`}>
                                                 <Button variant="outline" size="sm">
                                                     <ClipboardCheck className="mr-1 h-4 w-4" />
                                                     Take Attendance
                                                 </Button>
                                             </Link>
-                                            <Link href={`/attendance/${section.id}/history`}>
+                                            <Link href={`/teacher/attendance/${section.id}/history`}>
                                                 <Button variant="ghost" size="sm">
                                                     <History className="mr-1 h-4 w-4" />
                                                     History

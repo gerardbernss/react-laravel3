@@ -53,7 +53,7 @@ export function useStudentCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/students');
+        post('/admin/students');
     };
 
     const addSibling = () =>

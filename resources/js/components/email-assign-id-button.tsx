@@ -11,7 +11,7 @@ function EmailAssignIdButton({ applicationId }: { applicationId: number }) {
 
         try {
             const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-            const response = await fetch(`/studentidassignment/${applicationId}/email-admission`, {
+            const response = await fetch(`/admin/student-id-assignment/${applicationId}/email-admission`, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',

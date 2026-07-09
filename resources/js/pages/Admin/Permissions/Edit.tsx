@@ -16,8 +16,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Permissions', href: '/permissions' },
-    { title: 'Edit Permission', href: '/permissions/edit' },
+    { title: 'Permissions', href: '/admin/permissions' },
+    { title: 'Edit Permission', href: '/admin/permissions/edit' },
 ];
 
 export default function Edit({ permission }: Props) {
@@ -29,7 +29,7 @@ export default function Edit({ permission }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/permissions">
+                    <Link href="/admin/permissions">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Permissions
@@ -83,7 +83,7 @@ export default function Edit({ permission }: Props) {
                                 </div>
 
                                 <div className="flex justify-end gap-4">
-                                    <Link href="/permissions">
+                                    <Link href="/admin/permissions">
                                         <Button type="button" variant="outline">
                                             Cancel
                                         </Button>

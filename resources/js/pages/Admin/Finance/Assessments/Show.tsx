@@ -14,7 +14,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Finance', href: '/admin/finance/assessments' },
+    { title: 'Finance', href: '/admin/fee-assessments' },
     { title: 'Assessment Detail', href: '#' },
 ];
 
@@ -62,7 +62,7 @@ export default function AssessmentShow({ assessment }: Props) {
             <div className="p-6">
                 <div className="mb-6 flex items-start justify-between">
                     <div>
-                        <Link href="/admin/finance/assessments">
+                        <Link href="/admin/fee-assessments">
                             <Button variant="ghost" size="sm" className="mb-2 -ml-2">
                                 <ArrowLeft className="mr-1 h-4 w-4" />
                                 Back to Assessments
@@ -75,7 +75,7 @@ export default function AssessmentShow({ assessment }: Props) {
                     </div>
                     <div className="flex items-center gap-2">
                         <span className={`rounded-full border px-3 py-1 text-sm font-medium ${sc.color}`}>{sc.label}</span>
-                        <Button variant="outline" size="sm" onClick={() => router.post(`/admin/finance/assessments/${assessment.id}/sync-status`)}>
+                        <Button variant="outline" size="sm" onClick={() => router.post(`/admin/fee-assessments/${assessment.id}/sync-status`)}>
                             Sync Status
                         </Button>
                     </div>

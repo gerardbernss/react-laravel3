@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LABEL_TEXT, PAGE_PADDING, PAGE_TITLE } from '@/constants/ui';
 import { useUserCreate } from '@/hooks/useUserCreate';
 import AppLayout from '@/layouts/app-layout';
-import users from '@/routes/users';
+import users from '@/routes/admin/users';
 import { type BreadcrumbItem, type Role } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CircleAlert, UserPlus } from 'lucide-react';
@@ -19,7 +19,7 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Users', href: '/users' },
+    { title: 'Users', href: '/admin/users' },
     { title: 'Create New User', href: users.create.url() },
 ];
 
@@ -32,7 +32,7 @@ export default function Create({ roles }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6 flex items-center gap-4">
-                    <Link href="/users">
+                    <Link href="/admin/users">
                         <Button variant="outline" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Users

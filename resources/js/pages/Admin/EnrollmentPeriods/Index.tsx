@@ -21,7 +21,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Enrollment Periods', href: '/enrollment-periods' },
+    { title: 'Enrollment Periods', href: '/admin/enrollment-periods' },
 ];
 
 function StatusBadge({ status }: { status: EnrollmentPeriod['status'] }) {

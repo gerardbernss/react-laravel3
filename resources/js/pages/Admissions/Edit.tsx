@@ -18,8 +18,8 @@ import React from 'react';
 import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Applicant List', href: '/admissions/applicants' },
-    { title: 'Edit Applicant', href: '/admissions/applicants/edit' },
+    { title: 'Applicant List', href: '/admin/applicants' },
+    { title: 'Edit Applicant', href: '/admin/applicants/edit' },
 ];
 
 const LabelWithTooltip = ({ label, tooltip }: { label: string; tooltip?: string }) => {

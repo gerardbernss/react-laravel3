@@ -29,7 +29,7 @@ interface PageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Employees', href: '/employees' },
+    { title: 'Employees', href: '/admin/employees' },
 ];
 
 interface EmployeeRowProps {
@@ -62,7 +62,7 @@ function EmployeeRow({ employee: emp, onDeactivate }: EmployeeRowProps) {
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">
-                    <Link href={`/employees/${emp.id}/edit`}>
+                    <Link href={`/admin/employees/${emp.id}/edit`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -114,7 +114,7 @@ export default function EmployeesIndex() {
                             {employees.total} employee{employees.total !== 1 ? 's' : ''} on record
                         </p>
                     </div>
-                    <Link href="/employees/create">
+                    <Link href="/admin/employees/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Employee

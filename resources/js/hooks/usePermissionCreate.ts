@@ -9,7 +9,7 @@ export function usePermissionCreate() {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post('/permissions');
+        post('/admin/permissions');
     };
 
     return { data, setData, processing, errors, handleSubmit };

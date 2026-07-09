@@ -7,10 +7,10 @@ interface Params {
 
 export function useApplicantView({ applicant }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Applicant List', href: '/admissions/applicants' },
+        { title: 'Applicant List', href: '/admin/applicants' },
         {
             title: `${applicant.first_name ?? ''} ${applicant.last_name ?? ''}`,
-            href: `/admissions/applicants/${applicant.id}/show`,
+            href: `/admin/applicants/${applicant.id}/show`,
         },
     ];
 

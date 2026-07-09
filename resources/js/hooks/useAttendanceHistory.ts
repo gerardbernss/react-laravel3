@@ -50,17 +50,17 @@ export function useAttendanceHistory({ blockSection, selectedSubjectId, dateFrom
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Attendance', href: '/attendance' },
+        { title: 'Attendance', href: '/teacher/attendance' },
         ...(blockSection.grade_level
-            ? [{ title: blockSection.grade_level, href: `/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` }]
+            ? [{ title: blockSection.grade_level, href: `/teacher/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` }]
             : []),
-        { title: blockSection.code, href: `/attendance/${blockSection.id}` },
-        { title: 'History', href: `/attendance/${blockSection.id}/history` },
+        { title: blockSection.code, href: `/teacher/attendance/${blockSection.id}` },
+        { title: 'History', href: `/teacher/attendance/${blockSection.id}/history` },
     ];
 
     const applyFilters = () => {
         router.get(
-            `/attendance/${blockSection.id}/history`,
+            `/teacher/attendance/${blockSection.id}/history`,
             { subject_id: subjectVal, date_from: fromVal || undefined, date_to: toVal || undefined },
             { preserveState: true, replace: true },
         );
@@ -69,7 +69,7 @@ export function useAttendanceHistory({ blockSection, selectedSubjectId, dateFrom
     const clearFilters = () => {
         setFromVal('');
         setToVal('');
-        router.get(`/attendance/${blockSection.id}/history`, { subject_id: subjectVal }, { preserveState: false, replace: true });
+        router.get(`/teacher/attendance/${blockSection.id}/history`, { subject_id: subjectVal }, { preserveState: false, replace: true });
     };
 
     const hasDateFilter = !!(fromVal || toVal);

@@ -37,8 +37,8 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Finance', href: '/admin/finance/assessments' },
-    { title: 'Assessments', href: '/admin/finance/assessments' },
+    { title: 'Finance', href: '/admin/fee-assessments' },
+    { title: 'Assessments', href: '/admin/fee-assessments' },
     { title: 'Enrollment Payment', href: '#' },
 ];
 
@@ -60,7 +60,7 @@ export default function ApplicantEnroll({ applicant, assessment }: Props) {
             <div className="p-6">
                 {/* Header */}
                 <div className="mb-6">
-                    <Link href="/admin/finance/assessments">
+                    <Link href="/admin/fee-assessments">
                         <Button variant="ghost" size="sm" className="mb-2 -ml-2">
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Back to Assessments

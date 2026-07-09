@@ -11,7 +11,7 @@ it('blocks access to users index without permission', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get('/users')
+        ->get('/admin/users')
         ->assertForbidden();
 });
 
@@ -36,7 +36,7 @@ it('allows access to users index with permission', function () {
     $user->assignRole($role);
 
     $this->actingAs($user)
-        ->get('/users')
+        ->get('/admin/users')
         ->assertSuccessful();
 });
 
@@ -44,7 +44,7 @@ it('blocks access to roles without permission', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get('/roles')
+        ->get('/admin/roles')
         ->assertForbidden();
 });
 
@@ -69,11 +69,11 @@ it('allows access to roles with permission', function () {
     $user->assignRole($role);
 
     $this->actingAs($user)
-        ->get('/roles')
+        ->get('/admin/roles')
         ->assertSuccessful();
 });
 
 it('redirects unauthenticated users to login', function () {
-    $this->get('/users')
+    $this->get('/admin/users')
         ->assertRedirect('/login');
 });

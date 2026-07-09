@@ -51,8 +51,8 @@ export function useAttendanceSheet({ blockSection, students, selectedDate, selec
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Attendance', href: '/attendance' },
-        { title: blockSection.code, href: `/attendance/${blockSection.id}` },
+        { title: 'Attendance', href: '/teacher/attendance' },
+        { title: blockSection.code, href: `/teacher/attendance/${blockSection.id}` },
     ];
 
     const getCurrentValue = useCallback(
@@ -134,18 +134,18 @@ export function useAttendanceSheet({ blockSection, students, selectedDate, selec
     const hasChanges = changes.size > 0;
 
     const handleSubjectChange = (subjectId: string) => {
-        router.get(`/attendance/${blockSection.id}`, { date: selectedDate, subject_id: subjectId }, { preserveState: false });
+        router.get(`/teacher/attendance/${blockSection.id}`, { date: selectedDate, subject_id: subjectId }, { preserveState: false });
     };
 
     const handleDateChange = (date: string) => {
-        router.get(`/attendance/${blockSection.id}`, { date, subject_id: selectedSubjectId }, { preserveState: false });
+        router.get(`/teacher/attendance/${blockSection.id}`, { date, subject_id: selectedSubjectId }, { preserveState: false });
     };
 
     const handleSave = () => {
         if (!hasChanges) return;
         setSaving(true);
         router.post(
-            `/attendance/${blockSection.id}`,
+            `/teacher/attendance/${blockSection.id}`,
             { date: selectedDate, subject_id: selectedSubjectId, attendance: Array.from(changes.values()) },
             {
                 preserveScroll: true,

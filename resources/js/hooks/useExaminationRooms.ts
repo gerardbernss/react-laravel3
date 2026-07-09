@@ -76,7 +76,7 @@ export function useExaminationRooms(rooms: ExaminationRoom[]) {
     };
 
     const confirmDelete = () => {
-        destroy(`/examination-rooms/${deleteDialog.id}`, {
+        destroy(`/admin/examination-rooms/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

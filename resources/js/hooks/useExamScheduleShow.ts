@@ -60,8 +60,8 @@ interface Params {
 export function useExamScheduleShow({ schedule, availableApplicants }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Exam Schedules', href: '/exam-schedules' },
-        { title: schedule.name, href: `/exam-schedules/${schedule.id}` },
+        { title: 'Exam Schedules', href: '/admin/exam-schedules' },
+        { title: schedule.name, href: `/admin/exam-schedules/${schedule.id}` },
     ];
 
     const { delete: destroy, processing: deleting } = useForm();
@@ -108,13 +108,13 @@ export function useExamScheduleShow({ schedule, availableApplicants }: Params) {
     const allSelected = filteredAvailable.length > 0 && filteredAvailable.every((a) => selected.includes(a.id));
 
     const confirmDelete = () => {
-        destroy(`/exam-schedules/${schedule.id}`, {
+        destroy(`/admin/exam-schedules/${schedule.id}`, {
             onSuccess: () => setShowDeleteDialog(false),
         });
     };
 
     const confirmRemove = () => {
-        destroy(`/exam-assignments/${removeDialog.id}`, {
+        destroy(`/admin/exam-assignments/${removeDialog.id}`, {
             onSuccess: () => setRemoveDialog({ open: false, id: 0, name: '' }),
         });
     };
@@ -147,7 +147,7 @@ export function useExamScheduleShow({ schedule, availableApplicants }: Params) {
         setAssignError(null);
         setSubmitting(true);
         router.post(
-            '/exam-assignments/bulk',
+            '/admin/exam-assignments/bulk',
             { applicant_ids: selected, exam_schedule_id: schedule.id },
             {
                 onSuccess: () => {

@@ -17,7 +17,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Examination Rooms', href: '/examination-rooms' },
+    { title: 'Examination Rooms', href: '/admin/examination-rooms' },
 ];
 
 function SortIcon({ col, sortConfig }: { col: RoomSortKey; sortConfig: { key: RoomSortKey | null; direction: 'asc' | 'desc' } }) {
@@ -50,12 +50,12 @@ function RoomRow({ room, processing, onDelete }: RoomRowProps) {
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
-                    <Link href={`/examination-rooms/${room.id}`}>
+                    <Link href={`/admin/examination-rooms/${room.id}`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Eye className="h-3 w-3" /> View
                         </button>
                     </Link>
-                    <Link href={`/examination-rooms/${room.id}/edit`}>
+                    <Link href={`/admin/examination-rooms/${room.id}/edit`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -105,7 +105,7 @@ export default function Index({ rooms }: Props) {
                         <Building2 className="h-7 w-7 text-primary" />
                         <h1 className={PAGE_TITLE}>Examination Rooms</h1>
                     </div>
-                    <Link href="/examination-rooms/create">
+                    <Link href="/admin/examination-rooms/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Room

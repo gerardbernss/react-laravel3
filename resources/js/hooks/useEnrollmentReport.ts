@@ -18,7 +18,7 @@ export function useEnrollmentReport({ filters }: Params) {
 
     const handleFilter = () => {
         router.get(
-            '/enrollment/report',
+            '/admin/enrollment/report',
             {
                 status: statusFilter !== 'all' ? statusFilter : undefined,
                 category: categoryFilter !== 'all' ? categoryFilter : undefined,

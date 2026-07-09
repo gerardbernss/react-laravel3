@@ -80,7 +80,7 @@ export function useStudentShow({ student, personalData }: Params) {
 
     const handleWithdraw = (e: FormEvent) => {
         e.preventDefault();
-        withdrawForm.post(`/students/${student.id}/withdraw`, {
+        withdrawForm.post(`/admin/students/${student.id}/withdraw`, {
             onSuccess: () => {
                 setShowWithdrawDialog(false);
                 withdrawForm.reset();

@@ -71,14 +71,14 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                 <div className="mb-6">
                     <div className="mb-4 flex items-center gap-4">
                         <Link
-                            href={blockSection.grade_level ? `/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/attendance'}
+                            href={blockSection.grade_level ? `/teacher/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/teacher/attendance'}
                             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
                         >
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Back
                         </Link>
                         <Link
-                            href={`/attendance/${blockSection.id}/history?subject_id=${selectedSubjectId}`}
+                            href={`/teacher/attendance/${blockSection.id}/history?subject_id=${selectedSubjectId}`}
                             className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
                         >
                             <History className="mr-1 h-4 w-4" />
@@ -154,7 +154,7 @@ export default function Sheet({ blockSection, students, selectedDate, selectedSu
                                                     <td className="px-4 py-2 text-gray-500">{dt.toLocaleDateString('en-US', { weekday: 'long' })}</td>
                                                     <td className="px-4 py-2 text-center">
                                                         <Link
-                                                            href={`/attendance/${blockSection.id}?date=${d}&subject_id=${selectedSubjectId}`}
+                                                            href={`/teacher/attendance/${blockSection.id}?date=${d}&subject_id=${selectedSubjectId}`}
                                                             onClick={() => setMissedOpen(false)}
                                                             className="inline-flex items-center gap-1 rounded bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200"
                                                         >

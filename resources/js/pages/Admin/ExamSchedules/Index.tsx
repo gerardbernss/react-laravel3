@@ -19,7 +19,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Exam Schedules', href: '/exam-schedules' },
+    { title: 'Exam Schedules', href: '/admin/exam-schedules' },
 ];
 
 const formatDate = (dateStr: string) =>
@@ -83,12 +83,12 @@ function ScheduleRow({ schedule, processing, onDelete }: ScheduleRowProps) {
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
-                    <Link href={`/exam-schedules/${schedule.id}`}>
+                    <Link href={`/admin/exam-schedules/${schedule.id}`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Users className="h-3 w-3" /> View Assigned
                         </button>
                     </Link>
-                    <Link href={`/exam-schedules/${schedule.id}/edit`}>
+                    <Link href={`/admin/exam-schedules/${schedule.id}/edit`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -143,13 +143,13 @@ export default function Index({ schedules, rooms }: Props) {
                         <h1 className={PAGE_TITLE}>Exam Schedules</h1>
                     </div>
                     <div className="flex gap-2">
-                        <Link href="/examination-rooms">
+                        <Link href="/admin/examination-rooms">
                             <Button variant="outline">
                                 <Building2 className="mr-2 h-4 w-4" />
                                 Manage Rooms
                             </Button>
                         </Link>
-                        <Link href="/exam-schedules/create">
+                        <Link href="/admin/exam-schedules/create">
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Schedule

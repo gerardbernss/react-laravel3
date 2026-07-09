@@ -21,8 +21,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Exam Results', href: '/exam-results' },
-    { title: 'Upload', href: '/exam-results/upload' },
+    { title: 'Exam Results', href: '/admin/exam-results' },
+    { title: 'Upload', href: '/admin/exam-results/upload' },
 ];
 
 const SAMPLE_HEADERS = [
@@ -59,7 +59,7 @@ export default function UploadExamResults({ importConflicts, importWarning, hasP
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/exam-results" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/exam-results" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Exam Results
                     </Link>

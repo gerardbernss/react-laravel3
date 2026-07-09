@@ -34,7 +34,7 @@ interface PageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Permissions', href: '/permissions' },
+    { title: 'Permissions', href: '/admin/permissions' },
 ];
 
 interface PermissionTableRowProps {
@@ -97,14 +97,14 @@ function PermissionTableRow({ permission, visibleColumns, isSelected, processing
                 <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex justify-center gap-2">
                         {hasPermission('view-permissions') && (
-                            <Link href={`/permissions/${permission.id}`}>
+                            <Link href={`/admin/permissions/${permission.id}`}>
                                 <button className={TABLE_ROW_ACTION}>
                                     <Eye className="h-3 w-3" /> View
                                 </button>
                             </Link>
                         )}
                         {hasPermission('update-permissions') && (
-                            <Link href={`/permissions/${permission.id}/edit`}>
+                            <Link href={`/admin/permissions/${permission.id}/edit`}>
                                 <button className={TABLE_ROW_ACTION}>
                                     <Pencil className="h-3 w-3" /> Edit
                                 </button>
@@ -170,7 +170,7 @@ export default function Index() {
                         <p className={`mt-1 ${BODY_TEXT}`}>Manage system permissions and access controls</p>
                     </div>
                     {hasPermission('create-permissions') && (
-                        <Link href="/permissions/create">
+                        <Link href="/admin/permissions/create">
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Create Permission
@@ -327,7 +327,7 @@ export default function Index() {
                         <h3 className={`mt-4 ${SECTION_HEADING}`}>No permissions found</h3>
                         <p className={`mt-2 ${BODY_TEXT}`}>Get started by creating your first permission.</p>
                         {hasPermission('create-permissions') && (
-                            <Link href="/permissions/create">
+                            <Link href="/admin/permissions/create">
                                 <Button className="mt-4">
                                     <Plus className="mr-2 h-4 w-4" />
                                     Create Permission

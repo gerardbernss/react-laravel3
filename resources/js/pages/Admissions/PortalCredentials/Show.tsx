@@ -55,7 +55,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Portal Credentials', href: '/portal-credentials' },
+    { title: 'Portal Credentials', href: '/admin/portal-credentials' },
     { title: 'Details', href: '#' },
 ];
 
@@ -93,7 +93,7 @@ const getStatusBadge = (status: string) => {
             <div className={`space-y-6 ${PAGE_PADDING}`}>
                 {/* Header */}
                 <div className="mb-6">
-                    <Link href="/portal-credentials" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/portal-credentials" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Portal Credentials
                     </Link>

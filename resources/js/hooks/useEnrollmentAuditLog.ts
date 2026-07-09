@@ -26,12 +26,12 @@ interface Params {
 export function useEnrollmentAuditLog({ applicant, auditLogs }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Enrollment Management', href: '/enrollment/dashboard' },
+        { title: 'Enrollment Management', href: '/admin/enrollment/dashboard' },
         {
             title: `${applicant.personal_data?.last_name}, ${applicant.personal_data?.first_name}`,
-            href: `/enrollment/${applicant.id}`,
+            href: `/admin/enrollment/${applicant.id}`,
         },
-        { title: 'Audit Log', href: `/enrollment/${applicant.id}/audit-log` },
+        { title: 'Audit Log', href: `/admin/enrollment/${applicant.id}/audit-log` },
     ];
 
     const [currentPage, setCurrentPage] = useState(1);

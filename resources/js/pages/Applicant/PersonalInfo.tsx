@@ -55,7 +55,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/applicant/dashboard' },
-    { title: 'Application Information', href: '/applicant/personal-info' },
+    { title: 'Application Information', href: '/applicant/profile' },
 ];
 
 const HEALTH_OPTIONS = ['Asthma', 'Diabetes', 'Heart Disease', 'Epilepsy', 'Severe Allergies', 'Visual Impairment', 'Hearing Impairment', 'Others'];

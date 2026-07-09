@@ -19,9 +19,9 @@ interface Params {
 export function useExamScheduleEdit({ schedule }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Exam Schedules', href: '/exam-schedules' },
-        { title: schedule.name, href: `/exam-schedules/${schedule.id}` },
-        { title: 'Edit', href: `/exam-schedules/${schedule.id}/edit` },
+        { title: 'Exam Schedules', href: '/admin/exam-schedules' },
+        { title: schedule.name, href: `/admin/exam-schedules/${schedule.id}` },
+        { title: 'Edit', href: `/admin/exam-schedules/${schedule.id}/edit` },
     ];
 
     const { data, setData, put, processing, errors } = useForm({
@@ -36,7 +36,7 @@ export function useExamScheduleEdit({ schedule }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/exam-schedules/${schedule.id}`);
+        put(`/admin/exam-schedules/${schedule.id}`);
     };
 
     return { breadcrumbs, data, setData, processing, errors, handleSubmit };

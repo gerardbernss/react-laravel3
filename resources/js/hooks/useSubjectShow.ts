@@ -36,15 +36,15 @@ interface Params {
 export function useSubjectShow({ subject }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Subjects', href: '/subjects' },
-        { title: subject.code, href: `/subjects/${subject.id}` },
+        { title: 'Subjects', href: '/admin/subjects' },
+        { title: subject.code, href: `/admin/subjects/${subject.id}` },
     ];
 
     const { delete: destroy, processing } = useForm();
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const confirmDelete = () => {
-        destroy(`/subjects/${subject.id}`, {
+        destroy(`/admin/subjects/${subject.id}`, {
             onSuccess: () => setShowDeleteDialog(false),
         });
     };

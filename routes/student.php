@@ -17,7 +17,7 @@
  *                            The 'student.enrolled' middleware (EnsureEnrolledStudent) aborts
  *                            with 403 if the student's enrollment_status is not 'Active'.
  *
- * Password change is mandatory on first login: the portal redirects to /student/change-password
+ * Password change is mandatory on first login: the portal redirects to /student/password
  * whenever password_changed = false on the PortalCredential. This is enforced in
  * StudentPortalController, not at the middleware level.
  *
@@ -32,16 +32,16 @@ use Illuminate\Support\Facades\Route;
 
 // Student portal login
 Route::get('student/login', [StudentLoginController::class, 'create'])->name('student.login');
-Route::post('student/login', [StudentLoginController::class, 'store']);
+Route::post('student/login', [StudentLoginController::class, 'store'])->name('student.login.store');
 
 // Applicant routes (no student prefix)
 Route::middleware('auth:student')->group(function () {
     Route::get('applicant/dashboard', [StudentPortalController::class, 'applicantDashboard'])
         ->name('applicant.dashboard');
-    Route::get('applicant/personal-info', [StudentPortalController::class, 'applicantPersonalInfo'])
-        ->name('applicant.personal-info');
-    Route::post('applicant/personal-info', [StudentPortalController::class, 'applicantUpdatePersonalInfo'])
-        ->name('applicant.personal-info.update');
+    Route::get('applicant/profile', [StudentPortalController::class, 'applicantPersonalInfo'])
+        ->name('applicant.profile.edit');
+    Route::put('applicant/profile', [StudentPortalController::class, 'applicantUpdatePersonalInfo'])
+        ->name('applicant.profile.update');
     Route::get('applicant/enrollment', [StudentPortalController::class, 'applicantEnrollment'])
         ->name('applicant.enrollment');
     Route::post('applicant/enrollment/generate-assessment', [StudentPortalController::class, 'generateApplicantAssessment'])
@@ -55,17 +55,17 @@ Route::middleware('auth:student')->prefix('student')->group(function () {
     Route::get('dashboard', [StudentPortalController::class, 'dashboard'])
         ->name('student.dashboard');
 
-    Route::get('personal-info', [StudentPortalController::class, 'personalInfo'])
-        ->name('student.personal-info');
+    Route::get('profile', [StudentPortalController::class, 'personalInfo'])
+        ->name('student.profile.edit');
 
-    Route::put('personal-info', [StudentPortalController::class, 'updatePersonalInfo'])
-        ->name('student.personal-info.update');
+    Route::put('profile', [StudentPortalController::class, 'updatePersonalInfo'])
+        ->name('student.profile.update');
 
-    Route::get('change-password', [StudentPortalController::class, 'changePasswordForm'])
-        ->name('student.change-password');
+    Route::get('password', [StudentPortalController::class, 'changePasswordForm'])
+        ->name('student.password.edit');
 
-    Route::put('change-password', [StudentPortalController::class, 'changePassword'])
-        ->name('student.change-password.update');
+    Route::put('password', [StudentPortalController::class, 'changePassword'])
+        ->name('student.password.update');
 
     Route::post('logout', [StudentLoginController::class, 'destroy'])
         ->name('student.logout');

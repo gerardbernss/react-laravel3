@@ -51,12 +51,12 @@ class ExamResultsController extends Controller
         if ($result['status'] === 'conflicts') {
             session(['exam_import_pending' => $result['pendingRows']]);
 
-            return redirect()->route('exam-results.create')
+            return redirect()->route('admin.exam-results.upload')
                 ->with('importConflicts', $result['conflicts'])
                 ->with('importWarning', $result['warning']);
         }
 
-        return redirect()->route('exam-results.index')->with('success', $result['message']);
+        return redirect()->route('admin.exam-results.index')->with('success', $result['message']);
     }
 
     public function confirmStore(ConfirmExamResultsImportRequest $request): RedirectResponse
@@ -65,61 +65,61 @@ class ExamResultsController extends Controller
         session()->forget('exam_import_pending');
 
         if (empty($pendingRows)) {
-            return redirect()->route('exam-results.create')
+            return redirect()->route('admin.exam-results.upload')
                 ->withErrors(['file' => 'Session expired. Please re-upload the file.']);
         }
 
         $message = $this->examResultService->confirmImport($pendingRows, (bool) $request->validated('overwrite'));
 
-        return redirect()->route('exam-results.index')->with('success', $message);
+        return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
     public function updateRankings(): RedirectResponse
     {
         $count = $this->examResultService->updateRankings();
 
-        return redirect()->route('exam-results.index')->with('success', "Rankings updated for {$count} record(s).");
+        return redirect()->route('admin.exam-results.index')->with('success', "Rankings updated for {$count} record(s).");
     }
 
     public function updateSettings(UpdateExamPassingThresholdRequest $request): RedirectResponse
     {
         $this->examResultService->updatePassingThreshold((float) $request->validated('passing_percentage'));
 
-        return redirect()->route('exam-results.index')->with('success', 'Passing threshold updated.');
+        return redirect()->route('admin.exam-results.index')->with('success', 'Passing threshold updated.');
     }
 
     public function sendResult(ApplicantExamResult $result): RedirectResponse
     {
         $outcome = $this->examResultService->sendResult($result);
 
-        return redirect()->route('exam-results.index')->with($outcome['success'] ? 'success' : 'error', $outcome['message']);
+        return redirect()->route('admin.exam-results.index')->with($outcome['success'] ? 'success' : 'error', $outcome['message']);
     }
 
     public function sendAllResults(SendAllExamResultsRequest $request): RedirectResponse
     {
         $message = $this->examResultService->sendAllResults($request->validated('scope'));
 
-        return redirect()->route('exam-results.index')->with('success', $message);
+        return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
     public function updateAll(): RedirectResponse
     {
         $message = $this->examResultService->updateAllRankingsAndStatuses();
 
-        return redirect()->route('exam-results.index')->with('success', $message);
+        return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
     public function updateApplicantStatuses(): RedirectResponse
     {
         $message = $this->examResultService->updateApplicantStatuses();
 
-        return redirect()->route('exam-results.index')->with('success', $message);
+        return redirect()->route('admin.exam-results.index')->with('success', $message);
     }
 
     public function updateApplicantStatus(ApplicantExamResult $result): RedirectResponse
     {
         $outcome = $this->examResultService->updateApplicantStatus($result);
 
-        return redirect()->route('exam-results.index')->with($outcome['success'] ? 'success' : 'error', $outcome['message']);
+        return redirect()->route('admin.exam-results.index')->with($outcome['success'] ? 'success' : 'error', $outcome['message']);
     }
 }

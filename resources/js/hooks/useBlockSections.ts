@@ -102,7 +102,7 @@ export function useBlockSections(blockSections: BlockSection[], schoolYears: str
     };
 
     const confirmDelete = () => {
-        destroy(`/block-sections/${deleteDialog.id}`, {
+        destroy(`/admin/block-sections/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };
@@ -115,7 +115,7 @@ export function useBlockSections(blockSections: BlockSection[], schoolYears: str
 
     const handleCopySubmit = (e: FormEvent) => {
         e.preventDefault();
-        copyForm.post('/block-sections/copy-year', {
+        copyForm.post('/admin/block-sections/copy-year', {
             onSuccess: () => setShowCopyDialog(false),
         });
     };

@@ -18,7 +18,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Exam Assignments', href: '/exam-assignments' },
+    { title: 'Exam Assignments', href: '/admin/exam-assignments' },
 ];
 
 function SortIcon({ col, sortConfig }: { col: AssignmentSortKey; sortConfig: { key: AssignmentSortKey | null; direction: 'asc' | 'desc' } }) {
@@ -140,7 +140,7 @@ export default function Index({ assignments, schedules }: Props) {
                         <h1 className={PAGE_TITLE}>Exam Assignments</h1>
                         <p className={`mt-1 ${BODY_TEXT}`}>Manage applicant exam schedule assignments</p>
                     </div>
-                    <Link href="/exam-assignments/create">
+                    <Link href="/admin/exam-assignments/create">
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
                             Assign Applicants

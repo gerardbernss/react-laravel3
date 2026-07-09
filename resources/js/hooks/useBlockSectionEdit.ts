@@ -58,9 +58,9 @@ export function useBlockSectionEdit({ blockSection, subjects }: Params) {
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Block Sections', href: '/block-sections' },
-        { title: blockSection.code, href: `/block-sections/${blockSection.id}` },
-        { title: 'Edit', href: `/block-sections/${blockSection.id}/edit` },
+        { title: 'Block Sections', href: '/admin/block-sections' },
+        { title: blockSection.code, href: `/admin/block-sections/${blockSection.id}` },
+        { title: 'Edit', href: `/admin/block-sections/${blockSection.id}/edit` },
     ];
 
     const semesterCompatible = (s: Subject) =>
@@ -105,7 +105,7 @@ export function useBlockSectionEdit({ blockSection, subjects }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/block-sections/${blockSection.id}`);
+        put(`/admin/block-sections/${blockSection.id}`);
     };
 
     return {

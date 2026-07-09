@@ -18,8 +18,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Block Sections', href: '/block-sections' },
-    { title: 'Create', href: '/block-sections/create' },
+    { title: 'Block Sections', href: '/admin/block-sections' },
+    { title: 'Create', href: '/admin/block-sections/create' },
 ];
 
 const gradeLevels = [
@@ -52,7 +52,7 @@ export default function Create({ subjects }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/block-sections" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Block Sections
                     </Link>
@@ -295,7 +295,7 @@ export default function Create({ subjects }: Props) {
                                 </>
                             )}
                         </Button>
-                        <Link href="/block-sections">
+                        <Link href="/admin/block-sections">
                             <Button type="button" variant="outline">
                                 Cancel
                             </Button>

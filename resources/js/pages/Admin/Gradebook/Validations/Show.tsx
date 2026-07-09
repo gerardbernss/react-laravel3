@@ -41,7 +41,7 @@ export default function ValidationsShow({ blockSection, subjects, quarters, isFa
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/gradebook/validations" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/teacher/gradebook/validations" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Validations
                     </Link>
@@ -91,7 +91,7 @@ export default function ValidationsShow({ blockSection, subjects, quarters, isFa
                                             )}
                                             {quarters.map((q) => {
                                                 const data = subject.quarters[q];
-                                                const entryHref = `/gradebook/${blockSection.id}/${subject.id}/${q}/entry`;
+                                                const entryHref = `/teacher/gradebook/${blockSection.id}/${subject.id}/${q}/entry`;
                                                 const isSubmitted = data.status === 'submitted';
                                                 const showView = data.status !== 'draft' || canFinalize;
 

@@ -87,7 +87,7 @@ export function useRoleTable(roles: Role[]) {
 
     const confirmDelete = () => {
         setHideAlert(false);
-        destroy(`/roles/${deleteDialog.id}`, {
+        destroy(`/admin/roles/${deleteDialog.id}`, {
             onSuccess: () => setDeleteDialog({ open: false, id: 0, name: '' }),
         });
     };

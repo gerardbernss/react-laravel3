@@ -11,7 +11,7 @@ export function usePermissionShow({ permission }: Params) {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const confirmDelete = () => {
-        destroy(`/permissions/${permission.id}`, {
+        destroy(`/admin/permissions/${permission.id}`, {
             onSuccess: () => setShowDeleteDialog(false),
         });
     };

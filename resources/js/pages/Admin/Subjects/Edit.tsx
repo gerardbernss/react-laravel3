@@ -38,7 +38,7 @@ export default function Edit({ subject, facultyUsers }: Props) {
             <div className={PAGE_PADDING}>
                 {/* Header */}
                 <div className="mb-6">
-                    <Link href="/subjects" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/subjects" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Subjects
                     </Link>
@@ -257,7 +257,7 @@ export default function Edit({ subject, facultyUsers }: Props) {
                                     </>
                                 )}
                             </Button>
-                            <Link href="/subjects">
+                            <Link href="/admin/subjects">
                                 <Button type="button" variant="outline">
                                     Cancel
                                 </Button>

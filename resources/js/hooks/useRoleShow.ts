@@ -21,7 +21,7 @@ export function useRoleShow({ role }: Params) {
     };
 
     const confirmRemoveRole = () => {
-        destroy(`/users/${removeDialog.userId}/remove-role`, {
+        destroy(`/admin/users/${removeDialog.userId}/remove-role`, {
             data: { role_id: role.id } as any,
             onSuccess: () => setRemoveDialog({ open: false, userId: 0, userName: '' }),
         });

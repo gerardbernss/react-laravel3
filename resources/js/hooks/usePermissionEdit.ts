@@ -14,7 +14,7 @@ export function usePermissionEdit({ permission }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/permissions/${permission.id}`);
+        put(`/admin/permissions/${permission.id}`);
     };
 
     return { data, setData, processing, errors, handleSubmit };

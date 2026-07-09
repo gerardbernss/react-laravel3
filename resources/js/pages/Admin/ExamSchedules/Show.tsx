@@ -70,7 +70,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
             <Head title={schedule.name} />
 
             <div className={PAGE_PADDING}>
-                <Link href="/exam-schedules" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/admin/exam-schedules" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                     <ArrowLeft className="mr-1 h-4 w-4" />
                     Back to Schedules
                 </Link>
@@ -91,7 +91,7 @@ export default function Show({ schedule, availableApplicants }: Props) {
                                 <span className="ml-1.5 rounded-full bg-white/20 px-1.5 text-xs">{availableApplicants.length}</span>
                             )}
                         </Button>
-                        <Link href={`/exam-schedules/${schedule.id}/edit`}>
+                        <Link href={`/admin/exam-schedules/${schedule.id}/edit`}>
                             <Button variant="outline">
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit

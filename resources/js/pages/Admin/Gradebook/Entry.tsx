@@ -47,7 +47,7 @@ export default function GradebookEntry({ blockSection, subject, quarter, compone
                 <div className="sticky top-0 z-10 border-b bg-white px-6 py-3 shadow-sm">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <Link href={`/gradebook/${blockSection.id}`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                            <Link href={`/teacher/gradebook/${blockSection.id}`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                                 <ArrowLeft className="mr-1 h-4 w-4" />
                                 Back
                             </Link>
@@ -82,7 +82,7 @@ export default function GradebookEntry({ blockSection, subject, quarter, compone
                             )}
 
                             {!isLocked && (
-                                <Link href={`/gradebook/${blockSection.id}/${subject.id}/${quarter}/components`}>
+                                <Link href={`/teacher/gradebook/${blockSection.id}/${subject.id}/${quarter}/components`}>
                                     <Button variant="outline" size="sm">
                                         <Settings className="mr-1 h-4 w-4" />
                                         Components
@@ -150,7 +150,7 @@ export default function GradebookEntry({ blockSection, subject, quarter, compone
                             <p className={`mt-2 ${BODY_TEXT}`}>
                                 Define grading components (Written Work, Performance Task, Quarterly Assessment) before entering scores.
                             </p>
-                            <Link href={`/gradebook/${blockSection.id}/${subject.id}/${quarter}/components`} className="mt-4 inline-block">
+                            <Link href={`/teacher/gradebook/${blockSection.id}/${subject.id}/${quarter}/components`} className="mt-4 inline-block">
                                 <Button>Set Up Components →</Button>
                             </Link>
                         </div>
@@ -204,7 +204,7 @@ export default function GradebookEntry({ blockSection, subject, quarter, compone
                                                         </div>
                                                         <div className="font-mono text-xs text-gray-400">{student.student_id_number ?? '—'}</div>
                                                         <a
-                                                            href={`/reports/report-card/${student.enrollment_id}`}
+                                                            href={`/teacher/reports/report-card/${student.enrollment_id}`}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600"

@@ -40,7 +40,7 @@ export function useEmployees(filters: EmployeeFilters) {
 
     const applyFilters = (overrides: Record<string, string> = {}) => {
         router.get(
-            '/employees',
+            '/admin/employees',
             { search, department, status, ...overrides },
             { preserveState: true, replace: true },
         );
@@ -50,7 +50,7 @@ export function useEmployees(filters: EmployeeFilters) {
         setSearch('');
         setDepartment('');
         setStatus('');
-        router.get('/employees', {}, { preserveState: false });
+        router.get('/admin/employees', {}, { preserveState: false });
     };
 
     const handleDeactivate = (employee: Employee) => {
@@ -59,7 +59,7 @@ export function useEmployees(filters: EmployeeFilters) {
 
     const confirmDeactivate = () => {
         if (!deactivateDialog.employee) return;
-        router.delete(`/employees/${deactivateDialog.employee.id}`, {
+        router.delete(`/admin/employees/${deactivateDialog.employee.id}`, {
             onSuccess: () => setDeactivateDialog({ open: false, employee: null }),
         });
     };

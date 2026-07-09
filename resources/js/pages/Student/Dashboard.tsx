@@ -86,7 +86,7 @@ export default function Dashboard({ student, personalData, application, studentR
                                 <h3 className="font-medium text-yellow-800">Password Change Required</h3>
                                 <p className="text-sm text-yellow-700">
                                     For security, please change your temporary password.{' '}
-                                    <a href="/student/change-password" className="font-medium underline">
+                                    <a href="/student/password" className="font-medium underline">
                                         Change password now
                                     </a>
                                 </p>

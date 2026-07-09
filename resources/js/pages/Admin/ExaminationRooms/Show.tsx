@@ -20,7 +20,7 @@ export default function Show({ room }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/examination-rooms" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/examination-rooms" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Rooms
                     </Link>
@@ -37,7 +37,7 @@ export default function Show({ room }: Props) {
                         </div>
 
                         <div className="flex gap-2">
-                            <Link href={`/examination-rooms/${room.id}/edit`}>
+                            <Link href={`/admin/examination-rooms/${room.id}/edit`}>
                                 <Button variant="outline">
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
@@ -99,7 +99,7 @@ export default function Show({ room }: Props) {
                                                     {new Date(schedule.exam_date).toLocaleDateString()} • {schedule.start_time} - {schedule.end_time}
                                                 </p>
                                             </div>
-                                            <Link href={`/exam-schedules/${schedule.id}`}>
+                                            <Link href={`/admin/exam-schedules/${schedule.id}`}>
                                                 <Button variant="ghost" size="sm">
                                                     View
                                                 </Button>

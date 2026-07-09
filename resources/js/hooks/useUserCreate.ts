@@ -1,4 +1,4 @@
-import users from '@/routes/users';
+import users from '@/routes/admin/users';
 import { useForm } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
 

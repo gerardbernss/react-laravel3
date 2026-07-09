@@ -21,7 +21,7 @@ export default function Show({ subject }: Props) {
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/subjects" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <Link href="/admin/subjects" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Subjects
                     </Link>
@@ -36,7 +36,7 @@ export default function Show({ subject }: Props) {
                         </div>
 
                         <div className="flex gap-2">
-                            <Link href={`/subjects/${subject.id}/edit`}>
+                            <Link href={`/admin/subjects/${subject.id}/edit`}>
                                 <Button variant="outline">
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
@@ -117,7 +117,7 @@ export default function Show({ subject }: Props) {
                                                     {section.grade_level} • {section.school_year}
                                                 </p>
                                             </div>
-                                            <Link href={`/block-sections/${section.id}`}>
+                                            <Link href={`/admin/block-sections/${section.id}`}>
                                                 <Button variant="ghost" size="sm">
                                                     View
                                                 </Button>

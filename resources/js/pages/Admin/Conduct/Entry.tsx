@@ -32,14 +32,14 @@ export default function ConductEntry({ blockSection, quarter, quarters, categori
                 <Head title={`Conduct — ${blockSection.code} ${quarter}`} />
                 <div className={PAGE_PADDING}>
                     <Link
-                        href={`/gradebook/${blockSection.id}`}
+                        href={`/teacher/gradebook/${blockSection.id}`}
                         className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
                     >
                         <ArrowLeft className="mr-1 h-4 w-4" /> Back
                     </Link>
                     <div className={`${CARD} p-12 text-center`}>
                         <p className={BODY_TEXT}>No active conduct criteria. Add categories and criteria first.</p>
-                        <Link href="/conduct-categories" className="mt-3 inline-block text-sm text-blue-600 hover:underline">
+                        <Link href="/teacher/conduct-categories" className="mt-3 inline-block text-sm text-blue-600 hover:underline">
                             Manage Conduct Categories →
                         </Link>
                     </div>
@@ -55,7 +55,7 @@ export default function ConductEntry({ blockSection, quarter, quarters, categori
             <div className={`min-w-0 ${PAGE_PADDING}`}>
                 <div className="mb-6">
                     <Link
-                        href={`/gradebook/${blockSection.id}`}
+                        href={`/teacher/gradebook/${blockSection.id}`}
                         className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
                     >
                         <ArrowLeft className="mr-1 h-4 w-4" /> Back to {blockSection.code}
@@ -71,7 +71,7 @@ export default function ConductEntry({ blockSection, quarter, quarters, categori
                         <div className="flex shrink-0 items-center gap-2 pt-1">
                             <div className="flex gap-1">
                                 {quarters.map((q) => (
-                                    <Link key={q} href={`/gradebook/${blockSection.id}/conduct/${q}`}>
+                                    <Link key={q} href={`/teacher/gradebook/${blockSection.id}/conduct/${q}`}>
                                         <Button variant={q === quarter ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs">
                                             {q}
                                         </Button>

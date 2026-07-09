@@ -29,12 +29,12 @@ const applicantNavItems: NavItem[] = [
     },
     {
         title: 'Application Information',
-        href: '/applicant/personal-info',
+        href: '/applicant/profile',
         icon: User,
     },
     {
         title: 'Change Password',
-        href: '/student/change-password',
+        href: '/student/password',
         icon: Key,
     },
 ];
@@ -52,12 +52,12 @@ const examPassedNavItems: NavItem[] = [
     },
     {
         title: 'Application Information',
-        href: '/applicant/personal-info',
+        href: '/applicant/profile',
         icon: User,
     },
     {
         title: 'Change Password',
-        href: '/student/change-password',
+        href: '/student/password',
         icon: Key,
     },
 ];
@@ -95,12 +95,12 @@ const enrolledNavItems: NavItem[] = [
     },
     {
         title: 'Personal Information',
-        href: '/student/personal-info',
+        href: '/student/profile',
         icon: User,
     },
     {
         title: 'Change Password',
-        href: '/student/change-password',
+        href: '/student/password',
         icon: Key,
     },
     {
@@ -153,13 +153,13 @@ function StudentNavUser() {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href="/student/personal-info">
+                    <Link href="/student/profile">
                         <User className="mr-2 h-4 w-4" />
                         Personal Info
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <Link href="/student/change-password">
+                    <Link href="/student/password">
                         <Key className="mr-2 h-4 w-4" />
                         Change Password
                     </Link>

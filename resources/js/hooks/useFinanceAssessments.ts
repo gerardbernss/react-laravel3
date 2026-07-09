@@ -107,7 +107,7 @@ export function useFinanceAssessments(
 
     const handleGenerateAssessments = () => {
         if (!openStudentPeriod) return;
-        postGenerate(`/enrollment-periods/${openStudentPeriod.id}/generate-assessments`, {
+        postGenerate(`/admin/enrollment-periods/${openStudentPeriod.id}/generate-assessments`, {
             onSuccess: () => setShowGenerateDialog(false),
         });
     };

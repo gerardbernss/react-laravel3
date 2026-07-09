@@ -26,7 +26,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Portal Credentials', href: '/portal-credentials' },
+    { title: 'Portal Credentials', href: '/admin/portal-credentials' },
 ];
 
 function SortIcon({ col, sortConfig }: { col: CredentialSortKey; sortConfig: { key: CredentialSortKey | null; direction: 'asc' | 'desc' } }) {
@@ -79,7 +79,7 @@ function CredentialRow({ credential, onSend, onResend }: CredentialRowProps) {
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
-                    <Link href={`/portal-credentials/${credential.id}`}>
+                    <Link href={`/admin/portal-credentials/${credential.id}`}>
                         <Button variant="outline" size="sm" title="View Details">
                             <Eye className="h-4 w-4" />
                         </Button>

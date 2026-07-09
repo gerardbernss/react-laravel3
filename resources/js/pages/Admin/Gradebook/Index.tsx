@@ -15,7 +15,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Gradebook', href: '/gradebook' },
+    { title: 'Gradebook', href: '/teacher/gradebook' },
 ];
 
 function SubjectRow({ entry }: { entry: SubjectEntry }) {
@@ -29,7 +29,7 @@ function SubjectRow({ entry }: { entry: SubjectEntry }) {
             <td className="px-4 py-3 text-gray-600">{entry.grade_level ?? '—'}</td>
             <td className="px-4 py-3 text-gray-600">{entry.school_year ?? '—'}</td>
             <td className="px-4 py-3 text-right">
-                <Link href={`/gradebook/${entry.block_section_id}`}>
+                <Link href={`/teacher/gradebook/${entry.block_section_id}`}>
                     <button className={TABLE_ROW_ACTION}>
                         <ChevronRight className="h-3 w-3" /> Open
                     </button>
@@ -53,7 +53,7 @@ function SectionRow({ section }: { section: BlockSection }) {
             <td className="px-4 py-3 text-center text-gray-700">{section.subjects_count}</td>
             <td className="px-4 py-3 text-center text-gray-700">{section.enrollments_count}</td>
             <td className="px-4 py-3 text-right">
-                <Link href={`/gradebook/${section.id}`}>
+                <Link href={`/teacher/gradebook/${section.id}`}>
                     <button className={TABLE_ROW_ACTION}>
                         <ChevronRight className="h-3 w-3" /> Open
                     </button>
@@ -90,7 +90,7 @@ export default function GradebookIndex({ isFaculty, mySubjects, blockSections }:
                                 : 'Select a section to manage its gradebook.'}
                         </p>
                     </div>
-                    <Link href="/gradebook/validations" className="shrink-0">
+                    <Link href="/teacher/gradebook/validations" className="shrink-0">
                         <Button variant="outline" size="sm">
                             <ClipboardCheck className="mr-1.5 h-4 w-4" />
                             Grade Validations

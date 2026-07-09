@@ -15,8 +15,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Gradebook', href: '/gradebook' },
-    { title: 'Validations', href: '/gradebook/validations' },
+    { title: 'Gradebook', href: '/teacher/gradebook' },
+    { title: 'Validations', href: '/teacher/gradebook/validations' },
 ];
 
 export default function ValidationsIndex({ isFaculty, mySubjects, sections }: Props) {
@@ -35,7 +35,7 @@ export default function ValidationsIndex({ isFaculty, mySubjects, sections }: Pr
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href="/gradebook" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/teacher/gradebook" className="mb-3 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="h-4 w-4" />
                         Back to Gradebook
                     </Link>
@@ -77,7 +77,7 @@ export default function ValidationsIndex({ isFaculty, mySubjects, sections }: Pr
                                                 <td className="px-4 py-3 text-gray-600">{entry.school_year ?? '—'}</td>
                                                 <td className="px-4 py-3 text-right">
                                                     <Link
-                                                        href={`/gradebook/validations/${entry.block_section_id}`}
+                                                        href={`/teacher/gradebook/validations/${entry.block_section_id}`}
                                                         className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
                                                     >
                                                         Open <ChevronRight className="h-4 w-4" />
@@ -129,7 +129,7 @@ export default function ValidationsIndex({ isFaculty, mySubjects, sections }: Pr
                                             <td className="px-4 py-3 text-center text-gray-700">{section.subjects_count}</td>
                                             <td className="px-4 py-3 text-right">
                                                 <Link
-                                                    href={`/gradebook/validations/${section.id}`}
+                                                    href={`/teacher/gradebook/validations/${section.id}`}
                                                     className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
                                                 >
                                                     Open <ChevronRight className="h-4 w-4" />

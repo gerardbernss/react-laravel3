@@ -42,7 +42,7 @@ class ApplicantExamAssignmentController extends Controller
             return back()->withErrors(['error' => $result['error']]);
         }
 
-        return redirect()->route('exam-assignments.index')
+        return redirect()->route('admin.exam-assignments.index')
             ->with('success', 'Applicant assigned to exam schedule successfully.');
     }
 
@@ -54,7 +54,7 @@ class ApplicantExamAssignmentController extends Controller
             return back()->withErrors(['error' => $result['error']]);
         }
 
-        return redirect()->route('exam-assignments.index')
+        return redirect()->route('admin.exam-assignments.index')
             ->with('success', "{$result['assigned']} applicant(s) assigned to exam schedule successfully.");
     }
 
@@ -76,7 +76,7 @@ class ApplicantExamAssignmentController extends Controller
     {
         $this->assignmentService->delete($assignment);
 
-        return redirect()->route('exam-assignments.index')
+        return redirect()->route('admin.exam-assignments.index')
             ->with('success', 'Assignment removed successfully.');
     }
 }

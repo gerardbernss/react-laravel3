@@ -73,8 +73,8 @@ function computeGrade(scores: Record<number, string>, components: GradeComponent
 export function useGradebookEntry({ blockSection, subject, quarter, components, students, weightTotal, validationStatus, validationId }: Params) {
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Gradebook', href: '/gradebook' },
-        { title: blockSection.code, href: `/gradebook/${blockSection.id}` },
+        { title: 'Gradebook', href: '/teacher/gradebook' },
+        { title: blockSection.code, href: `/teacher/gradebook/${blockSection.id}` },
         { title: `${subject.code} ${quarter} Entry`, href: '' },
     ];
 
@@ -117,7 +117,7 @@ export function useGradebookEntry({ blockSection, subject, quarter, components, 
             }
         }
         router.put(
-            `/gradebook/${blockSection.id}/${subject.id}/${quarter}/scores`,
+            `/teacher/gradebook/${blockSection.id}/${subject.id}/${quarter}/scores`,
             { scores: payload },
             {
                 preserveScroll: true,
@@ -130,7 +130,7 @@ export function useGradebookEntry({ blockSection, subject, quarter, components, 
     const submitForValidation = useCallback(() => {
         setSubmitting(true);
         router.post(
-            `/gradebook/${blockSection.id}/${subject.id}/${quarter}/submit`,
+            `/teacher/gradebook/${blockSection.id}/${subject.id}/${quarter}/submit`,
             {},
             { preserveScroll: true, onFinish: () => setSubmitting(false) },
         );
@@ -140,7 +140,7 @@ export function useGradebookEntry({ blockSection, subject, quarter, components, 
         if (!validationId) return;
         setFinalizing(true);
         router.post(
-            `/grade-validations/${validationId}/finalize`,
+            `/teacher/gradebook/validations/${validationId}/finalize`,
             {},
             { preserveScroll: true, onFinish: () => setFinalizing(false) },
         );
@@ -150,7 +150,7 @@ export function useGradebookEntry({ blockSection, subject, quarter, components, 
         if (!validationId || !rejectReason.trim()) return;
         setRejecting(true);
         router.post(
-            `/grade-validations/${validationId}/reject`,
+            `/teacher/gradebook/validations/${validationId}/reject`,
             { rejection_reason: rejectReason },
             {
                 preserveScroll: true,

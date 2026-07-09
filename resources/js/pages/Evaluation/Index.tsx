@@ -74,7 +74,7 @@ function ApplicantRow({ row, visibleColumns, selectedRows, onSelectRow, onDelete
             <td className="px-4 py-3">
                 <div className="flex items-center gap-1.5">
                     <Link
-                        href={`/admissions/applicants/${row.id}/show`}
+                        href={`/admin/applicants/${row.id}/show`}
                         className="rounded-lg p-1.5 text-blue-600 transition-colors hover:bg-blue-50"
                         title="View"
                     >
@@ -150,7 +150,7 @@ export default function Index({ applications }: Props) {
                         <div className="flex flex-col items-start md:items-end">
                             <div className="hidden h-4 md:block" />
                             <Link
-                                href="/admissions/applicants/create"
+                                href="/admin/applicants/create"
                                 className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg"
                             >
                                 <HiPlus size={18} />

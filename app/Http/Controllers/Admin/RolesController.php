@@ -49,7 +49,7 @@ class RolesController extends Controller
 
         $this->roleService->create($data);
 
-        return redirect()->route('roles.index')->with('message', 'Role created successfully!');
+        return redirect()->route('admin.roles.index')->with('message', 'Role created successfully!');
     }
 
     public function show(Role $role)
@@ -78,7 +78,7 @@ class RolesController extends Controller
 
         $this->roleService->update($role, $data);
 
-        return redirect()->route('roles.index')->with('message', 'Role updated successfully!');
+        return redirect()->route('admin.roles.index')->with('message', 'Role updated successfully!');
     }
 
     public function destroy(Role $role)
@@ -87,7 +87,7 @@ class RolesController extends Controller
 
         $this->roleRepository->delete($role);
 
-        return redirect()->route('roles.index')->with('message', 'Role deleted successfully!');
+        return redirect()->route('admin.roles.index')->with('message', 'Role deleted successfully!');
     }
 
     public function assignPermission(AssignPermissionRequest $request, Role $role)

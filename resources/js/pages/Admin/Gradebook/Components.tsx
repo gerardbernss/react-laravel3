@@ -29,7 +29,7 @@ export default function GradebookComponents({ blockSection, subject, quarter, co
 
             <div className={PAGE_PADDING}>
                 <div className="mb-6">
-                    <Link href={`/gradebook/${blockSection.id}`} className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <Link href={`/teacher/gradebook/${blockSection.id}`} className="mb-4 inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                         <ArrowLeft className="mr-1 h-4 w-4" />
                         Back to Section
                     </Link>
@@ -101,7 +101,7 @@ export default function GradebookComponents({ blockSection, subject, quarter, co
 
                         {components.length > 0 && weightOk && (
                             <div className="mt-4 flex justify-end">
-                                <Link href={`/gradebook/${blockSection.id}/${subject.id}/${quarter}/entry`}>
+                                <Link href={`/teacher/gradebook/${blockSection.id}/${subject.id}/${quarter}/entry`}>
                                     <Button>Go to Score Entry →</Button>
                                 </Link>
                             </div>

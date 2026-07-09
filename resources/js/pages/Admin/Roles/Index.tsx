@@ -36,7 +36,7 @@ interface RolesPageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Roles', href: '/roles' },
+    { title: 'Roles', href: '/admin/roles' },
 ];
 
 interface RoleTableRowProps {
@@ -120,14 +120,14 @@ function RoleTableRow({ role, visibleColumns, isSelected, processing, onSelect, 
                 <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex justify-center gap-2">
                         {hasPermission('view-roles') && (
-                            <Link href={`/roles/${role.id}`}>
+                            <Link href={`/admin/roles/${role.id}`}>
                                 <button className={TABLE_ROW_ACTION}>
                                     <Eye className="h-3 w-3" /> View
                                 </button>
                             </Link>
                         )}
                         {hasPermission('update-roles') && (
-                            <Link href={`/roles/${role.id}/edit`}>
+                            <Link href={`/admin/roles/${role.id}/edit`}>
                                 <button className={TABLE_ROW_ACTION}>
                                     <Pencil className="h-3 w-3" /> Edit
                                 </button>
@@ -187,7 +187,7 @@ export default function Index() {
                         <p className={`mt-1 ${BODY_TEXT}`}>Manage system roles and their permissions</p>
                     </div>
                     {hasPermission('create-roles') && (
-                        <Link href="/roles/create">
+                        <Link href="/admin/roles/create">
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Create Role
@@ -347,7 +347,7 @@ export default function Index() {
                         <h3 className={`mt-4 ${SECTION_HEADING}`}>No roles found</h3>
                         <p className={`mt-2 ${BODY_TEXT}`}>Get started by creating your first role.</p>
                         {hasPermission('create-roles') && (
-                            <Link href="/roles/create">
+                            <Link href="/admin/roles/create">
                                 <Button className="mt-4">
                                     <Plus className="mr-2 h-4 w-4" />
                                     Create Role

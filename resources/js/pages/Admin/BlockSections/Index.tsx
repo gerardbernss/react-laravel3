@@ -23,7 +23,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Block Sections', href: '/block-sections' },
+    { title: 'Block Sections', href: '/admin/block-sections' },
 ];
 
 function SortIcon({ col, sortConfig }: { col: BlockSectionSortKey; sortConfig: { key: BlockSectionSortKey | null; direction: 'asc' | 'desc' } }) {
@@ -69,12 +69,12 @@ function BlockSectionRow({ section, processing, onDelete }: BlockSectionRowProps
             </td>
             <td className="px-4 py-3">
                 <div className="flex justify-center gap-1">
-                    <Link href={`/block-sections/${section.id}`}>
+                    <Link href={`/admin/block-sections/${section.id}`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Eye className="h-3 w-3" /> View
                         </button>
                     </Link>
-                    <Link href={`/block-sections/${section.id}/edit`}>
+                    <Link href={`/admin/block-sections/${section.id}/edit`}>
                         <button className={TABLE_ROW_ACTION}>
                             <Pencil className="h-3 w-3" /> Edit
                         </button>
@@ -212,7 +212,7 @@ export default function Index({ blockSections, schoolYears }: Props) {
                             </TooltipTrigger>
                             <TooltipContent>Copy block sections to recent school year</TooltipContent>
                         </Tooltip>
-                        <Link href="/block-sections/create">
+                        <Link href="/admin/block-sections/create">
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Block Section

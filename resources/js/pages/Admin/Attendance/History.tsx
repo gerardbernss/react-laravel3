@@ -65,7 +65,7 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
                 <div className="mb-6">
                     <div className="mb-4 flex items-center gap-4">
                         <Link
-                            href={blockSection.grade_level ? `/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/attendance'}
+                            href={blockSection.grade_level ? `/teacher/attendance/grade/${encodeURIComponent(blockSection.grade_level)}` : '/teacher/attendance'}
                             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
                         >
                             <ArrowLeft className="mr-1 h-4 w-4" />
@@ -85,7 +85,7 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
                             </p>
                         </div>
                         <div className="flex gap-2">
-                            <Link href={`/attendance/${blockSection.id}?subject_id=${subjectVal}`}>
+                            <Link href={`/teacher/attendance/${blockSection.id}?subject_id=${subjectVal}`}>
                                 <Button variant="outline">
                                     <ClipboardCheck className="mr-2 h-4 w-4" />
                                     Take / View Today
@@ -207,7 +207,7 @@ export default function History({ blockSection, subjects, selectedSubjectId, dat
                                         {record.attendance_rate !== null ? `${record.attendance_rate}%` : '—'}
                                     </AppTable.Td>
                                     <AppTable.Td className="text-center">
-                                        <Link href={`/attendance/${blockSection.id}?date=${record.date}&subject_id=${subjectVal}`}>
+                                        <Link href={`/teacher/attendance/${blockSection.id}?date=${record.date}&subject_id=${subjectVal}`}>
                                             <Button variant="outline" size="sm">
                                                 <ClipboardCheck className="mr-1 h-3.5 w-3.5" />
                                                 View / Edit

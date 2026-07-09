@@ -23,9 +23,9 @@ interface Params {
 export function useSubjectEdit({ subject }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Subjects', href: '/subjects' },
-        { title: subject.code, href: `/subjects/${subject.id}` },
-        { title: 'Edit', href: `/subjects/${subject.id}/edit` },
+        { title: 'Subjects', href: '/admin/subjects' },
+        { title: subject.code, href: `/admin/subjects/${subject.id}` },
+        { title: 'Edit', href: `/admin/subjects/${subject.id}/edit` },
     ];
 
     const { data, setData, put, processing, errors } = useForm({
@@ -45,7 +45,7 @@ export function useSubjectEdit({ subject }: Params) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/subjects/${subject.id}`);
+        put(`/admin/subjects/${subject.id}`);
     };
 
     return { breadcrumbs, data, setData, processing, errors, handleSubmit };

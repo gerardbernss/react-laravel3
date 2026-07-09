@@ -143,7 +143,7 @@ export function useStudentEdit({ student, personalData, initialSiblings }: Param
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post(`/students/${student.id}`);
+        post(`/admin/students/${student.id}`);
     };
 
     const toggleCondition = (condition: string) => {

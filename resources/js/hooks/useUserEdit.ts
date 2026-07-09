@@ -1,4 +1,4 @@
-import users from '@/routes/users';
+import users from '@/routes/admin/users';
 import { type BreadcrumbItem } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
@@ -22,8 +22,8 @@ interface Params {
 
 export function useUserEdit({ user }: Params) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Users', href: '/users' },
-        { title: 'Edit User', href: `/users/${user.id}/edit` },
+        { title: 'Users', href: '/admin/users' },
+        { title: 'Edit User', href: `/admin/users/${user.id}/edit` },
     ];
 
     const [hideAlert, setHideAlert] = useState(false);

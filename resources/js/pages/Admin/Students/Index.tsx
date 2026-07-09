@@ -15,7 +15,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
+    { title: 'Students', href: '/admin/students' },
 ];
 
 const statusVariant: Record<string, string> = {
@@ -121,7 +121,7 @@ export default function StudentsIndex({ students }: Props) {
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Link href={`/students/${student.id}`}>
+                                                <Link href={`/admin/students/${student.id}`}>
                                                     <button className={TABLE_ROW_ACTION}>
                                                         <Eye className="h-3 w-3" /> View
                                                     </button>
