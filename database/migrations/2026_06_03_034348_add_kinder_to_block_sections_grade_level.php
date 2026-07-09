@@ -7,6 +7,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Oracle-only: dynamic CHECK constraint lookup/rewrite via user_constraints.
+        // Other drivers (e.g. sqlite in tests) don't have a named constraint to touch.
+        if (DB::getDriverName() !== 'oracle') {
+            return;
+        }
+
         $this->dropGradeLevelConstraints();
 
         $values = "'Kinder','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5',"
@@ -17,6 +23,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'oracle') {
+            return;
+        }
+
         $this->dropGradeLevelConstraints();
 
         $values = "'Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6',"

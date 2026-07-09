@@ -9,6 +9,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'oracle') {
+            Schema::table('enrollment_periods', function (Blueprint $table) {
+                $table->dropUnique(['school_year', 'semester', 'type']);
+            });
+
+            return;
+        }
+
         // Find the unique constraint on (school_year, semester, type) by catalog lookup
         // rather than a hardcoded name, since Oracle generates names differently on fresh installs.
         $result = DB::selectOne("

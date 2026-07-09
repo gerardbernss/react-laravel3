@@ -10,11 +10,17 @@ use Laravel\Socialite\Two\User as SocialiteUser;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    // Create a default role for testing
+    // Tests use @example.com addresses; without this, they'd inherit whatever
+    // GOOGLE_ALLOWED_DOMAINS happens to be set to in the developer's real .env
+    // (e.g. the production slu.edu.ph restriction) and fail non-deterministically.
+    // Tests that specifically exercise the domain allowlist override this themselves.
+    config(['services.google.allowed_domains' => []]);
+
+    // Create the default role assigned to new Google sign-ups (see GoogleAuthService::createUserFromGoogle)
     Role::create([
-        'slug' => 'user',
-        'name' => 'User',
-        'description' => 'Regular user role',
+        'slug' => 'base',
+        'name' => 'Base',
+        'description' => 'Default role for new accounts',
         'is_active' => true,
     ]);
 });
@@ -105,7 +111,7 @@ it('redirects to login with error when Google authentication fails', function ()
 });
 
 it('assigns default role to new Google users', function () {
-    $defaultRole = Role::where('slug', 'user')->first();
+    $defaultRole = Role::where('slug', 'base')->first();
 
     $googleUser = Mockery::mock(SocialiteUser::class);
     $googleUser->shouldReceive('getId')->andReturn('google123');
@@ -118,7 +124,7 @@ it('assigns default role to new Google users', function () {
     $this->get(route('auth.google.callback'));
 
     $user = User::where('google_id', 'google123')->first();
-    expect($user->hasRole('user'))->toBeTrue();
+    expect($user->hasRole('base'))->toBeTrue();
 });
 
 it('blocks sign-in when email domain is not allowed', function () {

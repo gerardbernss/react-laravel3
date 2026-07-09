@@ -7,6 +7,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // This CHECK constraint rewrite is Oracle-specific (dynamic constraint lookup via
+        // PL/SQL); other drivers (e.g. sqlite in tests) don't enforce a named CHECK
+        // constraint here at all, so there's nothing to drop/recreate.
+        if (DB::getDriverName() !== 'oracle') {
+            return;
+        }
+
         // Oracle: find the CHECK constraint for grade_level via user_cons_columns
         // (avoids querying the LONG-typed search_condition column).
         DB::unprepared("
@@ -38,6 +45,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'oracle') {
+            return;
+        }
+
         DB::unprepared("
             DECLARE
                 v_name VARCHAR2(200);

@@ -18,7 +18,7 @@ it('can view permissions index with proper permission', function () {
 
     $response = $this->get('/admin/permissions');
     $response->assertSuccessful();
-    $response->assertInertia(fn ($page) => $page->component('Permissions/Index'));
+    $response->assertInertia(fn ($page) => $page->component('Admin/Permissions/Index'));
 });
 
 it('can create a new permission', function () {

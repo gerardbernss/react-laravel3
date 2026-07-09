@@ -9,6 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
+            $table->dropIndex(['portal_access_active']);
+        });
+
+        Schema::table('students', function (Blueprint $table) {
             $table->dropColumn(['portal_access_active', 'portal_enrollment_date']);
         });
     }

@@ -15,12 +15,24 @@ return new class extends Migration
         });
 
         // 2. Make email nullable — use raw SQL to avoid Doctrine DBAL issues on Oracle
-        DB::statement('ALTER TABLE student_personal_data MODIFY email NULL');
+        if (DB::getDriverName() === 'oracle') {
+            DB::statement('ALTER TABLE student_personal_data MODIFY email NULL');
+        } else {
+            Schema::table('student_personal_data', function (Blueprint $table) {
+                $table->string('email')->nullable()->change();
+            });
+        }
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE student_personal_data MODIFY email NOT NULL');
+        if (DB::getDriverName() === 'oracle') {
+            DB::statement('ALTER TABLE student_personal_data MODIFY email NOT NULL');
+        } else {
+            Schema::table('student_personal_data', function (Blueprint $table) {
+                $table->string('email')->nullable(false)->change();
+            });
+        }
 
         Schema::table('student_personal_data', function (Blueprint $table) {
             $table->dropUnique(['applicant_personal_data_id']);
