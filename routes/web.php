@@ -13,13 +13,11 @@
  *   /teacher/* ↔ teacher.*  — gradebook, attendance, conduct, reports (RBAC via permission:X)
  *   /applications/* ↔ applications.* — public online-application intake forms (no auth)
  *
- * NOTE: several admin.* resource groups below (subjects, subject-schedules, students,
- * block-sections, enrollment-periods, programs, examination-rooms, exam-schedules,
- * exam-assignments, fees, discount-types, announcements, semester-periods, fee-assessments)
- * are protected only by auth+verified — no permission:X gate exists for them yet
- * (verified against database/seeders/RolePermissionSeeder.php). Adding one is an
- * authorization decision outside the scope of this URL-structure cleanup, so it's left
- * as-is; see TODO markers.
+ * Academic-structure and finance admin.* groups below are gated by broader,
+ * area-level permissions (manage-academic-structure, manage-students,
+ * manage-enrollment-periods, manage-examinations, manage-finance,
+ * manage-announcements) rather than one slug per resource — see
+ * database/seeders/RolePermissionSeeder.php.
  *
  * Admissions-specific routes (portal credentials, exam results, enrollment dashboard)
  * are in routes/admissions.php, student portal routes in routes/student.php,
@@ -217,32 +215,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
         });
 
-        // TODO: no permission:X gate exists for academic-structure management below
-        // (subjects, subject-schedules, students, block-sections, enrollment-periods,
-        // programs, examination-rooms, exam-schedules, exam-assignments) — currently
-        // any authenticated+verified user can manage these. Needs an authorization
-        // decision (new permission slugs + role assignment) before gating.
+        // Academic structure: subjects, subject schedules, block sections, programs
+        Route::middleware(['permission:manage-academic-structure'])->group(function () {
+            // Subject management
+            Route::resource('subjects', SubjectsController::class);
+            Route::post('/subjects/{subject}/toggle-status', [SubjectsController::class, 'toggleStatus'])->name('subjects.toggle-status');
 
-        // Subject management
-        Route::resource('subjects', SubjectsController::class);
-        Route::post('/subjects/{subject}/toggle-status', [SubjectsController::class, 'toggleStatus'])->name('subjects.toggle-status');
+            // Subject schedule management
+            Route::resource('subject-schedules', SubjectSchedulesController::class)->except(['show']);
 
-        // Subject schedule management
-        Route::resource('subject-schedules', SubjectSchedulesController::class)->except(['show']);
+            // Block section management
+            Route::resource('block-sections', BlockSectionsController::class);
+            Route::post('/block-sections/copy-year', [BlockSectionsController::class, 'copyToNewYear'])->name('block-sections.copy-year');
+            Route::post('/block-sections/{blockSection}/toggle-status', [BlockSectionsController::class, 'toggleStatus'])->name('block-sections.toggle-status');
+            Route::post('/block-sections/{blockSection}/add-student', [BlockSectionsController::class, 'addStudent'])->name('block-sections.add-student');
+            Route::delete('/block-sections/{blockSection}/students/{studentEnrollment}', [BlockSectionsController::class, 'removeStudent'])->name('block-sections.remove-student');
+
+            // Program management
+            Route::resource('programs', ProgramsController::class)->except(['show']);
+            Route::post('/programs/{program}/toggle-status', [ProgramsController::class, 'toggleStatus'])->name('programs.toggle-status');
+        });
 
         // Student management (URL now matches route name: /admin/students ↔ admin.students.*)
-        Route::resource('students', StudentsController::class);
-        Route::post('/students/{student}/withdraw', [StudentsController::class, 'withdraw'])->name('students.withdraw');
-
-        // Block section management
-        Route::resource('block-sections', BlockSectionsController::class);
-        Route::post('/block-sections/copy-year', [BlockSectionsController::class, 'copyToNewYear'])->name('block-sections.copy-year');
-        Route::post('/block-sections/{blockSection}/toggle-status', [BlockSectionsController::class, 'toggleStatus'])->name('block-sections.toggle-status');
-        Route::post('/block-sections/{blockSection}/add-student', [BlockSectionsController::class, 'addStudent'])->name('block-sections.add-student');
-        Route::delete('/block-sections/{blockSection}/students/{studentEnrollment}', [BlockSectionsController::class, 'removeStudent'])->name('block-sections.remove-student');
+        Route::middleware(['permission:manage-students'])->group(function () {
+            Route::resource('students', StudentsController::class);
+            Route::post('/students/{student}/withdraw', [StudentsController::class, 'withdraw'])->name('students.withdraw');
+        });
 
         // Enrollment period management
-        Route::prefix('enrollment-periods')->name('enrollment-periods.')->group(function () {
+        Route::middleware(['permission:manage-enrollment-periods'])->prefix('enrollment-periods')->name('enrollment-periods.')->group(function () {
             Route::get('/', [EnrollmentPeriodController::class, 'index'])->name('index');
             Route::post('/', [EnrollmentPeriodController::class, 'store'])->name('store');
             Route::put('/{period}', [EnrollmentPeriodController::class, 'update'])->name('update');
@@ -252,56 +253,60 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('/{period}', [EnrollmentPeriodController::class, 'destroy'])->name('destroy');
         });
 
-        // Program management
-        Route::resource('programs', ProgramsController::class)->except(['show']);
-        Route::post('/programs/{program}/toggle-status', [ProgramsController::class, 'toggleStatus'])->name('programs.toggle-status');
+        // Examinations: rooms, schedules, applicant exam assignments
+        Route::middleware(['permission:manage-examinations'])->group(function () {
+            // Examination room management — static "active" route must precede the
+            // resource's {examination_room} show route, or "active" would be parsed as an ID.
+            Route::get('/examination-rooms/active', [ExaminationRoomsController::class, 'getActiveRooms'])->name('examination-rooms.active');
+            Route::resource('examination-rooms', ExaminationRoomsController::class);
 
-        // Examination room management — static "active" route must precede the
-        // resource's {examination_room} show route, or "active" would be parsed as an ID.
-        Route::get('/examination-rooms/active', [ExaminationRoomsController::class, 'getActiveRooms'])->name('examination-rooms.active');
-        Route::resource('examination-rooms', ExaminationRoomsController::class);
+            // Exam schedule management — same static-before-resource ordering as above.
+            Route::get('/exam-schedules/available', [ExamSchedulesController::class, 'getAvailableSchedules'])->name('exam-schedules.available');
+            Route::resource('exam-schedules', ExamSchedulesController::class);
 
-        // Exam schedule management — same static-before-resource ordering as above.
-        Route::get('/exam-schedules/available', [ExamSchedulesController::class, 'getAvailableSchedules'])->name('exam-schedules.available');
-        Route::resource('exam-schedules', ExamSchedulesController::class);
-
-        // Exam assignment management
-        Route::prefix('exam-assignments')->name('exam-assignments.')->group(function () {
-            Route::get('/', [ApplicantExamAssignmentController::class, 'index'])->name('index');
-            Route::get('/create', [ApplicantExamAssignmentController::class, 'create'])->name('create');
-            Route::post('/', [ApplicantExamAssignmentController::class, 'store'])->name('store');
-            Route::post('/bulk', [ApplicantExamAssignmentController::class, 'bulkStore'])->name('bulk-store');
-            Route::patch('/{assignment}/status', [ApplicantExamAssignmentController::class, 'updateStatus'])->name('update-status');
-            Route::post('/{assignment}/mark-result', [ApplicantExamAssignmentController::class, 'markResult'])->name('mark-result');
-            Route::delete('/{assignment}', [ApplicantExamAssignmentController::class, 'destroy'])->name('destroy');
+            // Exam assignment management
+            Route::prefix('exam-assignments')->name('exam-assignments.')->group(function () {
+                Route::get('/', [ApplicantExamAssignmentController::class, 'index'])->name('index');
+                Route::get('/create', [ApplicantExamAssignmentController::class, 'create'])->name('create');
+                Route::post('/', [ApplicantExamAssignmentController::class, 'store'])->name('store');
+                Route::post('/bulk', [ApplicantExamAssignmentController::class, 'bulkStore'])->name('bulk-store');
+                Route::patch('/{assignment}/status', [ApplicantExamAssignmentController::class, 'updateStatus'])->name('update-status');
+                Route::post('/{assignment}/mark-result', [ApplicantExamAssignmentController::class, 'markResult'])->name('mark-result');
+                Route::delete('/{assignment}', [ApplicantExamAssignmentController::class, 'destroy'])->name('destroy');
+            });
         });
 
-        // Fee management
-        Route::post('/fees/copy-from-year', [FeeController::class, 'copyFromYear'])->name('fees.copy-from-year');
-        Route::resource('fees', FeeController::class)->except(['show']);
-        Route::post('/fees/{fee}/toggle-status', [FeeController::class, 'toggleStatus'])->name('fees.toggle-status');
+        // Finance: fees, discount types, semester periods, fee assessments & payments
+        Route::middleware(['permission:manage-finance'])->group(function () {
+            // Fee management
+            Route::post('/fees/copy-from-year', [FeeController::class, 'copyFromYear'])->name('fees.copy-from-year');
+            Route::resource('fees', FeeController::class)->except(['show']);
+            Route::post('/fees/{fee}/toggle-status', [FeeController::class, 'toggleStatus'])->name('fees.toggle-status');
 
-        // Discount types
-        Route::resource('discount-types', DiscountTypeController::class);
-        Route::post('/discount-types/{discountType}/toggle-status', [DiscountTypeController::class, 'toggleStatus'])->name('discount-types.toggle-status');
+            // Discount types
+            Route::resource('discount-types', DiscountTypeController::class);
+            Route::post('/discount-types/{discountType}/toggle-status', [DiscountTypeController::class, 'toggleStatus'])->name('discount-types.toggle-status');
+
+            // Semester periods
+            Route::get('/semester-periods', [SemesterPeriodController::class, 'index'])->name('semester-periods.index');
+            Route::put('/semester-periods/{semesterPeriod}', [SemesterPeriodController::class, 'update'])->name('semester-periods.update');
+
+            // Fee assessments & payments (formerly "finance/assessments")
+            Route::prefix('fee-assessments')->name('fee-assessments.')->group(function () {
+                Route::get('/', [StudentAssessmentsController::class, 'index'])->name('index');
+                Route::get('/{assessment}', [StudentAssessmentsController::class, 'show'])->name('show');
+                Route::post('/{assessment}/payments', [StudentAssessmentsController::class, 'processPayment'])->name('payments.store');
+                Route::put('/{assessment}/payments/{payment}', [StudentAssessmentsController::class, 'updatePayment'])->name('payments.update');
+                Route::delete('/{assessment}/payments/{payment}', [StudentAssessmentsController::class, 'deletePayment'])->name('payments.destroy');
+                Route::patch('/{assessment}/minimum-amount', [StudentAssessmentsController::class, 'updateMinimumAmount'])->name('minimum-amount');
+                Route::post('/{assessment}/sync-status', [StudentAssessmentsController::class, 'syncStatus'])->name('sync-status');
+                Route::get('/{assessment}/debug', [StudentAssessmentsController::class, 'debugStatus'])->name('debug');
+            });
+        });
 
         // Announcements
-        Route::resource('announcements', AnnouncementsController::class);
-
-        // Semester periods
-        Route::get('/semester-periods', [SemesterPeriodController::class, 'index'])->name('semester-periods.index');
-        Route::put('/semester-periods/{semesterPeriod}', [SemesterPeriodController::class, 'update'])->name('semester-periods.update');
-
-        // Fee assessments & payments (formerly "finance/assessments")
-        Route::prefix('fee-assessments')->name('fee-assessments.')->group(function () {
-            Route::get('/', [StudentAssessmentsController::class, 'index'])->name('index');
-            Route::get('/{assessment}', [StudentAssessmentsController::class, 'show'])->name('show');
-            Route::post('/{assessment}/payments', [StudentAssessmentsController::class, 'processPayment'])->name('payments.store');
-            Route::put('/{assessment}/payments/{payment}', [StudentAssessmentsController::class, 'updatePayment'])->name('payments.update');
-            Route::delete('/{assessment}/payments/{payment}', [StudentAssessmentsController::class, 'deletePayment'])->name('payments.destroy');
-            Route::patch('/{assessment}/minimum-amount', [StudentAssessmentsController::class, 'updateMinimumAmount'])->name('minimum-amount');
-            Route::post('/{assessment}/sync-status', [StudentAssessmentsController::class, 'syncStatus'])->name('sync-status');
-            Route::get('/{assessment}/debug', [StudentAssessmentsController::class, 'debugStatus'])->name('debug');
+        Route::middleware(['permission:manage-announcements'])->group(function () {
+            Route::resource('announcements', AnnouncementsController::class);
         });
     });
 

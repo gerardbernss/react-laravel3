@@ -67,6 +67,15 @@ class RolePermissionSeeder extends Seeder
 
             // Employee permissions
             ['name' => 'Manage Employees', 'slug' => 'manage-employees', 'description' => 'Can create and manage employee records'],
+
+            // Academic structure & operations permissions (previously unprotected admin routes)
+            ['name' => 'Manage Academic Structure', 'slug' => 'manage-academic-structure', 'description' => 'Can manage subjects, subject schedules, block sections, and programs'],
+            ['name' => 'Manage Students', 'slug' => 'manage-students', 'description' => 'Can create, update, and withdraw student records'],
+            ['name' => 'Manage Enrollment Periods', 'slug' => 'manage-enrollment-periods', 'description' => 'Can open, close, and configure enrollment periods'],
+            ['name' => 'Manage Examinations', 'slug' => 'manage-examinations', 'description' => 'Can manage examination rooms, exam schedules, and applicant exam assignments'],
+            ['name' => 'Manage Finance', 'slug' => 'manage-finance', 'description' => 'Can manage fees, discount types, semester periods, and student fee assessments/payments'],
+            ['name' => 'Manage Announcements', 'slug' => 'manage-announcements', 'description' => 'Can create and manage announcements'],
+            ['name' => 'Manage Enrollment', 'slug' => 'manage-enrollment', 'description' => 'Can access the staff enrollment dashboard and enroll, withdraw, or revert applicants'],
         ];
 
         foreach ($permissions as $permission) {
@@ -141,6 +150,13 @@ class RolePermissionSeeder extends Seeder
             'manage-student-id-assignment',
             'manage-employees',
             'manage-portal-credentials',
+            'manage-academic-structure',
+            'manage-students',
+            'manage-enrollment-periods',
+            'manage-examinations',
+            'manage-finance',
+            'manage-announcements',
+            'manage-enrollment',
         ], 'and', false)->pluck('id')->toArray();
         $adminRole->syncPermissions(array_unique(array_merge($adminPermissions, $adminExtraPermissions)));
 

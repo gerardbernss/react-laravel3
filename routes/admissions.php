@@ -16,8 +16,7 @@
  *                                          left as-is (out of scope for a routing cleanup).
  *   permission:manage-exam-results       — upload CSV scores, rank results, send result emails,
  *                                          bulk-update applicant statuses (Exam Passed / Exam Failed)
- *   (no extra permission)                — enrollment dashboard, onsite enrollment wizard, audit log
- *                                          TODO: no permission:X gate exists for this group yet.
+ *   permission:manage-enrollment          — enrollment dashboard, onsite enrollment wizard, audit log
  *
  * This file is included by routes/web.php via require __DIR__.'/admissions.php'.
  */
@@ -57,7 +56,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     // ===== ENROLLMENT ROUTES =====
-    Route::prefix('enrollment')->name('enrollment.')->group(function () {
+    Route::middleware(['permission:manage-enrollment'])->prefix('enrollment')->name('enrollment.')->group(function () {
         Route::get('/dashboard', [EnrollmentController::class, 'dashboard'])->name('dashboard');
         Route::get('/report', [EnrollmentController::class, 'report'])->name('report');
         Route::get('/{applicant}', [EnrollmentController::class, 'show'])->name('show');
